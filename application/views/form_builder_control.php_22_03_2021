@@ -1,0 +1,194 @@
+<?php
+echo '<span style="display:none;" class="question_id_span">' . $question_id . '</span>';
+
+switch ($question_type_id) {
+	case "1": // Text Field
+		//echo '<input type="text" class="text-box-black">';
+		echo '<div class="text-box-black" ></div>';
+		break;
+	case "2": // Text
+
+		echo '<div  class="text_block" >' . $user_input . '</div><div style="clear: both;"></div>';
+		break;
+	case "3": // Mutliple choice
+
+		$option_text = explode(":::", $user_input);
+		for ($i = 0; $i < count($option_text); $i++) {
+			echo "<input type='radio' name='radio_list' />&nbsp;" . $option_text[$i] . "<br>";
+		}
+		break;
+	case "4": // Checkboxes
+		$option_text = explode(":::", $user_input);
+		for ($i = 0; $i < count($option_text); $i++) {
+			echo "<input type='checkbox' name='checkbox_list' />&nbsp;" . $option_text[$i] . "<br>";
+		}
+		break;
+	case "5": // Drop Down Menu 	
+		$option_text = explode(":::", $user_input);
+
+		/*echo "<select name='cmb_box'>";
+		for($i=0;$i<count($option_text);$i++)
+		{
+			echo "<option value='".$option_text[$i]."'>".$option_text[$i]."</option>";
+		}
+		echo "</select>";*/
+
+		echo '<div class="selector" ><span style="width: 126px;">' . $option_text[0] . '</span></div>';
+		break;
+	case "6": // Number Scale
+
+		for ($i = $scale_from; $i <= $scale_to; $i++) {
+			echo "<input type='radio' name='radio_scale' value='" . $i . "' />&nbsp;" . $i . "<br>";
+		}
+		break;
+	case "7": // Grid
+
+		echo "<table border='0' cellpadding='3' cellspacing='15'>";
+		echo "<tr>";
+		echo "<td>&nbsp;</td>";
+		for ($i = 0; $i < count($column_text); $i++) {
+			echo "<td align='center'>" . $column_text[$i] . "</td>";
+		}
+
+		echo "</tr>";
+
+
+		for ($i = 0; $i < count($row_text); $i++) {
+			echo "<tr>";
+			echo "<td>" . $row_text[$i] . "</td>";
+			for ($j = 0; $j < count($column_text); $j++) {
+				echo "<td  align='center'><input type='radio' name='radio_scale" . $i . "' value='row_" . $i . "_col" . $j . "' /></td>";
+			}
+			echo "</tr>";
+		}
+
+
+		echo "</table>";
+
+		break;
+	case "8": // Date
+
+		//echo '<input type="text" name="dtpicker_date" placeholder="Date Picker" readonly class="text-box-black">';
+		echo '<div class="text-box-black" name="dtpicker_date" >Date Picker</div><br>';
+		break;
+	case "9": // time
+
+		//echo '<input type="text" name="dtpicker_date" placeholder="Time Picker" readonly class="text-box-black">';
+		echo '<div class="text-box-black" name="dtpicker_time" >Time Picker</div><br>';
+		break;
+	case "10": // heading
+		echo "<h1>" . $user_input . "</h1>";
+		break;
+	case "11": // image
+
+		if ($form_builder_image_temp != "") {
+			echo '<div align="' . $image_align . '"><img src="' . URL::base() . 'images/form_builder_uploaded_images/' . $form_builder_image_temp . '" width="100" title="' . $image_title . '" ></div>';
+		}
+
+		break;
+	case "12": // sub heading
+		echo "<h3>" . $user_input . "</h3>";
+		break;
+	case "13": // Line Divider
+		echo "<hr>";
+		break;
+	case "14": // Blank Space
+		echo "<br>";
+		break;
+	case "15": // comments
+
+		//echo '<textarea name="dtpicker_date" placeholder="comments" readonly class="text-box-black"></textarea>';
+		echo '<div name="div_comments" class="text-box-black">comments</div>';
+		break;
+	case "16": // signature
+
+		if ($include_name == '1') {
+			echo '<div class="image-label">Name</div>';
+			echo '<div class="text-box-black"></div><br>';
+		}
+		if ($include_employer == '1') {
+			echo '<div class="image-label">Employer/Company</div>';
+			echo '<div class="text-box-black"></div><br>';
+		}
+		if ($include_email == '1') {
+			echo '<div class="image-label">Email</div>';
+			echo '<div class="text-box-black"></div><br>';
+		}
+		if ($include_phone == '1') {
+			echo '<div class="image-label">Phone</div>';
+			echo '<div class="text-box-black"></div><br>';
+		}
+
+		//echo '<textarea name="dtpicker_date" placeholder="Signature" readonly class="text-box-black"></textarea>';
+		if ($user_input != "")
+			echo "<br><p>" . $user_input . "</p><br>";
+		echo '<div name="div_sign" class="text-box-black">Signature</div>';
+
+		break;
+	case "17": // upload button
+
+		if ($user_input != "")
+			echo "<p>" . $user_input . "</p><br>";
+		//echo '<input type="button" name="" style="background-color:#007A01;color:#ffffff;" class="text-box-black" value="Upload">';
+		echo '<div name="" style="text-align:center; border:none; background-color:#007A01;color:#ffffff;" class="text-box-black" >Upload</div>';
+
+		break;
+	case "18": // participant name
+		if ($user_input != "")
+			echo "<p>" . $user_input . "</p>";
+		echo '<div class="text-box-black" ></div>';
+		if ($participant_include_employer == '1') {
+			echo '<br><div class="image-label">Employer/Company</div>';
+			echo '<div class="text-box-black"></div>';
+		}
+		if ($participant_include_signature == '1') {
+			echo '<br><div name="div_sign" class="text-box-black">Signature</div>';
+		}
+		echo '<input type="hidden" name="participant_name_ele[]"  id="participant_name_ele" />';
+		break;
+	case "19": // location function
+		if ($user_input != "")
+			echo "<p>" . $user_input . "</p><br>";
+		echo '<div class="text-box-black" ></div>';
+		echo '<input type="hidden" name="location_ele[]"  id="location_ele" />';
+		echo '<div name="" style="text-align:center; border:none;width:140px;margin-top:5px; background-color:#808080;color:#ffffff;" class="text-box-black" >MAP</div>';
+		break;
+	case "20": // web link button
+
+		echo '<div style="height:auto;text-align:left;padding-left:10px; border:none; background-color:#' . $button_colour . ';color:#ffffff;" class="text-box-black" >' . $user_input . '</div>';
+
+		break;
+
+	case "21": // Document Button 
+
+		echo '<div style="height:auto;text-align:left;padding-left:10px; border:none; background-color:#' . $button_colour . ';color:#ffffff;" class="text-box-black" >' . $doc_title . '</div>';
+		break;
+
+	case "22": // SWMS Hazard/Risk
+		if ($user_input != "")
+			echo "<p>" . $user_input . "</p><br>";
+		echo '<div style="height:auto;text-align:left;padding-left:10px; border:none; background-color:#808080;color:#ffffff;" class="text-box-black" >SWMS Hazard/Risk</div>';
+		break;
+
+	case "23": // Document Menu 
+
+		echo '<div style="height:auto;text-align:left;padding-left:10px; border:none; background-color:#808080;color:#ffffff;" class="text-box-black" >Document Menu</div>';
+		echo '<div class="doc-uploaded" style="display:none;">';
+		$doc_menu_file_arr = explode(",", $form_builder_doc_multi_temp);
+		foreach ($doc_menu_file_arr as $doc_file) {
+			echo '<a class="image-doc-link" target="_blank" href="' . URL::base() . 'images/formbuilder_upload/' . $doc_file . '" >' . $doc_file . '</a><br>';
+		}
+		echo '<br>';
+		echo '</div>';
+		break;
+
+	case "24": // Add recipient
+		echo "<div class='add_recipient' style='height:auto;text-align:left;padding-left:10px; border:none;'>";
+		echo "Send email notifications to <br>";
+		echo "<div class='rounded' >";
+		echo "<input style='width:90%' id='email_recipient_additional' class='email_recipient_additional' name='email_recipient__additional[]' required='required' type='text'>";
+		echo "</div>";
+		echo "<div class='add-another'><a href='javascript:;'>Add Another</a></div>";
+		echo "</div>";
+		break;
+}

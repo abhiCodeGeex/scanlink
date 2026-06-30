@@ -1,0 +1,655 @@
+Jan 11 06:22:16 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/addurl with parameters array (  'module' => 'item',  'action' => 'addurl',)
+Jan 11 06:22:16 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 11 06:22:16 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 11 06:22:16 symfony [info] {itemActions} Call "itemActions->executeAddurl()"
+Jan 11 06:22:16 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 11 06:22:16 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_user AS a__id_user, a.project_name AS a__project_name, a.description AS a__description, a.url AS a__url, a.project_key AS a__project_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_projects a WHERE (a.url = ? OR a.url = ?) - (http://webplanex.net, http://webplanex.net/)
+Jan 11 06:22:16 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_items a WHERE (a.url = ?) - (http://webplanex.net/projects/analytics_test/)
+Jan 11 06:22:16 symfony [info] {Doctrine_Connection_Statement} execute : INSERT INTO ana_items (status, id_project, url, item_key, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?) - (1, 2, http://webplanex.net/projects/analytics_test/, nx1FYgBrzXMhLxiBzVAAdsdj2IkyP1, 2013-01-11 06:22:16, 2013-01-11 06:22:16)
+Jan 12 00:15:13 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 12 00:15:13 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 12 00:15:13 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 12 00:15:13 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 12 00:15:13 symfony [notice] {sfWebDebugLogger}  Notice at /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 23 (Undefined index: scheme)
+Jan 12 00:15:13 symfony [notice] {sfWebDebugLogger}  Notice at /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 23 (Undefined index: host)
+Jan 12 00:15:13 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 12 00:15:13 symfony [info] {Doctrine_Connection_Mysql} query : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = "t4h7RQL2h6nlEpdMWrhzWhdh4Bp1Q" AND (a2.url = "://" OR a2.url = ":///")) - ()
+Jan 12 00:16:27 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 12 00:16:27 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 12 00:16:27 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 12 00:16:27 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 12 00:31:41 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 12 00:31:41 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 12 00:31:41 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 12 00:31:41 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 12 00:31:41 symfony [err] {Doctrine_Exception} Couldn't find class "http
+Jan 12 00:31:41 symfony [info] {sfWebResponse} Send status "HTTP/1.1 500 Internal Server Error"
+Jan 12 00:31:41 symfony [info] {sfWebResponse} Send header "Content-Type: text/html; charset=utf-8"
+Jan 12 00:31:41 symfony [info] {sfWebDebugLogger} Configuration 185.71 ms (10)
+Jan 12 00:31:41 symfony [info] {sfWebDebugLogger} Factories 76.77 ms (1)
+Jan 12 00:31:41 symfony [info] {sfWebDebugLogger} Action "item/index" 494.18 ms (1)
+Jan 12 00:32:39 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 12 00:32:39 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 12 00:32:39 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 12 00:32:39 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 12 00:32:39 symfony [err] {Doctrine_Exception} Couldn't find class "http
+Jan 12 00:32:39 symfony [info] {sfWebResponse} Send status "HTTP/1.1 500 Internal Server Error"
+Jan 12 00:32:39 symfony [info] {sfWebResponse} Send header "Content-Type: text/html; charset=utf-8"
+Jan 12 00:32:39 symfony [info] {sfWebDebugLogger} Configuration 37.86 ms (10)
+Jan 12 00:32:39 symfony [info] {sfWebDebugLogger} Factories 29.91 ms (1)
+Jan 12 00:32:39 symfony [info] {sfWebDebugLogger} Action "item/index" 206.12 ms (1)
+Jan 12 00:33:35 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 12 00:33:35 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 12 00:33:35 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 12 00:33:35 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 12 00:34:07 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 12 00:34:07 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 12 00:34:07 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 12 00:34:07 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 12 00:34:52 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 12 00:34:52 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 12 00:34:52 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 12 00:34:52 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 12 00:34:52 symfony [err] {Doctrine_Exception} Couldn't find class "http
+Jan 12 00:34:52 symfony [info] {sfWebResponse} Send status "HTTP/1.1 500 Internal Server Error"
+Jan 12 00:34:52 symfony [info] {sfWebResponse} Send header "Content-Type: text/html; charset=utf-8"
+Jan 12 00:34:52 symfony [info] {sfWebDebugLogger} Configuration 40.12 ms (10)
+Jan 12 00:34:52 symfony [info] {sfWebDebugLogger} Factories 31.65 ms (1)
+Jan 12 00:34:52 symfony [info] {sfWebDebugLogger} Action "item/index" 217.50 ms (1)
+Jan 12 00:35:17 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 12 00:35:17 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 12 00:35:17 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 12 00:35:17 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 12 00:36:15 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 12 00:36:16 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 12 00:36:16 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 12 00:36:16 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 12 00:36:33 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 12 00:36:33 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 12 00:36:33 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 12 00:36:33 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 12 00:36:35 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 12 00:36:35 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 12 00:36:35 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 12 00:36:35 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 12 00:37:11 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 12 00:37:11 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 12 00:37:11 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 12 00:37:11 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 12 00:38:37 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 12 00:38:37 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 12 00:38:37 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 12 00:38:37 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 12 01:08:46 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 12 01:08:46 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 12 01:08:46 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 12 01:08:46 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 12 01:27:57 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 12 01:27:57 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 12 01:27:57 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 12 01:27:57 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 12 01:27:57 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 12 01:27:57 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = "t4h7RQL2h6nlEpdMWrhzWhdh4Bp1Q" AND a2.url = "?") - (http://webplanex.nethttp://webplanex.net/)
+Jan 12 01:29:25 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 12 01:29:25 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 12 01:29:25 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 12 01:29:25 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 12 01:29:25 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 12 01:29:25 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = "t4h7RQL2h6nlEpdMWrhzWhdh4Bp1Q" AND a2.url = "?") - (http://webplanex.nethttp://webplanex.net/)
+Jan 12 01:31:39 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 12 01:31:39 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 12 01:31:39 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 12 01:31:39 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 12 01:31:39 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 12 01:31:39 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = "t4h7RQL2h6nlEpdMWrhzWhdh4Bp1Q" AND a2.url = "?") - (http://webplanex.nethttp://webplanex.net/)
+Jan 12 01:31:59 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 12 01:31:59 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 12 01:31:59 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 12 01:31:59 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 12 01:31:59 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 12 01:31:59 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = "t4h7RQL2h6nlEpdMWrhzWhdh4Bp1Q" AND a2.url = "?") - (http://webplanex.net/)
+Jan 12 01:38:32 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 12 01:38:32 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 12 01:38:32 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 12 01:38:32 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 12 01:38:32 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 12 01:38:32 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = "t4h7RQL2h6nlEpdMWrhzWhdh4Bp1Q" AND a2.url = "?") - (http://webplanex.net/)
+Jan 12 01:39:24 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 12 01:39:24 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 12 01:39:24 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 12 01:39:24 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 12 01:39:24 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 12 01:39:24 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (t4h7RQL2h6nlEpdMWrhzWhdh4Bp1Q, http://webplanex.net/)
+Jan 12 01:41:10 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 12 01:41:10 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 12 01:41:10 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 12 01:41:10 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 12 01:41:10 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 12 01:41:10 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (t4h7RQL2h6nlEpdMWrhzWhdh4Bp1Q, http://webplanex.net)
+Jan 12 01:42:08 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 12 01:42:08 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 12 01:42:08 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 12 01:42:08 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 12 01:42:08 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 12 01:42:08 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (t4h7RQL2h6nlEpdMWrhzWhdh4Bp1Q, http://webplanex.net)
+Jan 12 01:46:44 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 12 01:46:44 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 12 01:46:44 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 12 01:46:44 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 12 01:46:44 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 12 01:46:44 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (t4h7RQL2h6nlEpdMWrhzWhdh4Bp1Q, http://webplanex.net/)
+Jan 15 05:26:06 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /data/getdata with parameters array (  'module' => 'data',  'action' => 'getdata',)
+Jan 15 05:26:06 symfony [info] {sfFrontWebController} Action "data/getdata" does not exist
+Jan 15 05:26:06 symfony [err] {sfError404Exception} Action "data/getdata" does not exist.
+Jan 15 05:26:06 symfony [info] {sfWebResponse} Send status "HTTP/1.1 404 Not Found"
+Jan 15 05:26:06 symfony [info] {sfWebResponse} Send header "Content-Type: text/html; charset=utf-8"
+Jan 15 05:26:06 symfony [info] {sfWebDebugLogger} Configuration 331.60 ms (5)
+Jan 15 05:26:06 symfony [info] {sfWebDebugLogger} Factories 137.63 ms (1)
+Jan 15 05:26:47 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /data/getdata with parameters array (  'module' => 'data',  'action' => 'getdata',)
+Jan 15 05:26:47 symfony [info] {sfFrontWebController} Action "data/getdata" does not exist
+Jan 15 05:26:47 symfony [err] {sfError404Exception} Action "data/getdata" does not exist.
+Jan 15 05:26:47 symfony [info] {sfWebResponse} Send status "HTTP/1.1 404 Not Found"
+Jan 15 05:26:47 symfony [info] {sfWebResponse} Send header "Content-Type: text/html; charset=utf-8"
+Jan 15 05:26:47 symfony [info] {sfWebDebugLogger} Configuration 0.91 ms (5)
+Jan 15 05:26:47 symfony [info] {sfWebDebugLogger} Factories 31.30 ms (1)
+Jan 15 05:42:47 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /data/getdata with parameters array (  'module' => 'data',  'action' => 'getdata',)
+Jan 15 05:42:47 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 15 05:42:47 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 15 05:42:47 symfony [info] {dataActions} Call "dataActions->executeGetdata()"
+Jan 15 05:42:47 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 15 05:42:47 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_items a WHERE (a.item_key = ?) - (Xtskj6I3hWxHp4CNGzsVqg6F6X1fbW)
+Jan 15 05:42:47 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a.country_name AS a__country_name, COUNT(a.id) AS a__0 FROM ana_item_analytics a WHERE (a.id_item = ?) GROUP BY a.country_name - (17)
+Jan 15 05:43:30 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /data/getdata with parameters array (  'module' => 'data',  'action' => 'getdata',)
+Jan 15 05:43:30 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 15 05:43:30 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 15 05:43:30 symfony [info] {dataActions} Call "dataActions->executeGetdata()"
+Jan 15 05:43:30 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 15 05:43:30 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_items a WHERE (a.item_key = ?) - (Xtskj6I3hWxHp4CNGzsVqg6F6X1fbW)
+Jan 15 05:43:30 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a.country_name AS a__country_name, COUNT(a.id) AS a__0 FROM ana_item_analytics a WHERE (a.id_item = ?) GROUP BY a.country_name - (17)
+Jan 15 05:43:30 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a.region_name AS a__region_name, a.country_name AS a__country_name, COUNT(a.id) AS a__0 FROM ana_item_analytics a WHERE (a.id_item = ? AND a.country_name = ?) GROUP BY a.region_name - (17, India)
+Jan 15 05:43:30 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a.city_name AS a__city_name, a.region_name AS a__region_name, COUNT(a.id) AS a__0 FROM ana_item_analytics a WHERE (a.id_item = ? AND a.region_name = ?) GROUP BY a.city_name - (17, Gujarat)
+Jan 15 05:43:30 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a.city_name AS a__city_name, a.country_name AS a__country_name, a2.id AS a2__id, a2.device_name AS a2__device_name, COUNT(a.id) AS a__0 FROM ana_item_analytics a LEFT JOIN ana_devices a2 ON a.id_device = a2.id WHERE (a.id_item = ?) GROUP BY a.id_device - (17)
+Jan 15 05:43:30 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a.city_name AS a__city_name, a.country_name AS a__country_name, a2.id AS a2__id, a2.device_name AS a2__device_name, COUNT(a.id) AS a__0 FROM ana_item_analytics a LEFT JOIN ana_devices a2 ON a.id_device = a2.id WHERE (a.id_item = ?) GROUP BY a.id_device - (17)
+Jan 15 05:43:30 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a2.id AS a2__id, a2.browser_name AS a2__browser_name, COUNT(a.id) AS a__0 FROM ana_item_analytics a LEFT JOIN ana_browsers a2 ON a.id_browser = a2.id WHERE (a.id_item = ?) GROUP BY a.id_browser - (17)
+Jan 15 05:43:30 symfony [info] {sfWebResponse} Send status "HTTP/1.1 200 OK"
+Jan 15 05:43:30 symfony [info] {sfWebResponse} Send header "Content-Type: text/html; charset=utf-8"
+Jan 15 05:43:30 symfony [info] {sfWebDebugLogger} Configuration 1.30 ms (8)
+Jan 15 05:43:30 symfony [info] {sfWebDebugLogger} Factories 31.20 ms (1)
+Jan 15 05:43:30 symfony [info] {sfWebDebugLogger} Action "data/getdata" 114.29 ms (1)
+Jan 15 05:43:30 symfony [info] {sfWebDebugLogger} Database (Doctrine) 0.03 ms (8)
+Jan 15 05:43:30 symfony [info] {sfWebDebugLogger} View "None" for "data/getdata" 0.01 ms (1)
+Jan 15 05:43:30 symfony [info] {sfWebResponse} Send content (32286 o)
+Jan 21 02:06:40 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /data/Scanalytics/key/DOjgNEvl6aX44hd7AQterOkHYD44k/print/true with parameters array (  'module' => 'data',  'action' => 'Scanalytics',  'key' => 'DOjgNEvl6aX44hd7AQterOkHYD44k',  'print' => 'true',)
+Jan 21 02:06:40 symfony [info] {sfFrontWebController} Action "data/Scanalytics" does not exist
+Jan 21 02:06:40 symfony [err] {sfError404Exception} Action "data/Scanalytics" does not exist.
+Jan 21 02:06:40 symfony [info] {sfWebResponse} Send status "HTTP/1.1 404 Not Found"
+Jan 21 02:06:40 symfony [info] {sfWebResponse} Send header "Content-Type: text/html; charset=utf-8"
+Jan 21 02:06:40 symfony [info] {sfWebDebugLogger} Configuration 1.33 ms (5)
+Jan 21 02:06:40 symfony [info] {sfWebDebugLogger} Factories 135.34 ms (1)
+Jan 21 02:07:30 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /data/Scanalytics/key/DOjgNEvl6aX44hd7AQterOkHYD44k/print/true with parameters array (  'module' => 'data',  'action' => 'Scanalytics',  'key' => 'DOjgNEvl6aX44hd7AQterOkHYD44k',  'print' => 'true',)
+Jan 21 02:07:30 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 21 02:07:30 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 21 02:07:30 symfony [info] {dataActions} Call "dataActions->executeScanalytics()"
+Jan 21 02:07:30 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 21 02:07:30 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_items a WHERE (a.item_key = ?) - (DOjgNEvl6aX44hd7AQterOkHYD44k)
+Jan 21 02:07:30 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a.latitude AS a__latitude, a.longitude AS a__longitude, a2.id AS a2__id, a2.browser_name AS a2__browser_name, a3.id AS a3__id, a3.device_name AS a3__device_name FROM ana_item_analytics a LEFT JOIN ana_browsers a2 ON a.id_browser = a2.id LEFT JOIN ana_devices a3 ON a.id_device = a3.id WHERE (a.id_item = ?) GROUP BY a.country_name - (23)
+Jan 21 02:07:59 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /data/Scanalytics/key/DOjgNEvl6aX44hd7AQterOkHYD44k/print/true with parameters array (  'module' => 'data',  'action' => 'Scanalytics',  'key' => 'DOjgNEvl6aX44hd7AQterOkHYD44k',  'print' => 'true',)
+Jan 21 02:07:59 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 21 02:07:59 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 21 02:07:59 symfony [info] {dataActions} Call "dataActions->executeScanalytics()"
+Jan 21 02:07:59 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 21 02:07:59 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_items a WHERE (a.item_key = ?) - (DOjgNEvl6aX44hd7AQterOkHYD44k)
+Jan 21 02:07:59 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a.latitude AS a__latitude, a.longitude AS a__longitude, a2.id AS a2__id, a2.browser_name AS a2__browser_name, a3.id AS a3__id, a3.device_name AS a3__device_name FROM ana_item_analytics a LEFT JOIN ana_browsers a2 ON a.id_browser = a2.id LEFT JOIN ana_devices a3 ON a.id_device = a3.id WHERE (a.id_item = ?) GROUP BY a.country_name - (23)
+Jan 21 02:10:14 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /data/Scanalytics/key/Zs972ls7c8VlAJNAEAr3kIMj7glgH/print/true with parameters array (  'module' => 'data',  'action' => 'Scanalytics',  'key' => 'Zs972ls7c8VlAJNAEAr3kIMj7glgH',  'print' => 'true',)
+Jan 21 02:10:14 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 21 02:10:14 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 21 02:10:14 symfony [info] {dataActions} Call "dataActions->executeScanalytics()"
+Jan 21 02:10:14 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 21 02:10:14 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_items a WHERE (a.item_key = ?) - (Zs972ls7c8VlAJNAEAr3kIMj7glgH)
+Jan 21 02:10:14 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a.latitude AS a__latitude, a.longitude AS a__longitude, a2.id AS a2__id, a2.browser_name AS a2__browser_name, a3.id AS a3__id, a3.device_name AS a3__device_name FROM ana_item_analytics a LEFT JOIN ana_browsers a2 ON a.id_browser = a2.id LEFT JOIN ana_devices a3 ON a.id_device = a3.id WHERE (a.id_item = ?) GROUP BY a.country_name - ()
+Jan 21 02:10:19 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /data/Scanalytics/key/Zs972ls7c8VlAJNAEAr3kIMj7glgH/print/true with parameters array (  'module' => 'data',  'action' => 'Scanalytics',  'key' => 'Zs972ls7c8VlAJNAEAr3kIMj7glgH',  'print' => 'true',)
+Jan 21 02:10:19 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 21 02:10:19 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 21 02:10:19 symfony [info] {dataActions} Call "dataActions->executeScanalytics()"
+Jan 21 02:10:19 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 21 02:10:19 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_items a WHERE (a.item_key = ?) - (Zs972ls7c8VlAJNAEAr3kIMj7glgH)
+Jan 21 02:10:19 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a.latitude AS a__latitude, a.longitude AS a__longitude, a2.id AS a2__id, a2.browser_name AS a2__browser_name, a3.id AS a3__id, a3.device_name AS a3__device_name FROM ana_item_analytics a LEFT JOIN ana_browsers a2 ON a.id_browser = a2.id LEFT JOIN ana_devices a3 ON a.id_device = a3.id WHERE (a.id_item = ?) GROUP BY a.country_name - ()
+Jan 21 02:32:54 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /data/Scanalytics/key/bvI1jWDnUy5q6fKEamqf1ASiFLVX/print/true with parameters array (  'module' => 'data',  'action' => 'Scanalytics',  'key' => 'bvI1jWDnUy5q6fKEamqf1ASiFLVX',  'print' => 'true',)
+Jan 21 02:32:54 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 21 02:32:54 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 21 02:32:54 symfony [info] {dataActions} Call "dataActions->executeScanalytics()"
+Jan 21 02:32:54 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 21 02:32:54 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_items a WHERE (a.item_key = ?) - (bvI1jWDnUy5q6fKEamqf1ASiFLVX)
+Jan 21 02:32:54 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a.latitude AS a__latitude, a.longitude AS a__longitude, a2.id AS a2__id, a2.browser_name AS a2__browser_name, a3.id AS a3__id, a3.device_name AS a3__device_name FROM ana_item_analytics a LEFT JOIN ana_browsers a2 ON a.id_browser = a2.id LEFT JOIN ana_devices a3 ON a.id_device = a3.id WHERE (a.id_item = ?) GROUP BY a.country_name - (33)
+Jan 21 02:33:29 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /data/Scanalytics/key/bvI1jWDnUy5q6fKEamqf1ASiFLVX/print/true with parameters array (  'module' => 'data',  'action' => 'Scanalytics',  'key' => 'bvI1jWDnUy5q6fKEamqf1ASiFLVX',  'print' => 'true',)
+Jan 21 02:33:29 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 21 02:33:29 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 21 02:33:29 symfony [info] {dataActions} Call "dataActions->executeScanalytics()"
+Jan 21 02:33:29 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 21 02:33:29 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_items a WHERE (a.item_key = ?) - (bvI1jWDnUy5q6fKEamqf1ASiFLVX)
+Jan 21 02:33:29 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a.latitude AS a__latitude, a.longitude AS a__longitude, a2.id AS a2__id, a2.browser_name AS a2__browser_name, a3.id AS a3__id, a3.device_name AS a3__device_name FROM ana_item_analytics a LEFT JOIN ana_browsers a2 ON a.id_browser = a2.id LEFT JOIN ana_devices a3 ON a.id_device = a3.id WHERE (a.id_item = ?) - (33)
+Jan 21 03:19:07 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /data/findwpanalyticsbyid with parameters array (  'module' => 'data',  'action' => 'findwpanalyticsbyid',)
+Jan 21 03:19:07 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 21 03:19:07 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 21 03:19:07 symfony [info] {dataActions} Call "dataActions->executeFindwpanalyticsbyid()"
+Jan 21 03:19:07 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 21 03:19:07 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_items a WHERE (a.item_key = ?) - (bvI1jWDnUy5q6fKEamqf1ASiFLVX)
+Jan 21 03:19:07 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a.latitude AS a__latitude, a.longitude AS a__longitude, a2.id AS a2__id, a2.browser_name AS a2__browser_name, a3.id AS a3__id, a3.device_name AS a3__device_name FROM ana_item_analytics a LEFT JOIN ana_browsers a2 ON a.id_browser = a2.id LEFT JOIN ana_devices a3 ON a.id_device = a3.id WHERE (a.id_item = ? AND ai = ?) - (33, 109)
+Jan 21 03:19:07 symfony [err] {Doctrine_Connection_Mysql_Exception} SQLSTATE[42S22]: Column not found: 1054 Unknown column 'ai' in 'where clause'
+Jan 21 03:19:07 symfony [info] {sfWebResponse} Send status "HTTP/1.1 500 Internal Server Error"
+Jan 21 03:19:07 symfony [info] {sfWebResponse} Send header "Content-Type: text/html; charset=utf-8"
+Jan 21 03:19:07 symfony [info] {sfWebDebugLogger} Configuration 1.74 ms (8)
+Jan 21 03:19:07 symfony [info] {sfWebDebugLogger} Factories 69.32 ms (1)
+Jan 21 03:19:07 symfony [info] {sfWebDebugLogger} Action "data/findwpanalyticsbyid" 123.52 ms (1)
+Jan 21 03:19:07 symfony [info] {sfWebDebugLogger} Database (Doctrine) 0.01 ms (2)
+Jan 21 03:19:19 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /data/findwpanalyticsbyid with parameters array (  'module' => 'data',  'action' => 'findwpanalyticsbyid',)
+Jan 21 03:19:19 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 21 03:19:19 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 21 03:19:19 symfony [info] {dataActions} Call "dataActions->executeFindwpanalyticsbyid()"
+Jan 21 03:19:19 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 21 03:19:19 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_items a WHERE (a.item_key = ?) - (bvI1jWDnUy5q6fKEamqf1ASiFLVX)
+Jan 21 03:19:19 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a.latitude AS a__latitude, a.longitude AS a__longitude, a2.id AS a2__id, a2.browser_name AS a2__browser_name, a3.id AS a3__id, a3.device_name AS a3__device_name FROM ana_item_analytics a LEFT JOIN ana_browsers a2 ON a.id_browser = a2.id LEFT JOIN ana_devices a3 ON a.id_device = a3.id WHERE (a.id_item = ? AND ai = ?) - (33, 109)
+Jan 21 03:19:19 symfony [err] {Doctrine_Connection_Mysql_Exception} SQLSTATE[42S22]: Column not found: 1054 Unknown column 'ai' in 'where clause'
+Jan 21 03:19:19 symfony [info] {sfWebResponse} Send status "HTTP/1.1 500 Internal Server Error"
+Jan 21 03:19:19 symfony [info] {sfWebResponse} Send header "Content-Type: text/html; charset=utf-8"
+Jan 21 03:19:19 symfony [info] {sfWebDebugLogger} Configuration 1.40 ms (8)
+Jan 21 03:19:19 symfony [info] {sfWebDebugLogger} Factories 31.81 ms (1)
+Jan 21 03:19:19 symfony [info] {sfWebDebugLogger} Action "data/findwpanalyticsbyid" 119.11 ms (1)
+Jan 21 03:19:19 symfony [info] {sfWebDebugLogger} Database (Doctrine) 0.01 ms (2)
+Jan 21 03:19:58 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /data/findwpanalyticsbyid with parameters array (  'module' => 'data',  'action' => 'findwpanalyticsbyid',)
+Jan 21 03:20:01 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /data/findwpanalyticsbyid with parameters array (  'module' => 'data',  'action' => 'findwpanalyticsbyid',)
+Jan 21 03:20:01 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 21 03:20:01 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 21 03:20:01 symfony [info] {dataActions} Call "dataActions->executeFindwpanalyticsbyid()"
+Jan 21 03:20:01 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 21 03:20:01 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_items a WHERE (a.item_key = ?) - (bvI1jWDnUy5q6fKEamqf1ASiFLVX)
+Jan 21 03:20:01 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a.latitude AS a__latitude, a.longitude AS a__longitude, a2.id AS a2__id, a2.browser_name AS a2__browser_name, a3.id AS a3__id, a3.device_name AS a3__device_name FROM ana_item_analytics a LEFT JOIN ana_browsers a2 ON a.id_browser = a2.id LEFT JOIN ana_devices a3 ON a.id_device = a3.id WHERE (a.id_item = ? AND a.id = ?) - (33, 109)
+Jan 21 03:20:01 symfony [info] {sfWebResponse} Send status "HTTP/1.1 200 OK"
+Jan 21 03:20:01 symfony [info] {sfWebResponse} Send header "Content-Type: text/html; charset=utf-8"
+Jan 21 03:20:01 symfony [info] {sfWebDebugLogger} Configuration 1.44 ms (8)
+Jan 21 03:20:01 symfony [info] {sfWebDebugLogger} Factories 30.28 ms (1)
+Jan 21 03:20:01 symfony [info] {sfWebDebugLogger} Action "data/findwpanalyticsbyid" 65.15 ms (1)
+Jan 21 03:20:01 symfony [info] {sfWebDebugLogger} Database (Doctrine) 0.02 ms (3)
+Jan 21 03:20:01 symfony [info] {sfWebDebugLogger} View "None" for "data/findwpanalyticsbyid" 0.01 ms (1)
+Jan 21 03:20:01 symfony [info] {sfWebResponse} Send content (23245 o)
+Jan 21 03:58:48 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /data/findwpanalyticsbyid with parameters array (  'module' => 'data',  'action' => 'findwpanalyticsbyid',)
+Jan 21 03:58:48 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 21 03:58:48 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 21 03:58:48 symfony [info] {dataActions} Call "dataActions->executeFindwpanalyticsbyid()"
+Jan 21 03:58:48 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 21 03:58:48 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_items a WHERE (a.item_key = ?) - (bvI1jWDnUy5q6fKEamqf1ASiFLVX)
+Jan 21 03:58:48 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a.latitude AS a__latitude, a.longitude AS a__longitude, a2.id AS a2__id, a2.browser_name AS a2__browser_name, a3.id AS a3__id, a3.device_name AS a3__device_name FROM ana_item_analytics a LEFT JOIN ana_browsers a2 ON a.id_browser = a2.id LEFT JOIN ana_devices a3 ON a.id_device = a3.id WHERE (a.id_item = ? AND a.id = ?) LIMIT 1 - (33, 109)
+Jan 21 03:58:48 symfony [err] {Doctrine_Record_UnknownPropertyException} Unknown record property / related component "ana_brosers" on "AnaItemAnalytics"
+Jan 21 03:58:48 symfony [info] {sfWebResponse} Send status "HTTP/1.1 500 Internal Server Error"
+Jan 21 03:58:48 symfony [info] {sfWebResponse} Send header "Content-Type: text/html; charset=utf-8"
+Jan 21 03:58:48 symfony [info] {sfWebDebugLogger} Configuration 1.54 ms (8)
+Jan 21 03:58:48 symfony [info] {sfWebDebugLogger} Factories 78.77 ms (1)
+Jan 21 03:58:48 symfony [info] {sfWebDebugLogger} Action "data/findwpanalyticsbyid" 122.11 ms (1)
+Jan 21 03:58:48 symfony [info] {sfWebDebugLogger} Database (Doctrine) 0.01 ms (3)
+Jan 21 03:59:27 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /data/findwpanalyticsbyid with parameters array (  'module' => 'data',  'action' => 'findwpanalyticsbyid',)
+Jan 21 03:59:27 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 21 03:59:27 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 21 03:59:27 symfony [info] {dataActions} Call "dataActions->executeFindwpanalyticsbyid()"
+Jan 21 03:59:27 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 21 03:59:27 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_items a WHERE (a.item_key = ?) - (bvI1jWDnUy5q6fKEamqf1ASiFLVX)
+Jan 21 03:59:27 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a.latitude AS a__latitude, a.longitude AS a__longitude, a2.id AS a2__id, a2.browser_name AS a2__browser_name, a3.id AS a3__id, a3.device_name AS a3__device_name FROM ana_item_analytics a LEFT JOIN ana_browsers a2 ON a.id_browser = a2.id LEFT JOIN ana_devices a3 ON a.id_device = a3.id WHERE (a.id_item = ? AND a.id = ?) LIMIT 1 - (33, 109)
+Jan 21 03:59:27 symfony [err] {Doctrine_Record_UnknownPropertyException} Unknown record property / related component "ana_brosers" on "AnaItemAnalytics"
+Jan 21 03:59:27 symfony [info] {sfWebResponse} Send status "HTTP/1.1 500 Internal Server Error"
+Jan 21 03:59:27 symfony [info] {sfWebResponse} Send header "Content-Type: text/html; charset=utf-8"
+Jan 21 03:59:27 symfony [info] {sfWebDebugLogger} Configuration 1.24 ms (8)
+Jan 21 03:59:27 symfony [info] {sfWebDebugLogger} Factories 29.06 ms (1)
+Jan 21 03:59:27 symfony [info] {sfWebDebugLogger} Action "data/findwpanalyticsbyid" 123.72 ms (1)
+Jan 21 03:59:27 symfony [info] {sfWebDebugLogger} Database (Doctrine) 0.01 ms (3)
+Jan 21 04:00:07 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /data/findwpanalyticsbyid with parameters array (  'module' => 'data',  'action' => 'findwpanalyticsbyid',)
+Jan 21 04:00:07 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 21 04:00:07 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 21 04:00:07 symfony [info] {dataActions} Call "dataActions->executeFindwpanalyticsbyid()"
+Jan 21 04:00:07 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 21 04:00:07 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_items a WHERE (a.item_key = ?) - (bvI1jWDnUy5q6fKEamqf1ASiFLVX)
+Jan 21 04:00:07 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a.latitude AS a__latitude, a.longitude AS a__longitude, a2.id AS a2__id, a2.browser_name AS a2__browser_name, a3.id AS a3__id, a3.device_name AS a3__device_name FROM ana_item_analytics a LEFT JOIN ana_browsers a2 ON a.id_browser = a2.id LEFT JOIN ana_devices a3 ON a.id_device = a3.id WHERE (a.id_item = ? AND a.id = ?) LIMIT 1 - (33, 109)
+Jan 21 04:00:07 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a.country_code AS a__country_code, a.country_name AS a__country_name, a.region_name AS a__region_name, a.city_name AS a__city_name, a.zipcode AS a__zipcode, a.latitude AS a__latitude, a.longitude AS a__longitude, a.ip_add AS a__ip_add, a.timezone AS a__timezone, a.id_browser AS a__id_browser, a.browser_version AS a__browser_version, a.id_platform AS a__id_platform, a.id_device AS a__id_device, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_item_analytics a WHERE (a.id = ?) LIMIT 1 - (109)
+Jan 21 04:00:07 symfony [info] {sfWebResponse} Send status "HTTP/1.1 200 OK"
+Jan 21 04:00:07 symfony [info] {sfWebResponse} Send header "Content-Type: text/html; charset=utf-8"
+Jan 21 04:00:07 symfony [info] {sfWebDebugLogger} Configuration 1.20 ms (8)
+Jan 21 04:00:07 symfony [info] {sfWebDebugLogger} Factories 28.43 ms (1)
+Jan 21 04:00:07 symfony [info] {sfWebDebugLogger} Action "data/findwpanalyticsbyid" 73.81 ms (1)
+Jan 21 04:00:07 symfony [info] {sfWebDebugLogger} Database (Doctrine) 0.02 ms (4)
+Jan 21 04:00:07 symfony [info] {sfWebDebugLogger} View "None" for "data/findwpanalyticsbyid" 0.01 ms (1)
+Jan 21 04:00:07 symfony [info] {sfWebResponse} Send content (26681 o)
+Jan 21 04:00:10 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /data/findwpanalyticsbyid with parameters array (  'module' => 'data',  'action' => 'findwpanalyticsbyid',)
+Jan 21 04:00:10 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 21 04:00:10 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 21 04:00:10 symfony [info] {dataActions} Call "dataActions->executeFindwpanalyticsbyid()"
+Jan 21 04:00:10 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 21 04:00:10 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_items a WHERE (a.item_key = ?) - (bvI1jWDnUy5q6fKEamqf1ASiFLVX)
+Jan 21 04:00:10 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a.latitude AS a__latitude, a.longitude AS a__longitude, a2.id AS a2__id, a2.browser_name AS a2__browser_name, a3.id AS a3__id, a3.device_name AS a3__device_name FROM ana_item_analytics a LEFT JOIN ana_browsers a2 ON a.id_browser = a2.id LEFT JOIN ana_devices a3 ON a.id_device = a3.id WHERE (a.id_item = ? AND a.id = ?) LIMIT 1 - (33, 109)
+Jan 21 04:00:10 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a.country_code AS a__country_code, a.country_name AS a__country_name, a.region_name AS a__region_name, a.city_name AS a__city_name, a.zipcode AS a__zipcode, a.latitude AS a__latitude, a.longitude AS a__longitude, a.ip_add AS a__ip_add, a.timezone AS a__timezone, a.id_browser AS a__id_browser, a.browser_version AS a__browser_version, a.id_platform AS a__id_platform, a.id_device AS a__id_device, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_item_analytics a WHERE (a.id = ?) LIMIT 1 - (109)
+Jan 21 04:00:10 symfony [info] {sfWebResponse} Send status "HTTP/1.1 200 OK"
+Jan 21 04:00:10 symfony [info] {sfWebResponse} Send header "Content-Type: text/html; charset=utf-8"
+Jan 21 04:00:10 symfony [info] {sfWebDebugLogger} Configuration 1.36 ms (8)
+Jan 21 04:00:10 symfony [info] {sfWebDebugLogger} Factories 30.75 ms (1)
+Jan 21 04:00:10 symfony [info] {sfWebDebugLogger} Action "data/findwpanalyticsbyid" 88.43 ms (1)
+Jan 21 04:00:10 symfony [info] {sfWebDebugLogger} Database (Doctrine) 0.02 ms (4)
+Jan 21 04:00:10 symfony [info] {sfWebDebugLogger} View "None" for "data/findwpanalyticsbyid" 0.01 ms (1)
+Jan 21 04:00:11 symfony [info] {sfWebResponse} Send content (26681 o)
+Jan 21 04:37:31 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /data/scanalytics with parameters array (  'module' => 'data',  'action' => 'scanalytics',)
+Jan 21 04:37:31 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 21 04:37:31 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 21 04:37:31 symfony [info] {dataActions} Call "dataActions->executeScanalytics()"
+Jan 21 04:37:31 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 21 04:37:31 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_items a WHERE (a.item_key = ?) - (bvI1jWDnUy5q6fKEamqf1ASiFLVX)
+Jan 21 04:37:32 symfony [err] {Doctrine_Exception} Couldn't find class id
+Jan 21 04:37:32 symfony [info] {sfWebResponse} Send status "HTTP/1.1 500 Internal Server Error"
+Jan 21 04:37:32 symfony [info] {sfWebResponse} Send header "Content-Type: text/html; charset=utf-8"
+Jan 21 04:37:32 symfony [info] {sfWebDebugLogger} Configuration 409.67 ms (10)
+Jan 21 04:37:32 symfony [info] {sfWebDebugLogger} Factories 64.02 ms (1)
+Jan 21 04:37:32 symfony [info] {sfWebDebugLogger} Action "data/scanalytics" 589.97 ms (1)
+Jan 21 04:37:32 symfony [info] {sfWebDebugLogger} Database (Doctrine) 0.01 ms (2)
+Jan 21 04:38:04 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /data/scanalytics with parameters array (  'module' => 'data',  'action' => 'scanalytics',)
+Jan 21 04:38:04 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 21 04:38:04 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 21 04:38:04 symfony [info] {dataActions} Call "dataActions->executeScanalytics()"
+Jan 21 04:38:04 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 21 04:38:04 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_items a WHERE (a.item_key = ?) - (bvI1jWDnUy5q6fKEamqf1ASiFLVX)
+Jan 21 04:38:04 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a.latitude AS a__latitude, a.longitude AS a__longitude, a2.id AS a2__id, a2.browser_name AS a2__browser_name, a3.id AS a3__id, a3.device_name AS a3__device_name FROM ana_item_analytics a LEFT JOIN ana_browsers a2 ON a.id_browser = a2.id LEFT JOIN ana_devices a3 ON a.id_device = a3.id WHERE (a.id_item = ?) ORDER BY a.created_at ASC - (33)
+Jan 21 04:38:04 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a.country_code AS a__country_code, a.country_name AS a__country_name, a.region_name AS a__region_name, a.city_name AS a__city_name, a.zipcode AS a__zipcode, a.latitude AS a__latitude, a.longitude AS a__longitude, a.ip_add AS a__ip_add, a.timezone AS a__timezone, a.id_browser AS a__id_browser, a.browser_version AS a__browser_version, a.id_platform AS a__id_platform, a.id_device AS a__id_device, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_item_analytics a WHERE (a.id = ?) LIMIT 1 - (109)
+Jan 21 04:38:04 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a.country_code AS a__country_code, a.country_name AS a__country_name, a.region_name AS a__region_name, a.city_name AS a__city_name, a.zipcode AS a__zipcode, a.latitude AS a__latitude, a.longitude AS a__longitude, a.ip_add AS a__ip_add, a.timezone AS a__timezone, a.id_browser AS a__id_browser, a.browser_version AS a__browser_version, a.id_platform AS a__id_platform, a.id_device AS a__id_device, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_item_analytics a WHERE (a.id = ?) LIMIT 1 - (110)
+Jan 21 04:38:04 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a.country_code AS a__country_code, a.country_name AS a__country_name, a.region_name AS a__region_name, a.city_name AS a__city_name, a.zipcode AS a__zipcode, a.latitude AS a__latitude, a.longitude AS a__longitude, a.ip_add AS a__ip_add, a.timezone AS a__timezone, a.id_browser AS a__id_browser, a.browser_version AS a__browser_version, a.id_platform AS a__id_platform, a.id_device AS a__id_device, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_item_analytics a WHERE (a.id = ?) LIMIT 1 - (111)
+Jan 21 04:38:04 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a.country_code AS a__country_code, a.country_name AS a__country_name, a.region_name AS a__region_name, a.city_name AS a__city_name, a.zipcode AS a__zipcode, a.latitude AS a__latitude, a.longitude AS a__longitude, a.ip_add AS a__ip_add, a.timezone AS a__timezone, a.id_browser AS a__id_browser, a.browser_version AS a__browser_version, a.id_platform AS a__id_platform, a.id_device AS a__id_device, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_item_analytics a WHERE (a.id = ?) LIMIT 1 - (112)
+Jan 21 04:38:04 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_item AS a__id_item, a.country_code AS a__country_code, a.country_name AS a__country_name, a.region_name AS a__region_name, a.city_name AS a__city_name, a.zipcode AS a__zipcode, a.latitude AS a__latitude, a.longitude AS a__longitude, a.ip_add AS a__ip_add, a.timezone AS a__timezone, a.id_browser AS a__id_browser, a.browser_version AS a__browser_version, a.id_platform AS a__id_platform, a.id_device AS a__id_device, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_item_analytics a WHERE (a.id = ?) LIMIT 1 - (113)
+Jan 21 04:38:04 symfony [info] {sfWebResponse} Send status "HTTP/1.1 200 OK"
+Jan 21 04:38:04 symfony [info] {sfWebResponse} Send header "Content-Type: text/html; charset=utf-8"
+Jan 21 04:38:04 symfony [info] {sfWebDebugLogger} Configuration 1.37 ms (8)
+Jan 21 04:38:04 symfony [info] {sfWebDebugLogger} Factories 30.39 ms (1)
+Jan 21 04:38:04 symfony [info] {sfWebDebugLogger} Action "data/scanalytics" 137.48 ms (1)
+Jan 21 04:38:04 symfony [info] {sfWebDebugLogger} Database (Doctrine) 0.05 ms (8)
+Jan 21 04:38:04 symfony [info] {sfWebDebugLogger} View "None" for "data/scanalytics" 0.01 ms (1)
+Jan 21 04:38:04 symfony [info] {sfWebResponse} Send content (40081 o)
+Jan 24 23:58:28 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 24 23:58:28 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 24 23:58:28 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 24 23:58:28 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 24 23:58:28 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 24 23:58:28 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (BJZnlQvSgJVKRuPYJIc1Mh9dFFxyIZ, http://www.webplanex.com/)
+Jan 24 23:59:21 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 24 23:59:21 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 24 23:59:21 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 24 23:59:21 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 24 23:59:21 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 24 23:59:21 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (BJZnlQvSgJVKRuPYJIc1Mh9dFFxyIZ, http://www.webplanex.com/)
+Jan 25 00:00:24 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 25 00:00:24 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 00:00:24 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 00:00:24 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 25 00:00:24 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 00:00:24 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (BJZnlQvSgJVKRuPYJIc1Mh9dFFxyIZ, http://www.webplanex.com/)
+Jan 25 00:00:26 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 25 00:00:26 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 00:00:26 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 00:00:26 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 25 00:00:26 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 00:00:26 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (BJZnlQvSgJVKRuPYJIc1Mh9dFFxyIZ, http://www.webplanex.com/)
+Jan 25 00:00:58 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 25 00:00:58 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 00:00:58 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 00:00:58 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 25 00:00:58 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 00:00:58 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (BJZnlQvSgJVKRuPYJIc1Mh9dFFxyIZ, http://www.webplanex.com/)
+Jan 25 00:01:29 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 25 00:01:29 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 00:01:29 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 00:01:29 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 25 00:01:29 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 00:01:29 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (BJZnlQvSgJVKRuPYJIc1Mh9dFFxyIZ, http://www.webplanex.com/)
+Jan 25 00:02:01 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 25 00:02:01 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 00:02:01 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 00:02:01 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 25 00:02:37 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 25 00:02:37 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 00:02:37 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 00:02:37 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 25 00:02:37 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 00:02:37 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (BJZnlQvSgJVKRuPYJIc1Mh9dFFxyIZ, http://www.webplanex.com/)
+Jan 25 00:03:40 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 25 00:03:40 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 00:03:40 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 00:03:40 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 25 00:03:40 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 00:03:40 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (BJZnlQvSgJVKRuPYJIc1Mh9dFFxyIZ, http://www.webplanex.com/)
+Jan 25 00:04:22 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 25 00:04:22 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 00:04:22 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 00:04:22 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 25 00:04:22 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 00:04:22 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (BJZnlQvSgJVKRuPYJIc1Mh9dFFxyIZ, http://www.webplanex.com/)
+Jan 25 00:05:00 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 25 00:05:00 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 00:05:00 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 00:05:00 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 25 00:05:00 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 00:05:00 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (BJZnlQvSgJVKRuPYJIc1Mh9dFFxyIZ, http://www.webplanex.com/)
+Jan 25 12:35:00 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.match_word AS a__match_word, a.platform_name AS a__platform_name FROM ana_platforms a WHERE (a.platform_name = ?) - (windows)
+Jan 25 12:35:00 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.match_word AS a__match_word, a.device_name AS a__device_name FROM ana_devices a WHERE (a.device_name = ?) - (computer)
+Jan 25 12:35:00 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.match_word AS a__match_word, a.browser_name AS a__browser_name FROM ana_browsers a WHERE (a.browser_name = ?) - (Mozilla Firefox)
+Jan 25 00:05:16 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 25 00:05:16 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 00:05:16 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 00:05:16 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 25 00:05:16 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 00:05:16 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (BJZnlQvSgJVKRuPYJIc1Mh9dFFxyIZ, http://www.webplanex.com/)
+Jan 25 12:35:17 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.match_word AS a__match_word, a.platform_name AS a__platform_name FROM ana_platforms a WHERE (a.platform_name = ?) - (windows)
+Jan 25 12:35:17 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.match_word AS a__match_word, a.device_name AS a__device_name FROM ana_devices a WHERE (a.device_name = ?) - (computer)
+Jan 25 12:35:17 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.match_word AS a__match_word, a.browser_name AS a__browser_name FROM ana_browsers a WHERE (a.browser_name = ?) - (Mozilla Firefox)
+Jan 25 12:35:17 symfony [info] {Doctrine_Connection_Statement} execute : INSERT INTO ana_item_analytics (scan_type, id_item, city_name, country_name, region_name, timezone, created_at, id_platform, id_device, id_browser, browser_version, latitude, longitude, ip_add, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) - (gps, 37, Rajkot, India, Gujarat, Asia/Calcutta, 2013-01-25 12:35:17, 1, 4, 1, 18.0, 22.30, 70.80, 182.237.14.254, 2013-01-25 12:35:17)
+Jan 25 00:07:04 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 25 00:07:04 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 00:07:04 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 00:07:04 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 25 00:07:04 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 00:07:04 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (BJZnlQvSgJVKRuPYJIc1Mh9dFFxyIZ, http://www.webplanex.com/)
+Jan 25 12:37:04 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.match_word AS a__match_word, a.platform_name AS a__platform_name FROM ana_platforms a WHERE (a.platform_name = ?) - (windows)
+Jan 25 12:37:04 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.match_word AS a__match_word, a.device_name AS a__device_name FROM ana_devices a WHERE (a.device_name = ?) - (computer)
+Jan 25 12:37:04 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.match_word AS a__match_word, a.browser_name AS a__browser_name FROM ana_browsers a WHERE (a.browser_name = ?) - (Mozilla Firefox)
+Jan 25 12:37:04 symfony [info] {Doctrine_Connection_Statement} execute : INSERT INTO ana_item_analytics (scan_type, id_item, city_name, country_name, region_name, timezone, created_at, id_platform, id_device, id_browser, browser_version, latitude, longitude, ip_add, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) - (gps, 37, Rajkot, India, Gujarat, Asia/Calcutta, 2013-01-25 12:37:04, 1, 4, 1, 18.0, 22.30, 70.80, 182.237.14.254, 2013-01-25 12:37:04)
+Jan 25 00:07:28 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 25 00:07:28 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 00:07:28 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 00:07:28 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 25 00:07:28 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 00:07:28 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (BJZnlQvSgJVKRuPYJIc1Mh9dFFxyIZ, http://www.webplanex.com/)
+Jan 25 00:09:40 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 25 00:09:40 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 00:09:40 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 00:09:40 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 25 00:09:40 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 00:09:40 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (BJZnlQvSgJVKRuPYJIc1Mh9dFFxyIZ, http://www.webplanex.com/)
+Jan 25 12:39:41 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.match_word AS a__match_word, a.platform_name AS a__platform_name FROM ana_platforms a WHERE (a.platform_name = ?) - (windows)
+Jan 25 12:39:41 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.match_word AS a__match_word, a.device_name AS a__device_name FROM ana_devices a WHERE (a.device_name = ?) - (computer)
+Jan 25 12:39:41 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.match_word AS a__match_word, a.browser_name AS a__browser_name FROM ana_browsers a WHERE (a.browser_name = ?) - (Mozilla Firefox)
+Jan 25 12:39:41 symfony [info] {Doctrine_Connection_Statement} execute : INSERT INTO ana_item_analytics (scan_type, id_item, city_name, country_name, region_name, timezone, created_at, id_platform, id_device, id_browser, browser_version, latitude, longitude, ip_add, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) - (gps, 37, Rajkot, India, Gujarat, Asia/Calcutta, 2013-01-25 12:39:41, 1, 4, 1, 18.0, 22.30, 70.80, 182.237.14.254, 2013-01-25 12:39:41)
+Jan 25 00:10:31 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 25 00:10:31 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 00:10:31 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 00:10:31 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 25 00:10:31 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 00:10:31 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (BJZnlQvSgJVKRuPYJIc1Mh9dFFxyIZ, http://www.webplanex.com/)
+Jan 25 00:10:32 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.match_word AS a__match_word, a.platform_name AS a__platform_name FROM ana_platforms a WHERE (a.platform_name = ?) - (windows)
+Jan 25 00:10:32 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.match_word AS a__match_word, a.device_name AS a__device_name FROM ana_devices a WHERE (a.device_name = ?) - (computer)
+Jan 25 00:10:32 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.match_word AS a__match_word, a.browser_name AS a__browser_name FROM ana_browsers a WHERE (a.browser_name = ?) - (Mozilla Firefox)
+Jan 25 00:10:32 symfony [info] {Doctrine_Connection_Statement} execute : INSERT INTO ana_item_analytics (scan_type, id_item, city_name, country_name, region_name, id_platform, id_device, id_browser, browser_version, latitude, longitude, ip_add, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) - (gps, 37, Rajkot, India, Gujarat, 1, 4, 1, 18.0, 22.30, 70.80, 182.237.14.254, 2013-01-25 00:10:32, 2013-01-25 00:10:32)
+Jan 25 00:15:43 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 25 00:15:43 symfony [info] {sfFrontWebController} Action "item/index" does not exist
+Jan 25 00:15:43 symfony [err] {sfError404Exception} Action "item/index" does not exist.
+Jan 25 00:15:43 symfony [info] {sfWebResponse} Send status "HTTP/1.1 404 Not Found"
+Jan 25 00:15:43 symfony [info] {sfWebResponse} Send header "Content-Type: text/html; charset=utf-8"
+Jan 25 00:15:43 symfony [info] {sfWebDebugLogger} Configuration 1.40 ms (5)
+Jan 25 00:15:43 symfony [info] {sfWebDebugLogger} Factories 61.07 ms (1)
+Jan 25 00:15:50 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 25 00:15:50 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 00:15:50 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 00:15:50 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 25 00:15:50 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 00:15:50 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (BJZnlQvSgJVKRuPYJIc1Mh9dFFxyIZ, http://www.webplanex.com/)
+Jan 25 12:45:51 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.match_word AS a__match_word, a.platform_name AS a__platform_name FROM ana_platforms a WHERE (a.platform_name = ?) - (windows)
+Jan 25 12:45:51 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.match_word AS a__match_word, a.device_name AS a__device_name FROM ana_devices a WHERE (a.device_name = ?) - (computer)
+Jan 25 12:45:51 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.match_word AS a__match_word, a.browser_name AS a__browser_name FROM ana_browsers a WHERE (a.browser_name = ?) - (Mozilla Firefox)
+Jan 25 12:45:51 symfony [info] {Doctrine_Connection_Statement} execute : INSERT INTO ana_item_analytics (scan_type, id_item, city_name, country_name, region_name, timezone, created_at, id_platform, id_device, id_browser, browser_version, latitude, longitude, ip_add, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) - (gps, 37, Rajkot, India, Gujarat, test, 2013-01-25 12:45:51, 1, 4, 1, 18.0, 22.30, 70.80, 182.237.14.254, 2013-01-25 12:45:51)
+Jan 25 01:56:12 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 25 01:56:12 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 01:56:12 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 01:56:12 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 25 01:56:12 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 01:56:12 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (BJZnlQvSgJVKRuPYJIc1Mh9dFFxyIZ, http://www.webplanex.com/)
+Jan 25 14:26:13 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.match_word AS a__match_word, a.platform_name AS a__platform_name FROM ana_platforms a WHERE (a.platform_name = ?) - (windows)
+Jan 25 14:26:13 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.match_word AS a__match_word, a.device_name AS a__device_name FROM ana_devices a WHERE (a.device_name = ?) - (computer)
+Jan 25 14:26:13 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.match_word AS a__match_word, a.browser_name AS a__browser_name FROM ana_browsers a WHERE (a.browser_name = ?) - (Mozilla Firefox)
+Jan 25 14:26:13 symfony [info] {Doctrine_Connection_Statement} execute : INSERT INTO ana_item_analytics (scan_type, id_item, city_name, country_name, region_name, timezone, created_at, id_platform, id_device, id_browser, browser_version, latitude, longitude, ip_add, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) - (gps, 37, Rajkot, India, Gujarat, test, 2013-01-25 14:26:13, 1, 4, 1, 18.0, 22.30, 70.80, 182.237.11.109, 2013-01-25 14:26:13)
+Jan 25 02:25:09 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/database with parameters array (  'module' => 'item',  'action' => 'database',)
+Jan 25 02:25:09 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 02:25:09 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 02:25:09 symfony [info] {itemActions} Call "itemActions->executeDatabase()"
+Jan 25 02:25:10 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 02:25:10 symfony [info] {Doctrine_Connection_Mysql} query : SELECT a.id AS a__id, a.timezone AS a__timezone FROM ana_item_analytics a ORDER BY a.id DESC - ()
+Jan 25 02:25:44 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 25 02:25:44 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 02:25:44 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 02:25:44 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 25 02:25:44 symfony [notice] {sfWebDebugLogger}  Notice at /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 33 (Undefined index: scheme)
+Jan 25 02:25:44 symfony [notice] {sfWebDebugLogger}  Notice at /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 33 (Undefined index: host)
+Jan 25 02:25:44 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 02:25:44 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (BJZnlQvSgJVKRuPYJIc1Mh9dFFxyIZ, :/)
+Jan 25 02:30:22 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 25 02:30:22 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 02:30:22 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 02:30:22 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 25 02:30:22 symfony [notice] {sfWebDebugLogger}  Notice at /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 33 (Undefined index: scheme)
+Jan 25 02:30:22 symfony [notice] {sfWebDebugLogger}  Notice at /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 33 (Undefined index: host)
+Jan 25 02:30:22 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 02:30:22 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (BJZnlQvSgJVKRuPYJIc1Mh9dFFxyIZ, :/)
+Jan 25 02:31:31 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 25 02:31:31 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 02:31:31 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 02:31:31 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 25 02:31:31 symfony [notice] {sfWebDebugLogger}  Notice at /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 31 (Undefined index: scheme)
+Jan 25 02:31:31 symfony [notice] {sfWebDebugLogger}  Notice at /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 31 (Undefined index: host)
+Jan 25 02:31:31 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 02:31:31 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (BJZnlQvSgJVKRuPYJIc1Mh9dFFxyIZ, :/)
+Jan 25 02:31:34 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 25 02:31:34 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 02:31:34 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 02:31:34 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 25 02:31:34 symfony [notice] {sfWebDebugLogger}  Notice at /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 31 (Undefined index: scheme)
+Jan 25 02:31:34 symfony [notice] {sfWebDebugLogger}  Notice at /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 31 (Undefined index: host)
+Jan 25 02:31:34 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 02:31:34 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (BJZnlQvSgJVKRuPYJIc1Mh9dFFxyIZ, :/)
+Jan 25 02:31:58 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/database with parameters array (  'module' => 'item',  'action' => 'database',)
+Jan 25 02:31:58 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 02:31:58 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 02:31:58 symfony [info] {itemActions} Call "itemActions->executeDatabase()"
+Jan 25 02:31:58 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 02:31:58 symfony [info] {Doctrine_Connection_Mysql} query : SELECT a.id AS a__id, a.timezone AS a__timezone FROM ana_item_analytics a ORDER BY a.id DESC - ()
+Jan 25 02:32:07 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Jan 25 02:32:07 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 02:32:07 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 02:32:07 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Jan 25 02:32:07 symfony [notice] {sfWebDebugLogger}  Notice at /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 31 (Undefined index: scheme)
+Jan 25 02:32:07 symfony [notice] {sfWebDebugLogger}  Notice at /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 31 (Undefined index: host)
+Jan 25 02:32:07 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 02:32:07 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (BJZnlQvSgJVKRuPYJIc1Mh9dFFxyIZ, :/)
+Jan 25 02:32:45 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/database with parameters array (  'module' => 'item',  'action' => 'database',)
+Jan 25 02:32:45 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 02:32:45 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 02:32:45 symfony [info] {itemActions} Call "itemActions->executeDatabase()"
+Jan 25 02:32:45 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 02:32:45 symfony [info] {Doctrine_Connection_Mysql} query : SELECT a.id AS a__id, a.timezone AS a__timezone FROM ana_item_analytics a ORDER BY a.id DESC - ()
+Jan 25 02:33:14 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/database with parameters array (  'module' => 'item',  'action' => 'database',)
+Jan 25 02:33:14 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 02:33:14 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 02:33:14 symfony [info] {itemActions} Call "itemActions->executeDatabase()"
+Jan 25 02:33:15 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 02:33:15 symfony [info] {Doctrine_Connection_Mysql} query : SELECT a.id AS a__id, a.timezone AS a__timezone FROM ana_item_analytics a ORDER BY a.id DESC - ()
+Jan 25 02:34:26 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/database with parameters array (  'module' => 'item',  'action' => 'database',)
+Jan 25 02:34:26 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 02:34:26 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 02:34:26 symfony [info] {itemActions} Call "itemActions->executeDatabase()"
+Jan 25 02:34:26 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 02:34:26 symfony [info] {Doctrine_Connection_Mysql} query : SELECT a.id AS a__id, a.timezone AS a__timezone FROM ana_item_analytics a ORDER BY a.id DESC - ()
+Jan 25 03:13:56 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/database with parameters array (  'module' => 'item',  'action' => 'database',)
+Jan 25 03:13:56 symfony [info] {myUser} Automatic user logout due to timeout
+Jan 25 03:13:56 symfony [info] {myUser} User is not authenticated
+Jan 25 03:13:56 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 03:13:56 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 03:13:56 symfony [info] {itemActions} Call "itemActions->executeDatabase()"
+Jan 25 03:13:56 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 03:13:56 symfony [info] {Doctrine_Connection_Mysql} query : SELECT a.id AS a__id, a.timezone AS a__timezone FROM ana_item_analytics a ORDER BY a.id DESC - ()
+Jan 25 03:14:45 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/database with parameters array (  'module' => 'item',  'action' => 'database',)
+Jan 25 03:14:45 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 03:14:45 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 03:14:45 symfony [info] {itemActions} Call "itemActions->executeDatabase()"
+Jan 25 03:14:45 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 03:14:45 symfony [info] {Doctrine_Connection_Mysql} query : SELECT a.id AS a__id, a.id_item AS a__id_item, a.country_code AS a__country_code, a.country_name AS a__country_name, a.region_name AS a__region_name, a.city_name AS a__city_name, a.zipcode AS a__zipcode, a.latitude AS a__latitude, a.longitude AS a__longitude, a.ip_add AS a__ip_add, a.timezone AS a__timezone, a.id_browser AS a__id_browser, a.browser_version AS a__browser_version, a.id_platform AS a__id_platform, a.id_device AS a__id_device, a.scan_type AS a__scan_type, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_item_analytics a ORDER BY a.id DESC - ()
+Jan 25 03:15:36 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/database with parameters array (  'module' => 'item',  'action' => 'database',)
+Jan 25 03:15:36 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Jan 25 03:15:36 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Jan 25 03:15:36 symfony [info] {itemActions} Call "itemActions->executeDatabase()"
+Jan 25 03:15:36 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Jan 25 03:15:36 symfony [info] {Doctrine_Connection_Mysql} query : SELECT a.id AS a__id, a.id_item AS a__id_item, a.country_code AS a__country_code, a.country_name AS a__country_name, a.region_name AS a__region_name, a.city_name AS a__city_name, a.zipcode AS a__zipcode, a.latitude AS a__latitude, a.longitude AS a__longitude, a.ip_add AS a__ip_add, a.timezone AS a__timezone, a.id_browser AS a__id_browser, a.browser_version AS a__browser_version, a.id_platform AS a__id_platform, a.id_device AS a__id_device, a.scan_type AS a__scan_type, a.created_at AS a__created_at, a.updated_at AS a__updated_at FROM ana_item_analytics a ORDER BY a.id DESC - ()
+Feb 01 06:40:21 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Feb 01 06:40:21 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Feb 01 06:40:21 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Feb 01 06:40:21 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Feb 01 06:40:21 symfony [notice] {sfWebDebugLogger}  Notice at /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 31 (Undefined index: scheme)
+Feb 01 06:40:21 symfony [notice] {sfWebDebugLogger}  Notice at /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 31 (Undefined index: host)
+Feb 01 06:40:21 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Feb 01 06:40:21 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (dJx3NMxB3aAIa0jkkLJcI2zleib51V, :/)
+Feb 01 06:46:36 symfony [info] {sfPatternRouting} Match route "default" (/:module/:action/*) for /item/index with parameters array (  'module' => 'item',  'action' => 'index',)
+Feb 01 06:46:36 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Feb 01 06:46:36 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Feb 01 06:46:36 symfony [info] {itemActions} Call "itemActions->executeIndex()"
+Feb 01 06:46:36 symfony [notice] {sfWebDebugLogger}  Notice at /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 31 (Undefined index: scheme)
+Feb 01 06:46:36 symfony [notice] {sfWebDebugLogger}  Notice at /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 31 (Undefined index: host)
+Feb 01 06:46:36 symfony [info] {Doctrine_Connection_Mysql} exec : SET NAMES 'UTF8' - ()
+Feb 01 06:46:36 symfony [info] {Doctrine_Connection_Statement} execute : SELECT a.id AS a__id, a.id_project AS a__id_project, a.url AS a__url, a.item_key AS a__item_key, a.status AS a__status, a.created_at AS a__created_at, a.updated_at AS a__updated_at, a2.id AS a2__id, a2.id_user AS a2__id_user, a2.project_name AS a2__project_name, a2.description AS a2__description, a2.url AS a2__url, a2.project_key AS a2__project_key, a2.status AS a2__status, a2.created_at AS a2__created_at, a2.updated_at AS a2__updated_at FROM ana_items a LEFT JOIN ana_projects a2 ON a.id_project = a2.id WHERE (a.item_key = ? AND a2.url = ?) - (dJx3NMxB3aAIa0jkkLJcI2zleib51V, :/)
+Feb 05 09:54:37 symfony [info] {sfPatternRouting} Match route "homepage" (/) for / with parameters array (  'module' => 'default',  'action' => 'index',)
+Feb 05 09:54:37 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Feb 05 09:54:37 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Feb 05 09:54:37 symfony [info] {defaultActions} Call "defaultActions->executeIndex()"
+Feb 05 09:54:37 symfony [info] {sfPHPView} Render "F:\xampp\htdocs\wpanalytics\lib\vendor\symfony\lib/controller/default/templates/indexSuccess.php"
+Feb 05 09:54:37 symfony [info] {sfPHPView} Decorate content with "F:\xampp\htdocs\wpanalytics\lib\vendor\symfony\lib\controller\default\templates/defaultLayout.php"
+Feb 05 09:54:37 symfony [info] {sfPHPView} Render "F:\xampp\htdocs\wpanalytics\lib\vendor\symfony\lib\controller\default\templates/defaultLayout.php"
+Feb 05 09:54:37 symfony [info] {sfWebResponse} Send status "HTTP/1.1 200 OK"
+Feb 05 09:54:37 symfony [info] {sfWebResponse} Send header "Content-Type: text/html; charset=utf-8"
+Feb 05 09:54:37 symfony [info] {sfWebDebugLogger} Configuration 388.55 ms (9)
+Feb 05 09:54:37 symfony [info] {sfWebDebugLogger} Factories 233.23 ms (1)
+Feb 05 09:54:37 symfony [info] {sfWebDebugLogger} Action "default/index" 0.08 ms (1)
+Feb 05 09:54:37 symfony [info] {sfWebDebugLogger} View "Success" for "default/index" 64.72 ms (1)
+Feb 05 09:54:37 symfony [info] {sfWebResponse} Send content (29689 o)
+Feb 05 09:55:36 symfony [info] {sfPatternRouting} Match route "homepage" (/) for / with parameters array (  'module' => 'default',  'action' => 'index',)
+Feb 05 09:55:36 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Feb 05 09:55:36 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Feb 05 09:55:36 symfony [info] {defaultActions} Call "defaultActions->executeIndex()"
+Feb 05 09:55:36 symfony [info] {sfPHPView} Render "F:\xampp\htdocs\wpanalytics\lib\vendor\symfony\lib/controller/default/templates/indexSuccess.php"
+Feb 05 09:55:36 symfony [info] {sfPHPView} Decorate content with "F:\xampp\htdocs\wpanalytics\lib\vendor\symfony\lib\controller\default\templates/defaultLayout.php"
+Feb 05 09:55:36 symfony [info] {sfPHPView} Render "F:\xampp\htdocs\wpanalytics\lib\vendor\symfony\lib\controller\default\templates/defaultLayout.php"
+Feb 05 09:55:36 symfony [info] {sfWebResponse} Send status "HTTP/1.1 200 OK"
+Feb 05 09:55:36 symfony [info] {sfWebResponse} Send header "Content-Type: text/html; charset=utf-8"
+Feb 05 09:55:36 symfony [info] {sfWebDebugLogger} Configuration 16.09 ms (9)
+Feb 05 09:55:36 symfony [info] {sfWebDebugLogger} Factories 39.78 ms (1)
+Feb 05 09:55:36 symfony [info] {sfWebDebugLogger} Action "default/index" 0.09 ms (1)
+Feb 05 09:55:36 symfony [info] {sfWebDebugLogger} View "Success" for "default/index" 12.39 ms (1)
+Feb 05 09:55:36 symfony [info] {sfWebResponse} Send content (29688 o)
+Feb 05 09:57:00 symfony [info] {sfPatternRouting} Match route "homepage" (/) for / with parameters array (  'module' => 'default',  'action' => 'index',)
+Feb 05 09:57:00 symfony [info] {sfFilterChain} Executing filter "sfRenderingFilter"
+Feb 05 09:57:00 symfony [info] {sfFilterChain} Executing filter "sfExecutionFilter"
+Feb 05 09:57:00 symfony [info] {defaultActions} Call "defaultActions->executeIndex()"
+Feb 05 09:57:00 symfony [info] {sfPHPView} Render "F:\xampp\htdocs\wpanalytics\lib\vendor\symfony\lib/controller/default/templates/indexSuccess.php"
+Feb 05 09:57:00 symfony [info] {sfPHPView} Decorate content with "F:\xampp\htdocs\wpanalytics\lib\vendor\symfony\lib\controller\default\templates/defaultLayout.php"
+Feb 05 09:57:00 symfony [info] {sfPHPView} Render "F:\xampp\htdocs\wpanalytics\lib\vendor\symfony\lib\controller\default\templates/defaultLayout.php"
+Feb 05 09:57:00 symfony [info] {sfWebResponse} Send status "HTTP/1.1 200 OK"
+Feb 05 09:57:00 symfony [info] {sfWebResponse} Send header "Content-Type: text/html; charset=utf-8"
+Feb 05 09:57:00 symfony [info] {sfWebDebugLogger} Configuration 10.43 ms (9)
+Feb 05 09:57:00 symfony [info] {sfWebDebugLogger} Factories 39.04 ms (1)
+Feb 05 09:57:00 symfony [info] {sfWebDebugLogger} Action "default/index" 0.12 ms (1)
+Feb 05 09:57:00 symfony [info] {sfWebDebugLogger} View "Success" for "default/index" 17.57 ms (1)
+Feb 05 09:57:00 symfony [info] {sfWebResponse} Send content (29719 o)

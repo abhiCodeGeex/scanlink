@@ -1,0 +1,78 @@
+body
+{
+	font-family: calibri;
+}
+#response_view
+{
+	width:96%;
+	padding: 0 3% 0 1%;
+}
+
+#response_view .label
+{
+	width: 120px;
+	float: left;
+}
+
+.results  h1
+{
+	font-size:20px;
+	margin:10px 0;
+}
+
+.results  h3
+{
+	font-size:16px;
+	margin:10px 0;
+}
+
+.results .delete_btn
+{
+	/*background-color: #008000;
+	padding:10px;
+	border-radius: 8px;
+	border: 1px solid #006201;
+	color: #ffffff;
+	width: 110px;
+	cursor: pointer;*/
+	
+}
+
+label.error {
+  color: red;
+  font-size: 14px;
+}
+label.success {
+  color: green;
+  font-size: 14px;
+  text-transform: capitalize;
+}
+
+.delete_icon
+{
+	background:url(../images/delete_icon.png) no-repeat left top; width:22px; height:24px; display:block;
+	background-position:-9px -24px;
+	cursor: pointer;	
+}
+
+.delete_icon:hover{
+	background-position:-9px 0px;
+}
+
+td#paging {
+ 	padding: 10px;
+	
+}
+td#paging .pagelink {
+  	padding: 10px;
+  	font-weight: bold;
+  	font-size: 16px;
+	color: #278B28;
+ 	text-decoration: none;
+}
+
+
+td#paging .current {
+  	color: #000000;
+ 	
+}

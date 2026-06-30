@@ -1,0 +1,296 @@
+[11-Jan-2013 04:38:34 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[11-Jan-2013 04:38:35 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[11-Jan-2013 06:15:31 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[11-Jan-2013 06:15:32 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[11-Jan-2013 21:55:38 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[11-Jan-2013 21:55:39 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[11-Jan-2013 22:33:14 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[11-Jan-2013 22:33:15 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[12-Jan-2013 00:14:25 America/Denver] Couldn't find class "http
+[12-Jan-2013 00:14:25 America/Denver] PHP Fatal error:  Call to a member function evictAll() on a non-object in /home2/webplan1/public_html/demo/analytics/lib/vendor/symfony/lib/plugins/sfDoctrinePlugin/lib/vendor/doctrine/Doctrine/Connection.php on line 1239
+[12-Jan-2013 00:15:13 America/Denver] PHP Notice:  Undefined index: scheme in /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 23
+[12-Jan-2013 00:15:13 America/Denver] PHP Notice:  Undefined index: host in /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 23
+[12-Jan-2013 00:17:46 America/Denver] Couldn't find class "http
+[12-Jan-2013 00:17:46 America/Denver] PHP Fatal error:  Call to a member function evictAll() on a non-object in /home2/webplan1/public_html/demo/analytics/lib/vendor/symfony/lib/plugins/sfDoctrinePlugin/lib/vendor/doctrine/Doctrine/Connection.php on line 1239
+[12-Jan-2013 00:18:56 America/Denver] Couldn't find class "http
+[12-Jan-2013 00:18:56 America/Denver] PHP Fatal error:  Call to a member function evictAll() on a non-object in /home2/webplan1/public_html/demo/analytics/lib/vendor/symfony/lib/plugins/sfDoctrinePlugin/lib/vendor/doctrine/Doctrine/Connection.php on line 1239
+[12-Jan-2013 00:21:03 America/Denver] Couldn't find class "http
+[12-Jan-2013 00:21:03 America/Denver] PHP Fatal error:  Call to a member function evictAll() on a non-object in /home2/webplan1/public_html/demo/analytics/lib/vendor/symfony/lib/plugins/sfDoctrinePlugin/lib/vendor/doctrine/Doctrine/Connection.php on line 1239
+[12-Jan-2013 00:23:45 America/Denver] Couldn't find class "http
+[12-Jan-2013 00:23:45 America/Denver] PHP Fatal error:  Call to a member function evictAll() on a non-object in /home2/webplan1/public_html/demo/analytics/lib/vendor/symfony/lib/plugins/sfDoctrinePlugin/lib/vendor/doctrine/Doctrine/Connection.php on line 1239
+[12-Jan-2013 00:27:07 America/Denver] Couldn't find class "http
+[12-Jan-2013 00:27:07 America/Denver] PHP Fatal error:  Call to a member function evictAll() on a non-object in /home2/webplan1/public_html/demo/analytics/lib/vendor/symfony/lib/plugins/sfDoctrinePlugin/lib/vendor/doctrine/Doctrine/Connection.php on line 1239
+[12-Jan-2013 00:28:34 America/Denver] Couldn't find class "http
+[12-Jan-2013 00:28:34 America/Denver] PHP Fatal error:  Call to a member function evictAll() on a non-object in /home2/webplan1/public_html/demo/analytics/lib/vendor/symfony/lib/plugins/sfDoctrinePlugin/lib/vendor/doctrine/Doctrine/Connection.php on line 1239
+[12-Jan-2013 00:31:14 America/Denver] Couldn't find class "http
+[12-Jan-2013 00:31:14 America/Denver] PHP Fatal error:  Call to a member function evictAll() on a non-object in /home2/webplan1/public_html/demo/analytics/lib/vendor/symfony/lib/plugins/sfDoctrinePlugin/lib/vendor/doctrine/Doctrine/Connection.php on line 1239
+[12-Jan-2013 00:31:41 America/Denver] Couldn't find class "http
+[12-Jan-2013 00:31:41 America/Denver] PHP Fatal error:  Call to a member function evictAll() on a non-object in /home2/webplan1/public_html/demo/analytics/lib/vendor/symfony/lib/plugins/sfDoctrinePlugin/lib/vendor/doctrine/Doctrine/Connection.php on line 1239
+[12-Jan-2013 00:32:39 America/Denver] Couldn't find class "http
+[12-Jan-2013 00:32:39 America/Denver] PHP Fatal error:  Call to a member function evictAll() on a non-object in /home2/webplan1/public_html/demo/analytics/lib/vendor/symfony/lib/plugins/sfDoctrinePlugin/lib/vendor/doctrine/Doctrine/Connection.php on line 1239
+[12-Jan-2013 00:34:52 America/Denver] Couldn't find class "http
+[12-Jan-2013 00:34:52 America/Denver] PHP Fatal error:  Call to a member function evictAll() on a non-object in /home2/webplan1/public_html/demo/analytics/lib/vendor/symfony/lib/plugins/sfDoctrinePlugin/lib/vendor/doctrine/Doctrine/Connection.php on line 1239
+[12-Jan-2013 01:42:08 America/Denver] PHP Fatal error:  Call to a member function toArray() on a non-object in /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 35
+[12-Jan-2013 01:46:44 America/Denver] PHP Fatal error:  Call to a member function toArray() on a non-object in /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 35
+[12-Jan-2013 02:45:27 America/Denver] Empty module and/or action after parsing the URL "/js.wpapi.js" (/).
+[12-Jan-2013 02:45:44 America/Denver] Empty module and/or action after parsing the URL "/wpapi.js" (/).
+[12-Jan-2013 02:47:03 America/Denver] Empty module and/or action after parsing the URL "/wpapi.js" (/).
+[12-Jan-2013 06:26:39 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[12-Jan-2013 06:26:39 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[12-Jan-2013 06:30:51 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:30:51 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:30:52 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:30:53 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:30:54 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:31:17 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:31:18 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:31:20 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:31:21 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:31:21 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:31:26 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:31:27 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:31:31 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:31:37 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:31:38 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:31:41 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:31:45 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:31:59 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:32:00 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:32:01 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:32:02 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:32:04 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:32:05 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:32:06 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:32:10 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:32:12 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:32:12 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:32:13 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:32:14 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:32:15 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:32:41 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:32:45 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:32:46 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:32:47 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:32:48 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:32:48 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:32:49 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:32:50 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:33:28 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:33:30 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:33:48 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:33:50 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:33:51 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:33:51 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:33:52 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:34:31 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[12-Jan-2013 06:34:32 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[12-Jan-2013 06:34:46 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:34:48 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:34:50 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:34:51 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:36:02 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:40:02 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:40:08 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:40:10 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:48:25 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:48:30 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:48:31 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:48:32 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:48:33 America/Denver] Action "images/images" does not exist.
+[12-Jan-2013 06:48:34 America/Denver] Action "images/images" does not exist.
+[14-Jan-2013 23:48:08 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[14-Jan-2013 23:48:09 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[15-Jan-2013 00:20:01 America/Denver] Action "images/images" does not exist.
+[15-Jan-2013 00:20:03 America/Denver] Action "images/images" does not exist.
+[15-Jan-2013 00:20:03 America/Denver] Action "images/images" does not exist.
+[15-Jan-2013 00:20:07 America/Denver] Action "images/images" does not exist.
+[15-Jan-2013 00:20:08 America/Denver] Action "images/images" does not exist.
+[15-Jan-2013 00:20:11 America/Denver] Action "images/images" does not exist.
+[15-Jan-2013 00:20:13 America/Denver] Action "images/images" does not exist.
+[15-Jan-2013 00:20:15 America/Denver] Action "images/images" does not exist.
+[15-Jan-2013 00:20:17 America/Denver] Action "images/images" does not exist.
+[15-Jan-2013 00:58:06 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[15-Jan-2013 00:58:10 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[15-Jan-2013 02:14:41 America/Denver] Action "images/images" does not exist.
+[15-Jan-2013 02:14:46 America/Denver] Action "images/images" does not exist.
+[15-Jan-2013 02:14:47 America/Denver] Action "images/images" does not exist.
+[15-Jan-2013 02:14:48 America/Denver] Action "images/images" does not exist.
+[15-Jan-2013 02:14:50 America/Denver] Action "images/images" does not exist.
+[15-Jan-2013 02:14:51 America/Denver] Action "images/images" does not exist.
+[15-Jan-2013 04:59:42 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[15-Jan-2013 04:59:43 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[15-Jan-2013 05:21:16 America/Denver] Action "data/getdata" does not exist.
+[15-Jan-2013 05:25:55 America/Denver] Action "data/getdata" does not exist.
+[15-Jan-2013 05:26:06 America/Denver] Action "data/getdata" does not exist.
+[15-Jan-2013 05:26:47 America/Denver] Action "data/getdata" does not exist.
+[15-Jan-2013 05:40:45 America/Denver] PHP Fatal error:  Call to undefined method AnaItemAnalyticsTable::getState() in /home2/webplan1/public_html/demo/analytics/apps/api/modules/data/actions/actions.class.php on line 42
+[15-Jan-2013 05:41:05 America/Denver] PHP Fatal error:  Call to undefined method AnaItemAnalyticsTable::getState() in /home2/webplan1/public_html/demo/analytics/apps/api/modules/data/actions/actions.class.php on line 42
+[15-Jan-2013 05:41:08 America/Denver] PHP Fatal error:  Call to undefined method AnaItemAnalyticsTable::getState() in /home2/webplan1/public_html/demo/analytics/apps/api/modules/data/actions/actions.class.php on line 42
+[15-Jan-2013 05:41:41 America/Denver] PHP Fatal error:  Call to undefined method AnaItemAnalyticsTable::getState() in /home2/webplan1/public_html/demo/analytics/apps/api/modules/data/actions/actions.class.php on line 42
+[15-Jan-2013 05:42:33 America/Denver] PHP Fatal error:  Call to undefined method AnaItemAnalyticsTable::getState() in /home2/webplan1/public_html/demo/analytics/apps/api/modules/data/actions/actions.class.php on line 42
+[15-Jan-2013 05:42:39 America/Denver] PHP Fatal error:  Call to undefined method AnaItemAnalyticsTable::getState() in /home2/webplan1/public_html/demo/analytics/apps/api/modules/data/actions/actions.class.php on line 42
+[15-Jan-2013 05:42:47 America/Denver] PHP Fatal error:  Call to undefined method AnaItemAnalyticsTable::getState() in /home2/webplan1/public_html/demo/analytics/apps/api/modules/data/actions/actions.class.php on line 42
+[15-Jan-2013 06:02:27 America/Denver] PHP Fatal error:  Call to a member function getId() on a non-object in /home2/webplan1/public_html/demo/analytics/apps/api/modules/data/actions/actions.class.php on line 27
+[15-Jan-2013 06:02:30 America/Denver] PHP Fatal error:  Call to a member function getId() on a non-object in /home2/webplan1/public_html/demo/analytics/apps/api/modules/data/actions/actions.class.php on line 27
+[18-Jan-2013 04:39:31 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[18-Jan-2013 04:39:32 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[18-Jan-2013 04:43:48 America/Denver] This request has been forwarded to a 404 error page by the action "data/map".
+[18-Jan-2013 06:31:08 America/Denver] PHP Parse error:  syntax error, unexpected $end, expecting ')' in /home2/webplan1/public_html/demo/analytics/apps/api/modules/data/actions/actions.class.php on line 39
+[18-Jan-2013 23:52:40 America/Denver] PHP Parse error:  syntax error, unexpected $end in /home2/webplan1/public_html/demo/analytics/apps/api/modules/data/actions/actions.class.php on line 84
+[19-Jan-2013 07:38:16 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[19-Jan-2013 07:38:16 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[21-Jan-2013 02:05:34 America/Denver] Action "data/scanalytics" does not exist.
+[21-Jan-2013 02:05:48 America/Denver] Action "data/scanalytic" does not exist.
+[21-Jan-2013 02:06:15 America/Denver] Action "data/Scanalytics" does not exist.
+[21-Jan-2013 02:06:33 America/Denver] Action "data/Scanalytics" does not exist.
+[21-Jan-2013 02:06:40 America/Denver] Action "data/Scanalytics" does not exist.
+[21-Jan-2013 02:09:22 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[21-Jan-2013 02:09:23 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[21-Jan-2013 03:15:37 America/Denver] SQLSTATE[42S22]: Column not found: 1054 Unknown column 'ai' in 'where clause'
+[21-Jan-2013 03:16:57 America/Denver] SQLSTATE[42S22]: Column not found: 1054 Unknown column 'ai' in 'where clause'
+[21-Jan-2013 03:18:55 America/Denver] SQLSTATE[42S22]: Column not found: 1054 Unknown column 'ai' in 'where clause'
+[21-Jan-2013 03:18:58 America/Denver] SQLSTATE[42S22]: Column not found: 1054 Unknown column 'ai' in 'where clause'
+[21-Jan-2013 03:19:07 America/Denver] SQLSTATE[42S22]: Column not found: 1054 Unknown column 'ai' in 'where clause'
+[21-Jan-2013 03:19:19 America/Denver] SQLSTATE[42S22]: Column not found: 1054 Unknown column 'ai' in 'where clause'
+[21-Jan-2013 03:19:58 America/Denver] PHP Warning:  Unterminated comment starting line 238 in /home2/webplan1/public_html/demo/analytics/apps/api/modules/data/actions/actions.class.php on line 238
+[21-Jan-2013 03:19:58 America/Denver] PHP Parse error:  syntax error, unexpected $end, expecting T_FUNCTION in /home2/webplan1/public_html/demo/analytics/apps/api/modules/data/actions/actions.class.php on line 245
+[21-Jan-2013 03:25:08 America/Denver] PHP Parse error:  syntax error, unexpected T_ENCAPSED_AND_WHITESPACE, expecting ')' in /home2/webplan1/public_html/demo/analytics/apps/api/modules/data/actions/actions.class.php on line 82
+[21-Jan-2013 03:54:12 America/Denver] Unknown record property / related component "ana_brosers" on "AnaItemAnalytics"
+[21-Jan-2013 03:54:16 America/Denver] Unknown record property / related component "ana_brosers" on "AnaItemAnalytics"
+[21-Jan-2013 03:54:19 America/Denver] Unknown record property / related component "ana_brosers" on "AnaItemAnalytics"
+[21-Jan-2013 03:54:31 America/Denver] Unknown record property / related component "ana_brosers" on "AnaItemAnalytics"
+[21-Jan-2013 03:54:43 America/Denver] Unknown record property / related component "ana_brosers" on "AnaItemAnalytics"
+[21-Jan-2013 03:58:00 America/Denver] Unknown record property / related component "ana_brosers" on "AnaItemAnalytics"
+[21-Jan-2013 03:58:02 America/Denver] Unknown record property / related component "ana_brosers" on "AnaItemAnalytics"
+[21-Jan-2013 03:58:41 America/Denver] Unknown record property / related component "ana_brosers" on "AnaItemAnalytics"
+[21-Jan-2013 03:58:48 America/Denver] Unknown record property / related component "ana_brosers" on "AnaItemAnalytics"
+[21-Jan-2013 03:59:27 America/Denver] Unknown record property / related component "ana_brosers" on "AnaItemAnalytics"
+[21-Jan-2013 04:32:51 America/Denver] Couldn't find class id
+[21-Jan-2013 04:32:51 America/Denver] PHP Fatal error:  Call to a member function evictAll() on a non-object in /home2/webplan1/public_html/demo/analytics/lib/vendor/symfony/lib/plugins/sfDoctrinePlugin/lib/vendor/doctrine/Doctrine/Connection.php on line 1239
+[21-Jan-2013 04:32:56 America/Denver] Couldn't find class id
+[21-Jan-2013 04:32:56 America/Denver] PHP Fatal error:  Call to a member function evictAll() on a non-object in /home2/webplan1/public_html/demo/analytics/lib/vendor/symfony/lib/plugins/sfDoctrinePlugin/lib/vendor/doctrine/Doctrine/Connection.php on line 1239
+[21-Jan-2013 04:33:01 America/Denver] Couldn't find class id
+[21-Jan-2013 04:33:01 America/Denver] PHP Fatal error:  Call to a member function evictAll() on a non-object in /home2/webplan1/public_html/demo/analytics/lib/vendor/symfony/lib/plugins/sfDoctrinePlugin/lib/vendor/doctrine/Doctrine/Connection.php on line 1239
+[21-Jan-2013 04:33:35 America/Denver] Couldn't find class id
+[21-Jan-2013 04:33:35 America/Denver] PHP Fatal error:  Call to a member function evictAll() on a non-object in /home2/webplan1/public_html/demo/analytics/lib/vendor/symfony/lib/plugins/sfDoctrinePlugin/lib/vendor/doctrine/Doctrine/Connection.php on line 1239
+[21-Jan-2013 04:36:28 America/Denver] Couldn't find class id
+[21-Jan-2013 04:36:28 America/Denver] PHP Fatal error:  Call to a member function evictAll() on a non-object in /home2/webplan1/public_html/demo/analytics/lib/vendor/symfony/lib/plugins/sfDoctrinePlugin/lib/vendor/doctrine/Doctrine/Connection.php on line 1239
+[21-Jan-2013 04:37:21 America/Denver] Couldn't find class id
+[21-Jan-2013 04:37:21 America/Denver] PHP Fatal error:  Call to a member function evictAll() on a non-object in /home2/webplan1/public_html/demo/analytics/lib/vendor/symfony/lib/plugins/sfDoctrinePlugin/lib/vendor/doctrine/Doctrine/Connection.php on line 1239
+[21-Jan-2013 04:37:32 America/Denver] Couldn't find class id
+[21-Jan-2013 04:37:32 America/Denver] PHP Fatal error:  Call to a member function evictAll() on a non-object in /home2/webplan1/public_html/demo/analytics/lib/vendor/symfony/lib/plugins/sfDoctrinePlugin/lib/vendor/doctrine/Doctrine/Connection.php on line 1239
+[21-Jan-2013 04:38:31 America/Denver] Unknown column scan
+[21-Jan-2013 04:53:40 America/Denver] Unknown column 
+[21-Jan-2013 04:54:05 America/Denver] Unknown column 
+[21-Jan-2013 04:54:26 America/Denver] Unknown column 
+[21-Jan-2013 04:55:11 America/Denver] Unknown column 
+[21-Jan-2013 04:55:37 America/Denver] Unknown column 
+[21-Jan-2013 04:55:39 America/Denver] Unknown column 
+[21-Jan-2013 04:55:52 America/Denver] Unknown column 
+[21-Jan-2013 07:52:57 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[21-Jan-2013 07:53:24 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[21-Jan-2013 07:53:26 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[21-Jan-2013 07:53:26 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[21-Jan-2013 07:53:27 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[21-Jan-2013 07:53:49 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[21-Jan-2013 07:53:54 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[21-Jan-2013 07:58:24 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[21-Jan-2013 07:58:25 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[21-Jan-2013 07:58:25 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[21-Jan-2013 07:58:27 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[21-Jan-2013 07:58:29 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[21-Jan-2013 07:58:29 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[21-Jan-2013 07:58:29 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[21-Jan-2013 07:58:31 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[24-Jan-2013 03:10:52 America/Denver] SQLSTATE[42S22]: Column not found: 1054 Unknown column 'a.scan_type' in 'field list'
+[24-Jan-2013 03:10:57 America/Denver] SQLSTATE[42S22]: Column not found: 1054 Unknown column 'a.scan_type' in 'field list'
+[24-Jan-2013 03:11:31 America/Denver] SQLSTATE[42S22]: Column not found: 1054 Unknown column 'a.scan_type' in 'field list'
+[24-Jan-2013 03:11:40 America/Denver] SQLSTATE[42S22]: Column not found: 1054 Unknown column 'a.scan_type' in 'field list'
+[24-Jan-2013 03:12:20 America/Denver] SQLSTATE[42S22]: Column not found: 1054 Unknown column 'a.scan_type' in 'field list'
+[24-Jan-2013 23:38:26 America/Denver] PHP Parse error:  syntax error, unexpected $end, expecting '(' in /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 76
+[25-Jan-2013 00:15:43 America/Denver] Action "item/index" does not exist.
+[25-Jan-2013 02:25:44 America/Denver] PHP Notice:  Undefined index: scheme in /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 33
+[25-Jan-2013 02:25:44 America/Denver] PHP Notice:  Undefined index: host in /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 33
+[25-Jan-2013 02:30:22 America/Denver] PHP Notice:  Undefined index: scheme in /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 33
+[25-Jan-2013 02:30:22 America/Denver] PHP Notice:  Undefined index: host in /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 33
+[25-Jan-2013 02:31:31 America/Denver] PHP Notice:  Undefined index: scheme in /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 31
+[25-Jan-2013 02:31:31 America/Denver] PHP Notice:  Undefined index: host in /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 31
+[25-Jan-2013 02:31:34 America/Denver] PHP Notice:  Undefined index: scheme in /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 31
+[25-Jan-2013 02:31:34 America/Denver] PHP Notice:  Undefined index: host in /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 31
+[25-Jan-2013 02:32:07 America/Denver] PHP Notice:  Undefined index: scheme in /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 31
+[25-Jan-2013 02:32:07 America/Denver] PHP Notice:  Undefined index: host in /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 31
+[27-Jan-2013 03:04:22 America/Denver] PHP Fatal error:  Call to a member function getBrowserName() on a non-object in /home2/webplan1/public_html/demo/analytics/apps/api/modules/data/actions/actions.class.php on line 147
+[27-Jan-2013 03:04:30 America/Denver] PHP Fatal error:  Call to a member function getBrowserName() on a non-object in /home2/webplan1/public_html/demo/analytics/apps/api/modules/data/actions/actions.class.php on line 147
+[27-Jan-2013 03:05:09 America/Denver] PHP Fatal error:  Call to a member function getBrowserName() on a non-object in /home2/webplan1/public_html/demo/analytics/apps/api/modules/data/actions/actions.class.php on line 147
+[29-Jan-2013 22:06:25 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[29-Jan-2013 22:06:26 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[30-Jan-2013 23:56:22 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[30-Jan-2013 23:56:22 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[31-Jan-2013 07:27:23 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[31-Jan-2013 07:27:23 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[31-Jan-2013 21:31:03 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[31-Jan-2013 21:31:04 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 05:33:38 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 05:33:51 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 05:33:56 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 05:34:46 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 05:34:57 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 05:40:23 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:02:58 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:04:54 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:04:56 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:06:27 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:06:43 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:06:54 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:07:16 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:07:21 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:07:34 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:07:51 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:07:57 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:09:44 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:09:48 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:12:34 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:13:41 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:14:35 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:19:39 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:19:50 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:19:51 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:20:36 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:20:44 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:32:38 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:37:21 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:38:30 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:38:41 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:39:25 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:40:21 America/Denver] PHP Notice:  Undefined index: scheme in /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 31
+[01-Feb-2013 06:40:21 America/Denver] PHP Notice:  Undefined index: host in /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 31
+[01-Feb-2013 06:45:09 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:45:13 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:45:30 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:45:32 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:45:36 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:45:47 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:45:51 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:46:36 America/Denver] PHP Notice:  Undefined index: scheme in /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 31
+[01-Feb-2013 06:46:36 America/Denver] PHP Notice:  Undefined index: host in /home2/webplan1/public_html/demo/analytics/apps/api/modules/item/actions/actions.class.php on line 31
+[01-Feb-2013 06:47:31 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:48:51 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:48:58 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:54:44 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:54:51 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:55:13 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:56:13 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:57:40 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:59:10 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 06:59:10 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 07:05:30 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 07:06:33 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 07:36:45 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 07:36:52 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 07:36:56 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 07:46:18 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 07:46:26 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 07:47:38 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 07:52:38 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 21:51:48 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).
+[01-Feb-2013 21:51:48 America/Denver] Empty module and/or action after parsing the URL "/images/favicon.ico" (/).

@@ -1,0 +1,211 @@
+AnaUsers:
+  actAs:  [Timestampable]
+  columns:
+    id:
+      type:							integer
+      primary:	 				true
+      autoincrement:		true
+    first_name:
+      type:             string(255)
+      notnull:          true
+    last_name:          
+      type:             string(255)
+      notnull:          true
+    email:
+      type:             string(255)
+      unique:           true
+      notnull:          true
+    username:
+      type:             string(255)
+      unique:           true
+      notnull:          true
+    password:
+      type:             string(255)
+      notnull:          true
+    address:
+      type:							string(255)
+    user_type:
+      type:							enum
+      values:						[user,admin]	
+      default:					user
+    status:
+      type:							boolean
+      default:					0
+      
+AnaUserLogin:
+  columns:
+    id:
+      type:							integer
+      primary:	 				true
+      autoincrement:		true
+    id_user:
+      type:             integer
+      notnull:          true
+    ip_add:
+      type:             string(30)
+    login_time:
+      type:             timestamp
+  relations:
+    AnaUsers:
+      onDelete:					CASCADE
+      local:						id_user
+      foreignAlias:			AnaUsers
+      foreign:					id
+  
+
+AnaProjects:
+  actAs:  [Timestampable]
+  columns:
+    id:
+      type:							integer
+      primary:	 				true
+      autoincrement:		true
+    id_user:
+      type:             integer	
+      notnull:          true
+    project_name:
+      type:             string(255)
+      notnull:          true
+    description:          
+      type:             string(2000)
+      notnull:          true
+    url:
+      type:             string(255)
+      notnull:          true
+    project_key:
+      type:							string(50)
+      unique:						true
+      notnull:					true
+    status:
+      type:							boolean
+      default:					0
+  relations:
+    AnaUsers:
+      onDelete:					CASCADE
+      local:						id_user
+      foreignAlias:			AnaUsers
+      foreign:					id			
+
+      
+AnaItems:
+  actAs:  [Timestampable]
+  columns:
+    id:
+      type:							integer
+      primary:	 				true
+      autoincrement:		true
+    id_project:
+      type:             integer	
+      notnull:          true
+    url:
+      type:             string(255)
+      unique:           true
+    item_key:
+      type:							string(50)
+      unique:						true
+      notnull:					true
+    status:
+      type:							boolean
+      default:					1
+  relations:
+    AnaProjects:
+      onDelete:					CASCADE
+      local:						id_project
+      foreignAlias:			AnaProjects
+      foreign:					id
+
+AnaItemAnalytics:
+  actAs:  [Timestampable]
+  columns:
+    id:
+      type:							integer
+      primary:	 				true
+      autoincrement:		true
+    id_item:
+      type:             integer	
+      notnull:          true
+    country_code:
+      type:             string(20)
+    country_name:
+      type:             string(255)
+    region_name:
+      type:             string(255)
+    city_name:
+      type:             string(255)
+    zipcode:
+      type:             string(255)
+    latitude:
+      type:             string(50)
+    longitude:
+      type:             string(50)
+    ip_add:
+      type:             string(50)
+    timezone:
+      type:             string(50)
+    id_browser:
+      type:             integer
+    browser_version:    
+      type:             string(255)
+    id_platform:
+      type:             integer
+    id_device:
+      type:             integer
+  relations:
+    AnaItems:
+      onDelete:					CASCADE
+      local:						id_item
+      foreignAlias:			AnaItems
+      foreign:					id
+    AnaBrowsers:
+      onDelete:					CASCADE
+      local:						id_browser
+      foreignAlias:			AnaBrowsers
+      foreign:					id
+    AnaPlatforms:
+      onDelete:					CASCADE
+      local:						id_platform
+      foreignAlias:			AnaPlatforms
+      foreign:					id
+    AnaDevices:
+      onDelete:					CASCADE
+      local:						id_device
+      foreignAlias:			AnaDevices
+      foreign:					id
+      
+AnaBrowsers:
+  columns:
+    id:
+      type:							integer
+      primary:	 				true
+      autoincrement:		true
+    match_word:
+      type:             string(255)
+    browser_name:
+      type:             string(255)
+      unique:           true
+      
+AnaPlatforms:
+  columns:
+    id:
+      type:							integer
+      primary:	 				true
+      autoincrement:		true
+    match_word:
+      type:             string(255)
+    platform_name:
+      type:             string(255)
+      unique:           true      
+    
+  
+AnaDevices:
+  columns:
+    id:
+      type:							integer
+      primary:	 				true
+      autoincrement:		true
+    match_word:
+      type:             string(255)
+    device_name:
+      type:             string(255)
+      unique:           true
+      

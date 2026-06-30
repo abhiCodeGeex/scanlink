@@ -1,0 +1,3 @@
+scanlink.com.au/styles/colorbox.css
+Added max-height
+#cboxLoadedContent{margin-bottom:28px;max-height:350px;}

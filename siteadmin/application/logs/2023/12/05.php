@@ -1,0 +1,7 @@
+<?php defined('SYSPATH') or die('No direct script access.'); ?>
+
+2023-12-05 16:35:55 --- ERROR: HTTP_Exception_404 [ 404 ]: Unable to find a route to match the URI: codeorder/images/spacer.gif ~ SYSPATH/classes/kohana/request.php [ 1128 ]
+2023-12-05 16:35:55 --- STRACE: HTTP_Exception_404 [ 404 ]: Unable to find a route to match the URI: codeorder/images/spacer.gif ~ SYSPATH/classes/kohana/request.php [ 1128 ]
+--
+#0 /var/www/scanlink.com.au/siteadmin/index.php(132): Kohana_Request->execute()
+#1 {main}

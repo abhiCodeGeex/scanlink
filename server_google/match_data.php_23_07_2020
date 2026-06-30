@@ -1,0 +1,153 @@
+<?php session_start(); 
+
+
+$con = mysqli_connect("galadb1.croyirckzbgv.ap-southeast-2.rds.amazonaws.com","scanlink","RN4AS4a82h7P92uR","scanlink");
+
+// Check connection
+if (mysqli_connect_errno()) {
+  echo "Failed to connect to MySQL: " . mysqli_connect_error();
+  exit();
+}
+$scaneventid=@$_REQUEST["scanhitid"];
+
+if($scaneventid=="")
+{
+}
+else
+{
+$itemid=$_REQUEST["id_item"];
+//echo $scaneventid;
+$fetchdatafirst=mysqli_query($con,"select *  from ana_item_analytics where id_item='".$itemid."' and event_id='".$scaneventid."'");
+//echo "select DISTINCT event_id from ana_item_analytics where id_item='".$itemid."' and event_id='".$scaneventid."'";
+//$row=mysqli_fetch_array($fetchdatafirst);
+$nocount=mysqli_num_rows($fetchdatafirst);
+if($nocount==0)
+{
+	// print_r($_REQUEST);
+	//echo "diffrent session insert needs hits";
+$scaneventid1=$_REQUEST["scanhitid"];	
+$id_item=$_REQUEST["id_item"];
+$country_code=$_REQUEST["country_code"];
+ $country_name=$_REQUEST["country_name"];
+ $region_name=$_REQUEST["region_name"];
+ $city_name=$_REQUEST["city_name"];
+$zipcode="";
+$latitude=$_REQUEST["latitude"];
+$longitude=$_REQUEST["longitude"];
+$ip_add=$_REQUEST["ip_add"];
+$timezone=$_REQUEST["timezone"];
+$id_browsercat=$_REQUEST["id_browsercat"];
+$browser_version=$_REQUEST["browser_version"];
+$id_platformcat=$_REQUEST["id_platformcat"];
+$id_devicecat=$_REQUEST["id_devicecat"];
+$screensize=$_REQUEST["screensize"];
+//echo $id_browsercat;
+if($id_browsercat=='Internet Explorer')
+{
+	$id_browser=3;
+}
+
+else if($id_browsercat=='Safari')
+{
+	$id_browser=2;
+}
+else if($id_browsercat=='Chrome')
+{
+	$id_browser=4;
+}
+else if($id_browsercat=='Firefox')
+{
+	$id_browser=1;
+}
+else if($id_browsercat=='Opera')
+{
+	$id_browser=5;
+}
+else if($id_browsercat=='Netscape')
+{
+	$id_browser=6;
+}
+
+
+ if($id_devicecat=='Desktop'&& $id_platformcat=='Windows')
+{
+	$id_platform=1;
+	$scan_type="ip";
+	$id_device=4;
+}
+else if($id_devicecat=='Desktop'&&$id_platformcat=='Mac')
+{
+	$id_platform=1;
+	$scan_type="ip";
+	$id_device=12;
+}
+else if($id_devicecat=='Desktop'&&$id_platformcat=='Linux')
+{
+	$id_platform=1;
+	$id_device=11;
+	$scan_type="ip";
+}
+if($id_devicecat=='Mobile' && $id_platformcat=='iOS')
+{
+	$id_platform=2;
+	$id_device=3;
+	$scan_type="gps";
+}
+else if($id_devicecat=='Mobile' && $id_platformcat=='Android')
+{
+	$id_platform=2;
+	$id_device=9;
+	$scan_type="gps";
+}
+else if($id_devicecat=='Mobile' && $id_platformcat=='Blackberry')
+{
+	$id_platform=2;
+	$id_device=7;
+	$scan_type="gps";
+}
+
+else if($id_devicecat=='tablet' && $id_platformcat=='iOS')
+{
+	$id_platform=3;
+	$id_device=8;
+	$scan_type="gps";
+}
+else if($id_devicecat=='tablet' && $id_platformcat=='Windows')
+{
+	$id_platform=3;
+	$id_device=4;
+	$scan_type="gps";
+}
+else if($id_devicecat=='tablet' && $id_platformcat=='Android')
+{
+	$id_platform=3;
+	$id_device=4;
+	$scan_type="gps";
+}
+ $id_device;
+ $scan_type;
+ $id_platform;
+ 
+ $created_at=date("Y-m-d H:i:s");
+ $updated_at=date("Y-m-d H:i:s");
+	
+	
+	$insert=mysqli_query($con,"insert into ana_item_analytics(event_id,id_item,country_code,country_name,region_name,city_name,zipcode,latitude,longitude,ip_add,timezone,id_browser,browser_version,id_platform,id_device,scan_type,screen_size,created_at,updated_at) values ('".$scaneventid1."',".$id_item.",'".$country_code."','".$country_name."','".$region_name."','".$city_name."','".$zipcode."','".$latitude."','".$longitude."','".$ip_add."','".$timezone."','".$id_browsercat."','".$browser_version."',".$id_platform.",".$id_device.",'".$scan_type."','".$screensize."','".$created_at."','".$updated_at."')");
+	//echo "insert into ana_item_analytics(event_id,id_item,country_code,country_name,region_name,city_name,zipcode,latitude,longitude,ip_add,timezone,id_browser,browser_version,id_platform,id_device,scan_type,screen_size,created_at,updated_at) values ('".$scaneventid1."',".$id_item.",'".$country_code."','".$country_name."','".$region_name."','".$city_name."','".$zipcode."','".$latitude."','".$longitude."','".$ip_add."','".$timezone."',".$id_browser.",'".$browser_version."',".$id_platform.",".$id_device.",'".$scan_type."','".$screensize."','".$created_at."','".$updated_at."')";
+	//echo "insert into ana_item_analytics(event_id,id_item,country_code,country_name,region_name,city_name,zipcode,latitude,longitude,ip_add,timezone,id_browser,browser_version,id_platform,id_device,scan_type,screen_size,created_at,updated_at) values ('".$scaneventid1."',".$id_item.",'".$country_code."','".$country_name."','".$region_name."','".$city_name."','".$zipcode."','".$latitude."','".$longitude."','".$ip_add."','".$timezone."',".$id_browser.",'".$browser_version."',".$id_platform.",".$id_device.",'".$scan_type."','".$screensize."','". $created_at."','".$updated_at."')";
+if($insert>0)
+  {
+	 // echo 'data insert successs';
+  }
+  else
+ {
+	 // echo 'data insert failed';
+  }
+}
+else
+{
+		//echo "same session no hits needed";
+
+}
+}
+?>

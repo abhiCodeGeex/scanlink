@@ -1,0 +1,7 @@
+all:
+  doctrine:
+    class: sfDoctrineDatabase
+    param:
+      dsn: 'mysql:host=galadb1.croyirckzbgv.ap-southeast-2.rds.amazonaws.com;dbname=analytics_new'
+      username: webplanex
+      password: Gdet1hqgrP
