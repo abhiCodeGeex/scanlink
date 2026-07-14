@@ -105,6 +105,36 @@ class Profile extends Model
         return $this->hasMany(ChecklistItem::class);
     }
 
+    public function formQuestions(): HasMany
+    {
+        return $this->hasMany(FormBuilderQuestion::class)->orderBy('question_order');
+    }
+
+    public function formAnswers(): HasMany
+    {
+        return $this->hasMany(FormBuilderAnswer::class);
+    }
+
+    public function visitors(): HasMany
+    {
+        return $this->hasMany(VisitorContact::class);
+    }
+
+    public function participants(): HasMany
+    {
+        return $this->hasMany(Participant::class);
+    }
+
+    public function vocDocuments(): HasMany
+    {
+        return $this->hasMany(VocDocument::class);
+    }
+
+    public function vocRecipients(): HasMany
+    {
+        return $this->hasMany(VocRecipient::class);
+    }
+
     public function qrImage(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(QrImage::class, 'profile_id');
