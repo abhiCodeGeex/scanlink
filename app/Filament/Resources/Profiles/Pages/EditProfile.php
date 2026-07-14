@@ -15,6 +15,19 @@ class EditProfile extends EditRecord
 
     protected static string $resource = ProfileResource::class;
 
+    public function mount(int|string $record): void
+    {
+        parent::mount($record);
+
+        $this->record->loadMissing([
+            'client',
+            'equipmentType',
+            'contacts',
+            'qrImage',
+            'weblinks',
+        ]);
+    }
+
     protected function getHeaderActions(): array
     {
         return [

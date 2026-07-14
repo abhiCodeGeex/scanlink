@@ -8,6 +8,7 @@ use App\Models\QrImage;
 use chillerlan\QRCode\Data\QRMatrix;
 use chillerlan\QRCode\QRCode;
 use chillerlan\QRCode\QROptions;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -121,16 +122,20 @@ class ProfileQrService
             return null;
         }
 
-        $options = new QROptions([
-            'outputType' => QRCode::OUTPUT_IMAGE_PNG,
-            'scale' => 5,
-            'imageBase64' => true,
-            'moduleValues' => $this->moduleValuesForColor($colorCode),
-        ]);
+        $cacheKey = 'qr.preview.'.hash('xxh3', $data.'|'.($colorCode ?? ''));
 
-        $rendered = (new QRCode($options))->render($data);
+        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($data, $colorCode): ?string {
+            $options = new QROptions([
+                'outputType' => QRCode::OUTPUT_IMAGE_PNG,
+                'scale' => 5,
+                'imageBase64' => true,
+                'moduleValues' => $this->moduleValuesForColor($colorCode),
+            ]);
 
-        return is_string($rendered) ? $rendered : null;
+            $rendered = (new QRCode($options))->render($data);
+
+            return is_string($rendered) ? $rendered : null;
+        });
     }
 
     public function applyColorAndRegenerate(Profile $profile, string $colorCode): QrImage

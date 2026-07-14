@@ -31,7 +31,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->spa()
             ->login()
-            ->registration()
+            // Self-registration disabled — legacy siteadmin had no open signup.
             ->passwordReset()
             ->profile(isSimple: false)
             ->multiFactorAuthentication([
@@ -69,7 +69,7 @@ class AdminPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=3">',
+                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=5">',
             )
             ->widgets([
                 Widgets\AccountWidget::class,

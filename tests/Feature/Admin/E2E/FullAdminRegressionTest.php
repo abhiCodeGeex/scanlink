@@ -63,7 +63,7 @@ class FullAdminRegressionTest extends TestCase
     public function test_auth_pages_and_guest_redirects(): void
     {
         $this->get('/admin/login')->assertOk();
-        $this->get('/admin/register')->assertOk();
+        $this->get('/admin/register')->assertNotFound();
         $this->get('/admin/password-reset/request')->assertOk();
         $this->get('/admin/password-reset/reset')->assertForbidden();
         $this->get('/admin')->assertRedirect('/admin/login');
@@ -293,7 +293,11 @@ class FullAdminRegressionTest extends TestCase
 
         $this->assertFalse(GlobalSettings::canAccess());
         $this->assertFalse(\App\Filament\Resources\Clients\ClientResource::canCreate());
+        $this->assertFalse(\App\Filament\Resources\Galleries\GalleryResource::canCreate());
+        $this->assertFalse(\App\Filament\Resources\Testimonials\TestimonialResource::canCreate());
         $this->get('/admin/profiles')->assertSuccessful();
         $this->get('/admin/global-settings')->assertForbidden();
+        $this->get('/admin/galleries/create')->assertForbidden();
+        $this->get('/admin/testimonials/create')->assertForbidden();
     }
 }

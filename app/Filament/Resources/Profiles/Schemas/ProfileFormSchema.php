@@ -238,12 +238,19 @@ class ProfileFormSchema
         };
     }
 
+    /** @var array<int, string|null> */
+    private static array $slugCache = [];
+
     private static function slugFor(?int $typeId): ?string
     {
         if (! $typeId) {
             return null;
         }
 
-        return EquipmentType::query()->whereKey($typeId)->value('slag');
+        if (array_key_exists($typeId, self::$slugCache)) {
+            return self::$slugCache[$typeId];
+        }
+
+        return self::$slugCache[$typeId] = EquipmentType::query()->whereKey($typeId)->value('slag');
     }
 }

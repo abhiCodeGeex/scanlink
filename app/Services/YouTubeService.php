@@ -16,12 +16,14 @@ class YouTubeService
    */
   public function credentials(): array
   {
-    return [
-      'client_id' => Setting::valueFor('youtube_client_id') ?: config('youtube.client_id'),
-      'client_secret' => Setting::valueFor('youtube_client_secret') ?: config('youtube.client_secret'),
-      'refresh_token' => Setting::valueFor('youtube_refresh_token') ?: config('youtube.refresh_token'),
-      'developer_key' => Setting::valueFor('youtube_developer_key') ?: config('youtube.developer_key'),
-    ];
+    return once(function (): array {
+      return [
+        'client_id' => Setting::valueFor('youtube_client_id') ?: config('youtube.client_id'),
+        'client_secret' => Setting::valueFor('youtube_client_secret') ?: config('youtube.client_secret'),
+        'refresh_token' => Setting::valueFor('youtube_refresh_token') ?: config('youtube.refresh_token'),
+        'developer_key' => Setting::valueFor('youtube_developer_key') ?: config('youtube.developer_key'),
+      ];
+    });
   }
 
   public function hasUploadCredentials(): bool

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Galleries\Tables;
 
+use App\Enums\AdminRole;
 use App\Filament\Resources\Galleries\Schemas\GalleryForm;
 use App\Models\Gallery;
 use Filament\Actions\Action;
@@ -33,6 +34,8 @@ class GalleriesTable
                     ->label(fn (Gallery $record): string => $record->approve ? 'Block' : 'Unblock')
                     ->icon(fn (Gallery $record): string => $record->approve ? 'heroicon-o-no-symbol' : 'heroicon-o-check-circle')
                     ->color(fn (Gallery $record): string => $record->approve ? 'danger' : 'success')
+                    ->visible(fn (): bool => auth()->user()?->admin_role instanceof AdminRole
+                        && auth()->user()->admin_role->canWrite())
                     ->requiresConfirmation()
                     ->modalHeading(fn (Gallery $record): string => $record->approve ? 'Block this image?' : 'Unblock this image?')
                     ->action(fn (Gallery $record) => $record->update(['approve' => ! $record->approve])),
@@ -47,19 +50,13 @@ class GalleriesTable
 
     public static function thumbnailPath(Gallery $record): ?string
     {
-        $disk = Storage::disk('public');
-        $thumb = GalleryForm::STORAGE_DIRECTORY.'/thumb_'.$record->name;
-        $full = GalleryForm::STORAGE_DIRECTORY.'/'.$record->name;
-
-        if ($disk->exists($thumb)) {
-            return $thumb;
+        if (! filled($record->name)) {
+            return null;
         }
 
-        if ($disk->exists($full)) {
-            return $full;
-        }
-
-        return null;
+        // Prefer thumb path without Storage::exists() — exists() is very slow on Windows bind mounts.
+        // ImageColumn already uses checkFileExistence(false).
+        return GalleryForm::STORAGE_DIRECTORY.'/thumb_'.$record->name;
     }
 
     public static function deleteStoredFiles(Gallery $record): void

@@ -14,7 +14,7 @@ class AuthFlowTest extends TestCase
     public function test_admin_auth_pages_are_available(): void
     {
         $this->get('/admin/login')->assertOk();
-        $this->get('/admin/register')->assertOk();
+        $this->get('/admin/register')->assertNotFound();
         $this->get('/admin/password-reset/request')->assertOk();
         $this->get('/admin/password-reset/reset')->assertForbidden();
     }

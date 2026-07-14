@@ -3,6 +3,9 @@
  *
  * Light theme: green header (topbar) only. Sidebar uses default Filament colours.
  * Dark theme: topbar/sidebar banners untouched — primary accent + logo only.
+ *
+ * IMPORTANT: Never force white text/icons onto dropdown panels — that makes the
+ * user-menu theme switcher (and any other panel actions) invisible.
  */
 
 :root {
@@ -10,7 +13,7 @@
 }
 
 /* ---------------------------------------------------------------------------
- * LIGHT THEME ONLY — green header / topbar
+ * LIGHT THEME ONLY — green header / topbar chrome
  * ------------------------------------------------------------------------- */
 html:not(.dark) .fi-topbar {
     background-color: var(--scanlink-green) !important;
@@ -22,19 +25,65 @@ html:not(.dark) .fi-topbar > div {
     --tw-ring-color: transparent;
 }
 
-/* Topbar text/icons white for contrast on green */
-html:not(.dark) .fi-topbar .fi-icon-btn,
-html:not(.dark) .fi-topbar .fi-icon-btn svg,
-html:not(.dark) .fi-topbar-item-label,
-html:not(.dark) .fi-topbar .fi-dropdown-trigger,
-html:not(.dark) .fi-topbar .fi-topbar-item > a,
-html:not(.dark) .fi-topbar .fi-theme-switcher-btn {
+/*
+ * White contrast ONLY on the green bar itself — not menus/panels.
+ * Do NOT target .fi-theme-switcher-btn here (it lives in the user dropdown).
+ */
+html:not(.dark) .fi-topbar .fi-topbar-item-label,
+html:not(.dark) .fi-topbar .fi-topbar-item > a {
     color: #ffffff !important;
 }
 
-html:not(.dark) .fi-topbar .fi-icon-btn:hover,
-html:not(.dark) .fi-topbar .fi-theme-switcher-btn:hover {
+html:not(.dark) .fi-topbar .fi-topbar-actions .fi-icon-btn,
+html:not(.dark) .fi-topbar .fi-topbar-actions .fi-icon-btn svg,
+html:not(.dark) .fi-topbar .fi-global-search-results-ctn + .fi-icon-btn,
+html:not(.dark) .fi-topbar .fi-icon-btn.fi-topbar-database-notifications-btn,
+html:not(.dark) .fi-topbar .fi-icon-btn.fi-topbar-database-notifications-btn svg,
+html:not(.dark) .fi-topbar .fi-theme-switcher-ctn > .fi-icon-btn,
+html:not(.dark) .fi-topbar .fi-theme-switcher-ctn > .fi-icon-btn svg {
+    color: #ffffff !important;
+}
+
+html:not(.dark) .fi-topbar .fi-topbar-actions .fi-icon-btn:hover,
+html:not(.dark) .fi-topbar .fi-icon-btn.fi-topbar-database-notifications-btn:hover {
     background-color: rgb(255 255 255 / 0.15) !important;
+}
+
+/* ---------------------------------------------------------------------------
+ * Dropdown panels — always keep labels/icons visible (never inherit topbar white)
+ * Covers user menu, theme switcher, and any future topbar dropdowns.
+ * ------------------------------------------------------------------------- */
+html:not(.dark) .fi-dropdown-panel .fi-dropdown-list-item,
+html:not(.dark) .fi-dropdown-panel .fi-dropdown-list-item-label,
+html:not(.dark) .fi-dropdown-panel .fi-dropdown-header,
+html:not(.dark) .fi-dropdown-panel a {
+    color: rgb(55 65 81) !important; /* gray-700 */
+}
+
+html:not(.dark) .fi-dropdown-panel .fi-icon,
+html:not(.dark) .fi-dropdown-panel .fi-dropdown-list-item .fi-icon,
+html:not(.dark) .fi-dropdown-panel svg {
+    color: rgb(107 114 128) !important; /* gray-500 */
+}
+
+/* Theme switcher (Light / Dark / System) — readable on white panel */
+html:not(.dark) .fi-theme-switcher .fi-theme-switcher-btn,
+html:not(.dark) .fi-theme-switcher .fi-theme-switcher-btn svg {
+    color: rgb(156 163 175) !important; /* gray-400 */
+}
+
+html:not(.dark) .fi-theme-switcher .fi-theme-switcher-btn.fi-active,
+html:not(.dark) .fi-theme-switcher .fi-theme-switcher-btn.fi-active svg {
+    color: var(--scanlink-green) !important;
+}
+
+html:not(.dark) .fi-theme-switcher .fi-theme-switcher-btn:hover {
+    background-color: rgb(249 250 251) !important;
+    color: rgb(107 114 128) !important;
+}
+
+html:not(.dark) .fi-theme-switcher .fi-theme-switcher-btn:hover svg {
+    color: rgb(107 114 128) !important;
 }
 
 /* ---------------------------------------------------------------------------

@@ -14,8 +14,15 @@ RUN apk add --no-cache \
     libpng-dev \
     mariadb-client \
     $PHPIZE_DEPS \
-    && pecl install redis \
+    && git clone --depth 1 --branch 6.2.0 https://github.com/phpredis/phpredis.git /tmp/phpredis \
+    && cd /tmp/phpredis \
+    && phpize \
+    && ./configure \
+    && make -j$(nproc) \
+    && make install \
     && docker-php-ext-enable redis \
+    && cd / \
+    && rm -rf /tmp/phpredis \
     && apk del $PHPIZE_DEPS
 
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
@@ -28,9 +35,12 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         zip
 
 COPY docker/php/conf.d/zz-performance.ini /usr/local/etc/php/conf.d/zz-performance.ini
+COPY docker/php/docker-entrypoint.sh /usr/local/bin/scanlink-entrypoint.sh
+
+RUN chmod +x /usr/local/bin/scanlink-entrypoint.sh
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-CMD ["php-fpm"]
+ENTRYPOINT ["/usr/local/bin/scanlink-entrypoint.sh"]

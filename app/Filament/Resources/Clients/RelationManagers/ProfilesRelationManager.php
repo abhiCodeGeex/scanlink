@@ -17,7 +17,7 @@ class ProfilesRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->active())
+            ->modifyQueryUsing(fn ($query) => $query->active()->with('equipmentType'))
             ->columns([
                 TextColumn::make('name')
                     ->searchable(),

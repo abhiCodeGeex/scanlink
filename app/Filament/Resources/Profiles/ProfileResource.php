@@ -57,8 +57,9 @@ class ProfileResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
+        // List table only needs contacts; view/edit pages load the rest explicitly.
         return parent::getEloquentQuery()
-            ->with(['client', 'equipmentType', 'owner', 'contacts', 'qrImage', 'logos', 'pictures', 'documents', 'videos', 'weblinks'])
+            ->with(['contacts'])
             ->active();
     }
 

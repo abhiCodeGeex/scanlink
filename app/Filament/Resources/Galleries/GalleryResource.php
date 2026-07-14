@@ -40,11 +40,6 @@ class GalleryResource extends Resource
         return GalleriesTable::configure($table);
     }
 
-    public static function canCreate(): bool
-    {
-        return true;
-    }
-
     public static function canEdit($record): bool
     {
         return false;

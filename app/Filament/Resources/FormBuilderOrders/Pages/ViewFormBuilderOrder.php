@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\FormBuilderOrders\Pages;
 
+use App\Enums\AdminRole;
 use App\Enums\CodeOrderStatus;
 use App\Filament\Resources\FormBuilderOrders\FormBuilderOrderResource;
 use Filament\Actions\Action;
@@ -17,6 +18,9 @@ class ViewFormBuilderOrder extends ViewRecord
         return [
             Action::make('changeStatus')
                 ->label('Change Order Status')
+                ->icon('heroicon-o-arrow-path')
+                ->visible(fn (): bool => auth()->user()?->admin_role instanceof AdminRole
+                    && auth()->user()->admin_role->canWrite())
                 ->schema([
                     Select::make('status')
                         ->label('Change Order Status to')

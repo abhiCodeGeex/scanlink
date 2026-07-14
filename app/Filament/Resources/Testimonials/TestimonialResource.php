@@ -50,11 +50,6 @@ class TestimonialResource extends Resource
         return TestimonialsTable::configure($table);
     }
 
-    public static function canCreate(): bool
-    {
-        return true;
-    }
-
     public static function getPages(): array
     {
         return [

@@ -43,6 +43,7 @@
         if (!loader) return;
 
         let timeoutId = null;
+        const prefetched = new Set();
 
         const setBusy = (busy) => {
             loader.setAttribute('data-active', busy ? 'true' : 'false');
@@ -78,12 +79,51 @@
             }
         };
 
-        document.addEventListener('click', (event) => {
-            const target = event.target instanceof Element
-                ? event.target.closest('a[href], .fi-sidebar-item-btn, .fi-topbar-item-button')
-                : null;
+        const resolveAnchor = (target) => {
+            if (!(target instanceof Element)) {
+                return null;
+            }
 
-            if (!target || !isNavigationLink(target instanceof HTMLAnchorElement ? target : target.closest('a'))) {
+            const el = target.closest('a[href], .fi-sidebar-item-btn, .fi-topbar-item-button');
+            if (!el) {
+                return null;
+            }
+
+            return el instanceof HTMLAnchorElement ? el : el.closest('a');
+        };
+
+        // Prefetch on hover so the next click feels instant (Livewire SPA).
+        document.addEventListener('pointerover', (event) => {
+            const anchor = resolveAnchor(event.target);
+            if (!anchor || !isNavigationLink(anchor)) {
+                return;
+            }
+
+            const href = anchor.href;
+            if (prefetched.has(href)) {
+                return;
+            }
+
+            prefetched.add(href);
+
+            if (typeof window.Livewire !== 'undefined' && typeof window.Livewire.navigate === 'function') {
+                try {
+                    // Hint the browser + Livewire by warming the page when supported.
+                    const link = document.createElement('link');
+                    link.rel = 'prefetch';
+                    link.href = href;
+                    link.as = 'document';
+                    document.head.appendChild(link);
+                } catch (e) {
+                    // ignore
+                }
+            }
+        }, { passive: true });
+
+        document.addEventListener('click', (event) => {
+            const anchor = resolveAnchor(event.target);
+
+            if (!anchor || !isNavigationLink(anchor)) {
                 return;
             }
 
@@ -92,7 +132,6 @@
 
         document.addEventListener('livewire:navigate', start);
         document.addEventListener('livewire:navigating', start);
-        document.addEventListener('livewire:navigated', stop);
         document.addEventListener('livewire:navigated', stop);
         window.addEventListener('pageshow', stop);
         window.addEventListener('load', stop);

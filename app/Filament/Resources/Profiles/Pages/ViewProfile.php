@@ -13,6 +13,26 @@ class ViewProfile extends ViewRecord
 
     protected static string $resource = ProfileResource::class;
 
+    /**
+     * @param  array<string, mixed>  $parameters
+     */
+    public function mount(int|string $record): void
+    {
+        parent::mount($record);
+
+        $this->record->loadMissing([
+            'equipmentType',
+            'logos',
+            'videos',
+            'weblinks',
+            'pictures',
+            'documents',
+            'contacts',
+            'qrImage',
+            'client',
+        ]);
+    }
+
     protected function getHeaderActions(): array
     {
         return [
