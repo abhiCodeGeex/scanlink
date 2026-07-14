@@ -1,0 +1,342 @@
+<?php
+
+namespace App\Services;
+
+use App\Enums\ProfileCodeType;
+use App\Models\Profile;
+use App\Models\QrImage;
+use chillerlan\QRCode\Data\QRMatrix;
+use chillerlan\QRCode\QRCode;
+use chillerlan\QRCode\QROptions;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use TCPDF;
+
+class ProfileQrService
+{
+    public function profileUrl(Profile $profile): string
+    {
+        $profile->loadMissing('client');
+
+        return rtrim(config('scanlink.portal_url'), '/')
+            .'/'
+            .$profile->client->url
+            .'/'
+            .$profile->id;
+    }
+
+    public function resolveQrData(Profile $profile): string
+    {
+        if (filled($profile->shorturl)) {
+            return $profile->shorturl;
+        }
+
+        $profile->loadMissing('equipmentType');
+
+        // CustomQR encodes the destination URL (profiles.name), not the portal path.
+        $targetUrl = $profile->typeSlug() === 'customqr' && filled($profile->name)
+            ? $profile->name
+            : $this->profileUrl($profile);
+
+        $token = config('scanlink.short_url_api_token');
+
+        if ($token) {
+            $short = $this->shortenUrl($targetUrl, $token);
+
+            if ($short) {
+                $profile->update(['shorturl' => $short]);
+
+                return $short;
+            }
+        }
+
+        return $targetUrl;
+    }
+
+    public function generateFor(Profile $profile): QrImage
+    {
+        $data = $this->resolveQrData($profile);
+        $codeType = $profile->code_type ?? ProfileCodeType::QrCode;
+
+        if ($codeType === ProfileCodeType::DataMatrix) {
+            return $this->generateDataMatrix($profile, $data);
+        }
+
+        return $this->generateQrCode($profile, $data);
+    }
+
+    public function generateQrCode(Profile $profile, string $data): QrImage
+    {
+        $relativePath = config('scanlink.qr_path').'/CSQRIMG'.$profile->id.'.png';
+        $fullPath = storage_path('app/public/'.$relativePath);
+
+        if (! is_dir(dirname($fullPath))) {
+            mkdir(dirname($fullPath), 0755, true);
+        }
+
+        $options = new QROptions([
+            'outputType' => QRCode::OUTPUT_IMAGE_PNG,
+            'scale' => 8,
+            'imageBase64' => false,
+            'moduleValues' => $this->moduleValuesForColor($profile->color_code),
+        ]);
+
+        (new QRCode($options))->render($data, $fullPath);
+
+        return $this->saveRecord($profile, 'storage/'.$relativePath);
+    }
+
+    public function generateDataMatrix(Profile $profile, string $data): QrImage
+    {
+        $relativePath = config('scanlink.dm_path').'/DMIMG'.$profile->id.'.png';
+        $fullPath = storage_path('app/public/'.$relativePath);
+
+        if (! is_dir(dirname($fullPath))) {
+            mkdir(dirname($fullPath), 0755, true);
+        }
+
+        // Legacy uses dm_code/index.php — use QR library with compact output as fallback.
+        $options = new QROptions([
+            'outputType' => QRCode::OUTPUT_IMAGE_PNG,
+            'scale' => 6,
+            'version' => 3,
+            'imageBase64' => false,
+            'moduleValues' => $this->moduleValuesForColor($profile->color_code),
+        ]);
+
+        (new QRCode($options))->render($data, $fullPath);
+
+        return $this->saveRecord($profile, 'storage/'.$relativePath);
+    }
+
+    /**
+     * Live preview (CustomQR create/edit) — data URI, no filesystem write.
+     */
+    public function previewDataUri(string $data, ?string $colorCode = null): ?string
+    {
+        $data = trim($data);
+
+        if ($data === '') {
+            return null;
+        }
+
+        $options = new QROptions([
+            'outputType' => QRCode::OUTPUT_IMAGE_PNG,
+            'scale' => 5,
+            'imageBase64' => true,
+            'moduleValues' => $this->moduleValuesForColor($colorCode),
+        ]);
+
+        $rendered = (new QRCode($options))->render($data);
+
+        return is_string($rendered) ? $rendered : null;
+    }
+
+    public function applyColorAndRegenerate(Profile $profile, string $colorCode): QrImage
+    {
+        $normalized = $this->normalizeColor($colorCode) ?? '#000000';
+
+        $profile->update(['color_code' => $normalized]);
+
+        return $this->generateFor($profile->fresh());
+    }
+
+    public function downloadPdf(Profile $profile): StreamedResponse
+    {
+        $profile->loadMissing(['client', 'qrImage']);
+
+        if ($profile->qrImage === null) {
+            $this->generateFor($profile);
+            $profile->load('qrImage');
+        }
+
+        $qrAbsolute = Storage::disk('public')->path($profile->qrImage->diskPath());
+
+        $pdf = new TCPDF;
+        $pdf->SetCreator('ScanLink');
+        $pdf->SetAuthor('ScanLink');
+        $pdf->SetTitle('Code '.$profile->id);
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+        $pdf->AddPage();
+
+        $logoCandidates = [
+            public_path('images/logo.png'),
+            public_path('images/scanlink-logo.png'),
+            resource_path('images/logo.png'),
+        ];
+
+        foreach ($logoCandidates as $logoPath) {
+            if (is_file($logoPath)) {
+                $pdf->Image($logoPath, 85, 12, 40, 0, '', '', '', false, 300);
+
+                break;
+            }
+        }
+
+        $pdf->SetFont('helvetica', '', 14);
+        $pdf->SetY(45);
+        $pdf->Cell(0, 10, 'Profile No. : '.$profile->id, 0, 1);
+        $pdf->Cell(0, 10, 'Name : '.($profile->name ?: $profile->application ?: '-'), 0, 1);
+
+        $url = $profile->url ?: $this->profileUrl($profile);
+        $pdf->MultiCell(0, 10, 'URL :'.$url, 0, 'L');
+
+        if (is_file($qrAbsolute)) {
+            $pdf->Image($qrAbsolute, 85, 90, 40, 0, 'PNG');
+        }
+
+        $binary = $pdf->Output('code-'.$profile->id.'.pdf', 'S');
+
+        return response()->streamDownload(
+            function () use ($binary): void {
+                echo $binary;
+            },
+            'code-'.$profile->id.'.pdf',
+            ['Content-Type' => 'application/pdf'],
+        );
+    }
+
+    public function downloadQrImage(Profile $profile): StreamedResponse
+    {
+        $profile->loadMissing('qrImage');
+
+        if ($profile->qrImage === null) {
+            $this->generateFor($profile);
+            $profile->load('qrImage');
+        }
+
+        $path = $profile->qrImage->diskPath();
+
+        return Storage::disk('public')->download($path, basename($path));
+    }
+
+    /**
+     * @return array<int, array{0: int, 1: int, 2: int}>
+     */
+    protected function moduleValuesForColor(?string $colorCode): array
+    {
+        $rgb = $this->hexToRgb($colorCode) ?? [0, 0, 0];
+        $light = [255, 255, 255];
+
+        $darkTypes = [
+            QRMatrix::M_DATA_DARK,
+            QRMatrix::M_FINDER_DARK,
+            QRMatrix::M_ALIGNMENT_DARK,
+            QRMatrix::M_TIMING_DARK,
+            QRMatrix::M_FORMAT_DARK,
+            QRMatrix::M_VERSION_DARK,
+            QRMatrix::M_DARKMODULE,
+            QRMatrix::M_FINDER_DOT,
+            QRMatrix::M_SEPARATOR_DARK,
+            QRMatrix::M_QUIETZONE_DARK,
+            QRMatrix::M_LOGO_DARK,
+        ];
+
+        $lightTypes = [
+            QRMatrix::M_DATA,
+            QRMatrix::M_FINDER,
+            QRMatrix::M_ALIGNMENT,
+            QRMatrix::M_TIMING,
+            QRMatrix::M_FORMAT,
+            QRMatrix::M_VERSION,
+            QRMatrix::M_QUIETZONE,
+            QRMatrix::M_SEPARATOR,
+            QRMatrix::M_DARKMODULE_LIGHT,
+            QRMatrix::M_FINDER_DOT_LIGHT,
+            QRMatrix::M_LOGO,
+        ];
+
+        $values = [];
+
+        foreach ($darkTypes as $type) {
+            $values[$type] = $rgb;
+        }
+
+        foreach ($lightTypes as $type) {
+            $values[$type] = $light;
+        }
+
+        return $values;
+    }
+
+    /**
+     * @return array{0: int, 1: int, 2: int}|null
+     */
+    protected function hexToRgb(?string $colorCode): ?array
+    {
+        $normalized = $this->normalizeColor($colorCode);
+
+        if ($normalized === null) {
+            return null;
+        }
+
+        $hex = ltrim($normalized, '#');
+
+        if (strlen($hex) === 3) {
+            $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+        }
+
+        if (strlen($hex) !== 6 || ! ctype_xdigit($hex)) {
+            return null;
+        }
+
+        return [
+            hexdec(substr($hex, 0, 2)),
+            hexdec(substr($hex, 2, 2)),
+            hexdec(substr($hex, 4, 2)),
+        ];
+    }
+
+    protected function normalizeColor(?string $colorCode): ?string
+    {
+        if ($colorCode === null || trim($colorCode) === '') {
+            return null;
+        }
+
+        $value = trim($colorCode);
+
+        if (! str_starts_with($value, '#')) {
+            $value = '#'.$value;
+        }
+
+        $hex = ltrim($value, '#');
+
+        if (strlen($hex) === 3) {
+            $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+        }
+
+        if (strlen($hex) !== 6 || ! ctype_xdigit($hex)) {
+            return null;
+        }
+
+        return '#'.strtoupper($hex);
+    }
+
+    protected function saveRecord(Profile $profile, string $storagePath): QrImage
+    {
+        QrImage::query()->where('profile_id', $profile->id)->delete();
+
+        return QrImage::query()->create([
+            'profile_id' => $profile->id,
+            'qrimg_name' => $storagePath,
+        ]);
+    }
+
+    protected function shortenUrl(string $url, string $token): ?string
+    {
+        try {
+            $response = Http::timeout(10)->get('https://api.galatech.com.au/item/addurl', [
+                'url' => $url,
+                'token' => $token,
+            ]);
+
+            $short = $response->json('shortLink') ?? $response->json('short_url');
+
+            return is_string($short) ? $short : null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+}

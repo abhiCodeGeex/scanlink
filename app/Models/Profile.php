@@ -1,0 +1,139 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\ProfileCodeType;
+use Database\Factories\ProfileFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+#[Fillable([
+    'client_id', 'user_id', 'type_id', 'name', 'code_profile_name', 'identification',
+    'serial_no', 'address', 'description', 'notes', 'name_company', 'telephone',
+    'shorturl', 'url', 'protect', 'password', 'code_type', 'color_code', 'show_header',
+    'buttonbackcolor', 'buttonfontcolor', 'enable_data_collection', 'set_up_compulsory',
+    'data_collection_mobile', 'data_collection_email', 'data_collection_name',
+    'data_collection_content', 'display_share_link', 'application', 'activate_bridge_graphic',
+    'deleted', 'update_or_not', 'code_purchase_id', 'form_id', 'form_active',
+    'form_is_enable', 'pop_up_formbuilder', 'free_code', 'is_reseller_code',
+    'expired_at', 'activation_start_date', 'activation_end_date',
+])]
+class Profile extends Model
+{
+    /** @use HasFactory<ProfileFactory> */
+    use HasFactory;
+
+    protected function casts(): array
+    {
+        return [
+            'protect' => 'boolean',
+            'show_header' => 'boolean',
+            'enable_data_collection' => 'boolean',
+            'set_up_compulsory' => 'boolean',
+            'display_share_link' => 'boolean',
+            'activate_bridge_graphic' => 'boolean',
+            'deleted' => 'boolean',
+            'update_or_not' => 'boolean',
+            'form_active' => 'boolean',
+            'form_is_enable' => 'boolean',
+            'pop_up_formbuilder' => 'boolean',
+            'free_code' => 'boolean',
+            'is_reseller_code' => 'boolean',
+            'code_type' => ProfileCodeType::class,
+            'expired_at' => 'datetime',
+            'activation_start_date' => 'date',
+            'activation_end_date' => 'date',
+        ];
+    }
+
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(Client::class);
+    }
+
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(ClientUser::class, 'user_id');
+    }
+
+    public function equipmentType(): BelongsTo
+    {
+        return $this->belongsTo(EquipmentType::class, 'type_id');
+    }
+
+    public function codePurchase(): BelongsTo
+    {
+        return $this->belongsTo(CodePurchase::class, 'code_purchase_id');
+    }
+
+    public function logos(): HasMany
+    {
+        return $this->hasMany(Logo::class);
+    }
+
+    public function pictures(): HasMany
+    {
+        return $this->hasMany(Picture::class);
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(Document::class);
+    }
+
+    public function videos(): HasMany
+    {
+        return $this->hasMany(Video::class);
+    }
+
+    public function weblinks(): HasMany
+    {
+        return $this->hasMany(Weblink::class);
+    }
+
+    public function contacts(): HasMany
+    {
+        return $this->hasMany(ProfileContact::class);
+    }
+
+    public function checklistItems(): HasMany
+    {
+        return $this->hasMany(ChecklistItem::class);
+    }
+
+    public function qrImage(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(QrImage::class, 'profile_id');
+    }
+
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('deleted', false);
+    }
+
+    public function scopeLegacyVisible(Builder $query): Builder
+    {
+        return $query->where('deleted', false)
+            ->where(function (Builder $q): void {
+                $q->whereBetween('type_id', [1, 8])
+                    ->orWhere(function (Builder $inner): void {
+                        $inner->whereHas('equipmentType', fn (Builder $t) => $t->where('slag', 'code'))
+                            ->where('update_or_not', true);
+                    });
+            });
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->expired_at !== null && $this->expired_at->isPast();
+    }
+
+    public function typeSlug(): ?string
+    {
+        return $this->equipmentType?->slag;
+    }
+}
