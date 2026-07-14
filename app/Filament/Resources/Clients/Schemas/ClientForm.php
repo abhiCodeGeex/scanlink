@@ -75,6 +75,8 @@ class ClientForm
                             ->label('Reseller Email')
                             ->email()
                             ->maxLength(255)
+                            // Column is NOT NULL in live dump; empty must stay '' not null.
+                            ->dehydrateStateUsing(fn (?string $state): string => filled($state) ? $state : '')
                             ->visible(fn (string $operation): bool => $operation === 'edit'),
                         Toggle::make('checklist_option')
                             ->label('Checklist option')

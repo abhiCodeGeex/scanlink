@@ -30,6 +30,38 @@ class FormBuilderOrderResource extends Resource
 
     protected static ?int $navigationSort = 3;
 
+    protected static ?string $recordTitleAttribute = 'email';
+
+    /**
+     * @return array<int, string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['email', 'first_name', 'last_name', 'phone', 'postal_code'];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        /** @var \App\Models\FormBuilderOrder $record */
+        return array_filter([
+            'Phone' => $record->phone,
+            'Status' => is_object($record->status) && method_exists($record->status, 'label')
+                ? $record->status->label()
+                : (string) $record->status,
+        ]);
+    }
+
+    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string|\Illuminate\Contracts\Support\Htmlable
+    {
+        /** @var \App\Models\FormBuilderOrder $record */
+        $name = trim(($record->first_name ?? '').' '.($record->last_name ?? ''));
+
+        return $name !== '' ? $name : ($record->email ?: 'FB order #'.$record->getKey());
+    }
+
     public static function infolist(Schema $schema): Schema
     {
         return FormBuilderOrderInfolist::configure($schema);

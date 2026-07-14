@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Database\Factories\ClientFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
     'client_name',
@@ -27,6 +29,7 @@ class Client extends Model
 {
     /** @use HasFactory<ClientFactory> */
     use HasFactory;
+    use SoftDeletes;
 
     protected function casts(): array
     {
@@ -35,6 +38,16 @@ class Client extends Model
             'approve' => 'boolean',
             'is_password_change' => 'boolean',
         ];
+    }
+
+    /**
+     * Live schema stores empty reseller emails as '' (column is NOT NULL).
+     */
+    protected function resellerEmail(): Attribute
+    {
+        return Attribute::make(
+            set: fn (?string $value): string => $value ?? '',
+        );
     }
 
     public function users(): HasMany

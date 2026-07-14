@@ -48,6 +48,10 @@ class AdminPanelProvider extends PanelProvider
             ->darkModeBrandLogo(asset('images/scanlink-logo.png'))
             ->brandLogoHeight('2.75rem')
             ->favicon(asset('images/scanlink-logo.png'))
+            ->sidebarCollapsibleOnDesktop()
+            ->sidebarFullyCollapsibleOnDesktop()
+            ->globalSearch()
+            ->globalSearchDebounce('400ms')
             ->collapsibleNavigationGroups()
             ->navigationGroups([
                 NavigationGroup::make('Client')->collapsible(),
@@ -68,8 +72,12 @@ class AdminPanelProvider extends PanelProvider
                 fn (): string => view('filament.hooks.navigation-feedback')->render(),
             )
             ->renderHook(
+                PanelsRenderHook::BODY_END,
+                fn (): string => view('filament.hooks.sidebar-position')->render(),
+            )
+            ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=5">',
+                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=7">',
             )
             ->widgets([
                 Widgets\AccountWidget::class,

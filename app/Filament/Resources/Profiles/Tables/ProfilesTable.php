@@ -27,6 +27,7 @@ class ProfilesTable
             ->columns([
                 TextColumn::make('id')
                     ->label('Profile No.')
+                    ->searchable()
                     ->sortable(),
                 TextColumn::make('name')
                     ->label('Name')
@@ -65,7 +66,10 @@ class ProfilesTable
                     ->url(fn (Profile $record): string => ProfileResource::getUrl('edit', ['record' => $record])),
                 DeleteAction::make()
                     ->label('Delete')
+                    ->color('primary')
                     ->requiresConfirmation()
+                    ->modalHeading('Delete this profile?')
+                    ->modalDescription('This soft-deletes (archives) the profile. Related media is kept.')
                     ->action(fn (Profile $record) => $record->update(['deleted' => true])),
             ])
             ->bulkActions([

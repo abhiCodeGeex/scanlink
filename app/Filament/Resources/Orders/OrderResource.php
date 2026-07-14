@@ -29,6 +29,38 @@ class OrderResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
+    protected static ?string $recordTitleAttribute = 'email';
+
+    /**
+     * @return array<int, string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['email', 'first_name', 'last_name', 'contact', 'zip', 'profile_id', 'transaction_id'];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        /** @var \App\Models\Order $record */
+        return array_filter([
+            'Code #' => (string) $record->profile_id,
+            'Status' => $record->status instanceof \App\Enums\PhysicalOrderStatus
+                ? $record->status->label()
+                : (string) $record->status,
+        ]);
+    }
+
+    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string|\Illuminate\Contracts\Support\Htmlable
+    {
+        /** @var \App\Models\Order $record */
+        $name = trim(($record->first_name ?? '').' '.($record->last_name ?? ''));
+
+        return $name !== '' ? $name : ($record->email ?: 'Order #'.$record->getKey());
+    }
+
     public static function infolist(Schema $schema): Schema
     {
         return OrderInfolist::configure($schema);

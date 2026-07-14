@@ -72,8 +72,11 @@ class ClientsTable
                     ->modalHeading(fn (Client $record): string => $record->approve ? 'Block this client?' : 'Unblock this client?')
                     ->action(fn (Client $record) => $record->update(['approve' => ! $record->approve])),
                 DeleteAction::make()
+                    ->label('Delete')
+                    ->color('primary')
                     ->requiresConfirmation()
-                    ->modalHeading('Delete this client?'),
+                    ->modalHeading('Delete this client?')
+                    ->modalDescription('This soft-deletes the client. Related data is kept.'),
             ]);
     }
 }

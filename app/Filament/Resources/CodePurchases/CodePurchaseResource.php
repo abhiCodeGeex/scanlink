@@ -31,6 +31,44 @@ class CodePurchaseResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
+    protected static ?string $recordTitleAttribute = 'email';
+
+    /**
+     * @return array<int, string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        // Live `code_purchase` has no `transaction_id` (that column exists on `orders` only).
+        $attributes = ['email', 'first_name', 'last_name', 'company_name', 'phone', 'postal_code', 'transaction_id'];
+
+        $table = (new CodePurchase)->getTable();
+
+        return array_values(array_filter(
+            $attributes,
+            fn (string $column): bool => \Illuminate\Support\Facades\Schema::hasColumn($table, $column),
+        ));
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        /** @var \App\Models\CodePurchase $record */
+        return array_filter([
+            'Company' => $record->company_name,
+            'Codes' => (string) $record->no_of_codes,
+        ]);
+    }
+
+    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string|\Illuminate\Contracts\Support\Htmlable
+    {
+        /** @var \App\Models\CodePurchase $record */
+        $name = trim(($record->first_name ?? '').' '.($record->last_name ?? ''));
+
+        return $name !== '' ? $name : ($record->email ?: 'Code order #'.$record->getKey());
+    }
+
     public static function infolist(Schema $schema): Schema
     {
         return CodePurchaseInfolist::configure($schema);

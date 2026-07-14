@@ -73,8 +73,12 @@ class AdaptLiveImport extends Command
             });
         }
 
-        foreach (['cache', 'cache_locks', 'jobs', 'job_batches', 'failed_jobs', 'sessions'] as $table) {
-            // created by default Laravel migrations when missing
+        // Soft deletes for clients — must exist before SoftDeletes trait queries run.
+        // Do not only mark the migration as run; apply the column here too.
+        if (Schema::hasTable('clients') && ! Schema::hasColumn('clients', 'deleted_at')) {
+            Schema::table('clients', function (Blueprint $table) {
+                $table->softDeletes();
+            });
         }
 
         if (! Schema::hasTable('cache')) {
@@ -176,12 +180,38 @@ class AdaptLiveImport extends Command
                 continue;
             }
 
-            // Mark create_* migrations as run; additive ones are also marked if we applied them above.
+            // Only baseline create_* / framework table migrations already satisfied by the dump.
+            // Leave additive alter/add/make/seed migrations for `php artisan migrate`.
+            if ($this->isAdditiveMigration($migration)) {
+                continue;
+            }
+
             DB::table('migrations')->insert([
                 'migration' => $migration,
                 'batch' => $batch,
             ]);
             $this->line("Baselined migration: {$migration}");
         }
+
+        // Soft deletes may already be applied above — mark that migration run so migrate is a no-op.
+        $softDelete = '2026_07_14_163000_add_soft_deletes_to_clients_table';
+        if (
+            Schema::hasColumn('clients', 'deleted_at')
+            && ! in_array($softDelete, DB::table('migrations')->pluck('migration')->all(), true)
+        ) {
+            DB::table('migrations')->insert([
+                'migration' => $softDelete,
+                'batch' => $batch,
+            ]);
+            $this->line("Baselined migration: {$softDelete}");
+        }
+    }
+
+    protected function isAdditiveMigration(string $migration): bool
+    {
+        return (bool) preg_match(
+            '/_(add_|make_|alter_|seed_|update_|drop_|rename_|change_)/',
+            $migration
+        );
     }
 }

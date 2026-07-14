@@ -113,6 +113,71 @@ html:not(.dark) .fi-simple-layout .fi-btn-color-primary {
 }
 
 /* ---------------------------------------------------------------------------
+ * Buttons — Filament v5 uses .fi-color-* + CSS vars (--bg / --text).
+ * Shade auto-pick can make primary a light green with dark text; force brand.
+ * ------------------------------------------------------------------------- */
+.fi-btn.fi-color-primary:not(.fi-outlined),
+.fi-btn.fi-color-success:not(.fi-outlined),
+.fi-btn.fi-color-danger:not(.fi-outlined),
+.fi-btn.fi-color-warning:not(.fi-outlined),
+.fi-btn.fi-color-info:not(.fi-outlined),
+.fi-ac-btn-action.fi-color-primary:not(.fi-outlined),
+.fi-ac-btn-action.fi-color-success:not(.fi-outlined),
+.fi-ac-btn-action.fi-color-danger:not(.fi-outlined),
+.fi-ac-btn-action.fi-color-warning:not(.fi-outlined),
+.fi-header-actions .fi-btn.fi-color-primary,
+.fi-page-header-actions .fi-btn.fi-color-primary,
+button.fi-btn[type="submit"]:not(.fi-outlined):not(.fi-color-gray) {
+    --bg: #008c00 !important;
+    --text: #ffffff !important;
+    --hover-bg: #007000 !important;
+    --hover-text: #ffffff !important;
+    --dark-bg: #008c00 !important;
+    --dark-text: #ffffff !important;
+    --dark-hover-bg: #007000 !important;
+    --dark-hover-text: #ffffff !important;
+    background: #008c00 !important;
+    background-color: #008c00 !important;
+    color: #ffffff !important;
+    border-color: #008c00 !important;
+}
+
+/* Label text + icons inside primary CTAs (Create / Save / Delete) */
+.fi-btn.fi-color-primary:not(.fi-outlined) *,
+.fi-header-actions .fi-btn.fi-color-primary *,
+.fi-page-header-actions .fi-btn.fi-color-primary * {
+    color: #ffffff !important;
+}
+
+.fi-btn.fi-color-primary:not(.fi-outlined):hover,
+.fi-btn.fi-color-success:not(.fi-outlined):hover,
+.fi-btn.fi-color-danger:not(.fi-outlined):hover,
+.fi-btn.fi-color-warning:not(.fi-outlined):hover,
+.fi-btn.fi-color-info:not(.fi-outlined):hover,
+.fi-ac-btn-action.fi-color-primary:not(.fi-outlined):hover,
+button.fi-btn[type="submit"]:not(.fi-outlined):not(.fi-color-gray):hover {
+    background-color: #007000 !important;
+    color: #ffffff !important;
+}
+
+.fi-btn.fi-color-primary:not(.fi-outlined) > .fi-icon,
+.fi-btn.fi-color-success:not(.fi-outlined) > .fi-icon,
+.fi-btn.fi-color-danger:not(.fi-outlined) > .fi-icon,
+.fi-btn.fi-color-warning:not(.fi-outlined) > .fi-icon,
+.fi-btn.fi-color-info:not(.fi-outlined) > .fi-icon,
+.fi-ac-btn-action.fi-color-primary:not(.fi-outlined) > .fi-icon,
+.fi-btn.fi-color-primary:not(.fi-outlined) svg,
+.fi-btn.fi-color-success:not(.fi-outlined) svg {
+    color: #ffffff !important;
+}
+
+/* Outlined primary still uses brand green for ring/text */
+.fi-btn.fi-outlined.fi-color-primary {
+    color: var(--scanlink-green) !important;
+    --tw-ring-color: var(--scanlink-green);
+}
+
+/* ---------------------------------------------------------------------------
  * BOTH THEMES — Admin Home tile grid
  * ------------------------------------------------------------------------- */
 .scanlink-home-grid {

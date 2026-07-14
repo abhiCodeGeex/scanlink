@@ -40,6 +40,40 @@ class ProfileResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    /**
+     * @return array<int, string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        // Profile No. in admin is the primary key `id` — must be searchable.
+        return ['id', 'name', 'code_profile_name', 'identification', 'serial_no', 'shorturl', 'notes', 'client.client_name'];
+    }
+
+    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string|\Illuminate\Contracts\Support\Htmlable
+    {
+        /** @var Profile $record */
+        $label = trim((string) ($record->name ?: $record->code_profile_name));
+
+        return $label !== ''
+            ? $label
+            : 'Profile #'.$record->getKey();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        /** @var \App\Models\Profile $record */
+        $record->loadMissing('client');
+
+        return array_filter([
+            'Client' => $record->client?->client_name,
+            'ID' => (string) $record->id,
+            'Code' => $record->code_profile_name,
+        ]);
+    }
+
     public static function form(Schema $schema): Schema
     {
         return ProfileForm::configure($schema);

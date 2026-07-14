@@ -35,6 +35,14 @@ class TestimonialResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'title';
 
+    /**
+     * @return array<int, string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['title', 'video'];
+    }
+
     public static function form(Schema $schema): Schema
     {
         return TestimonialForm::configure($schema);

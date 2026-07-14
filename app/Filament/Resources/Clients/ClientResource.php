@@ -40,6 +40,27 @@ class ClientResource extends Resource
     protected static ?string $recordTitleAttribute = 'client_name';
 
     /**
+     * @return array<int, string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['client_name', 'email', 'telephone', 'contact_person', 'url', 'reseller_code'];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        /** @var \App\Models\Client $record */
+        return array_filter([
+            'Email' => $record->email,
+            'Phone' => $record->telephone,
+            'URL' => $record->url,
+        ]);
+    }
+
+    /**
      * @return array<NavigationItem>
      */
     public static function getNavigationItems(): array

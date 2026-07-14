@@ -92,7 +92,13 @@ class EditClient extends EditRecord
                         ->send();
                 }),
 
-            DeleteAction::make(),
+            DeleteAction::make()
+                ->label('Delete')
+                ->color('primary')
+                ->requiresConfirmation()
+                ->modalHeading('Delete this client?')
+                ->modalDescription('This soft-deletes the client. Related codes and users are kept. You can restore later from the database if needed.')
+                ->successNotificationTitle('Client deleted.'),
         ];
     }
 
@@ -104,6 +110,20 @@ class EditClient extends EditRecord
             $data['checklist_option'] = $primaryUser->checklist_option;
             $data['customqr_option'] = $primaryUser->customqr_option;
         }
+
+        return $data;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        // Live dump: reseller_email is NOT NULL. ConvertEmptyStringsToNull would send null.
+        $data['reseller_email'] = filled($data['reseller_email'] ?? null)
+            ? $data['reseller_email']
+            : '';
 
         return $data;
     }

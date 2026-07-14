@@ -33,9 +33,16 @@ class EditProfile extends EditRecord
         return [
             ...$this->profileQrHeaderActions(),
             DeleteAction::make()
-                ->label('Archive')
-                ->modalHeading('Archive profile')
-                ->action(fn () => $this->record->update(['deleted' => true])),
+                ->label('Delete')
+                ->color('primary')
+                ->requiresConfirmation()
+                ->modalHeading('Delete this profile?')
+                ->modalDescription('This soft-deletes (archives) the profile. Related media is kept.')
+                ->successNotificationTitle('Profile deleted.')
+                ->action(function (): void {
+                    $this->record->update(['deleted' => true]);
+                    $this->redirect(static::getResource()::getUrl('index'));
+                }),
         ];
     }
 
