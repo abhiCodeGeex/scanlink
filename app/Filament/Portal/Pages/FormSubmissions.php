@@ -12,6 +12,8 @@ use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FormSubmissions extends Page
@@ -164,6 +166,52 @@ class FormSubmissions extends Page
             fclose($out);
         }, $filename, [
             'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    public function printSessionUrl(string $sessionId): string
+    {
+        return route('portal.form-submissions.print', [
+            'sessionId' => $sessionId,
+            'profile' => $this->selectedProfileId,
+        ]);
+    }
+
+    public static function downloadSessionHtml(int $profileId, string $sessionId): Response
+    {
+        $user = Auth::user();
+        abort_unless($user, 403);
+
+        $member = $user->clientMemberships()
+            ->where('status', true)
+            ->orderByDesc('role')
+            ->first();
+
+        abort_unless($member, 403);
+
+        $profile = Profile::query()
+            ->where('client_id', $member->client_id)
+            ->active()
+            ->findOrFail($profileId);
+
+        $answers = FormBuilderAnswer::query()
+            ->with('question')
+            ->where('profile_id', $profile->id)
+            ->where('session_id', $sessionId)
+            ->orderBy('question_id')
+            ->get();
+
+        abort_if($answers->isEmpty(), 404);
+
+        $html = view('filament.portal.pages.form-submission-print', [
+            'profile' => $profile,
+            'sessionId' => $sessionId,
+            'answers' => $answers,
+            'submittedAt' => $answers->min('date_time'),
+        ])->render();
+
+        return response($html, 200, [
+            'Content-Type' => 'text/html; charset=UTF-8',
         ]);
     }
 

@@ -89,6 +89,9 @@
                                         <button type="button" class="fs-btn fs-btn-secondary fs-btn-sm" wire:click="viewSession('{{ $session->session_id }}')">
                                             {{ $viewSessionId === $session->session_id ? 'Hide' : 'View' }}
                                         </button>
+                                        <a href="{{ $this->printSessionUrl($session->session_id) }}" target="_blank" rel="noopener" class="fs-btn fs-btn-secondary fs-btn-sm" style="text-decoration:none;">
+                                            Print / PDF
+                                        </a>
                                         <button type="button" class="fs-btn fs-btn-danger fs-btn-sm" wire:click="deleteSession('{{ $session->session_id }}')" wire:confirm="Delete this submission?">
                                             Delete
                                         </button>

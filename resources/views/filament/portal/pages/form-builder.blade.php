@@ -71,7 +71,23 @@
         .fb-recipient-row { display: flex; gap: .5rem; margin-bottom: .5rem; }
         .fb-toolbar { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
         .sortable-ghost { opacity: .4; }
+        .fb-palette-item { cursor: grab; }
+        .fb-palette-item:active { cursor: grabbing; }
+        .fb-canvas-drop { transition: border-color .2s, background .2s; }
+        .fb-canvas-drop--over { border-color: var(--fb-green) !important; background: rgb(0 140 0 / .08) !important; }
+        .fb-composer-wrap { overflow: hidden; max-height: 0; opacity: 0; transform: translateY(-8px); transition: max-height .35s ease, opacity .25s ease, transform .25s ease; }
+        .fb-composer-wrap.is-open { max-height: 2000px; opacity: 1; transform: translateY(0); margin-top: 1rem; }
+        .fb-loading { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: rgb(0 0 0 / .25); }
+        .fb-spinner { width: 2.5rem; height: 2.5rem; border: 3px solid rgb(255 255 255 / .35); border-top-color: #fff; border-radius: 50%; animation: fb-spin .7s linear infinite; }
+        @keyframes fb-spin { to { transform: rotate(360deg); } }
+        .fb-copy-row { display: flex; gap: .5rem; align-items: flex-end; flex-wrap: wrap; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgb(229 231 235); }
+        .dark .fb-copy-row { border-color: rgb(55 65 81); }
+        .fb-image-preview { max-width: 200px; max-height: 120px; border-radius: 8px; margin-top: .5rem; object-fit: contain; }
     </style>
+
+    <div wire:loading.flex wire:target="saveQuestion,saveSettings,reorderQuestions,copyFromProfile" class="fb-loading">
+        <div class="fb-spinner" aria-label="Saving…"></div>
+    </div>
 
     <div class="fb-root space-y-4">
         {{-- Profile selector --}}
@@ -139,6 +155,23 @@
                 <div style="margin-top:1rem;">
                     <button type="button" class="fb-btn fb-btn-primary" wire:click="saveSettings">Save settings</button>
                 </div>
+
+                @if ($this->profilesWithExistingForms()->isNotEmpty())
+                    <div class="fb-copy-row">
+                        <div style="flex:1; min-width:200px;">
+                            <label class="fb-label">Use an existing form</label>
+                            <select wire:model="copyFromProfileId" class="fb-select">
+                                <option value="">Select profile with form…</option>
+                                @foreach ($this->profilesWithExistingForms() as $id => $name)
+                                    <option value="{{ $id }}">{{ $name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <button type="button" class="fb-btn fb-btn-secondary" wire:click="copyFromProfile" @disabled(! $copyFromProfileId)>
+                            Copy form
+                        </button>
+                    </div>
+                @endif
             </div>
 
             <div class="fb-layout {{ $showPreview ? 'fb-layout--preview' : '' }}">
@@ -153,6 +186,8 @@
                                         <button
                                             type="button"
                                             class="fb-palette-item"
+                                            draggable="true"
+                                            data-type-id="{{ $type->question_type_id }}"
                                             wire:click="openComposer({{ $type->question_type_id }})"
                                             wire:key="palette-{{ $group }}-{{ $type->question_type_id }}"
                                         >
@@ -167,6 +202,7 @@
                     </div>
 
                     {{-- Composer --}}
+                    <div class="fb-composer-wrap {{ $composingTypeId ? 'is-open' : '' }}">
                     @if ($composingTypeId)
                         <div class="fb-composer" wire:key="composer-{{ $composingTypeId }}-{{ $editingQuestionId }}">
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.75rem;">
@@ -251,6 +287,58 @@
                                 </div>
                             @endif
 
+                            @if ($composingTypeId === 11)
+                                <div class="fb-grid-2" style="margin-top:.75rem;">
+                                    <div>
+                                        <label class="fb-label">Image title</label>
+                                        <input type="text" wire:model="composerImageTitle" class="fb-input">
+                                    </div>
+                                    <div>
+                                        <label class="fb-label">Alignment</label>
+                                        <select wire:model="composerImageAlign" class="fb-select">
+                                            <option value="0">Left</option>
+                                            <option value="1">Centre</option>
+                                            <option value="2">Right</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div style="margin-top:.75rem;">
+                                    <label class="fb-label">Upload image</label>
+                                    <input type="file" wire:model="composerImageUpload" accept="image/*" class="fb-input">
+                                    @if ($composerImageUrl)
+                                        <img src="{{ \App\Support\PublicMediaPath::url($composerImageUrl) }}" alt="Preview" class="fb-image-preview">
+                                    @endif
+                                </div>
+                            @endif
+
+                            @if ($composingTypeId === 16)
+                                <div class="fb-grid-2" style="margin-top:.75rem;">
+                                    <label style="display:flex; align-items:center; gap:.5rem; font-size:.875rem;">
+                                        <input type="checkbox" wire:model="composerIncludeName"> Include name
+                                    </label>
+                                    <label style="display:flex; align-items:center; gap:.5rem; font-size:.875rem;">
+                                        <input type="checkbox" wire:model="composerIncludeEmployer"> Include employer
+                                    </label>
+                                    <label style="display:flex; align-items:center; gap:.5rem; font-size:.875rem;">
+                                        <input type="checkbox" wire:model="composerIncludeEmail"> Include email
+                                    </label>
+                                    <label style="display:flex; align-items:center; gap:.5rem; font-size:.875rem;">
+                                        <input type="checkbox" wire:model="composerIncludePhone"> Include phone
+                                    </label>
+                                </div>
+                            @endif
+
+                            @if ($composingTypeId === 18)
+                                <div class="fb-grid-2" style="margin-top:.75rem;">
+                                    <label style="display:flex; align-items:center; gap:.5rem; font-size:.875rem;">
+                                        <input type="checkbox" wire:model="composerParticipantIncludeSignature"> Include signature
+                                    </label>
+                                    <label style="display:flex; align-items:center; gap:.5rem; font-size:.875rem;">
+                                        <input type="checkbox" wire:model="composerParticipantIncludeEmployer"> Include employer
+                                    </label>
+                                </div>
+                            @endif
+
                             <div class="fb-grid-2" style="margin-top:.75rem;">
                                 <label style="display:flex; align-items:center; gap:.5rem; font-size:.875rem;">
                                     <input type="checkbox" wire:model="composerIsMandatory"> Mandatory
@@ -274,9 +362,10 @@
                             </div>
                         </div>
                     @endif
+                    </div>
 
                     {{-- Canvas --}}
-                    <div class="fb-card" style="margin-top:1rem;">
+                    <div class="fb-card fb-canvas-drop" style="margin-top:1rem;" id="fb-canvas-drop-zone">
                         <div class="fb-canvas-title">CREATE YOUR FORM HERE</div>
 
                         @if ($questions->isEmpty())
@@ -353,6 +442,20 @@
                                             $to = (int) ($question->options->firstWhere('question_option_type_id', 2)?->option_name ?? 5);
                                         @endphp
                                         <select disabled>@for($i = $from; $i <= $to; $i++)<option>{{ $i }}</option>@endfor</select>
+                                    @elseif ($tid === 11 && $question->image_url)
+                                        @php
+                                            $imgAlign = match ((string) ($question->image_align ?? '0')) {
+                                                '1' => 'center',
+                                                '2' => 'right',
+                                                default => 'left',
+                                            };
+                                        @endphp
+                                        <div style="text-align:{{ $imgAlign }};">
+                                            @if ($question->image_title)
+                                                <p style="font-weight:600;font-size:.8125rem;">{{ $question->image_title }}</p>
+                                            @endif
+                                            <img src="{{ \App\Support\PublicMediaPath::url($question->image_url) }}" alt="{{ $question->image_title ?: 'Image' }}" style="max-width:100%;border-radius:6px;">
+                                        </div>
                                     @elseif ($tid === 15 || $tid === 16)
                                         <label>{{ $question->question_text }}@if($question->is_mandatory)*@endif</label>
                                         <textarea rows="2" disabled></textarea>
@@ -387,13 +490,27 @@
     @script
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
     <script>
+        let fbCanvasSortable = null;
+
+        function fbDestroySortable() {
+            if (fbCanvasSortable) {
+                fbCanvasSortable.destroy();
+                fbCanvasSortable = null;
+            }
+            const el = document.getElementById('fb-question-canvas');
+            if (el) {
+                el.dataset.sortableInit = '0';
+            }
+        }
+
         function fbInitSortable() {
             const el = document.getElementById('fb-question-canvas');
             if (!el || el.dataset.sortableInit === '1') return;
             if (typeof Sortable === 'undefined') return;
 
+            fbDestroySortable();
             el.dataset.sortableInit = '1';
-            Sortable.create(el, {
+            fbCanvasSortable = Sortable.create(el, {
                 handle: '.fb-box-handle',
                 animation: 150,
                 ghostClass: 'sortable-ghost',
@@ -404,17 +521,53 @@
             });
         }
 
-        document.addEventListener('livewire:navigated', fbInitSortable);
+        function fbInitPaletteDrag() {
+            document.querySelectorAll('.fb-palette-item[draggable="true"]').forEach(item => {
+                if (item.dataset.dragInit === '1') return;
+                item.dataset.dragInit = '1';
+                item.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', item.dataset.typeId || '');
+                    e.dataTransfer.effectAllowed = 'copy';
+                });
+            });
 
-        Livewire.hook('morph.updated', ({ el }) => {
-            const canvas = document.getElementById('fb-question-canvas');
-            if (canvas && (el === canvas || el.contains?.(canvas) || canvas.contains?.(el))) {
-                canvas.dataset.sortableInit = '0';
-                fbInitSortable();
-            }
+            const dropZone = document.getElementById('fb-canvas-drop-zone');
+            if (!dropZone || dropZone.dataset.dropInit === '1') return;
+            dropZone.dataset.dropInit = '1';
+
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+                dropZone.classList.add('fb-canvas-drop--over');
+            });
+            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('fb-canvas-drop--over'));
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('fb-canvas-drop--over');
+                const typeId = parseInt(e.dataTransfer.getData('text/plain'), 10);
+                if (typeId > 0) {
+                    $wire.openComposer(typeId);
+                }
+            });
+        }
+
+        function fbInitAll() {
+            fbInitSortable();
+            fbInitPaletteDrag();
+        }
+
+        document.addEventListener('livewire:navigated', fbInitAll);
+
+        Livewire.hook('commit', ({ succeed }) => {
+            succeed(() => {
+                requestAnimationFrame(() => {
+                    fbDestroySortable();
+                    fbInitAll();
+                });
+            });
         });
 
-        fbInitSortable();
+        fbInitAll();
     </script>
     @endscript
 </x-filament-panels::page>

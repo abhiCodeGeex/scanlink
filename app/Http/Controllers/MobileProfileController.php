@@ -6,13 +6,19 @@ use App\Models\ChecklistItem;
 use App\Models\Client;
 use App\Models\FormBuilderAnswer;
 use App\Models\FormBuilderQuestion;
+use App\Models\FormBuilderRecipient;
+use App\Models\Participant;
 use App\Models\Profile;
 use App\Models\VisitorContact;
 use App\Services\AnalyticsApiService;
+use App\Services\FormBuilderService;
 use App\Services\ProfileQrService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -97,7 +103,7 @@ class MobileProfileController extends Controller
         return redirect()->route('scan.show', [$clientUrl, $profileId]);
     }
 
-    public function storeFormAnswer(Request $request, string $clientUrl, int $profileId): RedirectResponse
+    public function storeFormAnswer(Request $request, string $clientUrl, int $profileId, FormBuilderService $formBuilder): RedirectResponse
     {
         $profile = $this->resolveProfile($clientUrl, $profileId);
 
@@ -122,7 +128,6 @@ class MobileProfileController extends Controller
 
         $displayOnlyTypes = [2, 13, 14, 20, 21, 23];
         $sessionId = $validated['session_id'] ?? (string) Str::uuid();
-        $nextAnswerId = (int) FormBuilderAnswer::query()->max('answer_id');
 
         $answerMap = $validated['answers'] ?? [];
 
@@ -141,6 +146,8 @@ class MobileProfileController extends Controller
                 $answerMap[$questionId] = $path;
             }
         }
+
+        $savedAnswers = [];
 
         foreach ($answerMap as $questionId => $answer) {
             $question = $questions->get((int) $questionId);
@@ -166,9 +173,7 @@ class MobileProfileController extends Controller
                 continue;
             }
 
-            $nextAnswerId++;
-            FormBuilderAnswer::query()->create([
-                'answer_id' => $nextAnswerId,
+            $formBuilder->createAnswer([
                 'question_id' => (int) $questionId,
                 'profile_id' => $profile->id,
                 'question_answer' => (string) $answer,
@@ -179,7 +184,12 @@ class MobileProfileController extends Controller
                 'app_user_email' => $validated['app_user_email'] ?? null,
                 'app_user_mobile' => $validated['app_user_mobile'] ?? null,
             ]);
+
+            $savedAnswers[(int) $questionId] = (string) $answer;
         }
+
+        $this->markParticipatedParticipants($profile, $questions, $savedAnswers);
+        $this->notifyFormSubmissionRecipients($profile, $sessionId, $questions, $savedAnswers);
 
         return redirect()
             ->route('scan.show', [$clientUrl, $profileId])
@@ -286,5 +296,113 @@ class MobileProfileController extends Controller
         $videoId = app(\App\Services\YouTubeService::class)->parseVideoId($videoName);
 
         return $videoId ? 'https://www.youtube.com/embed/'.$videoId : null;
+    }
+
+    /**
+     * @param  Collection<int, FormBuilderQuestion>  $questions
+     * @param  array<int, string>  $savedAnswers
+     */
+    protected function markParticipatedParticipants(Profile $profile, Collection $questions, array $savedAnswers): void
+    {
+        $participantQuestions = $questions->filter(
+            fn (FormBuilderQuestion $question): bool => (int) $question->question_type_id === 18
+        );
+
+        if ($participantQuestions->isEmpty()) {
+            return;
+        }
+
+        foreach ($participantQuestions as $question) {
+            $name = trim((string) ($savedAnswers[$question->question_id] ?? ''));
+
+            if ($name === '') {
+                continue;
+            }
+
+            Participant::query()
+                ->where('profile_id', $profile->id)
+                ->whereRaw('LOWER(name) = ?', [strtolower($name)])
+                ->where('is_participated', false)
+                ->update([
+                    'is_participated' => true,
+                    'participated_date' => now()->toDateString(),
+                ]);
+        }
+    }
+
+    /**
+     * @param  Collection<int, FormBuilderQuestion>  $questions
+     * @param  array<int, string>  $savedAnswers
+     */
+    protected function notifyFormSubmissionRecipients(
+        Profile $profile,
+        string $sessionId,
+        Collection $questions,
+        array $savedAnswers,
+    ): void {
+        $formId = (int) ($profile->form_id ?: 0);
+
+        if ($formId <= 0 && $savedAnswers === []) {
+            return;
+        }
+
+        $recipients = collect();
+
+        if ($formId > 0) {
+            $recipients = FormBuilderRecipient::query()
+                ->where('form_id', $formId)
+                ->pluck('recipient_email');
+        }
+
+        foreach ($savedAnswers as $questionId => $answer) {
+            $question = $questions->get((int) $questionId);
+
+            if ($question && (int) $question->question_type_id === 24) {
+                $email = strtolower(trim($answer));
+
+                if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    $recipients->push($email);
+                }
+            }
+        }
+
+        $recipients = $recipients->map(fn (string $email): string => strtolower(trim($email)))
+            ->filter(fn (string $email): bool => filter_var($email, FILTER_VALIDATE_EMAIL))
+            ->unique()
+            ->values();
+
+        if ($recipients->isEmpty()) {
+            return;
+        }
+
+        $subjectParts = array_filter([
+            trim((string) ($profile->form_email_tag ?? '')),
+            trim((string) ($profile->form_title ?? '')),
+        ]);
+        $subject = $subjectParts !== [] ? implode(' — ', $subjectParts) : 'Form submission — '.$profile->name;
+
+        $lines = ["Form submission for {$profile->name}", "Session: {$sessionId}", ''];
+
+        foreach ($savedAnswers as $questionId => $answer) {
+            $question = $questions->get((int) $questionId);
+            $label = strip_tags((string) ($question?->question_text ?: "Question #{$questionId}"));
+            $lines[] = "{$label}: {$answer}";
+        }
+
+        $body = implode("\n", $lines);
+
+        foreach ($recipients as $email) {
+            try {
+                Mail::raw($body, function ($message) use ($email, $subject): void {
+                    $message->to($email)->subject($subject);
+                });
+            } catch (\Throwable $exception) {
+                Log::warning('Form submission email failed', [
+                    'profile_id' => $profile->id,
+                    'email' => $email,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        }
     }
 }

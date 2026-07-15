@@ -70,3 +70,12 @@ Route::post('/{clientUrl}/{profileId}/checklist/{itemId}/uncheck', [MobileProfil
     ->whereNumber('profileId')
     ->whereNumber('itemId')
     ->name('scan.checklist.uncheck');
+
+Route::middleware(['web', 'auth'])->group(function (): void {
+    Route::get('/portal/form-submissions/print/{sessionId}', function (Illuminate\Http\Request $request, string $sessionId) {
+        return \App\Filament\Portal\Pages\FormSubmissions::downloadSessionHtml(
+            $request->integer('profile'),
+            $sessionId,
+        );
+    })->name('portal.form-submissions.print');
+});

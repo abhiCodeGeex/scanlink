@@ -14,10 +14,13 @@ use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Collection;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Livewire\WithFileUploads;
 
 class FormBuilder extends Page
 {
     use InteractsWithClientMembership;
+    use WithFileUploads;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
 
@@ -80,6 +83,25 @@ class FormBuilder extends Page
     public string $composerImageTitle = '';
 
     public string $composerImageUrl = '';
+
+    public string $composerImageAlign = '0';
+
+    /** @var TemporaryUploadedFile|null */
+    public $composerImageUpload = null;
+
+    public bool $composerIncludeName = true;
+
+    public bool $composerIncludeEmployer = false;
+
+    public bool $composerIncludeEmail = false;
+
+    public bool $composerIncludePhone = false;
+
+    public bool $composerParticipantIncludeSignature = false;
+
+    public bool $composerParticipantIncludeEmployer = false;
+
+    public ?int $copyFromProfileId = null;
 
     public string $composerButtonLinkUrl = '';
 
@@ -191,6 +213,14 @@ class FormBuilder extends Page
         $this->composerLogColumntitle = (string) ($question->log_columntitle ?? '');
         $this->composerImageTitle = (string) ($question->image_title ?? '');
         $this->composerImageUrl = (string) ($question->image_url ?? '');
+        $this->composerImageAlign = (string) ($question->image_align ?? '0');
+        $this->composerIncludeName = (bool) ($question->include_name ?? true);
+        $this->composerIncludeEmployer = (bool) ($question->include_employer ?? false);
+        $this->composerIncludeEmail = (bool) ($question->include_email ?? false);
+        $this->composerIncludePhone = (bool) ($question->include_phone ?? false);
+        $this->composerParticipantIncludeSignature = (bool) ($question->participant_include_signature ?? false);
+        $this->composerParticipantIncludeEmployer = (bool) ($question->participant_include_employer ?? false);
+        $this->composerImageUpload = null;
         $this->composerButtonLinkUrl = (string) ($question->button_link_url ?? '');
         $this->composerButtonColour = (string) ($question->button_colour ?: '007A01');
         $this->composerDocTitle = (string) ($question->doc_title ?? '');
@@ -242,10 +272,15 @@ class FormBuilder extends Page
         $type = FormBuilderQuestionType::query()->find($typeId);
         $isDisplay = $type?->isDisplayOnly() ?? false;
 
-        if (! $isDisplay && trim($this->composerQuestionText) === '') {
+        if (! $isDisplay && trim($this->composerQuestionText) === '' && ! in_array($typeId, [11], true)) {
             Notification::make()->title('Question text is required')->danger()->send();
 
             return;
+        }
+
+        if ($typeId === 11 && $this->composerImageUpload instanceof TemporaryUploadedFile) {
+            $this->composerImageUrl = $this->composerImageUpload->store('form-builder/images', 'public');
+            $this->composerImageUpload = null;
         }
 
         $data = [
@@ -253,10 +288,17 @@ class FormBuilder extends Page
             'question_text' => $this->composerQuestionText,
             'image_title' => $this->composerImageTitle,
             'image_url' => $this->composerImageUrl ?: null,
+            'image_align' => $this->composerImageAlign,
             'button_link_url' => $this->composerButtonLinkUrl,
             'button_colour' => $this->composerButtonColour,
             'doc_title' => $this->composerDocTitle,
             'default_value' => $this->composerDefaultValue,
+            'include_name' => $this->composerIncludeName,
+            'include_employer' => $this->composerIncludeEmployer,
+            'include_email' => $this->composerIncludeEmail,
+            'include_phone' => $this->composerIncludePhone,
+            'participant_include_signature' => $this->composerParticipantIncludeSignature,
+            'participant_include_employer' => $this->composerParticipantIncludeEmployer,
             'is_mandatory' => $this->composerIsMandatory,
             'is_logchecked' => $this->composerIsLogchecked,
             'log_columntitle' => $this->composerLogColumntitle,
@@ -327,6 +369,46 @@ class FormBuilder extends Page
         Notification::make()->title('Form saved to library')->success()->send();
     }
 
+    public function copyFromProfile(): void
+    {
+        if (! $this->copyFromProfileId) {
+            Notification::make()->title('Select a profile to copy from')->warning()->send();
+
+            return;
+        }
+
+        $profile = $this->resolveProfile();
+        $client = $this->requireClient();
+
+        Profile::query()
+            ->where('client_id', $client->id)
+            ->active()
+            ->findOrFail($this->copyFromProfileId);
+
+        if ($this->copyFromProfileId === $profile->id) {
+            Notification::make()->title('Choose a different profile')->warning()->send();
+
+            return;
+        }
+
+        $cloned = $this->formLibrary->copyFromProfile($this->copyFromProfileId, $profile);
+
+        if ($cloned === 0) {
+            Notification::make()->title('Source profile has no questions')->warning()->send();
+
+            return;
+        }
+
+        Notification::make()
+            ->title('Form copied')
+            ->body("{$cloned} question(s) copied from the selected profile.")
+            ->success()
+            ->send();
+
+        $this->copyFromProfileId = null;
+        $this->loadProfileData();
+    }
+
     public function togglePreview(): void
     {
         $this->showPreview = ! $this->showPreview;
@@ -351,6 +433,34 @@ class FormBuilder extends Page
     public function addGridCol(): void
     {
         $this->composerGridCols[] = ['option_name' => ''];
+    }
+
+    /**
+     * @return Collection<int|string, string>
+     */
+    public function profilesWithExistingForms(): Collection
+    {
+        $client = $this->currentClient();
+
+        if (! $client) {
+            return collect();
+        }
+
+        $profileIdsWithQuestions = FormBuilderQuestion::query()
+            ->whereIn('profile_id', Profile::query()
+                ->where('client_id', $client->id)
+                ->active()
+                ->pluck('id'))
+            ->distinct()
+            ->pluck('profile_id');
+
+        return Profile::query()
+            ->where('client_id', $client->id)
+            ->active()
+            ->whereIn('id', $profileIdsWithQuestions)
+            ->when($this->selectedProfileId, fn ($q) => $q->where('id', '!=', $this->selectedProfileId))
+            ->orderBy('name')
+            ->pluck('name', 'id');
     }
 
     public function getTitle(): string|Htmlable
@@ -427,6 +537,14 @@ class FormBuilder extends Page
         $this->composerGridCols = [['option_name' => '']];
         $this->composerImageTitle = '';
         $this->composerImageUrl = '';
+        $this->composerImageAlign = '0';
+        $this->composerImageUpload = null;
+        $this->composerIncludeName = true;
+        $this->composerIncludeEmployer = false;
+        $this->composerIncludeEmail = false;
+        $this->composerIncludePhone = false;
+        $this->composerParticipantIncludeSignature = false;
+        $this->composerParticipantIncludeEmployer = false;
         $this->composerButtonLinkUrl = '';
         $this->composerButtonColour = '007A01';
         $this->composerDocTitle = '';

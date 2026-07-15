@@ -60,6 +60,23 @@ class FormLibraryService
         ]));
     }
 
+    public function copyFromProfile(int $sourceProfileId, Profile $targetProfile): int
+    {
+        $sourceProfile = Profile::query()->findOrFail($sourceProfileId);
+
+        $sourceQuestions = FormBuilderQuestion::query()
+            ->with('options')
+            ->where('profile_id', $sourceProfile->id)
+            ->orderBy('question_order')
+            ->get();
+
+        if ($sourceQuestions->isEmpty()) {
+            return 0;
+        }
+
+        return $this->cloneQuestionsOntoProfile($sourceQuestions, $targetProfile);
+    }
+
     public function applyLibraryFormToProfile(int $libraryFormId, Profile $targetProfile): int
     {
         $libraryEntry = FormBuilderLibrary::query()
@@ -77,6 +94,14 @@ class FormLibraryService
             return 0;
         }
 
+        return $this->cloneQuestionsOntoProfile($sourceQuestions, $targetProfile);
+    }
+
+    /**
+     * @param  Collection<int, FormBuilderQuestion>  $sourceQuestions
+     */
+    protected function cloneQuestionsOntoProfile(Collection $sourceQuestions, Profile $targetProfile): int
+    {
         $targetFormId = (int) ($targetProfile->form_id ?: 0);
 
         if ($targetFormId === 0) {

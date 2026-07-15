@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\FormBuilderAnswer;
 use App\Models\FormBuilderLibrary;
 use App\Models\FormBuilderQuestion;
 use App\Models\FormBuilderQuestionOption;
@@ -280,7 +281,7 @@ class FormBuilderService
         }
     }
 
-    protected function questionUsesAutoIncrement(): bool
+    public function questionUsesAutoIncrement(): bool
     {
         if (! Schema::hasTable('form_builder_question')) {
             return true;
@@ -296,6 +297,39 @@ class FormBuilderService
         } catch (\Throwable) {
             return false;
         }
+    }
+
+    public function answerUsesAutoIncrement(): bool
+    {
+        if (! Schema::hasTable('form_builder_answers')) {
+            return true;
+        }
+
+        try {
+            $column = DB::selectOne(
+                'SELECT EXTRA FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+                ['form_builder_answers', 'answer_id']
+            );
+
+            return $column && str_contains((string) ($column->EXTRA ?? ''), 'auto_increment');
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function createAnswer(array $data): FormBuilderAnswer
+    {
+        if (! $this->answerUsesAutoIncrement()) {
+            $nextId = (int) FormBuilderAnswer::query()->max('answer_id') + 1;
+            $data['answer_id'] = max(1, $nextId);
+        } else {
+            unset($data['answer_id']);
+        }
+
+        return FormBuilderAnswer::query()->create($data);
     }
 
     protected function ensureLibraryEntry(Profile $profile, int $formId): void

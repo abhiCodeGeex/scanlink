@@ -20,10 +20,16 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema as DbSchema;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Livewire\WithFileUploads;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ManageParticipants extends Page
 {
     use InteractsWithClientMembership;
+    use WithFileUploads;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
 
@@ -44,6 +50,9 @@ class ManageParticipants extends Page
 
     /** @var Collection<int, Participant> */
     public Collection $participants;
+
+    /** @var TemporaryUploadedFile|null */
+    public $csvImportFile = null;
 
     public static function getNavigationGroup(): ?string
     {
@@ -100,11 +109,8 @@ class ManageParticipants extends Page
             ->active()
             ->findOrFail($data['profile_id']);
 
-        $nextId = (int) Participant::query()->max('participant_id') + 1;
-
         Participant::query()->create([
-            'participant_id' => $nextId,
-            'profile_id' => $data['profile_id'],
+            ...$this->nextParticipantPayload((int) $data['profile_id']),
             'name' => $data['name'],
             'employer_cmp' => $data['employer_cmp'] ?? null,
             'due_date' => $data['due_date'] ?? null,
@@ -136,6 +142,108 @@ class ManageParticipants extends Page
         Notification::make()->title('Participant removed')->success()->send();
     }
 
+    public function importCsv(): void
+    {
+        $this->validate([
+            'csvImportFile' => ['required', 'file', 'mimes:csv,txt', 'max:2048'],
+            'data.profile_id' => ['required'],
+        ]);
+
+        $profileId = (int) $this->data['profile_id'];
+        $client = $this->requireClient();
+
+        Profile::query()
+            ->where('client_id', $client->id)
+            ->active()
+            ->findOrFail($profileId);
+
+        $handle = fopen($this->csvImportFile->getRealPath(), 'r');
+
+        if ($handle === false) {
+            Notification::make()->title('Could not read CSV file')->danger()->send();
+
+            return;
+        }
+
+        $imported = 0;
+        $rowNum = 0;
+
+        while (($row = fgetcsv($handle)) !== false) {
+            $rowNum++;
+
+            if ($row === [null] || $row === []) {
+                continue;
+            }
+
+            $name = trim((string) ($row[0] ?? ''));
+            $employer = trim((string) ($row[1] ?? ''));
+            $dueRaw = trim((string) ($row[2] ?? ''));
+
+            if ($name === '' || strtolower($name) === 'name') {
+                continue;
+            }
+
+            $dueDate = $this->parseParticipantDueDate($dueRaw);
+
+            Participant::query()->create([
+                ...$this->nextParticipantPayload($profileId),
+                'name' => $name,
+                'employer_cmp' => $employer !== '' ? $employer : null,
+                'due_date' => $dueDate,
+                'is_participated' => false,
+            ]);
+
+            $imported++;
+        }
+
+        fclose($handle);
+        $this->csvImportFile = null;
+        $this->loadParticipants($profileId);
+
+        Notification::make()
+            ->title('CSV imported')
+            ->body("{$imported} participant(s) added.")
+            ->success()
+            ->send();
+    }
+
+    public function exportParticipantsCsv(): StreamedResponse
+    {
+        $profileId = (int) ($this->data['profile_id'] ?? 0);
+        $client = $this->requireClient();
+
+        $profile = Profile::query()
+            ->where('client_id', $client->id)
+            ->active()
+            ->findOrFail($profileId);
+
+        $participants = Participant::query()
+            ->where('profile_id', $profile->id)
+            ->orderBy('participant_id')
+            ->get();
+
+        $filename = 'participants-'.$profile->id.'-'.now()->format('Y-m-d').'.csv';
+
+        return response()->streamDownload(function () use ($participants): void {
+            $out = fopen('php://output', 'w');
+            fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($out, ['name', 'employer', 'due_date', 'participated']);
+
+            foreach ($participants as $participant) {
+                fputcsv($out, [
+                    $participant->name,
+                    $participant->employer_cmp,
+                    optional($participant->due_date)->format('Y-m-d'),
+                    $participant->is_participated ? 'yes' : 'no',
+                ]);
+            }
+
+            fclose($out);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
     protected function loadParticipants(int $profileId): void
     {
         $this->participants = Participant::query()
@@ -158,6 +266,61 @@ class ManageParticipants extends Page
             ->active()
             ->orderBy('name')
             ->pluck('name', 'id');
+    }
+
+    /**
+     * @return array{participant_id?: int, profile_id: int}
+     */
+    protected function nextParticipantPayload(int $profileId): array
+    {
+        $payload = ['profile_id' => $profileId];
+
+        if (! $this->participantUsesAutoIncrement()) {
+            $payload['participant_id'] = (int) Participant::query()->max('participant_id') + 1;
+        }
+
+        return $payload;
+    }
+
+    protected function participantUsesAutoIncrement(): bool
+    {
+        if (! DbSchema::hasTable('participant')) {
+            return true;
+        }
+
+        try {
+            $column = DB::selectOne(
+                'SELECT EXTRA FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+                ['participant', 'participant_id']
+            );
+
+            return $column && str_contains((string) ($column->EXTRA ?? ''), 'auto_increment');
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    protected function parseParticipantDueDate(string $value): ?string
+    {
+        $value = trim($value);
+
+        if ($value === '') {
+            return null;
+        }
+
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+            return $value;
+        }
+
+        if (preg_match('/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/', $value, $matches)) {
+            return sprintf('%04d-%02d-%02d', (int) $matches[3], (int) $matches[2], (int) $matches[1]);
+        }
+
+        try {
+            return \Illuminate\Support\Carbon::parse($value)->toDateString();
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**
