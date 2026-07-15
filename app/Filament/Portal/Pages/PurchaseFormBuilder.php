@@ -69,12 +69,9 @@ class PurchaseFormBuilder extends Page
                     ->schema([
                         Select::make('profile_id')
                             ->label('Profile')
-                            ->options(fn (): array => Profile::query()
-                                ->where('client_id', $client?->id)
-                                ->active()
-                                ->orderBy('name')
-                                ->pluck('name', 'id')
-                                ->all())
+                            ->options(fn (): array => $client
+                                ? Profile::selectOptionsForClient((int) $client->id)->all()
+                                : [])
                             ->required()
                             ->searchable(),
                     ]),

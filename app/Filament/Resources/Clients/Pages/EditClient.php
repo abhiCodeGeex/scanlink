@@ -102,18 +102,6 @@ class EditClient extends EditRecord
         ];
     }
 
-    protected function mutateFormDataBeforeFill(array $data): array
-    {
-        $primaryUser = $this->record->primaryUser;
-
-        if ($primaryUser) {
-            $data['checklist_option'] = $primaryUser->checklist_option;
-            $data['customqr_option'] = $primaryUser->customqr_option;
-        }
-
-        return $data;
-    }
-
     /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
@@ -140,8 +128,6 @@ class EditClient extends EditRecord
         $primaryUser->update([
             'email' => $client->email,
             'password' => $client->password ?? $primaryUser->password,
-            'checklist_option' => (bool) ($this->data['checklist_option'] ?? $primaryUser->checklist_option),
-            'customqr_option' => (bool) ($this->data['customqr_option'] ?? $primaryUser->customqr_option),
         ]);
     }
 }

@@ -29,6 +29,8 @@ class TestimonialResource extends Resource
 
     protected static string|\UnitEnum|null $navigationGroup = 'Testimonial';
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $modelLabel = 'Testimonial';
 
     protected static ?int $navigationSort = 1;

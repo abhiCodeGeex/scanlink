@@ -36,8 +36,9 @@ class PortalProfilesTable
                     ->sortable(),
                 TextColumn::make('name')
                     ->label('Name')
-                    ->searchable()
-                    ->sortable(),
+                    ->searchable(['name', 'code_profile_name', 'identification', 'form_title', 'name2'])
+                    ->sortable()
+                    ->getStateUsing(fn (Profile $record): string => $record->displayLabel()),
                 TextColumn::make('expired_at')
                     ->label('Expires')
                     ->dateTime('d/m/Y')

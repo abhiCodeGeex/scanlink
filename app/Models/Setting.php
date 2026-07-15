@@ -7,6 +7,9 @@ use Illuminate\Support\Facades\Cache;
 
 class Setting extends Model
 {
+    /** Live `settings` table has updated_at only. */
+    public const CREATED_AT = null;
+
     protected $fillable = ['title', 'values'];
 
     public static function valueFor(string $title): ?string

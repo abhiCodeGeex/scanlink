@@ -9,6 +9,9 @@ class ChecklistItem extends Model
 {
     protected $table = 'checklist_item';
 
+    /** Live `checklist_item` table has no timestamp columns. */
+    public $timestamps = false;
+
     protected $fillable = ['profile_id', 'checklist_item', 'datetime'];
 
     protected function casts(): array

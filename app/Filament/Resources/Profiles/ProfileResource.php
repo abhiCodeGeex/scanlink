@@ -36,6 +36,8 @@ class ProfileResource extends Resource
 
     protected static string|\UnitEnum|null $navigationGroup = 'Product';
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?int $navigationSort = 1;
 
     protected static ?string $recordTitleAttribute = 'name';

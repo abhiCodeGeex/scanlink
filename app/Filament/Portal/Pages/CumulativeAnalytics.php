@@ -190,21 +190,4 @@ class CumulativeAnalytics extends Page
         return $rows;
     }
 
-    /**
-     * @return Collection<int|string, string>
-     */
-    public function clientProfileOptions(): Collection
-    {
-        $client = $this->currentClient();
-
-        if (! $client) {
-            return collect();
-        }
-
-        return Profile::query()
-            ->where('client_id', $client->id)
-            ->active()
-            ->orderBy('name')
-            ->pluck('name', 'id');
-    }
 }

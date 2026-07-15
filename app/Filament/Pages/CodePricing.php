@@ -92,9 +92,23 @@ class CodePricing extends Page
                         Grid::make(2)
                             ->schema([
                                 Section::make('Retail Pricing')
-                                    ->schema($retailFields),
+                                    ->schema($retailFields)
+                                    ->footer([
+                                        Actions::make([
+                                            Action::make('saveRetail')
+                                                ->label('Edit Pricing')
+                                                ->action('saveRetail'),
+                                        ]),
+                                    ]),
                                 Section::make('Reseller Pricing')
-                                    ->schema($resellerFields),
+                                    ->schema($resellerFields)
+                                    ->footer([
+                                        Actions::make([
+                                            Action::make('saveReseller')
+                                                ->label('Edit Pricing')
+                                                ->action('saveReseller'),
+                                        ]),
+                                    ]),
                             ]),
                     ]),
             ]);
@@ -132,24 +146,17 @@ class CodePricing extends Page
             ->send();
     }
 
-    /**
-     * @return array<Action>
-     */
-    protected function getFormActions(): array
-    {
-        return [
-            Action::make('saveRetail')
-                ->label('Edit Pricing')
-                ->action('saveRetail'),
-            Action::make('saveReseller')
-                ->label('Edit Pricing')
-                ->action('saveReseller'),
-        ];
-    }
-
     public function getTitle(): string|Htmlable
     {
         return static::$title ?? 'Code Pricing';
+    }
+
+    /**
+     * @return array<string>
+     */
+    public function getPageClasses(): array
+    {
+        return ['fi-page-code-pricing'];
     }
 
     public function content(Schema $schema): Schema
@@ -163,18 +170,7 @@ class CodePricing extends Page
     public function getFormContentComponent(): Component
     {
         return Form::make([EmbeddedSchema::make('form')])
-            ->id('form')
-            ->footer([
-                Actions::make($this->getFormActions())
-                    ->alignment($this->getFormActionsAlignment())
-                    ->fullWidth($this->hasFullWidthFormActions())
-                    ->key('form-actions'),
-            ]);
-    }
-
-    protected function hasFullWidthFormActions(): bool
-    {
-        return false;
+            ->id('form');
     }
 
     /**

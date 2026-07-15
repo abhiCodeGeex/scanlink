@@ -5,10 +5,13 @@ namespace App\Filament\Resources\Orders\Tables;
 use App\Enums\PhysicalOrderStatus;
 use App\Models\Order;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 
 class OrdersTable
 {
@@ -53,6 +56,43 @@ class OrdersTable
                         return $query->where('status', $value);
                     })
                     ->default('all'),
+                Filter::make('ordered_on')
+                    ->label('Date range')
+                    ->columns(2)
+                    ->schema([
+                        DatePicker::make('from')
+                            ->label('From')
+                            ->native(false)
+                            ->displayFormat('d/m/Y'),
+                        DatePicker::make('until')
+                            ->label('To')
+                            ->native(false)
+                            ->displayFormat('d/m/Y'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                filled($data['from'] ?? null),
+                                fn (Builder $builder): Builder => $builder->whereDate('ordered_on', '>=', $data['from']),
+                            )
+                            ->when(
+                                filled($data['until'] ?? null),
+                                fn (Builder $builder): Builder => $builder->whereDate('ordered_on', '<=', $data['until']),
+                            );
+                    })
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+
+                        if (filled($data['from'] ?? null)) {
+                            $indicators['from'] = 'From '.Carbon::parse($data['from'])->format('d/m/Y');
+                        }
+
+                        if (filled($data['until'] ?? null)) {
+                            $indicators['until'] = 'To '.Carbon::parse($data['until'])->format('d/m/Y');
+                        }
+
+                        return $indicators;
+                    }),
             ])
             ->recordActions([
                 ViewAction::make(),

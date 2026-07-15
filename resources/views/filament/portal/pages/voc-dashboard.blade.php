@@ -1,67 +1,88 @@
 <x-filament-panels::page>
-    <div class="space-y-6">
-        @if ($isVocUser)
-            <p class="text-sm text-gray-600 dark:text-gray-300">
-                Profiles linked to your VOC account.
-            </p>
-        @else
-            <p class="text-sm text-gray-600 dark:text-gray-300">
-                VOC and survey profiles for your organisation.
-            </p>
-        @endif
+    <style>
+        .sl-card { border-radius: 12px; border: 1px solid rgb(229 231 235); background: #fff; box-shadow: 0 1px 3px rgb(0 0 0 / 0.06); overflow: hidden; }
+        .dark .sl-card { border-color: rgb(55 65 81); background: rgb(17 24 39); }
+        .sl-card-pad { padding: 1.25rem; }
+        .sl-muted { margin: 0 0 1rem; font-size: .875rem; color: rgb(75 85 99); }
+        .dark .sl-muted { color: rgb(156 163 175); }
+        .sl-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+        .sl-table th { padding: .75rem 1rem; text-align: left; font-size: .6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #008C00; background: rgb(0 140 0 / .08); }
+        .dark .sl-table th { background: rgb(0 140 0 / .15); }
+        .sl-table td { padding: .85rem 1rem; border-top: 1px solid rgb(229 231 235); vertical-align: middle; }
+        .dark .sl-table td { border-color: rgb(55 65 81); }
+        .sl-link { color: #008C00; text-decoration: none; font-weight: 600; }
+        .sl-link:hover { text-decoration: underline; }
+        .sl-sep { margin: 0 .4rem; color: rgb(156 163 175); }
+        .sl-empty { padding: 1.5rem; font-size: .875rem; color: rgb(107 114 128); }
+        .sl-doc-list { list-style: none; margin: 0; padding: 0; }
+        .sl-doc-list li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .85rem 0; border-top: 1px solid rgb(229 231 235); font-size: .875rem; }
+        .dark .sl-doc-list li { border-color: rgb(55 65 81); }
+        .sl-doc-list li:first-child { border-top: 0; padding-top: 0; }
+        .sl-heading { margin: 0 0 1rem; font-size: 1.05rem; font-weight: 700; }
+    </style>
 
-        @if ($profiles->isNotEmpty())
-            <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
-                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead class="bg-gray-50 dark:bg-gray-800">
-                        <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Profile</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Type</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Links</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                        @foreach ($profiles as $profile)
-                            <tr wire:key="voc-profile-{{ $profile->id }}">
-                                <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">
-                                    #{{ $profile->id }} — {{ $profile->name }}
-                                </td>
-                                <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                                    {{ $profile->equipmentType?->name ?? 'Profile' }}
-                                </td>
-                                <td class="px-4 py-3 text-sm">
-                                    @if ($viewUrl = $this->profileViewUrl($profile))
-                                        <a href="{{ $viewUrl }}" class="text-primary-600 hover:underline">Portal view</a>
-                                        <span class="mx-1 text-gray-400">|</span>
-                                    @endif
-                                    <a href="{{ $this->profileScanUrl($profile) }}" target="_blank" rel="noopener" class="text-primary-600 hover:underline">Public scan</a>
-                                </td>
+    <div style="display:grid; gap:1.25rem;">
+        <p class="sl-muted">
+            @if ($isVocUser)
+                Profiles linked to your VOC account.
+            @else
+                VOC and survey profiles for your organisation.
+            @endif
+        </p>
+
+        <div class="sl-card">
+            @if ($profiles->isNotEmpty())
+                <div style="overflow-x:auto;">
+                    <table class="sl-table">
+                        <thead>
+                            <tr>
+                                <th>Profile</th>
+                                <th>Type</th>
+                                <th>Links</th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @else
-            <p class="text-sm text-gray-500 dark:text-gray-400">No VOC profiles are linked to your account.</p>
-        @endif
+                        </thead>
+                        <tbody>
+                            @foreach ($profiles as $profile)
+                                <tr wire:key="voc-profile-{{ $profile->id }}">
+                                    <td>
+                                        <strong>#{{ $profile->id }}</strong>
+                                        — {{ $profile->displayLabel() }}
+                                    </td>
+                                    <td>{{ $profile->equipmentType?->name ?? 'Profile' }}</td>
+                                    <td>
+                                        @if ($viewUrl = $this->profileViewUrl($profile))
+                                            <a href="{{ $viewUrl }}" class="sl-link">Portal view</a>
+                                            <span class="sl-sep">|</span>
+                                        @endif
+                                        <a href="{{ $this->profileScanUrl($profile) }}" target="_blank" rel="noopener" class="sl-link">Public scan</a>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <p class="sl-empty">No VOC profiles are linked to your account.</p>
+            @endif
+        </div>
 
         @if ($documents->isNotEmpty())
-            <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-                <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">VOC documents</h3>
-                <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+            <div class="sl-card sl-card-pad">
+                <h3 class="sl-heading">VOC documents</h3>
+                <ul class="sl-doc-list">
                     @foreach ($documents as $document)
-                        <li class="flex items-center justify-between py-3 text-sm">
+                        <li wire:key="voc-doc-{{ $document->id }}">
                             <div>
-                                <p class="font-medium text-gray-900 dark:text-white">{{ $document->name ?: 'Document' }}</p>
-                                <p class="text-gray-500 dark:text-gray-400">
+                                <div style="font-weight:600;">{{ $document->name ?: 'Document' }}</div>
+                                <div class="sl-muted" style="margin:0;">
                                     Profile #{{ $document->profile_id }}
                                     @if ($document->expiry_date)
                                         — expires {{ $document->expiry_date->format('d/m/Y') }}
                                     @endif
-                                </p>
+                                </div>
                             </div>
                             @if ($document->file_name)
-                                <a href="{{ asset('storage/'.ltrim(str_replace(['storage/', 'public/'], '', $document->file_name), '/')) }}" target="_blank" rel="noopener" class="text-primary-600 hover:underline">Download</a>
+                                <a href="{{ asset('storage/'.ltrim(str_replace(['storage/', 'public/'], '', $document->file_name), '/')) }}" target="_blank" rel="noopener" class="sl-link">Download</a>
                             @endif
                         </li>
                     @endforeach

@@ -8,6 +8,7 @@
             ['Manage Order', route('filament.admin.resources.orders.index'), 'heroicon-o-truck'],
             ['Manage Code Order', route('filament.admin.resources.code-purchases.index'), 'heroicon-o-shopping-cart'],
             ['Manage Form Builder Order', route('filament.admin.resources.form-builder-orders.index'), 'heroicon-o-document-text'],
+            ['Email Submission Log', \App\Filament\Pages\EmailSubmissionLog::getUrl(), 'heroicon-o-envelope-open'],
             ['Global Settings', \App\Filament\Pages\GlobalSettings::getUrl(), 'heroicon-o-cog-6-tooth'],
             ['Code Pricing', \App\Filament\Pages\CodePricing::getUrl(), 'heroicon-o-currency-dollar'],
             ['Manage Testimonial', route('filament.admin.resources.testimonials.index'), 'heroicon-o-chat-bubble-left-right'],

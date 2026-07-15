@@ -598,36 +598,15 @@ class FormBuilder extends Page
             ->distinct()
             ->pluck('profile_id');
 
-        return Profile::query()
-            ->where('client_id', $client->id)
-            ->active()
-            ->whereIn('id', $profileIdsWithQuestions)
-            ->when($this->selectedProfileId, fn ($q) => $q->where('id', '!=', $this->selectedProfileId))
-            ->orderBy('name')
-            ->pluck('name', 'id');
+        return Profile::selectOptionsForClient((int) $client->id, function ($query) use ($profileIdsWithQuestions): void {
+            $query->whereIn('id', $profileIdsWithQuestions)
+                ->when($this->selectedProfileId, fn ($q) => $q->where('id', '!=', $this->selectedProfileId));
+        });
     }
 
     public function getTitle(): string|Htmlable
     {
         return static::$title ?? 'Form Builder';
-    }
-
-    /**
-     * @return Collection<int|string, string>
-     */
-    public function clientProfileOptions(): Collection
-    {
-        $client = $this->currentClient();
-
-        if (! $client) {
-            return collect();
-        }
-
-        return Profile::query()
-            ->where('client_id', $client->id)
-            ->active()
-            ->orderBy('name')
-            ->pluck('name', 'id');
     }
 
     protected function loadProfileData(): void

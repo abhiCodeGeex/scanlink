@@ -90,6 +90,7 @@ class ManageParticipants extends Page
                         ->label('Profile')
                         ->options(fn (): array => $this->clientProfileOptions()->all())
                         ->required()
+                        ->searchable()
                         ->live()
                         ->afterStateUpdated(fn (?string $state) => $this->loadParticipants((int) $state)),
                     TextInput::make('name')->required()->maxLength(255),
@@ -250,22 +251,6 @@ class ManageParticipants extends Page
             ->where('profile_id', $profileId)
             ->orderBy('participant_id')
             ->get();
-    }
-
-    /** @return Collection<int|string, string> */
-    protected function clientProfileOptions(): Collection
-    {
-        $client = $this->currentClient();
-
-        if (! $client) {
-            return collect();
-        }
-
-        return Profile::query()
-            ->where('client_id', $client->id)
-            ->active()
-            ->orderBy('name')
-            ->pluck('name', 'id');
     }
 
     /**

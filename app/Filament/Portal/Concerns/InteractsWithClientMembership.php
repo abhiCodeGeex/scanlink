@@ -5,7 +5,9 @@ namespace App\Filament\Portal\Concerns;
 use App\Enums\UserType;
 use App\Models\Client;
 use App\Models\ClientUser;
+use App\Models\Profile;
 use App\Models\User;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
 trait InteractsWithClientMembership
@@ -27,6 +29,23 @@ trait InteractsWithClientMembership
     public function currentClient(): ?Client
     {
         return $this->currentClientUser()?->client;
+    }
+
+    /**
+     * Profile dropdown options with legacy-safe labels (never blank).
+     *
+     * @param  callable(\Illuminate\Database\Eloquent\Builder): void|null  $constrain
+     * @return Collection<int|string, string>
+     */
+    public function clientProfileOptions(?callable $constrain = null): Collection
+    {
+        $client = $this->currentClient();
+
+        if (! $client) {
+            return collect();
+        }
+
+        return Profile::selectOptionsForClient((int) $client->id, $constrain);
     }
 
     public function requireClientUser(): ClientUser

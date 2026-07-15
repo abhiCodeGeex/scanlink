@@ -8,7 +8,6 @@ use App\Filament\Resources\Clients\Pages\EditClient;
 use App\Filament\Resources\Clients\Pages\ListClients;
 use App\Filament\Resources\Clients\Pages\ManageClientUsers;
 use App\Filament\Resources\Clients\RelationManagers\ClientUsersRelationManager;
-use App\Filament\Resources\Clients\RelationManagers\ProfilesRelationManager;
 use App\Filament\Resources\Clients\Schemas\ClientForm;
 use App\Filament\Resources\Clients\Tables\ClientsTable;
 use App\Models\Client;
@@ -102,7 +101,6 @@ class ClientResource extends Resource
     {
         return [
             ClientUsersRelationManager::class,
-            ProfilesRelationManager::class,
         ];
     }
 

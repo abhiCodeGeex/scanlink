@@ -2,13 +2,13 @@
 
 namespace App\Enums;
 
-enum CodeOrderStatus: int
+enum CodeOrderStatus: string
 {
-    case New = 0;
-    case Renew = 1;
-    case InvoiceSend = 2;
-    case Paid = 3;
-    case Cancelled = 4;
+    case New = '0';
+    case Renew = '1';
+    case InvoiceSend = '2';
+    case Paid = '3';
+    case Cancelled = '4';
 
     public function label(): string
     {
@@ -24,7 +24,7 @@ enum CodeOrderStatus: int
     /**
      * Status options shown in the list filter (legacy: All, New, Renew, Invoice Send, Paid).
      *
-     * @return array<int, string>
+     * @return array<string, string>
      */
     public static function filterOptions(): array
     {
@@ -39,7 +39,7 @@ enum CodeOrderStatus: int
     /**
      * Status options selectable when changing an order (legacy view dropdown: New, Invoice Send, Paid).
      *
-     * @return array<int, string>
+     * @return array<string, string>
      */
     public static function changeOptions(): array
     {

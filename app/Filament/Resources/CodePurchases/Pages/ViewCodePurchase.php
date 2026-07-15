@@ -25,13 +25,13 @@ class ViewCodePurchase extends ViewRecord
                     Select::make('status')
                         ->label('Change Order Status to')
                         ->options(CodeOrderStatus::changeOptions())
-                        ->default(fn (): int => $this->record->status->value)
+                        ->default(fn (): string => $this->record->status->value)
                         ->required(),
                 ])
                 ->requiresConfirmation()
                 ->action(function (array $data): void {
                     $this->record->update([
-                        'status' => (int) $data['status'],
+                        'status' => (string) $data['status'],
                     ]);
 
                     $this->refreshFormData(['status']);

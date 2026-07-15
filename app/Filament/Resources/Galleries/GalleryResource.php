@@ -26,6 +26,8 @@ class GalleryResource extends Resource
 
     protected static string|\UnitEnum|null $navigationGroup = 'Gallery';
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $modelLabel = 'Gallery image';
 
     protected static ?int $navigationSort = 1;

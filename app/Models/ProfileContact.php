@@ -9,6 +9,9 @@ class ProfileContact extends Model
 {
     protected $table = 'profile_contact';
 
+    /** Live table uses datestamp, not Laravel timestamps. */
+    public $timestamps = false;
+
     protected $fillable = ['profile_id', 'name_company', 'telephone', 'datestamp'];
 
     protected function casts(): array

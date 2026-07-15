@@ -77,14 +77,7 @@ class FormLibrary extends Page implements HasTable
                         Select::make('profile_id')
                             ->label('Profile')
                             ->options(function (): array {
-                                $clientId = $this->requireClient()->id;
-
-                                return Profile::query()
-                                    ->where('client_id', $clientId)
-                                    ->active()
-                                    ->orderBy('name')
-                                    ->pluck('name', 'id')
-                                    ->all();
+                                return Profile::selectOptionsForClient((int) $this->requireClient()->id)->all();
                             })
                             ->required()
                             ->searchable(),

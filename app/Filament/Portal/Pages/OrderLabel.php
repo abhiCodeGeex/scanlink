@@ -19,7 +19,6 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
-use Illuminate\Support\Collection;
 
 class OrderLabel extends Page
 {
@@ -128,24 +127,6 @@ class OrderLabel extends Page
             'size' => $data['size'],
             'quantity' => 1,
         ]);
-    }
-
-    /**
-     * @return Collection<int|string, string>
-     */
-    protected function clientProfileOptions(): Collection
-    {
-        $client = $this->currentClient();
-
-        if (! $client) {
-            return collect();
-        }
-
-        return Profile::query()
-            ->where('client_id', $client->id)
-            ->active()
-            ->orderBy('name')
-            ->pluck('name', 'id');
     }
 
     /**

@@ -230,6 +230,8 @@ class FormSubmissions extends Page
     }
 
     /**
+     * Profiles that can receive / already have form submissions.
+     *
      * @return Collection<int|string, string>
      */
     public function clientProfileOptions(): Collection
@@ -240,12 +242,14 @@ class FormSubmissions extends Page
             return collect();
         }
 
-        return Profile::query()
-            ->where('client_id', $client->id)
-            ->where('form_active', true)
-            ->active()
-            ->orderBy('name')
-            ->pluck('name', 'id');
+        return Profile::selectOptionsForClient((int) $client->id, function ($query): void {
+            $query->where(function ($q): void {
+                $q->where('form_active', true)
+                    ->orWhere('form_is_enable', true)
+                    ->orWhereHas('formQuestions')
+                    ->orWhereHas('formAnswers');
+            });
+        });
     }
 
     public function answerForSession(object $session, int $questionId): string

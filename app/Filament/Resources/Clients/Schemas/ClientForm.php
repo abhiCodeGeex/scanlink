@@ -65,7 +65,6 @@ class ClientForm
                             ->unique(ignoreRecord: true)
                             ->maxLength(255)
                             ->regex('/^[a-zA-Z0-9_-]+$/')
-                            ->prefix(fn (): string => rtrim(config('scanlink.portal_url'), '/').'/')
                             ->helperText('(NOTE : Only characters, numbers, underscore and dash are allowed.)')
                             ->autocomplete('off')
                             ->disabled(fn (string $operation): bool => $operation === 'edit')
@@ -78,16 +77,6 @@ class ClientForm
                             // Column is NOT NULL in live dump; empty must stay '' not null.
                             ->dehydrateStateUsing(fn (?string $state): string => filled($state) ? $state : '')
                             ->visible(fn (string $operation): bool => $operation === 'edit'),
-                        Toggle::make('checklist_option')
-                            ->label('Checklist option')
-                            ->default(false)
-                            ->visible(fn (string $operation): bool => $operation === 'edit')
-                            ->dehydrated(false),
-                        Toggle::make('customqr_option')
-                            ->label('Custom QR option')
-                            ->default(false)
-                            ->visible(fn (string $operation): bool => $operation === 'edit')
-                            ->dehydrated(false),
                     ]),
                 Section::make('Add User')
                     ->columns(2)

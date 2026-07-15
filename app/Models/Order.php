@@ -11,6 +11,9 @@ class Order extends Model
 {
     use HasFactory;
 
+    /** Live `orders` table has no created_at/updated_at (uses ordered_on). */
+    public $timestamps = false;
+
     protected $fillable = [
         'client_id', 'user_id', 'profile_id', 'qty_small', 'qty_large',
         'price_small', 'price_large', 'status', 'transaction_id',

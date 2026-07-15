@@ -158,6 +158,53 @@ class Profile extends Model
             });
     }
 
+    /**
+     * Human label for selects / tables. Many legacy profiles leave `name` empty.
+     */
+    public function displayLabel(): string
+    {
+        $candidates = [
+            $this->name,
+            $this->code_profile_name,
+            $this->identification,
+            $this->form_title,
+            $this->getAttribute('name2'),
+            $this->url,
+            $this->shorturl,
+            $this->getAttribute('application'),
+        ];
+
+        foreach ($candidates as $candidate) {
+            $label = trim((string) $candidate);
+
+            if ($label !== '') {
+                return $label;
+            }
+        }
+
+        return 'Profile #'.$this->getKey();
+    }
+
+    /**
+     * @param  callable(\Illuminate\Database\Eloquent\Builder): void|null  $constrain
+     * @return \Illuminate\Support\Collection<int|string, string>
+     */
+    public static function selectOptionsForClient(int $clientId, ?callable $constrain = null): \Illuminate\Support\Collection
+    {
+        $query = static::query()
+            ->where('client_id', $clientId)
+            ->active();
+
+        if ($constrain) {
+            $constrain($query);
+        }
+
+        return $query
+            ->orderByRaw("COALESCE(NULLIF(TRIM(name), ''), NULLIF(TRIM(code_profile_name), ''), NULLIF(TRIM(identification), ''), NULLIF(TRIM(form_title), ''), CONCAT('Profile #', id))")
+            ->get(['id', 'name', 'code_profile_name', 'identification', 'form_title', 'name2', 'url', 'shorturl'])
+            ->mapWithKeys(fn (self $profile): array => [$profile->id => $profile->displayLabel()]);
+    }
+
     public function isExpired(): bool
     {
         return $this->expired_at !== null && $this->expired_at->isPast();

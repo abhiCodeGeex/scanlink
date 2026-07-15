@@ -9,6 +9,9 @@ class Weblink extends Model
 {
     protected $table = 'weblink';
 
+    /** Live dump has created_at only. */
+    public const UPDATED_AT = null;
+
     protected $fillable = [
         'profile_id', 'link_button', 'link_button_text',
         'link_button_url', 'link_button_color', 'link_button_align',
