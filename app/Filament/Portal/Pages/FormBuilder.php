@@ -8,6 +8,7 @@ use App\Models\FormBuilderQuestionType;
 use App\Models\Profile;
 use App\Services\FormBuilderService;
 use App\Services\FormLibraryService;
+use App\Support\FormBuilderMedia;
 use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -84,10 +85,16 @@ class FormBuilder extends Page
 
     public string $composerImageUrl = '';
 
-    public string $composerImageAlign = '0';
+    public string $composerImageAlign = 'left';
 
     /** @var TemporaryUploadedFile|null */
     public $composerImageUpload = null;
+
+    /** @var TemporaryUploadedFile|null */
+    public $composerDocUpload = null;
+
+    /** @var array<int, TemporaryUploadedFile|null> */
+    public array $composerDocUploads = [];
 
     public bool $composerIncludeName = true;
 
@@ -217,7 +224,9 @@ class FormBuilder extends Page
         $this->composerLogColumntitle = (string) ($question->log_columntitle ?? '');
         $this->composerImageTitle = (string) ($question->image_title ?? '');
         $this->composerImageUrl = (string) ($question->image_url ?? '');
-        $this->composerImageAlign = (string) ($question->image_align ?? '0');
+        $this->composerImageAlign = FormBuilderMedia::alignValue((string) ($question->image_align ?? 'left'));
+        $this->composerDocUpload = null;
+        $this->composerDocUploads = [];
         $this->composerIncludeName = (bool) ($question->include_name ?? true);
         $this->composerIncludeEmployer = (bool) ($question->include_employer ?? false);
         $this->composerIncludeEmail = (bool) ($question->include_email ?? false);
@@ -242,9 +251,35 @@ class FormBuilder extends Page
         $typeId = (int) $question->question_type_id;
 
         if (in_array($typeId, [3, 4, 5], true)) {
-            $this->composerOptions = $question->options->map(fn ($o): array => [
+            $opts = $question->options->map(fn ($o): array => [
                 'option_name' => (string) $o->option_name,
             ])->values()->all();
+
+            if ($opts === [] && str_contains($this->composerQuestionText, ':::')) {
+                [$labelPart, $optionsPart] = explode(':::', $this->composerQuestionText, 2);
+                $optionNames = array_values(array_filter(
+                    array_map('trim', explode(',', $optionsPart)),
+                    fn (string $name): bool => $name !== '',
+                ));
+
+                if ($optionNames !== []) {
+                    $this->composerOptions = array_map(
+                        fn (string $name): array => ['option_name' => $name],
+                        $optionNames,
+                    );
+                    $labelTrim = trim($labelPart);
+
+                    if ($labelTrim !== '' && ! str_contains($labelTrim, ',')) {
+                        $this->composerQuestionText = $labelTrim;
+                    } else {
+                        $this->composerQuestionText = '';
+                    }
+                } else {
+                    $this->composerOptions = [['option_name' => '']];
+                }
+            } else {
+                $this->composerOptions = $opts !== [] ? $opts : [['option_name' => '']];
+            }
         } elseif ($typeId === 6) {
             $from = $question->options->firstWhere('question_option_type_id', 1);
             $to = $question->options->firstWhere('question_option_type_id', 2);
@@ -296,12 +331,94 @@ class FormBuilder extends Page
             $this->composerImageUpload = null;
         }
 
+        if ($typeId === 21 && $this->composerDocUpload instanceof TemporaryUploadedFile) {
+            $storedPath = $this->composerDocUpload->store('form-builder/docs', 'public');
+            $this->composerQuestionText = $storedPath;
+            $this->composerDocTitle = trim($this->composerDocTitle) !== ''
+                ? $this->composerDocTitle
+                : basename($storedPath);
+            $this->composerButtonLinkUrl = trim($this->composerButtonLinkUrl) !== ''
+                ? $this->composerButtonLinkUrl
+                : $storedPath;
+            $this->composerDocUpload = null;
+        }
+
+        if ($typeId === 23 && $this->composerDocUploads !== []) {
+            $storedPaths = [];
+
+            foreach ($this->composerDocUploads as $upload) {
+                if ($upload instanceof TemporaryUploadedFile) {
+                    $storedPaths[] = $upload->store('form-builder/docs', 'public');
+                }
+            }
+
+            if ($storedPaths !== []) {
+                $titles = FormBuilderMedia::splitCsv($this->composerDocTitle);
+
+                if ($titles === []) {
+                    $titles = array_map('basename', $storedPaths);
+                } elseif (count($titles) < count($storedPaths)) {
+                    foreach ($storedPaths as $index => $path) {
+                        if (! isset($titles[$index])) {
+                            $titles[$index] = basename($path);
+                        }
+                    }
+                }
+
+                $this->composerQuestionText = implode(',', $storedPaths);
+                $this->composerDocTitle = implode(',', array_slice($titles, 0, count($storedPaths)));
+            }
+
+            $this->composerDocUploads = [];
+        }
+
+        if (in_array($typeId, [3, 4, 5], true)) {
+            $nonEmptyOptions = array_filter(
+                $this->composerOptions,
+                fn (array $row): bool => trim((string) ($row['option_name'] ?? '')) !== '',
+            );
+
+            if ($nonEmptyOptions === []) {
+                Notification::make()->title('Add at least one answer option')->danger()->send();
+
+                return;
+            }
+        }
+
+        if ($typeId === 6) {
+            $from = is_numeric($this->composerScaleFrom) ? (float) $this->composerScaleFrom : null;
+            $to = is_numeric($this->composerScaleTo) ? (float) $this->composerScaleTo : null;
+
+            if ($from === null || $to === null || $from > $to) {
+                Notification::make()->title('Scale requires numeric from/to values with from ≤ to')->danger()->send();
+
+                return;
+            }
+        }
+
+        if ($typeId === 7) {
+            $nonEmptyRows = array_filter(
+                $this->composerGridRows,
+                fn (array $row): bool => trim((string) ($row['option_name'] ?? '')) !== '',
+            );
+            $nonEmptyCols = array_filter(
+                $this->composerGridCols,
+                fn (array $row): bool => trim((string) ($row['option_name'] ?? '')) !== '',
+            );
+
+            if ($nonEmptyRows === [] || $nonEmptyCols === []) {
+                Notification::make()->title('Grid needs at least one row and one column')->danger()->send();
+
+                return;
+            }
+        }
+
         $data = [
             'question_type_id' => $typeId,
             'question_text' => $this->composerQuestionText,
             'image_title' => $this->composerImageTitle,
             'image_url' => $this->composerImageUrl ?: null,
-            'image_align' => $this->composerImageAlign,
+            'image_align' => FormBuilderMedia::alignValue($this->composerImageAlign),
             'button_link_url' => $this->composerButtonLinkUrl,
             'button_colour' => $this->composerButtonColour,
             'doc_title' => $this->composerDocTitle,
@@ -450,6 +567,18 @@ class FormBuilder extends Page
         $this->composerGridCols[] = ['option_name' => ''];
     }
 
+    public function removeGridRow(int $index): void
+    {
+        unset($this->composerGridRows[$index]);
+        $this->composerGridRows = array_values($this->composerGridRows);
+    }
+
+    public function removeGridCol(int $index): void
+    {
+        unset($this->composerGridCols[$index]);
+        $this->composerGridCols = array_values($this->composerGridCols);
+    }
+
     /**
      * @return Collection<int|string, string>
      */
@@ -552,8 +681,10 @@ class FormBuilder extends Page
         $this->composerGridCols = [['option_name' => '']];
         $this->composerImageTitle = '';
         $this->composerImageUrl = '';
-        $this->composerImageAlign = '0';
+        $this->composerImageAlign = 'left';
         $this->composerImageUpload = null;
+        $this->composerDocUpload = null;
+        $this->composerDocUploads = [];
         $this->composerIncludeName = true;
         $this->composerIncludeEmployer = false;
         $this->composerIncludeEmail = false;

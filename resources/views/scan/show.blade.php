@@ -201,6 +201,14 @@
                                 <div class="display-html">{!! $question->question_text !!}</div>
                                 @break
 
+                            @case(10)
+                                <h1>{{ strip_tags($question->question_text) }}</h1>
+                                @break
+
+                            @case(12)
+                                <h3>{{ strip_tags($question->question_text) }}</h3>
+                                @break
+
                             @case(20)
                                 <a class="form-link-btn" style="background:#{{ $question->button_colour ?: '008C00' }};" href="{{ $question->button_link_url ?: '#' }}" target="_blank" rel="noopener">
                                     {{ $question->question_text ?: 'Open link' }}
@@ -208,10 +216,33 @@
                                 @break
 
                             @case(21)
+                                @php $docHref = \App\Support\FormBuilderMedia::resolveDocumentHref($question); @endphp
+                                @if ($docHref)
+                                    <a class="form-link-btn" style="background:#{{ $question->button_colour ?: '008C00' }};" href="{{ $docHref }}" target="_blank" rel="noopener">
+                                        {{ $question->doc_title ?: 'View document' }}
+                                    </a>
+                                @endif
+                                @break
+
                             @case(23)
-                                <a class="form-link-btn" style="background:#{{ $question->button_colour ?: '008C00' }};" href="{{ $question->button_link_url ?: '#' }}" target="_blank" rel="noopener">
-                                    {{ $question->doc_title ?: $question->question_text ?: 'View document' }}
-                                </a>
+                                @php $docChoices = \App\Support\FormBuilderMedia::documentChoices($question); @endphp
+                                @if ($question->question_text && ! str_contains($question->question_text, ',') && ! str_contains($question->question_text, ':::'))
+                                    <p style="font-weight:600;margin-bottom:.35rem;">{{ $question->question_text }}</p>
+                                @endif
+                                <label>{{ $question->doc_title ?: 'Select documents' }}@if($question->is_mandatory) *@endif</label>
+                                <div class="field-choice">
+                                    @foreach ($docChoices as $doc)
+                                        <div style="margin-bottom:.35rem;">
+                                            <label>
+                                                <input type="checkbox" name="answers[{{ $qid }}][]" value="{{ $doc['title'] }}" {{ $required }}>
+                                                {{ $doc['title'] }}
+                                            </label>
+                                            @if ($doc['href'])
+                                                <a href="{{ $doc['href'] }}" target="_blank" rel="noopener" style="font-size:.85rem;margin-left:.5rem;">Download</a>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
                                 @break
 
                             @case(3)
@@ -309,12 +340,9 @@
 
                             @case(11)
                                 @php
-                                    $imgUrl = \App\Support\PublicMediaPath::url($question->image_url);
-                                    $align = match ((string) $question->image_align) {
-                                        '1' => 'center',
-                                        '2' => 'right',
-                                        default => 'left',
-                                    };
+                                    $imgUrl = \App\Support\FormBuilderMedia::url($question->image_url)
+                                        ?: \App\Support\FormBuilderMedia::url($question->question_text);
+                                    $align = \App\Support\FormBuilderMedia::alignCss($question->image_align);
                                 @endphp
                                 @if ($question->image_title)
                                     <p style="font-weight:600;text-align:{{ $align }};">{{ $question->image_title }}</p>

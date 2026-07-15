@@ -284,14 +284,20 @@
                                     <div>
                                         <label class="fb-label">Grid rows</label>
                                         @foreach ($composerGridRows as $ri => $row)
-                                            <input type="text" wire:model="composerGridRows.{{ $ri }}.option_name" class="fb-input" style="margin-bottom:.35rem;" wire:key="grow-{{ $ri }}">
+                                            <div class="fb-recipient-row" wire:key="grow-{{ $ri }}">
+                                                <input type="text" wire:model="composerGridRows.{{ $ri }}.option_name" class="fb-input">
+                                                <button type="button" class="fb-btn fb-btn-danger fb-btn-sm" wire:click="removeGridRow({{ $ri }})">×</button>
+                                            </div>
                                         @endforeach
                                         <button type="button" class="fb-btn fb-btn-secondary fb-btn-sm" wire:click="addGridRow">+ Row</button>
                                     </div>
                                     <div>
                                         <label class="fb-label">Grid columns</label>
                                         @foreach ($composerGridCols as $ci => $col)
-                                            <input type="text" wire:model="composerGridCols.{{ $ci }}.option_name" class="fb-input" style="margin-bottom:.35rem;" wire:key="gcol-{{ $ci }}">
+                                            <div class="fb-recipient-row" wire:key="gcol-{{ $ci }}">
+                                                <input type="text" wire:model="composerGridCols.{{ $ci }}.option_name" class="fb-input">
+                                                <button type="button" class="fb-btn fb-btn-danger fb-btn-sm" wire:click="removeGridCol({{ $ci }})">×</button>
+                                            </div>
                                         @endforeach
                                         <button type="button" class="fb-btn fb-btn-secondary fb-btn-sm" wire:click="addGridCol">+ Column</button>
                                     </div>
@@ -318,8 +324,16 @@
 
                             @if (in_array($composingTypeId, [21, 23], true))
                                 <div style="margin-top:.75rem;">
-                                    <label class="fb-label">Document title</label>
+                                    <label class="fb-label">Document title{{ $composingTypeId === 23 ? 's (comma-separated)' : '' }}</label>
                                     <input type="text" wire:model="composerDocTitle" class="fb-input">
+                                </div>
+                                <div style="margin-top:.75rem;">
+                                    <label class="fb-label">Upload document{{ $composingTypeId === 23 ? 's' : '' }}</label>
+                                    @if ($composingTypeId === 21)
+                                        <input type="file" wire:model="composerDocUpload" class="fb-input">
+                                    @else
+                                        <input type="file" wire:model="composerDocUploads" class="fb-input" multiple>
+                                    @endif
                                 </div>
                             @endif
 
@@ -332,9 +346,9 @@
                                     <div>
                                         <label class="fb-label">Alignment</label>
                                         <select wire:model="composerImageAlign" class="fb-select">
-                                            <option value="0">Left</option>
-                                            <option value="1">Centre</option>
-                                            <option value="2">Right</option>
+                                            <option value="left">Left</option>
+                                            <option value="center">Centre</option>
+                                            <option value="right">Right</option>
                                         </select>
                                     </div>
                                 </div>
@@ -342,7 +356,7 @@
                                     <label class="fb-label">Upload image</label>
                                     <input type="file" wire:model="composerImageUpload" accept="image/*" class="fb-input">
                                     @if ($composerImageUrl)
-                                        <img src="{{ \App\Support\PublicMediaPath::url($composerImageUrl) }}" alt="Preview" class="fb-image-preview">
+                                        <img src="{{ \App\Support\FormBuilderMedia::url($composerImageUrl) }}" alt="Preview" class="fb-image-preview">
                                     @endif
                                 </div>
                             @endif
@@ -478,19 +492,19 @@
                                             $to = (int) ($question->options->firstWhere('question_option_type_id', 2)?->option_name ?? 5);
                                         @endphp
                                         <select disabled>@for($i = $from; $i <= $to; $i++)<option>{{ $i }}</option>@endfor</select>
-                                    @elseif ($tid === 11 && $question->image_url)
+                                    @elseif ($tid === 11 && ($question->image_url || $question->question_text))
                                         @php
-                                            $imgAlign = match ((string) ($question->image_align ?? '0')) {
-                                                '1' => 'center',
-                                                '2' => 'right',
-                                                default => 'left',
-                                            };
+                                            $imgUrl = \App\Support\FormBuilderMedia::url($question->image_url)
+                                                ?: \App\Support\FormBuilderMedia::url($question->question_text);
+                                            $imgAlign = \App\Support\FormBuilderMedia::alignCss($question->image_align);
                                         @endphp
                                         <div style="text-align:{{ $imgAlign }};">
                                             @if ($question->image_title)
                                                 <p style="font-weight:600;font-size:.8125rem;">{{ $question->image_title }}</p>
                                             @endif
-                                            <img src="{{ \App\Support\PublicMediaPath::url($question->image_url) }}" alt="{{ $question->image_title ?: 'Image' }}" style="max-width:100%;border-radius:6px;">
+                                            @if ($imgUrl)
+                                                <img src="{{ $imgUrl }}" alt="{{ $question->image_title ?: 'Image' }}" style="max-width:100%;border-radius:6px;">
+                                            @endif
                                         </div>
                                     @elseif ($tid === 15 || $tid === 16)
                                         <label>{{ $question->question_text }}@if($question->is_mandatory)*@endif</label>

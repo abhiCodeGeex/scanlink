@@ -127,10 +127,11 @@ class MobileProfileController extends Controller
             ->get()
             ->keyBy('question_id');
 
-        $displayOnlyTypes = [2, 11, 13, 14, 20, 21, 23];
+        $displayOnlyTypes = [2, 10, 11, 12, 13, 14, 20, 21];
         $sessionId = $validated['session_id'] ?? (string) Str::uuid();
 
         $answerMap = $validated['answers'] ?? [];
+        $rawAnswers = $answerMap;
 
         foreach ($validated['answers_sig_text'] ?? [] as $questionId => $sigText) {
             if (filled($sigText) && empty($answerMap[$questionId])) {
@@ -179,6 +180,45 @@ class MobileProfileController extends Controller
             }
         }
 
+        foreach ($questions as $question) {
+            if (! $question->is_mandatory) {
+                continue;
+            }
+
+            if (in_array((int) $question->question_type_id, $displayOnlyTypes, true)) {
+                continue;
+            }
+
+            $questionId = $question->question_id;
+            $answer = $answerMap[$questionId] ?? null;
+
+            if (is_array($answer)) {
+                $hasValue = false;
+
+                foreach ($answer as $value) {
+                    if (is_array($value)) {
+                        if (array_filter($value, fn ($v) => filled($v)) !== []) {
+                            $hasValue = true;
+                            break;
+                        }
+                    } elseif (filled($value)) {
+                        $hasValue = true;
+                        break;
+                    }
+                }
+
+                if (! $hasValue) {
+                    return back()->withErrors(['form' => 'Please complete all mandatory fields.'])->withInput();
+                }
+
+                continue;
+            }
+
+            if (! filled($answer)) {
+                return back()->withErrors(['form' => 'Please complete all mandatory fields.'])->withInput();
+            }
+        }
+
         $savedAnswers = [];
 
         foreach ($answerMap as $questionId => $answer) {
@@ -220,7 +260,7 @@ class MobileProfileController extends Controller
             $savedAnswers[(int) $questionId] = (string) $answer;
         }
 
-        $this->markParticipatedParticipants($profile, $questions, $savedAnswers);
+        $this->markParticipatedParticipants($profile, $questions, $rawAnswers);
         $this->notifyFormSubmissionRecipients($profile, $sessionId, $questions, $savedAnswers);
 
         return redirect()
@@ -332,7 +372,7 @@ class MobileProfileController extends Controller
 
     /**
      * @param  Collection<int, FormBuilderQuestion>  $questions
-     * @param  array<int, string>  $savedAnswers
+     * @param  array<int|string, mixed>  $savedAnswers
      */
     protected function markParticipatedParticipants(Profile $profile, Collection $questions, array $savedAnswers): void
     {
@@ -345,7 +385,8 @@ class MobileProfileController extends Controller
         }
 
         foreach ($participantQuestions as $question) {
-            $name = trim((string) ($savedAnswers[$question->question_id] ?? ''));
+            $raw = $savedAnswers[$question->question_id] ?? $savedAnswers[(string) $question->question_id] ?? '';
+            $name = is_array($raw) ? trim((string) ($raw[0] ?? '')) : trim((string) $raw);
 
             if ($name === '') {
                 continue;
@@ -422,12 +463,23 @@ class MobileProfileController extends Controller
         }
 
         $body = implode("\n", $lines);
+        $attachPdf = (int) ($profile->form_submission_format ?? 0) === 1;
+        $pdfContent = $attachPdf ? $this->buildFormSubmissionPdf($profile, $sessionId, $questions, $savedAnswers) : null;
 
         foreach ($recipients as $email) {
             try {
-                Mail::raw($body, function ($message) use ($email, $subject): void {
-                    $message->to($email)->subject($subject);
-                });
+                if ($pdfContent !== null) {
+                    Mail::send([], [], function ($message) use ($email, $subject, $body, $pdfContent): void {
+                        $message->to($email)
+                            ->subject($subject)
+                            ->text($body)
+                            ->attachData($pdfContent, 'form-submission.pdf', ['mime' => 'application/pdf']);
+                    });
+                } else {
+                    Mail::raw($body, function ($message) use ($email, $subject): void {
+                        $message->to($email)->subject($subject);
+                    });
+                }
             } catch (\Throwable $exception) {
                 Log::warning('Form submission email failed', [
                     'profile_id' => $profile->id,
@@ -435,6 +487,53 @@ class MobileProfileController extends Controller
                     'error' => $exception->getMessage(),
                 ]);
             }
+        }
+    }
+
+    /**
+     * @param  Collection<int, FormBuilderQuestion>  $questions
+     * @param  array<int, string>  $savedAnswers
+     */
+    protected function buildFormSubmissionPdf(
+        Profile $profile,
+        string $sessionId,
+        Collection $questions,
+        array $savedAnswers,
+    ): ?string {
+        try {
+            $pdf = new \TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+            $pdf->SetCreator('ScanLink');
+            $pdf->SetAuthor($profile->name);
+            $pdf->SetTitle('Form submission — '.$profile->name);
+            $pdf->setPrintHeader(false);
+            $pdf->setPrintFooter(false);
+            $pdf->SetMargins(15, 15, 15);
+            $pdf->SetAutoPageBreak(true, 15);
+            $pdf->AddPage();
+            $pdf->SetFont('helvetica', 'B', 14);
+            $pdf->Write(0, 'Form submission — '.$profile->name, '', 0, 'L', true);
+            $pdf->SetFont('helvetica', '', 10);
+            $pdf->Write(0, 'Session: '.$sessionId, '', 0, 'L', true);
+            $pdf->Ln(4);
+
+            foreach ($savedAnswers as $questionId => $answer) {
+                $question = $questions->get((int) $questionId);
+                $label = strip_tags((string) ($question?->question_text ?: "Question #{$questionId}"));
+                $pdf->SetFont('helvetica', 'B', 10);
+                $pdf->MultiCell(0, 5, $label.':', 0, 'L', false, 1);
+                $pdf->SetFont('helvetica', '', 10);
+                $pdf->MultiCell(0, 5, (string) $answer, 0, 'L', false, 1);
+                $pdf->Ln(2);
+            }
+
+            return $pdf->Output('', 'S');
+        } catch (\Throwable $exception) {
+            Log::warning('Form submission PDF generation failed', [
+                'profile_id' => $profile->id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return null;
         }
     }
 }

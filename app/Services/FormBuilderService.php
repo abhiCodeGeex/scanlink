@@ -85,7 +85,7 @@ class FormBuilderService
                 'question_text' => $data['question_text'] ?? '',
                 'image_title' => $data['image_title'] ?? '',
                 'image_url' => $data['image_url'] ?? null,
-                'image_align' => $data['image_align'] ?? '0',
+                'image_align' => \App\Support\FormBuilderMedia::alignValue($data['image_align'] ?? 'left'),
                 'button_link_url' => $data['button_link_url'] ?? '',
                 'button_colour' => $data['button_colour'] ?? '007A01',
                 'doc_title' => $data['doc_title'] ?? '',
