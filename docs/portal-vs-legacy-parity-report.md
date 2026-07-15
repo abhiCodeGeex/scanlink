@@ -50,9 +50,9 @@ Legacy MD5 portal passwords: set to fallback `changeme` during sync (users must 
 | Code balance | `/portal/code-balance` | Wired |
 | Purchase codes | `/portal/purchase-codes` | Wired (invoice-later / pending) |
 | Multi renew any type | `/portal/renew-codes` | Wired |
-| Form builder + options + reorder | `/portal/form-builder` | Wired |
-| Form library apply/delete | `/portal/form-library` | Wired |
-| Form submissions detail | `/portal/form-submissions` | Wired |
+| Form builder editor (palette, canvas, drag, edit, settings) | `/portal/form-builder` | Wired |
+| Form library apply/delete/save | `/portal/form-library` | Wired |
+| Form submissions detail + CSV | `/portal/form-submissions` | Wired |
 | Participants | `/portal/participants` | Wired |
 | Buy form builder | `/portal/purchase-form-builder` | Wired |
 | Scan analytics + CSV | `/portal/scan-analytics` | Wired (Galatech API) |

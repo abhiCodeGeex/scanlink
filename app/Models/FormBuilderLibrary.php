@@ -11,12 +11,10 @@ class FormBuilderLibrary extends Model
 
     protected $primaryKey = 'form_builder_library_id';
 
-    public $incrementing = false;
-
     public $timestamps = false;
 
     protected $fillable = [
-        'form_builder_library_id', 'form_id', 'user_id', 'form_title',
+        'user_id', 'form_id', 'form_title',
         'is_deleted', 'is_deleted_from_library',
     ];
 

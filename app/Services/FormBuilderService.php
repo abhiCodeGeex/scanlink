@@ -99,6 +99,16 @@ class FormBuilderService
                 'is_logchecked' => (bool) ($data['is_logchecked'] ?? false),
                 'log_columntitle' => $data['log_columntitle'] ?? '',
                 'is_deleted' => false,
+                // Live schema columns are NOT NULL without defaults.
+                'covid_bg_color' => $data['covid_bg_color'] ?? '',
+                'covid_text_color' => $data['covid_text_color'] ?? '',
+                'visitor_name' => $data['visitor_name'] ?? '',
+                'visitor_phone' => $data['visitor_phone'] ?? '',
+                'date' => $data['date'] ?? '',
+                'time' => $data['time'] ?? '',
+                'venue_name' => $data['venue_name'] ?? '',
+                'venue_address' => $data['venue_address'] ?? '',
+                'location_description' => $data['location_description'] ?? '',
             ];
 
             if ($questionId) {

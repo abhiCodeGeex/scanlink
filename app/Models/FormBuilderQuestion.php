@@ -22,7 +22,8 @@ class FormBuilderQuestion extends Model
         'include_name', 'include_employer', 'include_email', 'include_phone',
         'participant_include_signature', 'participant_include_employer',
         'is_mandatory', 'is_deleted', 'is_logchecked', 'log_columntitle',
-        'covid_bg_color', 'covid_text_color',
+        'covid_bg_color', 'covid_text_color', 'visitor_name', 'visitor_phone',
+        'date', 'time', 'venue_name', 'venue_address', 'location_description',
     ];
 
     protected function casts(): array
