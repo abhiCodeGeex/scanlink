@@ -307,6 +307,27 @@
                                 <input type="time" name="answers[{{ $qid }}]" {{ $required }}>
                                 @break
 
+                            @case(11)
+                                @php
+                                    $imgUrl = \App\Support\PublicMediaPath::url($question->image_url);
+                                    $align = match ((string) $question->image_align) {
+                                        '1' => 'center',
+                                        '2' => 'right',
+                                        default => 'left',
+                                    };
+                                @endphp
+                                @if ($question->image_title)
+                                    <p style="font-weight:600;text-align:{{ $align }};">{{ $question->image_title }}</p>
+                                @endif
+                                @if ($imgUrl)
+                                    <div style="text-align:{{ $align }};">
+                                        <img src="{{ $imgUrl }}" alt="{{ $question->image_title ?: 'Form image' }}" style="max-width:100%;border-radius:8px;">
+                                    </div>
+                                @elseif ($question->question_text)
+                                    <div class="display-html">{!! $question->question_text !!}</div>
+                                @endif
+                                @break
+
                             @case(15)
                                 <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
                                 <textarea name="answers[{{ $qid }}]" rows="3" {{ $required }}></textarea>
@@ -319,7 +340,22 @@
                                     <input type="hidden" name="answers[{{ $qid }}]" id="sig-input-{{ $qid }}">
                                     <p style="margin:.35rem 0;"><button type="button" class="btn-outline btn" onclick="clearSig({{ $qid }})">Clear signature</button></p>
                                 </div>
-                                <textarea name="answers_sig_text[{{ $qid }}]" rows="2" placeholder="Or type your name" {{ $required }}></textarea>
+                                @if ($question->include_name)
+                                    <label>Name</label>
+                                    <input type="text" name="answers_meta[{{ $qid }}][name]" {{ $required }}>
+                                @endif
+                                @if ($question->include_employer)
+                                    <label>Employer</label>
+                                    <input type="text" name="answers_meta[{{ $qid }}][employer]">
+                                @endif
+                                @if ($question->include_email)
+                                    <label>Email</label>
+                                    <input type="email" name="answers_meta[{{ $qid }}][email]">
+                                @endif
+                                @if ($question->include_phone)
+                                    <label>Phone</label>
+                                    <input type="text" name="answers_meta[{{ $qid }}][phone]">
+                                @endif
                                 @break
 
                             @case(17)
@@ -330,6 +366,17 @@
                             @case(18)
                                 <label>{{ $question->question_text ?: 'Participant name' }}@if($question->is_mandatory) *@endif</label>
                                 <input type="text" name="answers[{{ $qid }}]" placeholder="Full name" {{ $required }}>
+                                @if ($question->participant_include_employer)
+                                    <label>Employer / company</label>
+                                    <input type="text" name="answers_meta[{{ $qid }}][employer]">
+                                @endif
+                                @if ($question->participant_include_signature)
+                                    <div class="signature-wrap">
+                                        <canvas id="sig-{{ $qid }}" width="320" height="120"></canvas>
+                                        <input type="hidden" name="answers_meta[{{ $qid }}][signature]" id="sig-input-{{ $qid }}">
+                                        <p style="margin:.35rem 0;"><button type="button" class="btn-outline btn" onclick="clearSig({{ $qid }})">Clear signature</button></p>
+                                    </div>
+                                @endif
                                 @break
 
                             @case(19)
@@ -337,13 +384,44 @@
                                 <input type="text" name="answers[{{ $qid }}]" placeholder="Location" {{ $required }}>
                                 @break
 
+                            @case(22)
+                                <label>{{ $question->question_text ?: 'SWMS Hazard / Risk' }}@if($question->is_mandatory) *@endif</label>
+                                <label>Task / activity</label>
+                                <input type="text" name="answers_meta[{{ $qid }}][task]" {{ $required }}>
+                                <label>Hazards</label>
+                                <textarea name="answers_meta[{{ $qid }}][hazards]" rows="2"></textarea>
+                                <label>Risk before controls</label>
+                                <input type="text" name="answers_meta[{{ $qid }}][risk_before]">
+                                <label>Controls / risk after</label>
+                                <textarea name="answers_meta[{{ $qid }}][risk_after]" rows="2"></textarea>
+                                <label>Photo (optional)</label>
+                                <input type="file" name="answers_file[{{ $qid }}]" accept="image/*">
+                                @break
+
                             @case(24)
-                                <label>{{ $question->question_text ?: 'Email' }}@if($question->is_mandatory) *@endif</label>
+                                <label>{{ $question->question_text ?: 'Additional recipient email' }}@if($question->is_mandatory) *@endif</label>
                                 <input type="email" name="answers[{{ $qid }}]" {{ $required }}>
                                 @break
 
+                            @case(25)
+                                @php
+                                    $bg = $question->covid_bg_color ?: '#ffffff';
+                                    $fg = $question->covid_text_color ?: '#222222';
+                                @endphp
+                                <div style="background:{{ $bg }};color:{{ $fg }};padding:1rem;border-radius:8px;">
+                                    <div class="display-html">{!! $question->question_text !!}</div>
+                                    <label>Visitor name</label>
+                                    <input type="text" name="answers_meta[{{ $qid }}][visitor_name]" {{ $required }}>
+                                    <label>Visitor phone</label>
+                                    <input type="text" name="answers_meta[{{ $qid }}][visitor_phone]">
+                                    <label>Venue</label>
+                                    <input type="text" name="answers_meta[{{ $qid }}][venue_name]">
+                                    <label>Location</label>
+                                    <input type="text" name="answers_meta[{{ $qid }}][location_description]">
+                                </div>
+                                @break
+
                             @default
-                                {{-- COVID/SWMS and unknown types: safe textarea fallback --}}
                                 <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
                                 <textarea name="answers[{{ $qid }}]" rows="2" {{ $required }}></textarea>
                         @endswitch
@@ -355,12 +433,18 @@
                 (function () {
                     const pads = {};
                     @foreach ($questions as $question)
-                        @if ((int) $question->question_type_id === 16)
+                        @if (
+                            (int) $question->question_type_id === 16
+                            || ((int) $question->question_type_id === 18 && $question->participant_include_signature)
+                        )
                             (function initSig{{ $question->question_id }}() {
                                 const canvas = document.getElementById('sig-{{ $question->question_id }}');
                                 const input = document.getElementById('sig-input-{{ $question->question_id }}');
                                 if (!canvas || !input) return;
                                 const ctx = canvas.getContext('2d');
+                                ctx.strokeStyle = '#111';
+                                ctx.lineWidth = 2;
+                                ctx.lineCap = 'round';
                                 let drawing = false;
                                 const pos = (e) => {
                                     const r = canvas.getBoundingClientRect();

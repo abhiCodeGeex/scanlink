@@ -110,6 +110,7 @@ class MobileProfileController extends Controller
         $validated = $request->validate([
             'answers' => ['nullable', 'array'],
             'answers.*' => ['nullable'],
+            'answers_meta' => ['nullable', 'array'],
             'answers_sig_text' => ['nullable', 'array'],
             'answers_sig_text.*' => ['nullable', 'string', 'max:5000'],
             'answers_file' => ['nullable', 'array'],
@@ -126,7 +127,7 @@ class MobileProfileController extends Controller
             ->get()
             ->keyBy('question_id');
 
-        $displayOnlyTypes = [2, 13, 14, 20, 21, 23];
+        $displayOnlyTypes = [2, 11, 13, 14, 20, 21, 23];
         $sessionId = $validated['session_id'] ?? (string) Str::uuid();
 
         $answerMap = $validated['answers'] ?? [];
@@ -137,13 +138,44 @@ class MobileProfileController extends Controller
             }
         }
 
+        foreach ($validated['answers_meta'] ?? [] as $questionId => $meta) {
+            if (! is_array($meta)) {
+                continue;
+            }
+
+            $parts = [];
+            foreach ($meta as $key => $value) {
+                if (filled($value) && is_scalar($value)) {
+                    $parts[] = ucfirst(str_replace('_', ' ', (string) $key)).': '.$value;
+                }
+            }
+
+            if ($parts === []) {
+                continue;
+            }
+
+            $metaText = implode(' | ', $parts);
+            $existing = $answerMap[$questionId] ?? null;
+
+            if (is_array($existing)) {
+                $answerMap[$questionId] = array_merge($existing, ['_meta' => $metaText]);
+            } elseif (filled($existing)) {
+                $answerMap[$questionId] = trim((string) $existing.' | '.$metaText);
+            } else {
+                $answerMap[$questionId] = $metaText;
+            }
+        }
+
         /** @var array<int, UploadedFile|null> $files */
         $files = $request->file('answers_file') ?? [];
 
         foreach ($files as $questionId => $file) {
             if ($file instanceof UploadedFile && $file->isValid()) {
                 $path = $file->store('form-uploads/'.$profile->id, 'public');
-                $answerMap[$questionId] = $path;
+                $existing = $answerMap[$questionId] ?? null;
+                $answerMap[$questionId] = filled($existing)
+                    ? trim((string) $existing.' | File: '.$path)
+                    : $path;
             }
         }
 

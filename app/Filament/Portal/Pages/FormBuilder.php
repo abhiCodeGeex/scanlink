@@ -111,6 +111,10 @@ class FormBuilder extends Page
 
     public string $composerDefaultValue = '';
 
+    public string $composerCovidBgColor = '#ffffff';
+
+    public string $composerCovidTextColor = '#222222';
+
     public bool $showPreview = false;
 
     protected FormBuilderService $formBuilder;
@@ -225,6 +229,15 @@ class FormBuilder extends Page
         $this->composerButtonColour = (string) ($question->button_colour ?: '007A01');
         $this->composerDocTitle = (string) ($question->doc_title ?? '');
         $this->composerDefaultValue = (string) ($question->default_value ?? '');
+        $this->composerCovidBgColor = (string) ($question->covid_bg_color ?: '#ffffff');
+        $this->composerCovidTextColor = (string) ($question->covid_text_color ?: '#222222');
+
+        if (! str_starts_with($this->composerCovidBgColor, '#')) {
+            $this->composerCovidBgColor = '#'.$this->composerCovidBgColor;
+        }
+        if (! str_starts_with($this->composerCovidTextColor, '#')) {
+            $this->composerCovidTextColor = '#'.$this->composerCovidTextColor;
+        }
 
         $typeId = (int) $question->question_type_id;
 
@@ -302,6 +315,8 @@ class FormBuilder extends Page
             'is_mandatory' => $this->composerIsMandatory,
             'is_logchecked' => $this->composerIsLogchecked,
             'log_columntitle' => $this->composerLogColumntitle,
+            'covid_bg_color' => ltrim($this->composerCovidBgColor, '#'),
+            'covid_text_color' => ltrim($this->composerCovidTextColor, '#'),
         ];
 
         $options = $this->buildOptionsPayload($typeId);
@@ -549,6 +564,8 @@ class FormBuilder extends Page
         $this->composerButtonColour = '007A01';
         $this->composerDocTitle = '';
         $this->composerDefaultValue = '';
+        $this->composerCovidBgColor = '#ffffff';
+        $this->composerCovidTextColor = '#222222';
     }
 
     /**

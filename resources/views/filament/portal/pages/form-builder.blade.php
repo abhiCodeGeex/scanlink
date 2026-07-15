@@ -212,17 +212,48 @@
                                 <button type="button" class="fb-btn fb-btn-secondary fb-btn-sm" wire:click="cancelComposer">Cancel</button>
                             </div>
 
-                            @unless (in_array($composingTypeId, [2, 13, 14, 20, 21, 23], true))
+                            @unless (in_array($composingTypeId, [2, 13, 14, 20, 21, 23, 25], true))
                                 <div style="margin-bottom:.75rem;">
                                     <label class="fb-label">Question / label text</label>
                                     <textarea wire:model="composerQuestionText" class="fb-textarea" rows="3"></textarea>
                                 </div>
                             @else
                                 <div style="margin-bottom:.75rem;">
-                                    <label class="fb-label">Display HTML / content</label>
-                                    <textarea wire:model="composerQuestionText" class="fb-textarea" rows="4"></textarea>
+                                    <label class="fb-label">{{ in_array($composingTypeId, [2, 25], true) ? 'Rich content (HTML supported)' : 'Display HTML / content' }}</label>
+                                    <textarea
+                                        wire:model="composerQuestionText"
+                                        class="fb-textarea fb-rich-target"
+                                        rows="6"
+                                        id="fb-rich-{{ $composingTypeId }}-{{ $editingQuestionId ?? 'new' }}"
+                                    ></textarea>
+                                    @if (in_array($composingTypeId, [2, 25], true))
+                                        <p style="font-size:.75rem;color:#6b7280;margin-top:.35rem;">Tip: you can paste HTML or use basic tags like &lt;b&gt;, &lt;p&gt;, &lt;ul&gt;.</p>
+                                    @endif
                                 </div>
                             @endunless
+
+                            @if ($composingTypeId === 25)
+                                <div class="fb-grid-2" style="margin-top:.75rem;">
+                                    <div>
+                                        <label class="fb-label">Background colour</label>
+                                        <div style="display:flex; gap:.5rem; align-items:center;">
+                                            <input type="color" value="{{ str_starts_with($composerCovidBgColor ?: '#ffffff', '#') ? ($composerCovidBgColor ?: '#ffffff') : '#'.ltrim($composerCovidBgColor, '#') }}"
+                                                   oninput="$wire.set('composerCovidBgColor', this.value)"
+                                                   style="width:2.5rem;height:2.5rem;border:none;background:transparent;cursor:pointer;">
+                                            <input type="text" wire:model="composerCovidBgColor" class="fb-input" style="flex:1;">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="fb-label">Text colour</label>
+                                        <div style="display:flex; gap:.5rem; align-items:center;">
+                                            <input type="color" value="{{ str_starts_with($composerCovidTextColor ?: '#222222', '#') ? ($composerCovidTextColor ?: '#222222') : '#'.ltrim($composerCovidTextColor, '#') }}"
+                                                   oninput="$wire.set('composerCovidTextColor', this.value)"
+                                                   style="width:2.5rem;height:2.5rem;border:none;background:transparent;cursor:pointer;">
+                                            <input type="text" wire:model="composerCovidTextColor" class="fb-input" style="flex:1;">
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
 
                             @if (in_array($composingTypeId, [3, 4, 5], true))
                                 <label class="fb-label">Answer options</label>
@@ -274,8 +305,13 @@
                                         <input type="text" wire:model="composerButtonLinkUrl" class="fb-input">
                                     </div>
                                     <div>
-                                        <label class="fb-label">Button colour (hex)</label>
-                                        <input type="text" wire:model="composerButtonColour" class="fb-input">
+                                        <label class="fb-label">Button colour</label>
+                                        <div style="display:flex; gap:.5rem; align-items:center;">
+                                            <input type="color" value="#{{ ltrim($composerButtonColour ?: '007A01', '#') }}"
+                                                   oninput="const hex=this.value.replace('#',''); $wire.set('composerButtonColour', hex)"
+                                                   style="width:2.5rem;height:2.5rem;border:none;background:transparent;cursor:pointer;">
+                                            <input type="text" wire:model="composerButtonColour" class="fb-input" placeholder="007A01" style="flex:1;">
+                                        </div>
                                     </div>
                                 </div>
                             @endif
