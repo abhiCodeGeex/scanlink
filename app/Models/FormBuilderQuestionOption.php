@@ -9,13 +9,13 @@ class FormBuilderQuestionOption extends Model
 {
     protected $table = 'form_builder_question_options';
 
-    protected $primaryKey = 'option_id';
-
-    public $incrementing = false;
+    protected $primaryKey = 'question_option_id';
 
     public $timestamps = false;
 
-    protected $fillable = ['option_id', 'question_id', 'option_name', 'question_option_type_id'];
+    protected $fillable = [
+        'question_option_id', 'question_id', 'option_name', 'question_option_type_id',
+    ];
 
     public function question(): BelongsTo
     {

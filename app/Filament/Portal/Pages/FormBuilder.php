@@ -4,24 +4,13 @@ namespace App\Filament\Portal\Pages;
 
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
 use App\Models\FormBuilderQuestion;
-use App\Models\FormBuilderQuestionOption;
 use App\Models\FormBuilderQuestionType;
 use App\Models\Profile;
+use App\Services\FormBuilderService;
+use App\Services\FormLibraryService;
 use BackedEnum;
-use Filament\Actions\Action;
-use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Filament\Schemas\Components\Actions;
-use Filament\Schemas\Components\Component;
-use Filament\Schemas\Components\EmbeddedSchema;
-use Filament\Schemas\Components\Form;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Collection;
@@ -42,17 +31,69 @@ class FormBuilder extends Page
 
     protected string $view = 'filament.portal.pages.form-builder';
 
-    /**
-     * @var array<string, mixed>|null
-     */
-    public ?array $data = [];
-
     public ?int $selectedProfileId = null;
-
-    public bool $formActive = false;
 
     /** @var Collection<int, FormBuilderQuestion> */
     public Collection $questions;
+
+    /** @var array{question: Collection, format: Collection, answer: Collection} */
+    public array $paletteGroups = [];
+
+    public string $formTitle = '';
+
+    /** @var array<int, string> */
+    public array $recipients = [];
+
+    public string $formEmailTag = '';
+
+    public bool $formIsEnable = false;
+
+    public bool $formActive = false;
+
+    public int $formSubmissionFormat = 0;
+
+    public ?int $composingTypeId = null;
+
+    public ?int $editingQuestionId = null;
+
+    public string $composerQuestionText = '';
+
+    public bool $composerIsMandatory = true;
+
+    public bool $composerIsLogchecked = false;
+
+    public string $composerLogColumntitle = '';
+
+    /** @var array<int, array{option_name: string}> */
+    public array $composerOptions = [];
+
+    public string $composerScaleFrom = '';
+
+    public string $composerScaleTo = '';
+
+    /** @var array<int, array{option_name: string}> */
+    public array $composerGridRows = [];
+
+    /** @var array<int, array{option_name: string}> */
+    public array $composerGridCols = [];
+
+    public string $composerImageTitle = '';
+
+    public string $composerImageUrl = '';
+
+    public string $composerButtonLinkUrl = '';
+
+    public string $composerButtonColour = '007A01';
+
+    public string $composerDocTitle = '';
+
+    public string $composerDefaultValue = '';
+
+    public bool $showPreview = false;
+
+    protected FormBuilderService $formBuilder;
+
+    protected FormLibraryService $formLibrary;
 
     public static function getNavigationGroup(): ?string
     {
@@ -64,262 +105,263 @@ class FormBuilder extends Page
         return static::memberCanAccessFormBuilder(static::portalMembership());
     }
 
+    public function boot(FormBuilderService $formBuilder, FormLibraryService $formLibrary): void
+    {
+        $this->formBuilder = $formBuilder;
+        $this->formLibrary = $formLibrary;
+    }
+
     public function mount(): void
     {
         $this->questions = collect();
+        $this->paletteGroups = $this->formBuilder->paletteGroups();
+
         $firstProfileId = $this->clientProfileOptions()->keys()->first();
 
-        $this->form->fill([
-            'profile_id' => $firstProfileId,
-            'question_text' => null,
-            'question_type_id' => $this->questionTypeOptions()->keys()->first(),
-            'is_mandatory' => false,
-            'options' => [],
-        ]);
-
         if ($firstProfileId) {
-            $this->loadQuestions((int) $firstProfileId);
+            $this->selectProfile((int) $firstProfileId);
         }
     }
 
-    public function defaultForm(Schema $schema): Schema
+    public function selectProfile(?int $profileId): void
     {
-        return $schema->statePath('data');
-    }
-
-    public function form(Schema $schema): Schema
-    {
-        return $schema
-            ->components([
-                Section::make('Profile form')
-                    ->schema([
-                        Select::make('profile_id')
-                            ->label('Profile')
-                            ->options(fn (): array => $this->clientProfileOptions()->all())
-                            ->required()
-                            ->live()
-                            ->afterStateUpdated(function (?string $state): void {
-                                $this->loadQuestions((int) $state);
-                            }),
-                        Toggle::make('form_active')
-                            ->label('Form active on scan page')
-                            ->live()
-                            ->afterStateUpdated(function (?bool $state): void {
-                                $this->toggleFormActive((bool) $state);
-                            }),
-                        Select::make('question_type_id')
-                            ->label('Question type')
-                            ->options(fn (): array => $this->questionTypeOptions()->all())
-                            ->required()
-                            ->live(),
-                        Textarea::make('question_text')
-                            ->label('Question text')
-                            ->required()
-                            ->rows(3)
-                            ->columnSpanFull(),
-                        Repeater::make('options')
-                            ->label('Answer options')
-                            ->schema([
-                                TextInput::make('option_name')
-                                    ->label('Option')
-                                    ->required(),
-                            ])
-                            ->visible(fn (callable $get): bool => in_array((int) $get('question_type_id'), [3, 4, 5], true))
-                            ->defaultItems(0)
-                            ->addActionLabel('Add option')
-                            ->columnSpanFull(),
-                        Toggle::make('is_mandatory')
-                            ->label('Mandatory'),
-                    ])
-                    ->columns(2),
-            ]);
-    }
-
-    public function toggleFormActive(bool $active): void
-    {
-        $profileId = (int) ($this->data['profile_id'] ?? $this->selectedProfileId ?? 0);
-
         if (! $profileId) {
+            $this->selectedProfileId = null;
+            $this->questions = collect();
+
             return;
         }
 
         $client = $this->requireClient();
 
-        $profile = Profile::query()
+        Profile::query()
             ->where('client_id', $client->id)
             ->active()
             ->findOrFail($profileId);
 
-        $profile->update([
-            'form_active' => $active,
-            'form_is_enable' => $active,
-        ]);
-
-        $this->formActive = $active;
-
-        Notification::make()
-            ->title($active ? 'Form activated' : 'Form deactivated')
-            ->success()
-            ->send();
+        $this->selectedProfileId = $profileId;
+        $this->cancelComposer();
+        $this->loadProfileData();
     }
 
-    public function addQuestion(): void
+    public function updatedSelectedProfileId(?int $profileId): void
     {
-        $data = $this->form->getState();
-        $client = $this->requireClient();
-        $profile = Profile::query()
-            ->where('client_id', $client->id)
-            ->active()
-            ->findOrFail($data['profile_id']);
+        $this->selectProfile($profileId);
+    }
 
-        $nextId = (int) FormBuilderQuestion::query()->max('question_id') + 1;
-        $nextOrder = (int) FormBuilderQuestion::query()
-            ->where('profile_id', $profile->id)
-            ->max('question_order') + 1;
+    public function saveSettings(): void
+    {
+        $profile = $this->resolveProfile();
 
-        FormBuilderQuestion::query()->create([
-            'question_id' => $nextId ?: 1,
-            'profile_id' => $profile->id,
-            'form_id' => $profile->form_id ?: 0,
-            'question_type_id' => $data['question_type_id'],
-            'question_text' => $data['question_text'],
-            'question_order' => $nextOrder ?: 1,
-            'is_mandatory' => (bool) ($data['is_mandatory'] ?? false),
+        $this->formBuilder->updateFormSettings($profile, [
+            'form_title' => $this->formTitle,
+            'form_email_tag' => $this->formEmailTag,
+            'form_is_enable' => $this->formIsEnable,
+            'form_active' => $this->formActive,
+            'form_submission_format' => $this->formSubmissionFormat,
+            'recipients' => array_values(array_filter($this->recipients, fn (string $e): bool => trim($e) !== '')),
         ]);
 
-        if (in_array((int) $data['question_type_id'], [3, 4, 5], true)) {
-            $this->syncQuestionOptions($nextId ?: 1, (int) $data['question_type_id'], $data['options'] ?? []);
+        Notification::make()->title('Form settings saved')->success()->send();
+
+        $this->loadProfileData();
+    }
+
+    public function openComposer(int $typeId): void
+    {
+        $this->composingTypeId = $typeId;
+        $this->editingQuestionId = null;
+        $this->resetComposerFields();
+    }
+
+    public function editQuestion(int $questionId): void
+    {
+        $profile = $this->resolveProfile();
+
+        $question = FormBuilderQuestion::query()
+            ->with(['questionType', 'options'])
+            ->where('profile_id', $profile->id)
+            ->findOrFail($questionId);
+
+        $this->editingQuestionId = $questionId;
+        $this->composingTypeId = (int) $question->question_type_id;
+        $this->composerQuestionText = (string) $question->question_text;
+        $this->composerIsMandatory = (bool) $question->is_mandatory;
+        $this->composerIsLogchecked = (bool) $question->is_logchecked;
+        $this->composerLogColumntitle = (string) ($question->log_columntitle ?? '');
+        $this->composerImageTitle = (string) ($question->image_title ?? '');
+        $this->composerImageUrl = (string) ($question->image_url ?? '');
+        $this->composerButtonLinkUrl = (string) ($question->button_link_url ?? '');
+        $this->composerButtonColour = (string) ($question->button_colour ?: '007A01');
+        $this->composerDocTitle = (string) ($question->doc_title ?? '');
+        $this->composerDefaultValue = (string) ($question->default_value ?? '');
+
+        $typeId = (int) $question->question_type_id;
+
+        if (in_array($typeId, [3, 4, 5], true)) {
+            $this->composerOptions = $question->options->map(fn ($o): array => [
+                'option_name' => (string) $o->option_name,
+            ])->values()->all();
+        } elseif ($typeId === 6) {
+            $from = $question->options->firstWhere('question_option_type_id', 1);
+            $to = $question->options->firstWhere('question_option_type_id', 2);
+            $this->composerScaleFrom = (string) ($from?->option_name ?? '1');
+            $this->composerScaleTo = (string) ($to?->option_name ?? '5');
+            $this->composerOptions = [];
+        } elseif ($typeId === 7) {
+            $this->composerGridRows = $question->options
+                ->where('question_option_type_id', 5)
+                ->map(fn ($o): array => ['option_name' => (string) $o->option_name])
+                ->values()->all();
+            $this->composerGridCols = $question->options
+                ->where('question_option_type_id', 6)
+                ->map(fn ($o): array => ['option_name' => (string) $o->option_name])
+                ->values()->all();
+            $this->composerOptions = [];
+        } else {
+            $this->composerOptions = [];
+        }
+    }
+
+    public function cancelComposer(): void
+    {
+        $this->composingTypeId = null;
+        $this->editingQuestionId = null;
+        $this->resetComposerFields();
+    }
+
+    public function saveQuestion(): void
+    {
+        $profile = $this->resolveProfile();
+        $typeId = (int) $this->composingTypeId;
+
+        if ($typeId <= 0) {
+            return;
         }
 
-        $profile->update([
-            'form_active' => true,
-            'form_is_enable' => true,
-        ]);
+        $type = FormBuilderQuestionType::query()->find($typeId);
+        $isDisplay = $type?->isDisplayOnly() ?? false;
+
+        if (! $isDisplay && trim($this->composerQuestionText) === '') {
+            Notification::make()->title('Question text is required')->danger()->send();
+
+            return;
+        }
+
+        $data = [
+            'question_type_id' => $typeId,
+            'question_text' => $this->composerQuestionText,
+            'image_title' => $this->composerImageTitle,
+            'image_url' => $this->composerImageUrl ?: null,
+            'button_link_url' => $this->composerButtonLinkUrl,
+            'button_colour' => $this->composerButtonColour,
+            'doc_title' => $this->composerDocTitle,
+            'default_value' => $this->composerDefaultValue,
+            'is_mandatory' => $this->composerIsMandatory,
+            'is_logchecked' => $this->composerIsLogchecked,
+            'log_columntitle' => $this->composerLogColumntitle,
+        ];
+
+        $options = $this->buildOptionsPayload($typeId);
+
+        $this->formBuilder->saveQuestion(
+            $profile,
+            $data,
+            $options,
+            $this->editingQuestionId,
+        );
 
         Notification::make()
-            ->title('Question added')
+            ->title($this->editingQuestionId ? 'Question updated' : 'Question added')
             ->success()
             ->send();
 
-        $this->loadQuestions($profile->id);
-        $this->form->fill([
-            'profile_id' => $profile->id,
-            'form_active' => true,
-            'question_text' => null,
-            'question_type_id' => $data['question_type_id'],
-            'is_mandatory' => false,
-            'options' => [],
-        ]);
+        $this->cancelComposer();
+        $this->loadProfileData();
     }
 
     public function deleteQuestion(int $questionId): void
     {
-        $client = $this->requireClient();
+        $profile = $this->resolveProfile();
 
-        $question = FormBuilderQuestion::query()
-            ->whereHas('profile', fn ($q) => $q->where('client_id', $client->id))
-            ->where('question_id', $questionId)
-            ->firstOrFail();
+        $this->formBuilder->deleteQuestion($profile, $questionId);
 
-        $profileId = $question->profile_id;
-        FormBuilderQuestionOption::query()->where('question_id', $questionId)->delete();
-        $question->delete();
-
-        Notification::make()
-            ->title('Question removed')
-            ->success()
-            ->send();
-
-        $this->loadQuestions($profileId);
-    }
-
-    public function moveQuestionUp(int $questionId): void
-    {
-        $this->reorderQuestion($questionId, -1);
-    }
-
-    public function moveQuestionDown(int $questionId): void
-    {
-        $this->reorderQuestion($questionId, 1);
-    }
-
-    protected function reorderQuestion(int $questionId, int $direction): void
-    {
-        $client = $this->requireClient();
-
-        $question = FormBuilderQuestion::query()
-            ->whereHas('profile', fn ($q) => $q->where('client_id', $client->id))
-            ->where('question_id', $questionId)
-            ->firstOrFail();
-
-        $siblings = FormBuilderQuestion::query()
-            ->where('profile_id', $question->profile_id)
-            ->orderBy('question_order')
-            ->get();
-
-        $index = $siblings->search(fn (FormBuilderQuestion $item): bool => $item->question_id === $questionId);
-        $swapIndex = $index + $direction;
-
-        if ($index === false || $swapIndex < 0 || $swapIndex >= $siblings->count()) {
-            return;
+        if ($this->editingQuestionId === $questionId) {
+            $this->cancelComposer();
         }
 
-        $other = $siblings[$swapIndex];
-        $currentOrder = $question->question_order;
-        $question->update(['question_order' => $other->question_order]);
-        $other->update(['question_order' => $currentOrder]);
+        Notification::make()->title('Question removed')->success()->send();
 
-        $this->loadQuestions($question->profile_id);
+        $this->loadProfileData();
     }
 
     /**
-     * @param  array<int, array{option_name?: string}>  $options
+     * @param  array<int, int|string>  $ids
      */
-    protected function syncQuestionOptions(int $questionId, int $questionTypeId, array $options): void
+    public function reorderQuestions(array $ids): void
     {
-        $nextOptionId = (int) FormBuilderQuestionOption::query()->max('option_id');
+        $profile = $this->resolveProfile();
 
-        foreach ($options as $option) {
-            if (! filled($option['option_name'] ?? null)) {
-                continue;
-            }
+        $this->formBuilder->reorder($profile, array_map('intval', $ids));
 
-            $nextOptionId++;
-            FormBuilderQuestionOption::query()->create([
-                'option_id' => $nextOptionId ?: 1,
-                'question_id' => $questionId,
-                'option_name' => $option['option_name'],
-                'question_option_type_id' => $questionTypeId,
-            ]);
-        }
+        $this->loadProfileData();
     }
 
-    protected function loadQuestions(int $profileId): void
+    public function addRecipient(): void
     {
-        $this->selectedProfileId = $profileId;
-        $this->questions = FormBuilderQuestion::query()
-            ->with(['questionType', 'options'])
-            ->where('profile_id', $profileId)
-            ->orderBy('question_order')
-            ->get();
+        $this->recipients[] = '';
+    }
 
-        $profile = Profile::query()->find($profileId);
-        $this->formActive = (bool) $profile?->form_active;
+    public function removeRecipient(int $index): void
+    {
+        unset($this->recipients[$index]);
+        $this->recipients = array_values($this->recipients);
+    }
 
-        $this->form->fill([
-            'profile_id' => $profileId,
-            'form_active' => $this->formActive,
-            'question_text' => $this->data['question_text'] ?? null,
-            'question_type_id' => $this->data['question_type_id'] ?? $this->questionTypeOptions()->keys()->first(),
-            'is_mandatory' => $this->data['is_mandatory'] ?? false,
-            'options' => $this->data['options'] ?? [],
-        ]);
+    public function saveToLibrary(): void
+    {
+        $profile = $this->resolveProfile();
+
+        $this->formLibrary->saveCurrentFormToLibrary($profile, $this->formTitle ?: null);
+
+        Notification::make()->title('Form saved to library')->success()->send();
+    }
+
+    public function togglePreview(): void
+    {
+        $this->showPreview = ! $this->showPreview;
+    }
+
+    public function addComposerOption(): void
+    {
+        $this->composerOptions[] = ['option_name' => ''];
+    }
+
+    public function removeComposerOption(int $index): void
+    {
+        unset($this->composerOptions[$index]);
+        $this->composerOptions = array_values($this->composerOptions);
+    }
+
+    public function addGridRow(): void
+    {
+        $this->composerGridRows[] = ['option_name' => ''];
+    }
+
+    public function addGridCol(): void
+    {
+        $this->composerGridCols[] = ['option_name' => ''];
+    }
+
+    public function getTitle(): string|Htmlable
+    {
+        return static::$title ?? 'Form Builder';
     }
 
     /**
      * @return Collection<int|string, string>
      */
-    protected function clientProfileOptions(): Collection
+    public function clientProfileOptions(): Collection
     {
         $client = $this->currentClient();
 
@@ -334,74 +376,96 @@ class FormBuilder extends Page
             ->pluck('name', 'id');
     }
 
-    /**
-     * @return Collection<int|string, string>
-     */
-    protected function questionTypeOptions(): Collection
+    protected function loadProfileData(): void
     {
-        $types = FormBuilderQuestionType::query()
-            ->where('is_active', true)
-            ->orderBy('type')
-            ->get();
-
-        if ($types->isEmpty()) {
-            return collect([
-                1 => 'Text',
-                2 => 'Textarea',
-                3 => 'Radio',
-                4 => 'Checkbox',
-                5 => 'Select',
-                6 => 'Date',
-                7 => 'Signature',
-                8 => 'File',
-            ]);
+        if (! $this->selectedProfileId) {
+            return;
         }
 
-        return $types->mapWithKeys(fn (FormBuilderQuestionType $type): array => [
-            $type->question_type_id => $type->label ?: ucfirst($type->type),
-        ]);
+        $profile = $this->resolveProfile();
+
+        $this->formTitle = (string) ($profile->form_title ?? '');
+        $this->formEmailTag = (string) ($profile->form_email_tag ?? '');
+        $this->formIsEnable = (bool) $profile->form_is_enable;
+        $this->formActive = (bool) $profile->form_active;
+        $this->formSubmissionFormat = (int) ($profile->form_submission_format ?? 0);
+
+        $this->recipients = $this->formBuilder
+            ->recipientsForProfile($profile)
+            ->pluck('recipient_email')
+            ->values()
+            ->all();
+
+        if ($this->recipients === []) {
+            $this->recipients = [''];
+        }
+
+        $this->questions = $this->formBuilder->questionsForProfile($profile->id);
+        $this->paletteGroups = $this->formBuilder->paletteGroups();
+    }
+
+    protected function resolveProfile(): Profile
+    {
+        $client = $this->requireClient();
+
+        return Profile::query()
+            ->where('client_id', $client->id)
+            ->active()
+            ->findOrFail($this->selectedProfileId);
+    }
+
+    protected function resetComposerFields(): void
+    {
+        $this->composerQuestionText = '';
+        $this->composerIsMandatory = true;
+        $this->composerIsLogchecked = false;
+        $this->composerLogColumntitle = '';
+        $this->composerOptions = [['option_name' => '']];
+        $this->composerScaleFrom = '1';
+        $this->composerScaleTo = '5';
+        $this->composerGridRows = [['option_name' => '']];
+        $this->composerGridCols = [['option_name' => '']];
+        $this->composerImageTitle = '';
+        $this->composerImageUrl = '';
+        $this->composerButtonLinkUrl = '';
+        $this->composerButtonColour = '007A01';
+        $this->composerDocTitle = '';
+        $this->composerDefaultValue = '';
     }
 
     /**
-     * @return array<Action>
+     * @return array<int, array{option_name: string, question_option_type_id?: int}>
      */
-    protected function getFormActions(): array
+    protected function buildOptionsPayload(int $typeId): array
     {
-        return [
-            Action::make('addQuestion')
-                ->label('Add question')
-                ->submit('addQuestion'),
-        ];
-    }
+        if (in_array($typeId, [3, 4, 5], true)) {
+            return array_map(fn (array $row): array => [
+                'option_name' => (string) ($row['option_name'] ?? ''),
+                'question_option_type_id' => 0,
+            ], $this->composerOptions);
+        }
 
-    public function getTitle(): string|Htmlable
-    {
-        return static::$title ?? 'Form Builder';
-    }
+        if ($typeId === 6) {
+            return [
+                ['option_name' => $this->composerScaleFrom ?: '1', 'question_option_type_id' => 1],
+                ['option_name' => $this->composerScaleTo ?: '5', 'question_option_type_id' => 2],
+            ];
+        }
 
-    public function content(Schema $schema): Schema
-    {
-        return $schema
-            ->components([
-                $this->getFormContentComponent(),
-            ]);
-    }
+        if ($typeId === 7) {
+            $rows = array_map(fn (array $row): array => [
+                'option_name' => (string) ($row['option_name'] ?? ''),
+                'question_option_type_id' => 5,
+            ], $this->composerGridRows);
 
-    public function getFormContentComponent(): Component
-    {
-        return Form::make([EmbeddedSchema::make('form')])
-            ->id('form')
-            ->livewireSubmitHandler('addQuestion')
-            ->footer([
-                Actions::make($this->getFormActions())
-                    ->alignment($this->getFormActionsAlignment())
-                    ->fullWidth($this->hasFullWidthFormActions())
-                    ->key('form-actions'),
-            ]);
-    }
+            $cols = array_map(fn (array $row): array => [
+                'option_name' => (string) ($row['option_name'] ?? ''),
+                'question_option_type_id' => 6,
+            ], $this->composerGridCols);
 
-    protected function hasFullWidthFormActions(): bool
-    {
-        return false;
+            return array_merge($rows, $cols);
+        }
+
+        return [];
     }
 }

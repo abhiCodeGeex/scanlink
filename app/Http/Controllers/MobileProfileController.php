@@ -13,6 +13,7 @@ use App\Services\ProfileQrService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -101,8 +102,12 @@ class MobileProfileController extends Controller
         $profile = $this->resolveProfile($clientUrl, $profileId);
 
         $validated = $request->validate([
-            'answers' => ['required', 'array'],
+            'answers' => ['nullable', 'array'],
             'answers.*' => ['nullable'],
+            'answers_sig_text' => ['nullable', 'array'],
+            'answers_sig_text.*' => ['nullable', 'string', 'max:5000'],
+            'answers_file' => ['nullable', 'array'],
+            'answers_file.*' => ['nullable', 'file', 'max:10240'],
             'session_id' => ['nullable', 'string', 'max:100'],
             'app_user_firstname' => ['nullable', 'string', 'max:100'],
             'app_user_lastname' => ['nullable', 'string', 'max:100'],
@@ -110,12 +115,51 @@ class MobileProfileController extends Controller
             'app_user_mobile' => ['nullable', 'string', 'max:50'],
         ]);
 
+        $questions = FormBuilderQuestion::query()
+            ->where('profile_id', $profile->id)
+            ->get()
+            ->keyBy('question_id');
+
+        $displayOnlyTypes = [2, 13, 14, 20, 21, 23];
         $sessionId = $validated['session_id'] ?? (string) Str::uuid();
         $nextAnswerId = (int) FormBuilderAnswer::query()->max('answer_id');
 
-        foreach ($validated['answers'] as $questionId => $answer) {
+        $answerMap = $validated['answers'] ?? [];
+
+        foreach ($validated['answers_sig_text'] ?? [] as $questionId => $sigText) {
+            if (filled($sigText) && empty($answerMap[$questionId])) {
+                $answerMap[$questionId] = $sigText;
+            }
+        }
+
+        /** @var array<int, UploadedFile|null> $files */
+        $files = $request->file('answers_file') ?? [];
+
+        foreach ($files as $questionId => $file) {
+            if ($file instanceof UploadedFile && $file->isValid()) {
+                $path = $file->store('form-uploads/'.$profile->id, 'public');
+                $answerMap[$questionId] = $path;
+            }
+        }
+
+        foreach ($answerMap as $questionId => $answer) {
+            $question = $questions->get((int) $questionId);
+
+            if ($question && in_array((int) $question->question_type_id, $displayOnlyTypes, true)) {
+                continue;
+            }
+
             if (is_array($answer)) {
-                $answer = implode(', ', array_filter($answer, fn ($value) => filled($value)));
+                $parts = [];
+                foreach ($answer as $row => $col) {
+                    if (is_array($col)) {
+                        $col = implode(': ', array_filter($col, fn ($v) => filled($v)));
+                    }
+                    if (filled($col)) {
+                        $parts[] = is_string($row) ? "{$row} → {$col}" : (string) $col;
+                    }
+                }
+                $answer = implode('; ', array_filter($parts, fn ($v) => filled($v)));
             }
 
             if (! filled($answer)) {

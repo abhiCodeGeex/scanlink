@@ -28,7 +28,11 @@
         .checklist .done { color: #2e7d32; text-decoration: line-through; }
         .field-choice { margin-top: .35rem; }
         .field-choice label { display: inline-flex; align-items: center; gap: .35rem; font-weight: 400; margin-top: .35rem; }
-        .field-choice input { width: auto; margin: 0; }
+        .field-grid { width: 100%; border-collapse: collapse; margin-top: .35rem; font-size: .875rem; }
+        .field-grid th, .field-grid td { border: 1px solid #ddd; padding: .35rem .5rem; text-align: center; }
+        .display-html { margin: .5rem 0; line-height: 1.5; }
+        .form-link-btn { display: inline-block; padding: .55rem 1rem; border-radius: 8px; color: #fff; text-decoration: none; font-weight: 600; margin: .25rem 0; }
+        .signature-wrap canvas { width: 100%; max-width: 320px; height: 120px; border: 1px dashed #ccc; border-radius: 6px; touch-action: none; }
     </style>
 </head>
 <body>
@@ -174,53 +178,217 @@
         @endif
 
         @if ($profile->form_active && $questions->isNotEmpty() && ! $needsVisitorInfo)
-            <form method="post" action="{{ route('scan.form', [$clientUrl, $profile->id]) }}" style="margin-top:1.5rem;">
+            <form method="post" action="{{ route('scan.form', [$clientUrl, $profile->id]) }}" enctype="multipart/form-data" style="margin-top:1.5rem;">
                 @csrf
-                <h2>Form</h2>
+                <h2>{{ $profile->form_title ?: 'Form' }}</h2>
                 @foreach ($questions as $question)
                     @php
-                        $type = $question->questionType?->type ?? 'text';
+                        $tid = (int) $question->question_type_id;
                         $options = $question->options;
+                        $qid = $question->question_id;
+                        $required = $question->is_mandatory ? 'required' : '';
                     @endphp
                     <div style="margin-bottom:1rem;">
-                        <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                        @switch($tid)
+                            @case(1)
+                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                                <input type="text" name="answers[{{ $qid }}]" {{ $required }}>
+                                @break
 
-                        @if (in_array($type, ['radio', 'select', 'checkbox'], true) && $options->isNotEmpty())
-                            @if ($type === 'select')
-                                <select name="answers[{{ $question->question_id }}]" @if($question->is_mandatory) required @endif>
+                            @case(2)
+                            @case(13)
+                            @case(14)
+                                <div class="display-html">{!! $question->question_text !!}</div>
+                                @break
+
+                            @case(20)
+                                <a class="form-link-btn" style="background:#{{ $question->button_colour ?: '008C00' }};" href="{{ $question->button_link_url ?: '#' }}" target="_blank" rel="noopener">
+                                    {{ $question->question_text ?: 'Open link' }}
+                                </a>
+                                @break
+
+                            @case(21)
+                            @case(23)
+                                <a class="form-link-btn" style="background:#{{ $question->button_colour ?: '008C00' }};" href="{{ $question->button_link_url ?: '#' }}" target="_blank" rel="noopener">
+                                    {{ $question->doc_title ?: $question->question_text ?: 'View document' }}
+                                </a>
+                                @break
+
+                            @case(3)
+                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                                <div class="field-choice">
+                                    @foreach ($options as $option)
+                                        <label>
+                                            <input type="radio" name="answers[{{ $qid }}]" value="{{ $option->option_name }}" {{ $required }}>
+                                            {{ $option->option_name }}
+                                        </label>
+                                    @endforeach
+                                </div>
+                                @break
+
+                            @case(4)
+                                <label>{{ $question->question_text }}</label>
+                                <div class="field-choice">
+                                    @foreach ($options as $option)
+                                        <label>
+                                            <input type="checkbox" name="answers[{{ $qid }}][]" value="{{ $option->option_name }}">
+                                            {{ $option->option_name }}
+                                        </label>
+                                    @endforeach
+                                </div>
+                                @break
+
+                            @case(5)
+                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                                <select name="answers[{{ $qid }}]" {{ $required }}>
                                     <option value="">Select…</option>
                                     @foreach ($options as $option)
                                         <option value="{{ $option->option_name }}">{{ $option->option_name }}</option>
                                     @endforeach
                                 </select>
-                            @elseif ($type === 'radio')
-                                <div class="field-choice">
-                                    @foreach ($options as $option)
-                                        <label>
-                                            <input type="radio" name="answers[{{ $question->question_id }}]" value="{{ $option->option_name }}" @if($question->is_mandatory) required @endif>
-                                            {{ $option->option_name }}
-                                        </label>
-                                    @endforeach
+                                @break
+
+                            @case(6)
+                                @php
+                                    $scaleFrom = (int) ($options->firstWhere('question_option_type_id', 1)?->option_name ?? 1);
+                                    $scaleTo = (int) ($options->firstWhere('question_option_type_id', 2)?->option_name ?? 5);
+                                    if ($scaleFrom > $scaleTo) { [$scaleFrom, $scaleTo] = [$scaleTo, $scaleFrom]; }
+                                @endphp
+                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                                <select name="answers[{{ $qid }}]" {{ $required }}>
+                                    <option value="">Select…</option>
+                                    @for ($i = $scaleFrom; $i <= $scaleTo; $i++)
+                                        <option value="{{ $i }}">{{ $i }}</option>
+                                    @endfor
+                                </select>
+                                @break
+
+                            @case(7)
+                                @php
+                                    $rows = $options->where('question_option_type_id', 5);
+                                    $cols = $options->where('question_option_type_id', 6);
+                                @endphp
+                                <label>{{ $question->question_text }}</label>
+                                @if ($rows->isNotEmpty() && $cols->isNotEmpty())
+                                    <table class="field-grid">
+                                        <thead>
+                                            <tr>
+                                                <th></th>
+                                                @foreach ($cols as $col)
+                                                    <th>{{ $col->option_name }}</th>
+                                                @endforeach
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach ($rows as $row)
+                                                <tr>
+                                                    <th style="text-align:left;">{{ $row->option_name }}</th>
+                                                    @foreach ($cols as $col)
+                                                        <td>
+                                                            <input type="radio" name="answers[{{ $qid }}][{{ $row->option_name }}]" value="{{ $col->option_name }}">
+                                                        </td>
+                                                    @endforeach
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                @else
+                                    <textarea name="answers[{{ $qid }}]" rows="2" {{ $required }}></textarea>
+                                @endif
+                                @break
+
+                            @case(8)
+                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                                <input type="date" name="answers[{{ $qid }}]" {{ $required }}>
+                                @break
+
+                            @case(9)
+                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                                <input type="time" name="answers[{{ $qid }}]" {{ $required }}>
+                                @break
+
+                            @case(15)
+                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                                <textarea name="answers[{{ $qid }}]" rows="3" {{ $required }}></textarea>
+                                @break
+
+                            @case(16)
+                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                                <div class="signature-wrap">
+                                    <canvas id="sig-{{ $qid }}" width="320" height="120"></canvas>
+                                    <input type="hidden" name="answers[{{ $qid }}]" id="sig-input-{{ $qid }}">
+                                    <p style="margin:.35rem 0;"><button type="button" class="btn-outline btn" onclick="clearSig({{ $qid }})">Clear signature</button></p>
                                 </div>
-                            @else
-                                <div class="field-choice">
-                                    @foreach ($options as $option)
-                                        <label>
-                                            <input type="checkbox" name="answers[{{ $question->question_id }}][]" value="{{ $option->option_name }}">
-                                            {{ $option->option_name }}
-                                        </label>
-                                    @endforeach
-                                </div>
-                            @endif
-                        @elseif ($type === 'textarea')
-                            <textarea name="answers[{{ $question->question_id }}]" rows="3" @if($question->is_mandatory) required @endif></textarea>
-                        @else
-                            <input type="{{ $type === 'date' ? 'date' : 'text' }}" name="answers[{{ $question->question_id }}]" @if($question->is_mandatory) required @endif>
-                        @endif
+                                <textarea name="answers_sig_text[{{ $qid }}]" rows="2" placeholder="Or type your name" {{ $required }}></textarea>
+                                @break
+
+                            @case(17)
+                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                                <input type="file" name="answers_file[{{ $qid }}]" {{ $required }}>
+                                @break
+
+                            @case(18)
+                                <label>{{ $question->question_text ?: 'Participant name' }}@if($question->is_mandatory) *@endif</label>
+                                <input type="text" name="answers[{{ $qid }}]" placeholder="Full name" {{ $required }}>
+                                @break
+
+                            @case(19)
+                                <label>{{ $question->question_text ?: 'Location' }}@if($question->is_mandatory) *@endif</label>
+                                <input type="text" name="answers[{{ $qid }}]" placeholder="Location" {{ $required }}>
+                                @break
+
+                            @case(24)
+                                <label>{{ $question->question_text ?: 'Email' }}@if($question->is_mandatory) *@endif</label>
+                                <input type="email" name="answers[{{ $qid }}]" {{ $required }}>
+                                @break
+
+                            @default
+                                {{-- COVID/SWMS and unknown types: safe textarea fallback --}}
+                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                                <textarea name="answers[{{ $qid }}]" rows="2" {{ $required }}></textarea>
+                        @endswitch
                     </div>
                 @endforeach
                 <p style="margin-top:1rem;"><button class="btn" type="submit">Submit</button></p>
             </form>
+            <script>
+                (function () {
+                    const pads = {};
+                    @foreach ($questions as $question)
+                        @if ((int) $question->question_type_id === 16)
+                            (function initSig{{ $question->question_id }}() {
+                                const canvas = document.getElementById('sig-{{ $question->question_id }}');
+                                const input = document.getElementById('sig-input-{{ $question->question_id }}');
+                                if (!canvas || !input) return;
+                                const ctx = canvas.getContext('2d');
+                                let drawing = false;
+                                const pos = (e) => {
+                                    const r = canvas.getBoundingClientRect();
+                                    const t = e.touches ? e.touches[0] : e;
+                                    return { x: t.clientX - r.left, y: t.clientY - r.top };
+                                };
+                                const start = (e) => { drawing = true; ctx.beginPath(); const p = pos(e); ctx.moveTo(p.x, p.y); e.preventDefault(); };
+                                const draw = (e) => { if (!drawing) return; const p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); e.preventDefault(); };
+                                const end = () => { drawing = false; input.value = canvas.toDataURL('image/png'); };
+                                canvas.addEventListener('mousedown', start);
+                                canvas.addEventListener('mousemove', draw);
+                                canvas.addEventListener('mouseup', end);
+                                canvas.addEventListener('mouseleave', end);
+                                canvas.addEventListener('touchstart', start, { passive: false });
+                                canvas.addEventListener('touchmove', draw, { passive: false });
+                                canvas.addEventListener('touchend', end);
+                                pads[{{ $question->question_id }}] = { canvas, input, ctx };
+                            })();
+                        @endif
+                    @endforeach
+                    window.clearSig = function (qid) {
+                        const pad = pads[qid];
+                        if (!pad) return;
+                        pad.ctx.clearRect(0, 0, pad.canvas.width, pad.canvas.height);
+                        pad.input.value = '';
+                    };
+                })();
+            </script>
         @endif
     </div>
 </div>

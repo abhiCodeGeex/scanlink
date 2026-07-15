@@ -18,8 +18,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'buttonbackcolor', 'buttonfontcolor', 'enable_data_collection', 'set_up_compulsory',
     'data_collection_mobile', 'data_collection_email', 'data_collection_name',
     'data_collection_content', 'display_share_link', 'application', 'activate_bridge_graphic',
-    'deleted', 'update_or_not', 'code_purchase_id', 'form_id', 'form_active',
-    'form_is_enable', 'pop_up_formbuilder', 'free_code', 'is_reseller_code',
+    'deleted', 'update_or_not', 'code_purchase_id', 'form_id', 'form_title',
+    'form_active', 'form_is_enable', 'form_submission_format', 'form_email_tag',
+    'pop_up_formbuilder', 'free_code', 'is_reseller_code',
     'expired_at', 'activation_start_date', 'activation_end_date',
 ])]
 class Profile extends Model

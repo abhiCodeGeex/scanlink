@@ -24,6 +24,7 @@ use App\Models\FormBuilderAnswer;
 use App\Models\FormBuilderQuestion;
 use App\Models\Profile;
 use App\Models\Weblink;
+use App\Services\FormBuilderService;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Route;
 
@@ -40,7 +41,15 @@ echo '  clients: '.Client::query()->count()."\n";
 echo '  profiles: '.Profile::query()->count()."\n";
 echo '  questions: '.FormBuilderQuestion::query()->count()."\n";
 echo '  answers: '.FormBuilderAnswer::query()->count()."\n";
-echo '  weblinks: '.Weblink::query()->count()."\n\n";
+echo '  weblinks: '.Weblink::query()->count()."\n";
+
+if (class_exists(FormBuilderService::class)) {
+    $palette = app(FormBuilderService::class)->paletteGroups();
+    $typeCount = $palette['question']->count() + $palette['format']->count() + $palette['answer']->count();
+    echo '  form_builder_types (palette): '.$typeCount.($typeCount > 8 ? ' OK' : ' LOW')."\n";
+}
+
+echo "\n";
 
 $portalPages = [
     PortalDashboard::class,

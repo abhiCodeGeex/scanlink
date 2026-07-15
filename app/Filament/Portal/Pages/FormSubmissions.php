@@ -4,11 +4,15 @@ namespace App\Filament\Portal\Pages;
 
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
 use App\Models\FormBuilderAnswer;
+use App\Models\FormBuilderQuestion;
 use App\Models\Profile;
 use BackedEnum;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FormSubmissions extends Page
 {
@@ -28,10 +32,14 @@ class FormSubmissions extends Page
 
     public ?int $selectedProfileId = null;
 
-    public ?string $expandedSessionId = null;
+    public ?string $viewSessionId = null;
 
-    /** @var Collection<int, object> */
-    public Collection $sessions;
+    public int $page = 1;
+
+    public int $perPage = 20;
+
+    /** @var Collection<int, FormBuilderQuestion> */
+    public Collection $logQuestions;
 
     public static function getNavigationGroup(): ?string
     {
@@ -45,28 +53,34 @@ class FormSubmissions extends Page
 
     public function mount(): void
     {
-        $this->sessions = collect();
+        $this->logQuestions = collect();
 
         $requestedProfile = request()->integer('profile');
         $firstProfileId = $requestedProfile ?: $this->clientProfileOptions()->keys()->first();
 
         if ($firstProfileId) {
-            $this->loadSessions((int) $firstProfileId);
+            $this->loadProfile((int) $firstProfileId);
         }
     }
 
     public function updatedSelectedProfileId(?int $profileId): void
     {
-        $this->expandedSessionId = null;
+        $this->page = 1;
+        $this->viewSessionId = null;
 
         if ($profileId) {
-            $this->loadSessions($profileId);
+            $this->loadProfile($profileId);
         }
     }
 
-    public function toggleSession(string $sessionId): void
+    public function goToPage(int $page): void
     {
-        $this->expandedSessionId = $this->expandedSessionId === $sessionId ? null : $sessionId;
+        $this->page = max(1, $page);
+    }
+
+    public function viewSession(string $sessionId): void
+    {
+        $this->viewSessionId = $this->viewSessionId === $sessionId ? null : $sessionId;
     }
 
     /**
@@ -86,26 +100,6 @@ class FormSubmissions extends Page
             ->get();
     }
 
-    protected function loadSessions(int $profileId): void
-    {
-        $client = $this->requireClient();
-
-        Profile::query()
-            ->where('client_id', $client->id)
-            ->active()
-            ->findOrFail($profileId);
-
-        $this->selectedProfileId = $profileId;
-
-        $this->sessions = FormBuilderAnswer::query()
-            ->where('profile_id', $profileId)
-            ->whereNotNull('session_id')
-            ->selectRaw('session_id, MIN(date_time) as submitted_at, COUNT(*) as answer_count')
-            ->groupBy('session_id')
-            ->orderByDesc('submitted_at')
-            ->get();
-    }
-
     public function deleteSession(string $sessionId): void
     {
         $client = $this->requireClient();
@@ -115,13 +109,76 @@ class FormSubmissions extends Page
             ->where('session_id', $sessionId)
             ->delete();
 
-        if ($this->expandedSessionId === $sessionId) {
-            $this->expandedSessionId = null;
+        if ($this->viewSessionId === $sessionId) {
+            $this->viewSessionId = null;
         }
 
-        if ($this->selectedProfileId) {
-            $this->loadSessions($this->selectedProfileId);
+        Notification::make()->title('Submission deleted')->success()->send();
+    }
+
+    public function exportCsv(): StreamedResponse
+    {
+        $profile = $this->resolveProfile();
+        $logQuestions = $this->logQuestions;
+        $filename = 'form-submissions-'.$profile->id.'-'.now()->format('Y-m-d').'.csv';
+
+        return response()->streamDownload(function () use ($profile, $logQuestions): void {
+            $out = fopen('php://output', 'w');
+            fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            $headers = ['#', 'Date/Time', 'Session ID'];
+            foreach ($logQuestions as $question) {
+                $headers[] = $question->log_columntitle ?: $question->question_text;
+            }
+            $headers[] = 'All answers';
+            fputcsv($out, $headers);
+
+            $sessions = $this->allSessionsQuery($profile->id)->get();
+            $rowNum = 0;
+
+            foreach ($sessions as $session) {
+                $rowNum++;
+                $answers = FormBuilderAnswer::query()
+                    ->with('question')
+                    ->where('profile_id', $profile->id)
+                    ->where('session_id', $session->session_id)
+                    ->get()
+                    ->keyBy('question_id');
+
+                $row = [
+                    $rowNum,
+                    $session->submitted_at,
+                    $session->session_id,
+                ];
+
+                foreach ($logQuestions as $question) {
+                    $row[] = $answers->get($question->question_id)?->question_answer ?? '';
+                }
+
+                $allAnswers = $answers->map(fn (FormBuilderAnswer $a): string => ($a->question?->question_text ?? 'Q'.$a->question_id).': '.$a->question_answer)->implode(' | ');
+                $row[] = $allAnswers;
+
+                fputcsv($out, $row);
+            }
+
+            fclose($out);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    /**
+     * @return LengthAwarePaginator<object>|null
+     */
+    public function paginatedSessions(): ?LengthAwarePaginator
+    {
+        if (! $this->selectedProfileId) {
+            return null;
         }
+
+        $query = $this->allSessionsQuery($this->selectedProfileId);
+
+        return $query->paginate($this->perPage, ['*'], 'page', $this->page);
     }
 
     /**
@@ -141,5 +198,63 @@ class FormSubmissions extends Page
             ->active()
             ->orderBy('name')
             ->pluck('name', 'id');
+    }
+
+    public function answerForSession(object $session, int $questionId): string
+    {
+        if (! $this->selectedProfileId) {
+            return '';
+        }
+
+        static $cache = [];
+
+        $key = $session->session_id;
+
+        if (! isset($cache[$key])) {
+            $cache[$key] = FormBuilderAnswer::query()
+                ->where('profile_id', $this->selectedProfileId)
+                ->where('session_id', $session->session_id)
+                ->pluck('question_answer', 'question_id');
+        }
+
+        return (string) ($cache[$key][$questionId] ?? '');
+    }
+
+    protected function loadProfile(int $profileId): void
+    {
+        $client = $this->requireClient();
+
+        Profile::query()
+            ->where('client_id', $client->id)
+            ->active()
+            ->findOrFail($profileId);
+
+        $this->selectedProfileId = $profileId;
+
+        $this->logQuestions = FormBuilderQuestion::query()
+            ->where('profile_id', $profileId)
+            ->where('is_logchecked', true)
+            ->orderBy('question_order')
+            ->get();
+    }
+
+    protected function resolveProfile(): Profile
+    {
+        $client = $this->requireClient();
+
+        return Profile::query()
+            ->where('client_id', $client->id)
+            ->active()
+            ->findOrFail($this->selectedProfileId);
+    }
+
+    protected function allSessionsQuery(int $profileId)
+    {
+        return FormBuilderAnswer::query()
+            ->where('profile_id', $profileId)
+            ->whereNotNull('session_id')
+            ->selectRaw('session_id, MIN(date_time) as submitted_at, COUNT(*) as answer_count')
+            ->groupBy('session_id')
+            ->orderByDesc('submitted_at');
     }
 }

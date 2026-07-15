@@ -57,7 +57,7 @@ return new class extends Migration
 
         if (! Schema::hasTable('form_builder_question_options')) {
             Schema::create('form_builder_question_options', function (Blueprint $table) {
-                $table->unsignedBigInteger('option_id')->primary();
+                $table->unsignedBigInteger('question_option_id', true);
                 $table->unsignedBigInteger('question_id');
                 $table->string('option_name')->nullable();
                 $table->unsignedBigInteger('question_option_type_id')->nullable();

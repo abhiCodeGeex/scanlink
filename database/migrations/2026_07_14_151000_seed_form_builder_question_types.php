@@ -28,7 +28,11 @@ return new class extends Migration
             DB::table('form_builder_question_types')->updateOrInsert(
                 ['question_type_id' => $id],
                 [
-                    'type' => $row['type'],
+                    'type' => match ($id) {
+                        2 => 1,
+                        3, 4, 5 => 2,
+                        default => 0,
+                    },
                     'label' => $row['label'],
                     'is_active' => true,
                 ],

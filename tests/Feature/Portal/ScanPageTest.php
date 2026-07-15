@@ -114,7 +114,6 @@ class ScanPageTest extends TestCase
         ]);
 
         FormBuilderQuestionOption::query()->create([
-            'option_id' => 1,
             'question_id' => 10,
             'option_name' => 'Good',
             'question_option_type_id' => 3,
