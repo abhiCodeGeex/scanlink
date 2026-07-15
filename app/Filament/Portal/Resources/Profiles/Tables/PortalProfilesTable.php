@@ -2,6 +2,7 @@
 
 namespace App\Filament\Portal\Resources\Profiles\Tables;
 
+use App\Filament\Portal\Concerns\InteractsWithClientMembership;
 use App\Filament\Portal\Pages\FormSubmissions;
 use App\Filament\Portal\Pages\OrderLabel;
 use App\Filament\Portal\Pages\ScanAnalytics;
@@ -65,22 +66,37 @@ class PortalProfilesTable
                     Action::make('downloadQr')
                         ->label('Download QR')
                         ->icon('heroicon-o-arrow-down-tray')
+                        ->visible(fn (): bool => InteractsWithClientMembership::memberCanDownload(
+                            InteractsWithClientMembership::portalMembership(),
+                        ))
                         ->action(fn (Profile $record): mixed => app(ProfileQrService::class)->downloadQrImage($record)),
                     Action::make('scanAnalytics')
                         ->label('Scan Analytics')
                         ->icon('heroicon-o-chart-bar')
+                        ->visible(fn (): bool => InteractsWithClientMembership::memberCanAccessAnalytics(
+                            InteractsWithClientMembership::portalMembership(),
+                        ))
                         ->url(fn (Profile $record): string => ScanAnalytics::getUrl().'?profile='.$record->id),
                     Action::make('visitorLog')
                         ->label('Visitor Log')
                         ->icon('heroicon-o-user-group')
+                        ->visible(fn (): bool => InteractsWithClientMembership::memberCanAccessVisitorLog(
+                            InteractsWithClientMembership::portalMembership(),
+                        ))
                         ->url(fn (Profile $record): string => VisitorLog::getUrl().'?profile='.$record->id),
                     Action::make('formSubmissions')
                         ->label('Form Submissions')
                         ->icon('heroicon-o-inbox-arrow-down')
+                        ->visible(fn (): bool => InteractsWithClientMembership::memberCanAccessFormSubmissions(
+                            InteractsWithClientMembership::portalMembership(),
+                        ))
                         ->url(fn (Profile $record): string => FormSubmissions::getUrl().'?profile='.$record->id),
                     Action::make('orderLabels')
                         ->label('Order Labels')
                         ->icon('heroicon-o-tag')
+                        ->visible(fn (): bool => InteractsWithClientMembership::memberCanOrderLabel(
+                            InteractsWithClientMembership::portalMembership(),
+                        ))
                         ->url(fn (Profile $record): string => OrderLabel::getUrl().'?profile='.$record->id),
                     DeleteAction::make()
                         ->label('Archive')

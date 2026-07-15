@@ -83,4 +83,30 @@ class MarketingController extends Controller
             'gallery' => Gallery::query()->latest('id')->limit(8)->get(),
         ]);
     }
+
+    public function howTo(): View
+    {
+        return view('marketing.how-to', [
+            'tutorials' => [
+                ['title' => 'Create a ScanLink account', 'url' => 'https://www.youtube.com/watch?v=9aTjweHyAWw'],
+                ['title' => 'Getting Started', 'url' => 'https://www.youtube.com/watch?v=o6NxTt0CmYI'],
+                ['title' => 'Register a new code', 'url' => 'https://www.youtube.com/watch?v=GZ12nXTO7_w'],
+                ['title' => 'Upload a logo', 'url' => 'https://www.youtube.com/watch?v=hGrBYsys2Oo'],
+                ['title' => 'Upload a video', 'url' => 'https://www.youtube.com/watch?v=H33caspIlcc'],
+                ['title' => 'Add text and phone numbers', 'url' => 'https://www.youtube.com/watch?v=CZx8xplEfoU'],
+                ['title' => 'Upload pictures', 'url' => 'https://www.youtube.com/watch?v=GshHCp9F0wU'],
+                ['title' => 'Upload documents', 'url' => 'https://www.youtube.com/watch?v=ujiEr65yg30'],
+                ['title' => 'Add web link buttons', 'url' => 'https://www.youtube.com/watch?v=id0I8j8RTuY'],
+                ['title' => 'Add social media and email share buttons', 'url' => 'https://www.youtube.com/watch?v=qOi6tSBsII4'],
+                ['title' => 'Create pop up messages to collect data', 'url' => 'https://www.youtube.com/watch?v=C_vH14MFtXA'],
+                ['title' => 'Select a code type - QR or Data matrix', 'url' => 'https://www.youtube.com/watch?v=jCeyQOfm7uc'],
+                ['title' => 'Feature code profile number on mobile display', 'url' => 'https://www.youtube.com/watch?v=eJtzHbZoCPw'],
+                ['title' => 'Password protect a code profile', 'url' => 'https://www.youtube.com/watch?v=KcXJnxuMVyc'],
+                ['title' => 'Link a code to a URL', 'url' => 'https://www.youtube.com/watch?v=uEDTnBPUk28'],
+                ['title' => 'Delete a code profile', 'url' => 'https://www.youtube.com/watch?v=Gu12cnKn16s'],
+                ['title' => 'View and download scan activity', 'url' => 'https://www.youtube.com/watch?v=Y0bVkzDA5Rc'],
+                ['title' => 'Create a form', 'url' => 'https://www.youtube.com/watch?v=cYQnzxkp528'],
+            ],
+        ]);
+    }
 }

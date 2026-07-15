@@ -29,6 +29,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'access_addcode',
     'access_edit',
     'access_delete',
+    'access_analytics',
+    'access_form_submission',
+    'access_download',
+    'access_label',
+    'access_log',
     'show_code_profile_id_to_acc_user',
     'first_name',
     'last_name',
@@ -66,6 +71,11 @@ class ClientUser extends Model
             'access_addcode' => 'boolean',
             'access_edit' => 'boolean',
             'access_delete' => 'boolean',
+            'access_analytics' => 'boolean',
+            'access_form_submission' => 'boolean',
+            'access_download' => 'boolean',
+            'access_label' => 'boolean',
+            'access_log' => 'boolean',
             'show_code_profile_id_to_acc_user' => 'boolean',
         ];
     }

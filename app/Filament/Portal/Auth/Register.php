@@ -29,6 +29,10 @@ class Register extends BaseRegister
                     ->label('Phone')
                     ->tel()
                     ->maxLength(50),
+                TextInput::make('client_reseller_code')
+                    ->label('Reseller code')
+                    ->maxLength(255)
+                    ->helperText('Optional — enter your reseller code if you were referred by a partner.'),
                 $this->getEmailFormComponent(),
                 $this->getPasswordFormComponent(),
                 $this->getPasswordConfirmationFormComponent(),
@@ -48,6 +52,20 @@ class Register extends BaseRegister
             while (Client::query()->where('url', $url)->exists()) {
                 $url = $baseUrl.'-'.$suffix;
                 $suffix++;
+            }
+
+            $resellerCode = trim((string) ($data['client_reseller_code'] ?? ''));
+
+            if (filled($resellerCode)) {
+                $resellerExists = Client::query()
+                    ->where('reseller_code', $resellerCode)
+                    ->exists();
+
+                if (! $resellerExists) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'client_reseller_code' => 'Enter a valid reseller code.',
+                    ]);
+                }
             }
 
             $client = Client::query()->create([
@@ -82,6 +100,7 @@ class Register extends BaseRegister
                 'last_name' => $nameParts[1] ?? null,
                 'company_name' => $data['company_name'],
                 'phone' => $data['phone'] ?? null,
+                'client_reseller_code' => filled($resellerCode) ? $resellerCode : null,
                 'is_password_change' => false,
                 'expire_at' => now()->addYear(),
             ]);

@@ -21,6 +21,7 @@
     <p class="links">
         <a href="{{ route('marketing.pricing') }}">Pricing</a>
         <a href="{{ route('marketing.faq') }}">FAQ</a>
+        <a href="{{ route('marketing.how-to') }}">How to</a>
         <a href="{{ route('marketing.contact') }}">Contact</a>
         <a href="/portal/login">Client login</a>
     </p>

@@ -47,6 +47,11 @@ class OrderLabel extends Page
         return 'Orders';
     }
 
+    public static function canAccess(): bool
+    {
+        return static::memberCanOrderLabel(static::portalMembership());
+    }
+
     public function mount(): void
     {
         $requestedProfile = request()->integer('profile');

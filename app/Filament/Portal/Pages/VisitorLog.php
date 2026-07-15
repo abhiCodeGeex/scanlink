@@ -38,6 +38,11 @@ class VisitorLog extends Page
         return 'Codes';
     }
 
+    public static function canAccess(): bool
+    {
+        return static::memberCanAccessVisitorLog(static::portalMembership());
+    }
+
     public function mount(): void
     {
         $this->visitors = collect();

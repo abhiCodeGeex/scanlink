@@ -2,6 +2,7 @@
 
 namespace App\Filament\Portal\Resources\Profiles\Pages;
 
+use App\Filament\Portal\Concerns\InteractsWithClientMembership;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Filament\Resources\Profiles\Pages\Concerns\HasProfileQrActions;
 use App\Filament\Resources\Profiles\Pages\Concerns\SyncsProfileAssets;
@@ -11,9 +12,15 @@ use Filament\Resources\Pages\EditRecord;
 class EditProfile extends EditRecord
 {
     use HasProfileQrActions;
+    use InteractsWithClientMembership;
     use SyncsProfileAssets;
 
     protected static string $resource = ProfileResource::class;
+
+    protected function canDownloadQr(): bool
+    {
+        return $this->canDownload();
+    }
 
     public function mount(int|string $record): void
     {

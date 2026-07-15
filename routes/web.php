@@ -11,6 +11,7 @@ Route::get('/', [MarketingController::class, 'home'])->name('marketing.home');
 
 Route::get('/contact', [MarketingController::class, 'contact'])->name('marketing.contact');
 Route::post('/contact', [MarketingController::class, 'submitContact'])->name('marketing.contact.submit');
+Route::get('/how-to', [MarketingController::class, 'howTo'])->name('marketing.how-to');
 Route::get('/pricing', [MarketingController::class, 'pricing'])->name('marketing.pricing');
 Route::get('/faq', [MarketingController::class, 'faq'])->name('marketing.faq');
 Route::get('/privacy', [MarketingController::class, 'privacy'])->name('marketing.privacy');

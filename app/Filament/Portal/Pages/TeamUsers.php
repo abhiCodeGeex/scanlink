@@ -67,6 +67,21 @@ class TeamUsers extends Page implements HasTable
                 IconColumn::make('access_delete')
                     ->label('Delete')
                     ->boolean(),
+                IconColumn::make('access_analytics')
+                    ->label('Analytics')
+                    ->boolean(),
+                IconColumn::make('access_form_submission')
+                    ->label('Forms')
+                    ->boolean(),
+                IconColumn::make('access_download')
+                    ->label('Download')
+                    ->boolean(),
+                IconColumn::make('access_label')
+                    ->label('Labels')
+                    ->boolean(),
+                IconColumn::make('access_log')
+                    ->label('Visitor log')
+                    ->boolean(),
                 IconColumn::make('status')
                     ->label('Active')
                     ->boolean(),
@@ -111,6 +126,16 @@ class TeamUsers extends Page implements HasTable
                 ->label('Can edit codes'),
             Toggle::make('access_delete')
                 ->label('Can delete codes'),
+            Toggle::make('access_analytics')
+                ->label('Can view analytics'),
+            Toggle::make('access_form_submission')
+                ->label('Can view form submissions'),
+            Toggle::make('access_download')
+                ->label('Can download QR / PDF'),
+            Toggle::make('access_label')
+                ->label('Can order labels'),
+            Toggle::make('access_log')
+                ->label('Can view visitor log'),
         ];
     }
 

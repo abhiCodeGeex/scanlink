@@ -38,6 +38,11 @@ class FormSubmissions extends Page
         return 'Forms';
     }
 
+    public static function canAccess(): bool
+    {
+        return static::memberCanAccessFormSubmissions(static::portalMembership());
+    }
+
     public function mount(): void
     {
         $this->sessions = collect();

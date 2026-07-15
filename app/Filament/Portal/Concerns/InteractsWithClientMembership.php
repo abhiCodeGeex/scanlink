@@ -2,8 +2,10 @@
 
 namespace App\Filament\Portal\Concerns;
 
+use App\Enums\UserType;
 use App\Models\Client;
 use App\Models\ClientUser;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 
 trait InteractsWithClientMembership
@@ -56,8 +58,60 @@ trait InteractsWithClientMembership
 
     public function canAddCode(): bool
     {
-        $member = $this->currentClientUser();
+        return static::memberCanAddCode($this->currentClientUser());
+    }
 
+    public function canEditCode(): bool
+    {
+        return static::memberCanEditCode($this->currentClientUser());
+    }
+
+    public function canDeleteCode(): bool
+    {
+        return static::memberCanDeleteCode($this->currentClientUser());
+    }
+
+    public function canAccessAnalytics(): bool
+    {
+        return static::memberCanAccessAnalytics($this->currentClientUser());
+    }
+
+    public function canAccessFormSubmissions(): bool
+    {
+        return static::memberCanAccessFormSubmissions($this->currentClientUser());
+    }
+
+    public function canDownload(): bool
+    {
+        return static::memberCanDownload($this->currentClientUser());
+    }
+
+    public function canOrderLabel(): bool
+    {
+        return static::memberCanOrderLabel($this->currentClientUser());
+    }
+
+    public function canAccessVisitorLog(): bool
+    {
+        return static::memberCanAccessVisitorLog($this->currentClientUser());
+    }
+
+    public static function portalMembership(): ?ClientUser
+    {
+        $user = auth()->user();
+
+        if (! $user instanceof User || $user->user_type !== UserType::Portal) {
+            return null;
+        }
+
+        return $user->clientMemberships()
+            ->where('status', true)
+            ->orderByDesc('role')
+            ->first();
+    }
+
+    public static function memberCanAddCode(?ClientUser $member): bool
+    {
         if (! $member) {
             return false;
         }
@@ -65,10 +119,8 @@ trait InteractsWithClientMembership
         return $member->isPrimary() || (bool) $member->access_addcode;
     }
 
-    public function canEditCode(): bool
+    public static function memberCanEditCode(?ClientUser $member): bool
     {
-        $member = $this->currentClientUser();
-
         if (! $member) {
             return false;
         }
@@ -76,14 +128,68 @@ trait InteractsWithClientMembership
         return $member->isPrimary() || (bool) $member->access_edit;
     }
 
-    public function canDeleteCode(): bool
+    public static function memberCanDeleteCode(?ClientUser $member): bool
     {
-        $member = $this->currentClientUser();
-
         if (! $member) {
             return false;
         }
 
         return $member->isPrimary() || (bool) $member->access_delete;
+    }
+
+    public static function memberCanAccessAnalytics(?ClientUser $member): bool
+    {
+        if (! $member) {
+            return false;
+        }
+
+        return $member->isPrimary() || (bool) $member->access_analytics;
+    }
+
+    public static function memberCanAccessFormSubmissions(?ClientUser $member): bool
+    {
+        if (! $member) {
+            return false;
+        }
+
+        return $member->isPrimary() || (bool) $member->access_form_submission;
+    }
+
+    public static function memberCanAccessFormBuilder(?ClientUser $member): bool
+    {
+        if (! $member) {
+            return false;
+        }
+
+        return $member->isPrimary()
+            || (bool) $member->access_form_submission
+            || (bool) $member->access_edit;
+    }
+
+    public static function memberCanDownload(?ClientUser $member): bool
+    {
+        if (! $member) {
+            return false;
+        }
+
+        return $member->isPrimary() || (bool) $member->access_download;
+    }
+
+    public static function memberCanOrderLabel(?ClientUser $member): bool
+    {
+        if (! $member) {
+            return false;
+        }
+
+        return $member->isPrimary() || (bool) $member->access_label;
+    }
+
+    public static function memberCanAccessVisitorLog(?ClientUser $member): bool
+    {
+        if (! $member) {
+            return false;
+        }
+
+        return $member->isPrimary() || (bool) $member->access_log;
     }
 }

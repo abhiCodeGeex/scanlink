@@ -11,6 +11,11 @@ use Illuminate\Support\HtmlString;
 
 trait HasProfileQrActions
 {
+    protected function canDownloadQr(): bool
+    {
+        return true;
+    }
+
     /**
      * @return array<int, Action>
      */
@@ -20,10 +25,12 @@ trait HasProfileQrActions
             Action::make('downloadQr')
                 ->label('Download QR')
                 ->icon('heroicon-o-arrow-down-tray')
+                ->visible(fn (): bool => $this->canDownloadQr())
                 ->action(fn (): mixed => app(ProfileQrService::class)->downloadQrImage($this->record)),
             Action::make('downloadPdf')
                 ->label('Download PDF')
                 ->icon('heroicon-o-document-arrow-down')
+                ->visible(fn (): bool => $this->canDownloadQr())
                 ->action(fn (): mixed => app(ProfileQrService::class)->downloadPdf($this->record)),
             Action::make('qrColor')
                 ->label('QR colour')

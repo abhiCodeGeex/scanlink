@@ -59,6 +59,11 @@ class FormBuilder extends Page
         return 'Forms';
     }
 
+    public static function canAccess(): bool
+    {
+        return static::memberCanAccessFormBuilder(static::portalMembership());
+    }
+
     public function mount(): void
     {
         $this->questions = collect();

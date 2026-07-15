@@ -28,6 +28,14 @@ class ClientUserFactory extends Factory
             'is_password_change' => true,
             'expire_at' => now()->addYear(),
             'is_sub_user' => false,
+            'access_addcode' => false,
+            'access_edit' => false,
+            'access_delete' => false,
+            'access_analytics' => false,
+            'access_form_submission' => false,
+            'access_download' => false,
+            'access_label' => false,
+            'access_log' => false,
         ];
     }
 

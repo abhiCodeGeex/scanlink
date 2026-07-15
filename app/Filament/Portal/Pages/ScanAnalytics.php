@@ -48,6 +48,11 @@ class ScanAnalytics extends Page
         return 'Codes';
     }
 
+    public static function canAccess(): bool
+    {
+        return static::memberCanAccessAnalytics(static::portalMembership());
+    }
+
     public function mount(AnalyticsApiService $analytics): void
     {
         $requestedProfile = request()->integer('profile');
