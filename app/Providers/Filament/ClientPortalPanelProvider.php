@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use App\Filament\Portal\Auth\Register;
 use App\Filament\Portal\Pages\PortalDashboard;
+use App\Http\Middleware\EnsurePortalPasswordChanged;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -75,6 +76,7 @@ class ClientPortalPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                EnsurePortalPasswordChanged::class,
             ]);
     }
 }

@@ -49,8 +49,10 @@ class OrderLabel extends Page
 
     public function mount(): void
     {
+        $requestedProfile = request()->integer('profile');
+
         $this->form->fill([
-            'profile_id' => $this->clientProfileOptions()->keys()->first(),
+            'profile_id' => $requestedProfile ?: $this->clientProfileOptions()->keys()->first(),
             'size' => 'small',
             'quantity' => 1,
         ]);
@@ -78,14 +80,16 @@ class OrderLabel extends Page
                                 'small' => 'Small ($'.number_format((float) config('scanlink.label_price_small'), 2).')',
                                 'large' => 'Large ($'.number_format((float) config('scanlink.label_price_large'), 2).')',
                             ])
-                            ->required(),
+                            ->required()
+                            ->live(),
                         TextInput::make('quantity')
                             ->label('Quantity')
                             ->numeric()
                             ->integer()
                             ->required()
                             ->minValue(1)
-                            ->maxValue(500),
+                            ->maxValue(500)
+                            ->live(),
                     ]),
             ]);
     }
@@ -110,7 +114,7 @@ class OrderLabel extends Page
 
         Notification::make()
             ->title('Label order created')
-            ->body("Order #{$order->id} is pending payment.")
+            ->body("Order #{$order->id} is pending payment. Postage and handling may apply.")
             ->success()
             ->send();
 
@@ -154,6 +158,24 @@ class OrderLabel extends Page
     public function getTitle(): string|Htmlable
     {
         return static::$title ?? 'Order Physical Labels';
+    }
+
+    public function orderSummary(): array
+    {
+        $data = $this->data ?? [];
+        $size = (string) ($data['size'] ?? 'small');
+        $quantity = max(1, (int) ($data['quantity'] ?? 1));
+        $unitPrice = $size === 'large'
+            ? (float) config('scanlink.label_price_large')
+            : (float) config('scanlink.label_price_small');
+
+        return [
+            'size' => $size,
+            'quantity' => $quantity,
+            'unit_price' => $unitPrice,
+            'subtotal' => $unitPrice * $quantity,
+            'postage_note' => 'Postage and handling may apply. Payment is required before labels are dispatched.',
+        ];
     }
 
     public function content(Schema $schema): Schema

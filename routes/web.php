@@ -59,3 +59,13 @@ Route::post('/{clientUrl}/{profileId}/visitor', [MobileProfileController::class,
 Route::post('/{clientUrl}/{profileId}/form', [MobileProfileController::class, 'storeFormAnswer'])
     ->whereNumber('profileId')
     ->name('scan.form');
+
+Route::post('/{clientUrl}/{profileId}/checklist/{itemId}/check', [MobileProfileController::class, 'checkChecklistItem'])
+    ->whereNumber('profileId')
+    ->whereNumber('itemId')
+    ->name('scan.checklist.check');
+
+Route::post('/{clientUrl}/{profileId}/checklist/{itemId}/uncheck', [MobileProfileController::class, 'uncheckChecklistItem'])
+    ->whereNumber('profileId')
+    ->whereNumber('itemId')
+    ->name('scan.checklist.uncheck');

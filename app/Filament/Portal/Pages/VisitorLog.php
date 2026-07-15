@@ -6,9 +6,11 @@ use App\Filament\Portal\Concerns\InteractsWithClientMembership;
 use App\Models\Profile;
 use App\Models\VisitorContact;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class VisitorLog extends Page
 {
@@ -39,11 +41,24 @@ class VisitorLog extends Page
     public function mount(): void
     {
         $this->visitors = collect();
-        $firstProfileId = $this->clientProfileOptions()->keys()->first();
+
+        $requestedProfile = request()->integer('profile');
+        $firstProfileId = $requestedProfile ?: $this->clientProfileOptions()->keys()->first();
 
         if ($firstProfileId) {
             $this->loadVisitors((int) $firstProfileId);
         }
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('exportCsv')
+                ->label('Export CSV')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->visible(fn (): bool => $this->visitors->isNotEmpty())
+                ->action(fn (): StreamedResponse => $this->exportVisitorsCsv()),
+        ];
     }
 
     public function updatedSelectedProfileId(?int $profileId): void
@@ -51,6 +66,32 @@ class VisitorLog extends Page
         if ($profileId) {
             $this->loadVisitors($profileId);
         }
+    }
+
+    public function exportVisitorsCsv(): StreamedResponse
+    {
+        $filename = 'visitor-log-profile-'.($this->selectedProfileId ?? 'export').'.csv';
+
+        return response()->streamDownload(function (): void {
+            $handle = fopen('php://output', 'w');
+
+            if ($handle === false) {
+                return;
+            }
+
+            fputcsv($handle, ['Name', 'Email', 'Mobile', 'Date']);
+
+            foreach ($this->visitors as $visitor) {
+                fputcsv($handle, [
+                    $visitor->user_name,
+                    $visitor->user_email,
+                    $visitor->user_mobile,
+                    $visitor->entry_date?->format('Y-m-d H:i:s'),
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv']);
     }
 
     protected function loadVisitors(int $profileId): void

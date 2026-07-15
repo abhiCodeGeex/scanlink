@@ -32,6 +32,13 @@
                                 <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ $session->answer_count }}</td>
                                 <td class="px-4 py-3 text-right">
                                     <x-filament::button
+                                        color="gray"
+                                        size="sm"
+                                        wire:click="toggleSession('{{ $session->session_id }}')"
+                                    >
+                                        {{ $expandedSessionId === $session->session_id ? 'Hide' : 'View' }}
+                                    </x-filament::button>
+                                    <x-filament::button
                                         color="danger"
                                         size="sm"
                                         wire:click="deleteSession('{{ $session->session_id }}')"
@@ -41,6 +48,30 @@
                                     </x-filament::button>
                                 </td>
                             </tr>
+                            @if ($expandedSessionId === $session->session_id)
+                                <tr wire:key="session-detail-{{ $session->session_id }}">
+                                    <td colspan="4" class="bg-gray-50 px-4 py-4 dark:bg-gray-800">
+                                        <table class="min-w-full text-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th class="pb-2 text-left font-medium text-gray-600 dark:text-gray-300">Question</th>
+                                                    <th class="pb-2 text-left font-medium text-gray-600 dark:text-gray-300">Answer</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach ($this->sessionAnswers($session->session_id) as $answer)
+                                                    <tr class="border-t border-gray-200 dark:border-gray-700">
+                                                        <td class="py-2 pr-4 text-gray-900 dark:text-white">
+                                                            {{ $answer->question?->question_text ?? 'Question #'.$answer->question_id }}
+                                                        </td>
+                                                        <td class="py-2 text-gray-600 dark:text-gray-300">{{ $answer->question_answer }}</td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                </tr>
+                            @endif
                         @endforeach
                     </tbody>
                 </table>

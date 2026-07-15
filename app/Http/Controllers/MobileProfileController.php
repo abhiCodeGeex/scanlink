@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ChecklistItem;
 use App\Models\Client;
 use App\Models\FormBuilderAnswer;
 use App\Models\FormBuilderQuestion;
@@ -17,12 +18,16 @@ use Illuminate\View\View;
 
 class MobileProfileController extends Controller
 {
-    public function show(string $clientUrl, int $profileId, ProfileQrService $qrService, AnalyticsApiService $analytics): View
+    public function show(string $clientUrl, int $profileId, ProfileQrService $qrService, AnalyticsApiService $analytics): View|RedirectResponse
     {
-        $profile = $this->resolveProfile($clientUrl, $profileId);
+        $profile = $this->resolveProfile($clientUrl, $profileId, eager: true);
 
         if ($profile->isExpired()) {
             return view('scan.expired', compact('profile'));
+        }
+
+        if ($redirectUrl = $this->codeRedirectUrl($profile)) {
+            return redirect()->away($redirectUrl);
         }
 
         if ($profile->protect && ! $this->isUnlocked($profile)) {
@@ -32,6 +37,7 @@ class MobileProfileController extends Controller
         $analytics->registerUrl($qrService->profileUrl($profile));
 
         $questions = FormBuilderQuestion::query()
+            ->with(['questionType', 'options'])
             ->where('profile_id', $profile->id)
             ->orderBy('question_order')
             ->get();
@@ -41,12 +47,15 @@ class MobileProfileController extends Controller
             'clientUrl' => $clientUrl,
             'questions' => $questions,
             'needsVisitorInfo' => $this->needsVisitorInfo($profile),
+            'publicMediaUrl' => fn (?string $path): ?string => \App\Support\PublicMediaPath::url($path),
+            'youtubeEmbedUrl' => fn (string $videoName): ?string => $this->youtubeEmbedUrl($videoName),
         ]);
     }
 
     public function unlock(Request $request, string $clientUrl, int $profileId): RedirectResponse
     {
         $profile = $this->resolveProfile($clientUrl, $profileId);
+
         $password = (string) $request->input('password', '');
 
         if ($profile->password && Hash::check($password, $profile->password)) {
@@ -93,7 +102,7 @@ class MobileProfileController extends Controller
 
         $validated = $request->validate([
             'answers' => ['required', 'array'],
-            'answers.*' => ['nullable', 'string'],
+            'answers.*' => ['nullable'],
             'session_id' => ['nullable', 'string', 'max:100'],
             'app_user_firstname' => ['nullable', 'string', 'max:100'],
             'app_user_lastname' => ['nullable', 'string', 'max:100'],
@@ -105,6 +114,10 @@ class MobileProfileController extends Controller
         $nextAnswerId = (int) FormBuilderAnswer::query()->max('answer_id');
 
         foreach ($validated['answers'] as $questionId => $answer) {
+            if (is_array($answer)) {
+                $answer = implode(', ', array_filter($answer, fn ($value) => filled($value)));
+            }
+
             if (! filled($answer)) {
                 continue;
             }
@@ -114,7 +127,7 @@ class MobileProfileController extends Controller
                 'answer_id' => $nextAnswerId,
                 'question_id' => (int) $questionId,
                 'profile_id' => $profile->id,
-                'question_answer' => $answer,
+                'question_answer' => (string) $answer,
                 'session_id' => $sessionId,
                 'date_time' => now(),
                 'app_user_firstname' => $validated['app_user_firstname'] ?? null,
@@ -129,15 +142,80 @@ class MobileProfileController extends Controller
             ->with('form_submitted', true);
     }
 
-    protected function resolveProfile(string $clientUrl, int $profileId): Profile
+    public function checkChecklistItem(Request $request, string $clientUrl, int $profileId, int $itemId): RedirectResponse
+    {
+        $profile = $this->resolveProfile($clientUrl, $profileId);
+
+        ChecklistItem::query()
+            ->where('profile_id', $profile->id)
+            ->where('id', $itemId)
+            ->firstOrFail()
+            ->update(['datetime' => now()]);
+
+        return redirect()->route('scan.show', [$clientUrl, $profileId]);
+    }
+
+    public function uncheckChecklistItem(Request $request, string $clientUrl, int $profileId, int $itemId): RedirectResponse
+    {
+        $profile = $this->resolveProfile($clientUrl, $profileId);
+
+        ChecklistItem::query()
+            ->where('profile_id', $profile->id)
+            ->where('id', $itemId)
+            ->firstOrFail()
+            ->update(['datetime' => null]);
+
+        return redirect()->route('scan.show', [$clientUrl, $profileId]);
+    }
+
+    protected function resolveProfile(string $clientUrl, int $profileId, bool $eager = false): Profile
     {
         $client = Client::query()->where('url', $clientUrl)->firstOrFail();
 
-        return Profile::query()
+        $query = Profile::query()
             ->where('client_id', $client->id)
             ->where('id', $profileId)
-            ->active()
-            ->firstOrFail();
+            ->active();
+
+        if ($eager) {
+            $query->with([
+                'logos',
+                'pictures',
+                'documents',
+                'videos',
+                'weblinks',
+                'checklistItems',
+                'equipmentType',
+                'client',
+            ]);
+        }
+
+        return $query->firstOrFail();
+    }
+
+    protected function codeRedirectUrl(Profile $profile): ?string
+    {
+        if ($profile->typeSlug() !== 'code') {
+            return null;
+        }
+
+        foreach ([$profile->shorturl, $profile->url, $profile->name] as $candidate) {
+            if (! filled($candidate)) {
+                continue;
+            }
+
+            $candidate = trim((string) $candidate);
+
+            if (filter_var($candidate, FILTER_VALIDATE_URL)) {
+                return $candidate;
+            }
+
+            if (str_starts_with($candidate, 'http://') || str_starts_with($candidate, 'https://')) {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 
     protected function isUnlocked(Profile $profile): bool
@@ -157,5 +235,12 @@ class MobileProfileController extends Controller
         }
 
         return session()->get('user_info') !== (string) $profile->id;
+    }
+
+    protected function youtubeEmbedUrl(string $videoName): ?string
+    {
+        $videoId = app(\App\Services\YouTubeService::class)->parseVideoId($videoName);
+
+        return $videoId ? 'https://www.youtube.com/embed/'.$videoId : null;
     }
 }

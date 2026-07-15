@@ -50,7 +50,6 @@ class MultipleCodeRenewal extends Page implements HasTable
                 ->active()
                 ->whereNotNull('expired_at')
                 ->where('expired_at', '<=', now()->addDays(60))
-                ->whereHas('equipmentType', fn (Builder $query) => $query->where('slag', 'code'))
                 ->with('equipmentType'))
             ->columns([
                 TextColumn::make('id')

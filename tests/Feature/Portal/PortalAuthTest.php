@@ -33,6 +33,7 @@ class PortalAuthTest extends TestCase
             'client_id' => $client->id,
             'email' => 'portal-user@example.com',
             'status' => true,
+            'is_password_change' => false,
         ]);
         $member->refresh();
 

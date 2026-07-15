@@ -2,8 +2,15 @@
 
 namespace App\Filament\Portal\Resources\Profiles\Tables;
 
+use App\Filament\Portal\Pages\FormSubmissions;
+use App\Filament\Portal\Pages\OrderLabel;
+use App\Filament\Portal\Pages\ScanAnalytics;
+use App\Filament\Portal\Pages\VisitorLog;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Models\Profile;
+use App\Services\ProfileQrService;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -51,14 +58,36 @@ class PortalProfilesTable
                     ->relationship('equipmentType', 'name'),
             ])
             ->recordActions([
-                ViewAction::make(),
-                EditAction::make()
-                    ->url(fn (Profile $record): string => ProfileResource::getUrl('edit', ['record' => $record])),
-                DeleteAction::make()
-                    ->label('Archive')
-                    ->requiresConfirmation()
-                    ->modalHeading('Archive profile')
-                    ->action(fn (Profile $record) => $record->update(['deleted' => true])),
+                ActionGroup::make([
+                    ViewAction::make(),
+                    EditAction::make()
+                        ->url(fn (Profile $record): string => ProfileResource::getUrl('edit', ['record' => $record])),
+                    Action::make('downloadQr')
+                        ->label('Download QR')
+                        ->icon('heroicon-o-arrow-down-tray')
+                        ->action(fn (Profile $record): mixed => app(ProfileQrService::class)->downloadQrImage($record)),
+                    Action::make('scanAnalytics')
+                        ->label('Scan Analytics')
+                        ->icon('heroicon-o-chart-bar')
+                        ->url(fn (Profile $record): string => ScanAnalytics::getUrl().'?profile='.$record->id),
+                    Action::make('visitorLog')
+                        ->label('Visitor Log')
+                        ->icon('heroicon-o-user-group')
+                        ->url(fn (Profile $record): string => VisitorLog::getUrl().'?profile='.$record->id),
+                    Action::make('formSubmissions')
+                        ->label('Form Submissions')
+                        ->icon('heroicon-o-inbox-arrow-down')
+                        ->url(fn (Profile $record): string => FormSubmissions::getUrl().'?profile='.$record->id),
+                    Action::make('orderLabels')
+                        ->label('Order Labels')
+                        ->icon('heroicon-o-tag')
+                        ->url(fn (Profile $record): string => OrderLabel::getUrl().'?profile='.$record->id),
+                    DeleteAction::make()
+                        ->label('Archive')
+                        ->requiresConfirmation()
+                        ->modalHeading('Archive profile')
+                        ->action(fn (Profile $record) => $record->update(['deleted' => true])),
+                ]),
             ]);
     }
 }

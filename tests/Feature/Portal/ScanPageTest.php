@@ -2,9 +2,12 @@
 
 namespace Tests\Feature\Portal;
 
+use App\Models\ChecklistItem;
 use App\Models\Client;
 use App\Models\FormBuilderQuestion;
+use App\Models\FormBuilderQuestionOption;
 use App\Models\Profile;
+use App\Models\Weblink;
 use Database\Seeders\Phase2Seeder;
 use Database\Seeders\Phase3Seeder;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -40,6 +43,89 @@ class ScanPageTest extends TestCase
         $this->get("/{$this->client->url}/{$this->profile->id}")
             ->assertOk()
             ->assertSee($this->profile->name);
+    }
+
+    public function test_scan_page_shows_weblink_when_present(): void
+    {
+        Weblink::query()->create([
+            'profile_id' => $this->profile->id,
+            'link_button_text' => 'Safety datasheet',
+            'link_button_url' => 'https://example.com/sds',
+        ]);
+
+        $this->get("/{$this->client->url}/{$this->profile->id}")
+            ->assertOk()
+            ->assertSee('Safety datasheet');
+    }
+
+    public function test_scan_page_shows_document_tile_when_present(): void
+    {
+        $this->profile->documents()->create([
+            'client_id' => $this->client->id,
+            'name' => 'Inspection PDF',
+            'doc_name' => 'storage/documents/sample.pdf',
+        ]);
+
+        $this->get("/{$this->client->url}/{$this->profile->id}")
+            ->assertOk()
+            ->assertSee('Inspection PDF');
+    }
+
+    public function test_scan_page_shows_checklist_items(): void
+    {
+        ChecklistItem::query()->create([
+            'profile_id' => $this->profile->id,
+            'checklist_item' => 'Check tyre pressure',
+        ]);
+
+        $this->get("/{$this->client->url}/{$this->profile->id}")
+            ->assertOk()
+            ->assertSee('Checklist')
+            ->assertSee('Check tyre pressure');
+    }
+
+    public function test_checklist_item_can_be_checked_and_unchecked(): void
+    {
+        $item = ChecklistItem::query()->create([
+            'profile_id' => $this->profile->id,
+            'checklist_item' => 'Inspect brakes',
+        ]);
+
+        $this->post("/{$this->client->url}/{$this->profile->id}/checklist/{$item->id}/check")
+            ->assertRedirect("/{$this->client->url}/{$this->profile->id}");
+
+        $this->assertNotNull($item->fresh()->datetime);
+
+        $this->post("/{$this->client->url}/{$this->profile->id}/checklist/{$item->id}/uncheck")
+            ->assertRedirect("/{$this->client->url}/{$this->profile->id}");
+
+        $this->assertNull($item->fresh()->datetime);
+    }
+
+    public function test_scan_page_renders_radio_options_for_form_questions(): void
+    {
+        FormBuilderQuestion::query()->create([
+            'question_id' => 10,
+            'profile_id' => $this->profile->id,
+            'form_id' => 1,
+            'question_type_id' => 3,
+            'question_text' => 'Condition?',
+            'question_order' => 1,
+        ]);
+
+        FormBuilderQuestionOption::query()->create([
+            'option_id' => 1,
+            'question_id' => 10,
+            'option_name' => 'Good',
+            'question_option_type_id' => 3,
+        ]);
+
+        $this->profile->update(['form_active' => true]);
+
+        $this->get("/{$this->client->url}/{$this->profile->id}")
+            ->assertOk()
+            ->assertSee('Condition?')
+            ->assertSee('Good');
     }
 
     public function test_expired_profile_shows_expired_view(): void
@@ -111,6 +197,19 @@ class ScanPageTest extends TestCase
         ]);
     }
 
+    public function test_code_profile_with_destination_url_redirects_externally(): void
+    {
+        $codeType = \App\Models\EquipmentType::query()->where('slag', 'code')->firstOrFail();
+
+        $this->profile->update([
+            'type_id' => $codeType->id,
+            'url' => 'https://example.com/destination',
+        ]);
+
+        $this->get("/{$this->client->url}/{$this->profile->id}")
+            ->assertRedirect('https://example.com/destination');
+    }
+
     public function test_marketing_routes_are_available(): void
     {
         $this->get('/pricing')->assertOk();
@@ -118,5 +217,17 @@ class ScanPageTest extends TestCase
         $this->get('/contact')->assertOk();
         $this->get('/privacy')->assertOk();
         $this->get('/terms')->assertOk();
+    }
+
+    public function test_contact_form_flashes_success(): void
+    {
+        $this->from('/contact')
+            ->post('/contact', [
+                'name' => 'Jane',
+                'email' => 'jane@example.com',
+                'message' => 'Hello there',
+            ])
+            ->assertRedirect('/contact')
+            ->assertSessionHas('contact_submitted', true);
     }
 }

@@ -17,7 +17,7 @@
     <h1>Contact ScanLink</h1>
     <p>Email: <a href="mailto:{{ $contactEmail }}">{{ $contactEmail }}</a></p>
 
-    @if (! empty($submitted))
+    @if (session('contact_submitted'))
         <p class="ok">Thanks — we received your message.</p>
     @endif
 

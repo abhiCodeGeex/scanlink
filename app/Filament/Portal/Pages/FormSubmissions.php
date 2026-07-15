@@ -28,6 +28,8 @@ class FormSubmissions extends Page
 
     public ?int $selectedProfileId = null;
 
+    public ?string $expandedSessionId = null;
+
     /** @var Collection<int, object> */
     public Collection $sessions;
 
@@ -39,7 +41,9 @@ class FormSubmissions extends Page
     public function mount(): void
     {
         $this->sessions = collect();
-        $firstProfileId = $this->clientProfileOptions()->keys()->first();
+
+        $requestedProfile = request()->integer('profile');
+        $firstProfileId = $requestedProfile ?: $this->clientProfileOptions()->keys()->first();
 
         if ($firstProfileId) {
             $this->loadSessions((int) $firstProfileId);
@@ -48,9 +52,33 @@ class FormSubmissions extends Page
 
     public function updatedSelectedProfileId(?int $profileId): void
     {
+        $this->expandedSessionId = null;
+
         if ($profileId) {
             $this->loadSessions($profileId);
         }
+    }
+
+    public function toggleSession(string $sessionId): void
+    {
+        $this->expandedSessionId = $this->expandedSessionId === $sessionId ? null : $sessionId;
+    }
+
+    /**
+     * @return Collection<int, FormBuilderAnswer>
+     */
+    public function sessionAnswers(string $sessionId): Collection
+    {
+        if (! $this->selectedProfileId) {
+            return collect();
+        }
+
+        return FormBuilderAnswer::query()
+            ->with('question')
+            ->where('profile_id', $this->selectedProfileId)
+            ->where('session_id', $sessionId)
+            ->orderBy('question_id')
+            ->get();
     }
 
     protected function loadSessions(int $profileId): void
@@ -81,6 +109,10 @@ class FormSubmissions extends Page
             ->whereHas('profile', fn ($q) => $q->where('client_id', $client->id))
             ->where('session_id', $sessionId)
             ->delete();
+
+        if ($this->expandedSessionId === $sessionId) {
+            $this->expandedSessionId = null;
+        }
 
         if ($this->selectedProfileId) {
             $this->loadSessions($this->selectedProfileId);

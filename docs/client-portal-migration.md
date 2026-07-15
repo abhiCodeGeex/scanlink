@@ -9,29 +9,41 @@
 | Legacy area | Laravel | Status |
 |-------------|---------|--------|
 | Login / logout / password reset | Filament portal auth | Done |
+| Forced password change | `EnsurePortalPasswordChanged` + `ForcePasswordChange` | Done |
 | Register (client + primary user) | `App\Filament\Portal\Auth\Register` | Done |
 | Dashboard | `PortalDashboard` | Done |
 | Edit account | `EditAccount` | Done |
 | Team / sub-users + permissions | `TeamUsers` | Done |
 | Code balance | `CodeBalance` | Done |
 | Purchase codes | `PurchaseCodes` + `CodePurchaseService` | Done |
-| Multiple code renewal | `MultipleCodeRenewal` + `CodeProfileRenewalService` | Done |
+| Multiple code renewal (any type, 60-day window) | `MultipleCodeRenewal` + `CodeProfileRenewalService` | Done |
 | Master code list + CRUD | Portal `ProfileResource` | Done |
-| Media (logos/pics/docs/videos) | Admin relation managers on portal profiles | Done |
+| Profile list type tabs + row actions | `ListProfiles` tabs + `PortalProfilesTable` actions | Done |
+| Media (logos/pics/docs/videos) | Admin relation managers + public scan render | Done |
 | QR generate on create | `ProfileQrService` in CreateProfile | Done |
-| Form builder editor | `FormBuilder` | Done |
-| Form submissions | `FormSubmissions` | Done |
+| Download QR / PDF on portal view & edit | `HasProfileQrActions` | Done |
+| Form builder editor (options, reorder, activate) | `FormBuilder` | Done |
+| Form submissions (expandable answers) | `FormSubmissions` | Done |
 | Form builder purchase / activate | `PurchaseFormBuilder` | Done |
 | Participants | `ManageParticipants` | Done |
-| Scan analytics | `ScanAnalytics` + `AnalyticsApiService` | Done |
-| Visitor log | `VisitorLog` | Done |
-| Order physical labels | `OrderLabel` + `LabelOrderService` | Done |
+| Scan analytics (readable UI + CSV export) | `ScanAnalytics` + `AnalyticsApiService` | Done |
+| Visitor log (+ CSV export) | `VisitorLog` | Done |
+| Order physical labels (price summary) | `OrderLabel` + `LabelOrderService` | Done |
 | PayPal IPN stub | `POST /notify/paypal` | Done |
-| VOC login entry | `/voclogin` → portal login; `VocDashboard` | Done |
-| Public mobile scan + password + forms + visitors | `MobileProfileController` | Done |
-| Marketing pages | `/`, `/contact`, `/pricing`, `/faq`, `/privacy`, `/terms` | Done |
+| VOC dashboard (linked profiles + documents) | `VocDashboard` | Done |
+| Public mobile scan (full profile, checklist, media) | `MobileProfileController` | Done |
+| Marketing pages + contact mail | `/contact` + `MarketingController` | Done |
 | Expiry / participant crons | `scanlink:send-*` scheduled in `routes/console.php` | Done |
 | Portal feature tables | Migration `2026_07_14_150000_*` | Done |
+
+## Remaining / UAT
+
+| Area | Notes |
+|------|-------|
+| Galatech analytics API | Requires live `analytic_key` on profiles + API reachability for charts/maps |
+| PayPal live checkout | IPN stub only; full payment flow needs UAT |
+| VOC equipment type in DB | Tabs/filters include `voc` / `survey` when `equipment_types` rows exist |
+| Branch merge to `main` | Blocked until UAT sign-off |
 
 ## Data import (existing pipeline)
 

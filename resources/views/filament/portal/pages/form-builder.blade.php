@@ -8,7 +8,7 @@
                 <div class="divide-y divide-gray-200 dark:divide-gray-700">
                     @foreach ($questions as $question)
                         <div class="flex items-start justify-between gap-4 py-4" wire:key="question-{{ $question->question_id }}">
-                            <div>
+                            <div class="min-w-0 flex-1">
                                 <p class="font-medium text-gray-900 dark:text-white">
                                     {{ $question->question_order }}. {{ $question->question_text }}
                                 </p>
@@ -18,15 +18,38 @@
                                         <span class="text-primary-600">(required)</span>
                                     @endif
                                 </p>
+                                @if ($question->options->isNotEmpty())
+                                    <ul class="mt-2 list-inside list-disc text-sm text-gray-600 dark:text-gray-300">
+                                        @foreach ($question->options as $option)
+                                            <li>{{ $option->option_name }}</li>
+                                        @endforeach
+                                    </ul>
+                                @endif
                             </div>
-                            <x-filament::button
-                                color="danger"
-                                size="sm"
-                                wire:click="deleteQuestion({{ $question->question_id }})"
-                                wire:confirm="Remove this question?"
-                            >
-                                Remove
-                            </x-filament::button>
+                            <div class="flex shrink-0 flex-col gap-2">
+                                <x-filament::button
+                                    color="gray"
+                                    size="sm"
+                                    wire:click="moveQuestionUp({{ $question->question_id }})"
+                                >
+                                    Up
+                                </x-filament::button>
+                                <x-filament::button
+                                    color="gray"
+                                    size="sm"
+                                    wire:click="moveQuestionDown({{ $question->question_id }})"
+                                >
+                                    Down
+                                </x-filament::button>
+                                <x-filament::button
+                                    color="danger"
+                                    size="sm"
+                                    wire:click="deleteQuestion({{ $question->question_id }})"
+                                    wire:confirm="Remove this question?"
+                                >
+                                    Remove
+                                </x-filament::button>
+                            </div>
                         </div>
                     @endforeach
                 </div>
