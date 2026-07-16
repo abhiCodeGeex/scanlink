@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\FormBuilderOrders\Tables;
 
 use App\Enums\CodeOrderStatus;
+use App\Filament\Support\DateRangeTableFilter;
 use App\Models\FormBuilderOrder;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
@@ -18,6 +19,10 @@ class FormBuilderOrdersTable
             ->defaultSort('created_at', 'desc')
             ->columns([
                 TextColumn::make('id')->label('ID')->sortable(),
+                TextColumn::make('created_at')
+                    ->label('Date')
+                    ->dateTime('d/m/Y H:i:s')
+                    ->sortable(),
                 TextColumn::make('full_name')
                     ->label('Full Name')
                     ->state(fn (FormBuilderOrder $record): string => $record->fullName())
@@ -51,6 +56,7 @@ class FormBuilderOrdersTable
                         return $query->where('status', $value);
                     })
                     ->default('all'),
+                DateRangeTableFilter::make('created_at', 'Date range'),
             ])
             ->recordActions([
                 ViewAction::make(),

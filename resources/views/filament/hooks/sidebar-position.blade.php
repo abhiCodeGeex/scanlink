@@ -14,12 +14,13 @@
         position: absolute;
         top: 0;
         width: 6px;
-        z-index: 25;
+        z-index: 15;
         cursor: col-resize;
         touch-action: none;
         user-select: none;
         background: transparent;
         display: none;
+        pointer-events: auto;
     }
 
     .scanlink-sidebar-grip:hover,

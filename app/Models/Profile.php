@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ProfileCodeType;
+use App\Models\Concerns\FillsLegacyNotNullDefaults;
 use Database\Factories\ProfileFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -26,7 +27,88 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Profile extends Model
 {
     /** @use HasFactory<ProfileFactory> */
+    use FillsLegacyNotNullDefaults;
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        // Live dump uses zero-dates; Carbon date casts reject them.
+        static::creating(function (Profile $profile): void {
+            foreach (['activation_start_date', 'activation_end_date', 'voc_dob'] as $column) {
+                if (! array_key_exists($column, $profile->getAttributes()) || $profile->getAttributes()[$column] === null) {
+                    $profile->attributes[$column] = '0000-00-00';
+                }
+            }
+        });
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected static function legacyNotNullDefaults(): array
+    {
+        return [
+            'code_purchase_id' => 0,
+            'form_title' => '',
+            'code_profile_name' => '',
+            'name' => '',
+            'position' => '',
+            'identification' => '',
+            'serial_no' => '',
+            'description' => '',
+            'name2' => '',
+            'description2' => '',
+            'notes' => '',
+            'name_company' => '',
+            'telephone' => '',
+            'address' => '',
+            'gps_coordinates' => '',
+            'password' => '',
+            'show_header' => 0,
+            'shorturl' => '',
+            'analytic_key' => '',
+            'buttonbackcolor' => '',
+            'buttonfontcolor' => '',
+            'data_collection_mobile' => 0,
+            'data_collection_email' => 0,
+            'data_collection_name' => '',
+            'data_collection_surname' => '',
+            'data_collection_content' => '',
+            'data_collection_btn_text' => '',
+            'data_collection_btn_color' => '',
+            'link_button' => 0,
+            'link_button_text' => '',
+            'link_button_url' => '',
+            'link_button_color' => '',
+            'url' => '',
+            'reseller_client_id' => 0,
+            'mobile' => '',
+            'email' => '',
+            'voc_first_name' => '',
+            'voc_last_name' => '',
+            'voc_address' => '',
+            'voc_town' => '',
+            'voc_state' => '',
+            'voc_phone' => '',
+            'voc_known_allergies' => '',
+            'voc_blood_type' => '',
+            'voc_next_of_kin' => '',
+            'voc_contact_phone' => '',
+            'voc_employer' => '',
+            'voc_emp_address' => '',
+            'voc_emp_town' => '',
+            'voc_emp_state' => '',
+            'voc_emp_phone' => '',
+            'voc_email_text' => '',
+            'voc_email_url' => '',
+            'voc_email_sign_line1' => '',
+            'voc_email_sign_line2' => '',
+            'voc_title_bar_text' => '',
+            'voc_title_bar_colour' => '',
+            'tiles_order' => '',
+            'color_code' => '',
+        ];
+    }
 
     protected function casts(): array
     {

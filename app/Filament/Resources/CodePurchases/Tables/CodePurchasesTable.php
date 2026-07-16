@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\CodePurchases\Tables;
 
 use App\Enums\CodeOrderStatus;
+use App\Filament\Support\DateRangeTableFilter;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -53,6 +54,7 @@ class CodePurchasesTable
                         return $query->where('status', $value);
                     })
                     ->default('all'),
+                DateRangeTableFilter::make('created_at', 'Date range'),
             ])
             ->recordActions([
                 ViewAction::make(),

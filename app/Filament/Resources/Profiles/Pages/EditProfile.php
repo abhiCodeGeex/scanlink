@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Profiles\Pages;
 
+use App\Filament\Concerns\HandlesDatabaseSaveFailures;
 use App\Filament\Resources\Profiles\Pages\Concerns\HasProfileQrActions;
 use App\Filament\Resources\Profiles\Pages\Concerns\SyncsProfileAssets;
 use App\Filament\Resources\Profiles\ProfileResource;
@@ -10,6 +11,7 @@ use Filament\Resources\Pages\EditRecord;
 
 class EditProfile extends EditRecord
 {
+    use HandlesDatabaseSaveFailures;
     use HasProfileQrActions;
     use SyncsProfileAssets;
 

@@ -28,7 +28,7 @@ class ViewCodePurchase extends ViewRecord
                         ->default(fn (): string => $this->record->status->value)
                         ->required(),
                 ])
-                ->requiresConfirmation()
+                ->modalSubmitActionLabel('Update status')
                 ->action(function (array $data): void {
                     $this->record->update([
                         'status' => (string) $data['status'],

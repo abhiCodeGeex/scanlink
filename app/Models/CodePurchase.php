@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Casts\MysqlEnumBoolean;
 use App\Enums\CodeOrderStatus;
+use App\Models\Concerns\FillsLegacyNotNullDefaults;
 use Database\Factories\CodePurchaseFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -37,12 +38,36 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class CodePurchase extends Model
 {
     /** @use HasFactory<CodePurchaseFactory> */
+    use FillsLegacyNotNullDefaults;
     use HasFactory;
 
     protected $table = 'code_purchase';
 
     /** Live dump has created_at only. */
     public const UPDATED_AT = null;
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected static function legacyNotNullDefaults(): array
+    {
+        return [
+            'town' => '',
+            'first_name' => '',
+            'last_name' => '',
+            'company_name' => '',
+            'billing_address' => '',
+            'phone' => '',
+            'postal_code' => 0,
+            'no_of_codes' => 0,
+            'per_code_amount' => 0,
+            'total_amount' => 0,
+            'exipry_date' => now()->addYear(),
+            'is_reseller_pricing_code' => '0',
+            'reseller_client_id' => 0,
+            'free_code' => '0',
+        ];
+    }
 
     protected function casts(): array
     {

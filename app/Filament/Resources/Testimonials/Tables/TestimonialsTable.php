@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Testimonials\Tables;
 
+use App\Filament\Support\DateRangeTableFilter;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -50,6 +51,7 @@ class TestimonialsTable
                                 ->removeField('title'),
                         ];
                     }),
+                DateRangeTableFilter::make('created_at', 'Date range'),
             ])
             ->recordActions([
                 ViewAction::make(),

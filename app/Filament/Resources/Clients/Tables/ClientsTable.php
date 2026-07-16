@@ -3,17 +3,16 @@
 namespace App\Filament\Resources\Clients\Tables;
 
 use App\Filament\Resources\Clients\ClientResource;
+use App\Filament\Support\DateRangeTableFilter;
 use App\Models\Client;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
-use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\TextInput;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Carbon;
 
 class ClientsTable
 {
@@ -58,43 +57,7 @@ class ClientsTable
                         filled($data['value'] ?? null),
                         fn (Builder $builder): Builder => $builder->where('client_name', 'like', '%'.$data['value'].'%'),
                     )),
-                Filter::make('regi_date')
-                    ->label('Date range')
-                    ->columns(2)
-                    ->schema([
-                        DatePicker::make('from')
-                            ->label('From')
-                            ->native(false)
-                            ->displayFormat('d/m/Y'),
-                        DatePicker::make('until')
-                            ->label('To')
-                            ->native(false)
-                            ->displayFormat('d/m/Y'),
-                    ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query
-                            ->when(
-                                filled($data['from'] ?? null),
-                                fn (Builder $builder): Builder => $builder->whereDate('regi_date', '>=', $data['from']),
-                            )
-                            ->when(
-                                filled($data['until'] ?? null),
-                                fn (Builder $builder): Builder => $builder->whereDate('regi_date', '<=', $data['until']),
-                            );
-                    })
-                    ->indicateUsing(function (array $data): array {
-                        $indicators = [];
-
-                        if (filled($data['from'] ?? null)) {
-                            $indicators['from'] = 'From '.Carbon::parse($data['from'])->format('d/m/Y');
-                        }
-
-                        if (filled($data['until'] ?? null)) {
-                            $indicators['until'] = 'To '.Carbon::parse($data['until'])->format('d/m/Y');
-                        }
-
-                        return $indicators;
-                    }),
+                DateRangeTableFilter::make('regi_date', 'Date range'),
             ])
             ->recordActions([
                 // Legacy row options: Users list, Edit, Block/Unblock, Delete.

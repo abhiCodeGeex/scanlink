@@ -39,6 +39,11 @@
 
 <script>
     (() => {
+        if (window.__scanlinkNavFeedbackInit) {
+            return;
+        }
+        window.__scanlinkNavFeedbackInit = true;
+
         const loader = document.getElementById('nav-feedback-loader');
         if (!loader) return;
 

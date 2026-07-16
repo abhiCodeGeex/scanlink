@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\MysqlEnumBoolean;
+use App\Models\Concerns\FillsLegacyNotNullDefaults;
 use Database\Factories\ClientFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -21,6 +23,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'password',
     'url',
     'approve',
+    'shortcut_title',
+    'shortcut_image1',
+    'shortcut_image2',
     'reseller_code',
     'reseller_email',
     'is_password_change',
@@ -28,14 +33,30 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Client extends Model
 {
     /** @use HasFactory<ClientFactory> */
+    use FillsLegacyNotNullDefaults;
     use HasFactory;
     use SoftDeletes;
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected static function legacyNotNullDefaults(): array
+    {
+        return [
+            'shortcut_title' => '',
+            'shortcut_image1' => '',
+            'shortcut_image2' => '',
+            'reseller_code' => '',
+            'reseller_email' => '',
+            'is_password_change' => false,
+        ];
+    }
 
     protected function casts(): array
     {
         return [
             'regi_date' => 'date',
-            'approve' => 'boolean',
+            'approve' => MysqlEnumBoolean::class,
             'is_password_change' => 'boolean',
         ];
     }

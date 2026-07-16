@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Clients\Tables;
 
 use App\Enums\ClientUserRole;
+use App\Filament\Support\DateRangeTableFilter;
 use App\Models\ClientUser;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
@@ -33,14 +34,44 @@ class ClientUsersTable
         if ($includeStatusColumns) {
             $columns[] = IconColumn::make('status')
                 ->label('Active')
-                ->boolean();
+                ->boolean()
+                ->tooltip(fn (ClientUser $record): string => $record->status ? 'Click to deactivate' : 'Click to activate')
+                ->action(
+                    Action::make('toggleActive')
+                        ->requiresConfirmation()
+                        ->modalHeading(fn (ClientUser $record): string => $record->status
+                            ? 'Deactivate this user?'
+                            : 'Activate this user?')
+                        ->modalDescription(fn (ClientUser $record): string => $record->status
+                            ? 'This user will no longer be able to sign in.'
+                            : 'This user will be able to sign in again.')
+                        ->action(fn (ClientUser $record) => $record->update(['status' => ! $record->status])),
+                );
             $columns[] = IconColumn::make('video_upload')
                 ->label('Video')
-                ->boolean();
+                ->boolean()
+                ->tooltip(fn (ClientUser $record): string => $record->video_upload ? 'Click to disable video upload' : 'Click to enable video upload')
+                ->action(
+                    Action::make('toggleVideo')
+                        ->requiresConfirmation()
+                        ->modalHeading(fn (ClientUser $record): string => $record->video_upload
+                            ? 'Disable video upload?'
+                            : 'Enable video upload?')
+                        ->modalDescription(fn (ClientUser $record): string => $record->video_upload
+                            ? 'This user will lose permission to upload videos.'
+                            : 'This user will be allowed to upload videos.')
+                        ->action(fn (ClientUser $record) => $record->update(['video_upload' => ! $record->video_upload])),
+                );
         }
 
         return $table
             ->columns($columns)
+            ->filters([
+                DateRangeTableFilter::make('created_at', 'Date range'),
+            ])
+            // Only Option buttons (and icon column actions) should run — not row clicks.
+            ->recordAction(null)
+            ->recordUrl(null)
             ->recordActionsColumnLabel('Option')
             ->recordActions(static::recordActions());
     }

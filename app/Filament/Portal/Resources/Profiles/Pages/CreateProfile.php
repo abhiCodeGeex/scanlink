@@ -4,6 +4,7 @@ namespace App\Filament\Portal\Resources\Profiles\Pages;
 
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
+use App\Filament\Concerns\HandlesDatabaseSaveFailures;
 use App\Filament\Resources\Profiles\Pages\Concerns\SyncsProfileAssets;
 use App\Services\AnalyticsApiService;
 use App\Services\ProfileQrService;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Schema;
 
 class CreateProfile extends CreateRecord
 {
+    use HandlesDatabaseSaveFailures;
     use InteractsWithClientMembership;
     use SyncsProfileAssets;
 

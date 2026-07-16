@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Clients\Pages;
 
 use App\Enums\CodeOrderStatus;
+use App\Filament\Concerns\HandlesDatabaseSaveFailures;
 use App\Filament\Resources\Clients\ClientResource;
 use App\Models\Client;
 use Filament\Actions\Action;
@@ -14,6 +15,8 @@ use Illuminate\Validation\ValidationException;
 
 class EditClient extends EditRecord
 {
+    use HandlesDatabaseSaveFailures;
+
     protected static string $resource = ClientResource::class;
 
     protected function getHeaderActions(): array
@@ -69,22 +72,34 @@ class EditClient extends EditRecord
                         ->required(),
                 ])
                 ->action(function (array $data): void {
-                    $client = $this->record;
+                    try {
+                        $client = $this->record;
 
-                    $client->codePurchases()->create([
-                        'email' => $client->email,
-                        'first_name' => $client->contact_person,
-                        'company_name' => $client->client_name,
-                        'billing_address' => $client->address,
-                        'phone' => $client->telephone,
-                        'no_of_codes' => (int) $data['no_of_codes'],
-                        'per_code_amount' => 0,
-                        'total_amount' => 0,
-                        'status' => CodeOrderStatus::New,
-                        'enable' => true,
-                        'free_code' => true,
-                        'ordered_on' => now(),
-                    ]);
+                        $client->codePurchases()->create([
+                            'email' => $client->email,
+                            'first_name' => $client->contact_person,
+                            'company_name' => $client->client_name,
+                            'billing_address' => $client->address,
+                            'phone' => $client->telephone,
+                            'no_of_codes' => (int) $data['no_of_codes'],
+                            'per_code_amount' => 0,
+                            'total_amount' => 0,
+                            'status' => CodeOrderStatus::New,
+                            'enable' => true,
+                            'free_code' => true,
+                            'ordered_on' => now(),
+                        ]);
+                    } catch (\Illuminate\Database\QueryException $exception) {
+                        report($exception);
+
+                        Notification::make()
+                            ->title('Could not add free codes')
+                            ->body('Unable to save. Please check the values and try again.')
+                            ->danger()
+                            ->send();
+
+                        return;
+                    }
 
                     Notification::make()
                         ->title('Free codes added.')

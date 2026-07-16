@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Casts\MysqlEnumBoolean;
 use App\Enums\ClientUserRole;
+use App\Models\Concerns\FillsLegacyNotNullDefaults;
 use Database\Factories\ClientUserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -25,6 +27,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'expire_at',
     'notice',
     'client_reseller_code',
+    'reseller_code',
+    'reseller_email',
+    'footer_logo',
     'is_sub_user',
     'access_addcode',
     'access_edit',
@@ -47,7 +52,35 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class ClientUser extends Model
 {
     /** @use HasFactory<ClientUserFactory> */
+    use FillsLegacyNotNullDefaults;
     use HasFactory;
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected static function legacyNotNullDefaults(): array
+    {
+        return [
+            'password' => '',
+            'notice' => 0,
+            'first_name' => '',
+            'last_name' => '',
+            'company_name' => '',
+            'billing_address' => '',
+            'town' => '',
+            'phone' => '',
+            'postal_code' => 0,
+            'footer_logo' => '',
+            'reseller_code' => '',
+            'reseller_email' => '',
+            'client_reseller_code' => '',
+            'show_code_profile_id_to_acc_user' => '0',
+            'video_upload' => 0,
+            'checklist_option' => '0',
+            'is_sub_user' => 0,
+            'is_password_change' => 0,
+        ];
+    }
 
     protected static function booted(): void
     {
@@ -60,7 +93,7 @@ class ClientUser extends Model
     {
         return [
             'role' => ClientUserRole::class,
-            'status' => 'boolean',
+            'status' => MysqlEnumBoolean::class,
             'video_upload' => 'boolean',
             'checklist_option' => 'boolean',
             'customqr_option' => 'boolean',
@@ -76,7 +109,6 @@ class ClientUser extends Model
             'access_download' => 'boolean',
             'access_label' => 'boolean',
             'access_log' => 'boolean',
-            'show_code_profile_id_to_acc_user' => 'boolean',
         ];
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Galleries\Pages;
 
+use App\Filament\Concerns\HandlesDatabaseSaveFailures;
 use App\Filament\Resources\Galleries\GalleryResource;
 use App\Filament\Resources\Galleries\Schemas\GalleryForm;
 use App\Models\Gallery;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\Storage;
 
 class CreateGallery extends CreateRecord
 {
+    use HandlesDatabaseSaveFailures;
+
     protected static string $resource = GalleryResource::class;
 
     protected function handleRecordCreation(array $data): Model

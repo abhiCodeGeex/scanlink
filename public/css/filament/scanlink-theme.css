@@ -326,3 +326,18 @@ html:not(.dark) .fi-topbar-collapse-sidebar-btn-ctn .fi-icon-btn:hover {
 .fi-page-code-pricing .fi-section-footer .fi-sc-actions {
     margin-top: 0.75rem;
 }
+
+/* ---------------------------------------------------------------------------
+ * Modals — closed shells must never steal the first click (SPA / Alpine race)
+ * ------------------------------------------------------------------------- */
+.fi-modal:not(.fi-modal-open) {
+    pointer-events: none !important;
+}
+
+.fi-modal.fi-modal-open {
+    pointer-events: auto !important;
+}
+
+[x-cloak] {
+    display: none !important;
+}

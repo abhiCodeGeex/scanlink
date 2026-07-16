@@ -3,11 +3,14 @@
 namespace App\Filament\Resources\Clients\Pages;
 
 use App\Enums\ClientUserRole;
+use App\Filament\Concerns\HandlesDatabaseSaveFailures;
 use App\Filament\Resources\Clients\ClientResource;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateClient extends CreateRecord
 {
+    use HandlesDatabaseSaveFailures;
+
     protected static string $resource = ClientResource::class;
 
     /**
@@ -33,6 +36,13 @@ class CreateClient extends CreateRecord
 
         unset($data['txtUseremail'], $data['txtUserpassword'], $data['videopermission']);
 
+        // Live schema: NOT NULL columns with no DB defaults.
+        $data['reseller_email'] = filled($data['reseller_email'] ?? null) ? $data['reseller_email'] : '';
+        $data['reseller_code'] = filled($data['reseller_code'] ?? null) ? $data['reseller_code'] : '';
+        $data['shortcut_title'] = $data['shortcut_title'] ?? '';
+        $data['shortcut_image1'] = $data['shortcut_image1'] ?? '';
+        $data['shortcut_image2'] = $data['shortcut_image2'] ?? '';
+
         return $data;
     }
 
@@ -50,6 +60,12 @@ class CreateClient extends CreateRecord
             'customqr_option' => false,
             'is_password_change' => true,
             'expire_at' => now()->addYear(),
+            'first_name' => $client->contact_person ?: '',
+            'last_name' => '',
+            'company_name' => $client->client_name ?: '',
+            'billing_address' => $client->address ?: '',
+            'phone' => $client->telephone ?: '',
+            'notice' => false,
         ]);
 
         if ($this->addUserData === null) {
@@ -67,7 +83,13 @@ class CreateClient extends CreateRecord
             'customqr_option' => false,
             'is_password_change' => true,
             'expire_at' => now()->addYear(),
-            'client_reseller_code' => $client->reseller_code,
+            'client_reseller_code' => $client->reseller_code ?: '',
+            'first_name' => '',
+            'last_name' => '',
+            'company_name' => $client->client_name ?: '',
+            'billing_address' => $client->address ?: '',
+            'phone' => $client->telephone ?: '',
+            'notice' => false,
         ]);
     }
 }
