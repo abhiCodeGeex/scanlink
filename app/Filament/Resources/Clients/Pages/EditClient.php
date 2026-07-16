@@ -5,9 +5,10 @@ namespace App\Filament\Resources\Clients\Pages;
 use App\Enums\CodeOrderStatus;
 use App\Filament\Concerns\HandlesDatabaseSaveFailures;
 use App\Filament\Resources\Clients\ClientResource;
+use App\Filament\Resources\Clients\RelationManagers\ClientUsersRelationManager;
+use App\Filament\Resources\Clients\Tables\ClientUsersTable;
 use App\Models\Client;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
@@ -26,14 +27,25 @@ class EditClient extends EditRecord
             Action::make('addResellerCode')
                 ->label('Add Reseller code')
                 ->icon('heroicon-o-tag')
+                ->modalCancelActionLabel('Cancel')
                 ->schema([
                     TextInput::make('reseller_code')
                         ->label('Reseller code')
-                        ->required()
                         ->default(fn (): ?string => $this->record->reseller_code),
                 ])
                 ->action(function (array $data): void {
-                    $code = trim($data['reseller_code']);
+                    $code = trim((string) ($data['reseller_code'] ?? ''));
+
+                    if (blank($code)) {
+                        $this->record->update(['reseller_code' => '']);
+
+                        Notification::make()
+                            ->title('Reseller code cleared.')
+                            ->success()
+                            ->send();
+
+                        return;
+                    }
 
                     $exists = Client::query()
                         ->where('reseller_code', $code)
@@ -63,6 +75,7 @@ class EditClient extends EditRecord
             Action::make('addFreeCodes')
                 ->label('Add free codes')
                 ->icon('heroicon-o-gift')
+                ->modalCancelActionLabel('Cancel')
                 ->schema([
                     TextInput::make('no_of_codes')
                         ->label('Number of codes')
@@ -107,13 +120,32 @@ class EditClient extends EditRecord
                         ->send();
                 }),
 
-            DeleteAction::make()
-                ->label('Delete')
+            Action::make('addUser')
+                ->label('Add User')
+                ->icon('heroicon-o-user-plus')
                 ->color('primary')
-                ->requiresConfirmation()
-                ->modalHeading('Delete this client?')
-                ->modalDescription('This soft-deletes the client. Related codes and users are kept. You can restore later from the database if needed.')
-                ->successNotificationTitle('Client deleted.'),
+                ->modalAutofocus(false)
+                ->modalCancelActionLabel('Cancel')
+                ->schema(ClientUsersTable::createFormSchema())
+                ->mountUsing(function (Action $action): void {
+                    ClientUsersTable::mountCleanCreateForm($action);
+                    $this->js('window.scanlinkScrollToClientUsers?.()');
+                })
+                ->action(function (array $data): void {
+                    $this->record->subUsers()->create(
+                        ClientUsersTable::prepareCreateData($data),
+                    );
+
+                    Notification::make()
+                        ->title('User added.')
+                        ->success()
+                        ->send();
+
+                    $this->dispatch('client-users-table-refresh')
+                        ->to(ClientUsersRelationManager::class);
+
+                    $this->js('window.scanlinkStickOnClientUsers?.()');
+                }),
         ];
     }
 

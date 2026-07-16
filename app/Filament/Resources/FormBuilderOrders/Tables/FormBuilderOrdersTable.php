@@ -4,6 +4,8 @@ namespace App\Filament\Resources\FormBuilderOrders\Tables;
 
 use App\Enums\CodeOrderStatus;
 use App\Filament\Support\DateRangeTableFilter;
+use App\Filament\Support\SearchTableFilter;
+use App\Filament\Support\TableFilterDefaults;
 use App\Models\FormBuilderOrder;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
@@ -15,7 +17,7 @@ class FormBuilderOrdersTable
 {
     public static function configure(Table $table): Table
     {
-        return $table
+        return TableFilterDefaults::apply($table
             ->defaultSort('created_at', 'desc')
             ->columns([
                 TextColumn::make('id')->label('ID')->sortable(),
@@ -40,6 +42,7 @@ class FormBuilderOrdersTable
                     ->state(fn (FormBuilderOrder $record): string => (string) ($record->details->first()?->profile_id ?? '-')),
             ])
             ->filters([
+                SearchTableFilter::make(['first_name', 'last_name', 'email', 'phone', 'postal_code']),
                 SelectFilter::make('status')
                     ->label('View Orders by Status')
                     ->options(array_merge(
@@ -60,6 +63,6 @@ class FormBuilderOrdersTable
             ])
             ->recordActions([
                 ViewAction::make(),
-            ]);
+            ]));
     }
 }

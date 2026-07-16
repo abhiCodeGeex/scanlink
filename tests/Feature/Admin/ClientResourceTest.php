@@ -6,9 +6,11 @@ use App\Enums\CodeOrderStatus;
 use App\Filament\Resources\Clients\Pages\CreateClient;
 use App\Filament\Resources\Clients\Pages\EditClient;
 use App\Filament\Resources\Clients\Pages\ListClients;
+use App\Mail\ClientWelcomeNotification;
 use App\Models\Client;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -66,6 +68,59 @@ class ClientResourceTest extends TestCase
             'email' => 'portal@test-client.example',
             'role' => 5,
         ]);
+    }
+
+    public function test_creating_client_sends_welcome_email(): void
+    {
+        Mail::fake();
+
+        $this->actingAs($this->admin());
+
+        Livewire::test(CreateClient::class)
+            ->set('data', [
+                'client_name' => 'Mail Test Client',
+                'contact_person' => 'Alex Smith',
+                'address' => '1 Test Street',
+                'telephone' => '0400000000',
+                'regi_date' => now()->toDateString(),
+                'url' => 'mail-test-client',
+                'email' => 'welcome@mail-test.example',
+                'password' => 'Portal@12345',
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        Mail::assertSent(
+            ClientWelcomeNotification::class,
+            fn (ClientWelcomeNotification $mail): bool => $mail->hasTo('welcome@mail-test.example'),
+        );
+    }
+
+    public function test_create_client_registration_date_starts_empty(): void
+    {
+        $this->actingAs($this->admin());
+
+        Livewire::test(CreateClient::class)
+            ->assertSet('data.regi_date', null);
+    }
+
+    public function test_create_client_rejects_future_registration_date(): void
+    {
+        $this->actingAs($this->admin());
+
+        Livewire::test(CreateClient::class)
+            ->set('data', [
+                'client_name' => 'Future Date Client',
+                'contact_person' => 'Alex Smith',
+                'address' => '1 Test Street',
+                'telephone' => '0400000000',
+                'regi_date' => now()->addDay()->toDateString(),
+                'url' => 'future-date-client',
+                'email' => 'future@example.com',
+                'password' => 'Portal@12345',
+            ])
+            ->call('create')
+            ->assertHasFormErrors(['regi_date']);
     }
 
     public function test_client_create_validates_required_fields(): void

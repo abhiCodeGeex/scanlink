@@ -4,6 +4,8 @@ namespace App\Filament\Resources\CodePurchases\Tables;
 
 use App\Enums\CodeOrderStatus;
 use App\Filament\Support\DateRangeTableFilter;
+use App\Filament\Support\SearchTableFilter;
+use App\Filament\Support\TableFilterDefaults;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -14,7 +16,7 @@ class CodePurchasesTable
 {
     public static function configure(Table $table): Table
     {
-        return $table
+        return TableFilterDefaults::apply($table
             ->defaultSort('created_at', 'desc')
             ->columns([
                 TextColumn::make('id')
@@ -38,6 +40,7 @@ class CodePurchasesTable
                     ->sortable(),
             ])
             ->filters([
+                SearchTableFilter::make(['first_name', 'last_name']),
                 SelectFilter::make('status')
                     ->label('View Orders by Status')
                     ->options(array_merge(
@@ -58,6 +61,6 @@ class CodePurchasesTable
             ])
             ->recordActions([
                 ViewAction::make(),
-            ]);
+            ]));
     }
 }

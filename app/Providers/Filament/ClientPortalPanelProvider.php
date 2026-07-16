@@ -48,18 +48,18 @@ class ClientPortalPanelProvider extends PanelProvider
             ->sidebarFullyCollapsibleOnDesktop()
             ->collapsedSidebarWidth('3.25rem')
             ->icons([
-                PanelsIconAlias::SIDEBAR_COLLAPSE_BUTTON => Heroicon::OutlinedChevronDoubleLeft,
-                PanelsIconAlias::SIDEBAR_EXPAND_BUTTON => Heroicon::OutlinedChevronDoubleRight,
-                PanelsIconAlias::SIDEBAR_COLLAPSE_BUTTON_RTL => Heroicon::OutlinedChevronDoubleRight,
-                PanelsIconAlias::SIDEBAR_EXPAND_BUTTON_RTL => Heroicon::OutlinedChevronDoubleLeft,
+                PanelsIconAlias::SIDEBAR_COLLAPSE_BUTTON => Heroicon::OutlinedBars3,
+                PanelsIconAlias::SIDEBAR_EXPAND_BUTTON => Heroicon::OutlinedBars3,
+                PanelsIconAlias::SIDEBAR_COLLAPSE_BUTTON_RTL => Heroicon::OutlinedBars3,
+                PanelsIconAlias::SIDEBAR_EXPAND_BUTTON_RTL => Heroicon::OutlinedBars3,
             ])
             ->collapsibleNavigationGroups()
             ->navigationGroups([
-                NavigationGroup::make('Codes')->collapsible(),
-                NavigationGroup::make('Account')->collapsible(),
-                NavigationGroup::make('Orders')->collapsible(),
-                NavigationGroup::make('Forms')->collapsible(),
-                NavigationGroup::make('VOC')->collapsible(),
+                NavigationGroup::make('Codes')->icon(Heroicon::OutlinedQrCode)->collapsible(),
+                NavigationGroup::make('Account')->icon(Heroicon::OutlinedUserCircle)->collapsible(),
+                NavigationGroup::make('Orders')->icon(Heroicon::OutlinedTruck)->collapsible(),
+                NavigationGroup::make('Forms')->icon(Heroicon::OutlinedClipboardDocumentList)->collapsible(),
+                NavigationGroup::make('VOC')->icon(Heroicon::OutlinedMegaphone)->collapsible(),
             ])
             ->discoverResources(in: app_path('Filament/Portal/Resources'), for: 'App\\Filament\\Portal\\Resources')
             ->discoverPages(in: app_path('Filament/Portal/Pages'), for: 'App\\Filament\\Portal\\Pages')
@@ -67,6 +67,10 @@ class ClientPortalPanelProvider extends PanelProvider
                 PortalDashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Portal/Widgets'), for: 'App\\Filament\\Portal\\Widgets')
+            ->renderHook(
+                PanelsRenderHook::SIDEBAR_FOOTER,
+                fn (): string => view('filament.hooks.sidebar-sign-out')->render(),
+            )
             ->renderHook(
                 PanelsRenderHook::BODY_END,
                 fn (): string => view('filament.hooks.sidebar-position')->render(),
@@ -76,8 +80,12 @@ class ClientPortalPanelProvider extends PanelProvider
                 fn (): string => view('filament.hooks.modal-open-fix')->render(),
             )
             ->renderHook(
+                PanelsRenderHook::BODY_END,
+                fn (): string => view('filament.hooks.table-filters')->render(),
+            )
+            ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=12">',
+                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=17">',
             )
             ->widgets([
                 Widgets\AccountWidget::class,

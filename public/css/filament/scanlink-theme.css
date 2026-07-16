@@ -10,6 +10,42 @@
 
 :root {
     --scanlink-green: #008c00;
+    --scanlink-green-hover: #007000;
+    --scanlink-green-soft: rgb(0 140 0 / 0.07);
+    --scanlink-green-muted: rgb(0 140 0 / 0.12);
+    --scanlink-green-ring: rgb(0 140 0 / 0.22);
+    --scanlink-green-shadow: rgb(0 140 0 / 0.14);
+    --scanlink-menu-text: rgb(31 41 55);
+    --scanlink-menu-text-muted: rgb(107 114 128);
+    --scanlink-menu-text-hover: var(--scanlink-green-hover);
+    --scanlink-menu-icon-accent: var(--scanlink-green);
+    --scanlink-menu-tray-bg: var(--scanlink-green-soft);
+    --scanlink-menu-item-hover-bg: var(--scanlink-green-soft);
+    --scanlink-menu-signout-hover-bg: rgb(243 244 246);
+    --scanlink-menu-switcher-idle: rgb(156 163 175);
+    --scanlink-menu-switcher-hover-bg: rgb(255 255 255 / 0.65);
+    --scanlink-menu-switcher-hover-text: rgb(107 114 128);
+    --scanlink-menu-switcher-active-bg: var(--scanlink-green-muted);
+    --scanlink-menu-switcher-active-text: var(--scanlink-green);
+}
+
+.dark {
+    --scanlink-green-soft: rgb(0 140 0 / 0.12);
+    --scanlink-green-muted: rgb(0 140 0 / 0.24);
+    --scanlink-green-ring: rgb(74 222 128 / 0.35);
+    --scanlink-green-shadow: rgb(0 140 0 / 0.28);
+    --scanlink-menu-text: rgb(243 244 246);
+    --scanlink-menu-text-muted: rgb(156 163 175);
+    --scanlink-menu-text-hover: rgb(134 239 172);
+    --scanlink-menu-icon-accent: rgb(74 222 128);
+    --scanlink-menu-tray-bg: rgb(0 140 0 / 0.18);
+    --scanlink-menu-item-hover-bg: rgb(0 140 0 / 0.16);
+    --scanlink-menu-signout-hover-bg: rgb(255 255 255 / 0.06);
+    --scanlink-menu-switcher-idle: rgb(156 163 175);
+    --scanlink-menu-switcher-hover-bg: rgb(255 255 255 / 0.08);
+    --scanlink-menu-switcher-hover-text: rgb(209 213 219);
+    --scanlink-menu-switcher-active-bg: rgb(0 140 0 / 0.38);
+    --scanlink-menu-switcher-active-text: rgb(134 239 172);
 }
 
 /* ---------------------------------------------------------------------------
@@ -84,6 +120,166 @@ html:not(.dark) .fi-theme-switcher .fi-theme-switcher-btn:hover {
 
 html:not(.dark) .fi-theme-switcher .fi-theme-switcher-btn:hover svg {
     color: rgb(107 114 128) !important;
+}
+
+/* ---------------------------------------------------------------------------
+ * User menu dropdown — brand green accent; readable in light + dark
+ * ------------------------------------------------------------------------- */
+.fi-user-menu .fi-dropdown-panel {
+    overflow: hidden;
+    border-color: var(--scanlink-green-ring) !important;
+    box-shadow:
+        0 4px 6px -1px rgb(0 0 0 / 0.06),
+        0 12px 28px -4px var(--scanlink-green-shadow) !important;
+}
+
+.dark .fi-user-menu .fi-dropdown-panel {
+    box-shadow:
+        0 4px 6px -1px rgb(0 0 0 / 0.45),
+        0 12px 28px -4px var(--scanlink-green-shadow) !important;
+}
+
+.fi-user-menu .fi-dropdown-panel::before {
+    content: '';
+    display: block;
+    height: 3px;
+    background: linear-gradient(
+        90deg,
+        var(--scanlink-green-hover),
+        var(--scanlink-green),
+        rgb(0 160 0)
+    );
+}
+
+.dark .fi-user-menu .fi-dropdown-panel::before {
+    background: linear-gradient(
+        90deg,
+        rgb(0 100 0),
+        rgb(74 222 128),
+        rgb(0 140 0)
+    );
+}
+
+/* Profile — primary action */
+.fi-user-menu .fi-dropdown-list:not(:has(.fi-theme-switcher)):first-child .fi-dropdown-list-item {
+    margin: 0.25rem 0.375rem 0;
+    border-radius: 0.5rem;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.fi-user-menu .fi-dropdown-list:not(:has(.fi-theme-switcher)):first-child .fi-dropdown-list-item,
+.fi-user-menu .fi-dropdown-list:not(:has(.fi-theme-switcher)):first-child .fi-dropdown-list-item-label {
+    color: var(--scanlink-menu-text) !important;
+}
+
+.fi-user-menu .fi-dropdown-list:not(:has(.fi-theme-switcher)):first-child .fi-dropdown-list-item .fi-icon,
+.fi-user-menu .fi-dropdown-list:not(:has(.fi-theme-switcher)):first-child .fi-dropdown-list-item svg {
+    color: var(--scanlink-menu-icon-accent) !important;
+}
+
+.fi-user-menu .fi-dropdown-list:not(:has(.fi-theme-switcher)):first-child .fi-dropdown-list-item:hover,
+.fi-user-menu .fi-dropdown-list:not(:has(.fi-theme-switcher)):first-child .fi-dropdown-list-item:focus-visible {
+    background-color: var(--scanlink-menu-item-hover-bg) !important;
+}
+
+.fi-user-menu .fi-dropdown-list:not(:has(.fi-theme-switcher)):first-child .fi-dropdown-list-item:hover,
+.fi-user-menu .fi-dropdown-list:not(:has(.fi-theme-switcher)):first-child .fi-dropdown-list-item:hover .fi-dropdown-list-item-label {
+    color: var(--scanlink-menu-text-hover) !important;
+}
+
+/* Theme switcher tray */
+.fi-user-menu .fi-dropdown-list:has(.fi-theme-switcher) {
+    margin: 0.375rem 0.5rem;
+    padding: 0.25rem;
+    border-radius: 0.625rem;
+    background: var(--scanlink-menu-tray-bg);
+}
+
+.fi-user-menu .fi-theme-switcher {
+    gap: 0.125rem;
+}
+
+.fi-user-menu .fi-theme-switcher .fi-theme-switcher-btn {
+    border-radius: 0.5rem !important;
+    transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fi-user-menu .fi-theme-switcher .fi-theme-switcher-btn,
+.fi-user-menu .fi-theme-switcher .fi-theme-switcher-btn svg {
+    color: var(--scanlink-menu-switcher-idle) !important;
+}
+
+.fi-user-menu .fi-theme-switcher .fi-theme-switcher-btn:hover,
+.fi-user-menu .fi-theme-switcher .fi-theme-switcher-btn:hover svg {
+    background-color: var(--scanlink-menu-switcher-hover-bg) !important;
+    color: var(--scanlink-menu-switcher-hover-text) !important;
+}
+
+.fi-user-menu .fi-theme-switcher .fi-theme-switcher-btn.fi-active,
+.fi-user-menu .fi-theme-switcher .fi-theme-switcher-btn.fi-active svg {
+    background-color: var(--scanlink-menu-switcher-active-bg) !important;
+    color: var(--scanlink-menu-switcher-active-text) !important;
+    box-shadow: inset 0 0 0 1px var(--scanlink-green-ring);
+}
+
+/* Sign out — neutral in both themes */
+.fi-user-menu .fi-dropdown-list:not(:has(.fi-theme-switcher)):last-child .fi-dropdown-list-item {
+    margin: 0 0.375rem 0.25rem;
+    border-radius: 0.5rem;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.fi-user-menu .fi-dropdown-list:not(:has(.fi-theme-switcher)):last-child .fi-dropdown-list-item,
+.fi-user-menu .fi-dropdown-list:not(:has(.fi-theme-switcher)):last-child .fi-dropdown-list-item-label {
+    color: var(--scanlink-menu-text-muted) !important;
+}
+
+.fi-user-menu .fi-dropdown-list:not(:has(.fi-theme-switcher)):last-child .fi-dropdown-list-item .fi-icon,
+.fi-user-menu .fi-dropdown-list:not(:has(.fi-theme-switcher)):last-child .fi-dropdown-list-item svg {
+    color: var(--scanlink-menu-text-muted) !important;
+}
+
+.fi-user-menu .fi-dropdown-list:not(:has(.fi-theme-switcher)):last-child .fi-dropdown-list-item:hover {
+    background-color: var(--scanlink-menu-signout-hover-bg) !important;
+}
+
+.fi-user-menu .fi-dropdown-list:not(:has(.fi-theme-switcher)):last-child .fi-dropdown-list-item:hover,
+.fi-user-menu .fi-dropdown-list:not(:has(.fi-theme-switcher)):last-child .fi-dropdown-list-item:hover .fi-dropdown-list-item-label,
+.fi-user-menu .fi-dropdown-list:not(:has(.fi-theme-switcher)):last-child .fi-dropdown-list-item:hover svg {
+    color: var(--scanlink-menu-text) !important;
+}
+
+/* Avatar trigger — light topbar ring */
+html:not(.dark) .fi-topbar .fi-user-menu-trigger {
+    border-radius: 9999px;
+    box-shadow: 0 0 0 2px rgb(255 255 255 / 0.92);
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+html:not(.dark) .fi-topbar .fi-user-menu-trigger:hover {
+    box-shadow:
+        0 0 0 2px #ffffff,
+        0 0 0 4px rgb(255 255 255 / 0.35);
+}
+
+html:not(.dark) .fi-topbar .fi-user-menu-trigger[aria-expanded='true'] {
+    box-shadow:
+        0 0 0 2px #ffffff,
+        0 0 0 4px rgb(255 255 255 / 0.5);
+}
+
+/* Avatar trigger — dark topbar ring */
+.dark .fi-topbar .fi-user-menu-trigger {
+    border-radius: 9999px;
+    box-shadow: 0 0 0 2px rgb(74 222 128 / 0.45);
+    transition: box-shadow 0.15s ease;
+}
+
+.dark .fi-topbar .fi-user-menu-trigger:hover,
+.dark .fi-topbar .fi-user-menu-trigger[aria-expanded='true'] {
+    box-shadow:
+        0 0 0 2px rgb(134 239 172 / 0.75),
+        0 0 0 4px rgb(0 140 0 / 0.28);
 }
 
 /* ---------------------------------------------------------------------------
@@ -178,8 +374,9 @@ button.fi-btn[type="submit"]:not(.fi-outlined):not(.fi-color-gray):hover {
 }
 
 /* ---------------------------------------------------------------------------
- * BOTH THEMES — Admin Home tile grid
+ * BOTH THEMES — Dashboard tile grid
  * ------------------------------------------------------------------------- */
+.scanlink-dashboard-grid,
 .scanlink-home-grid {
     display: grid;
     gap: 1rem;
@@ -187,17 +384,20 @@ button.fi-btn[type="submit"]:not(.fi-outlined):not(.fi-color-gray):hover {
 }
 
 @media (min-width: 768px) {
+    .scanlink-dashboard-grid,
     .scanlink-home-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
 @media (min-width: 1280px) {
+    .scanlink-dashboard-grid,
     .scanlink-home-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
 
+.scanlink-dashboard-tile,
 .scanlink-home-tile {
     display: flex;
     align-items: center;
@@ -210,16 +410,19 @@ button.fi-btn[type="submit"]:not(.fi-outlined):not(.fi-color-gray):hover {
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+.scanlink-dashboard-tile:hover,
 .scanlink-home-tile:hover {
     border-color: var(--scanlink-green);
     box-shadow: 0 2px 6px 0 rgb(0 140 0 / 0.25);
 }
 
+.dark .scanlink-dashboard-tile,
 .dark .scanlink-home-tile {
     background-color: rgb(17 24 39);
     border-color: rgb(255 255 255 / 0.1);
 }
 
+.scanlink-dashboard-tile-icon,
 .scanlink-home-tile-icon {
     height: 2rem;
     width: 2rem;
@@ -227,18 +430,27 @@ button.fi-btn[type="submit"]:not(.fi-outlined):not(.fi-color-gray):hover {
     color: var(--scanlink-green);
 }
 
+.scanlink-dashboard-tile-label,
 .scanlink-home-tile-label {
     font-size: 1.05rem;
     font-weight: 600;
     color: rgb(17 24 39);
 }
 
+.dark .scanlink-dashboard-tile-label,
 .dark .scanlink-home-tile-label {
     color: rgb(243 244 246);
 }
 
 /* Portal / admin sidebar: keep labels fully readable */
+.fi-sidebar {
+    display: flex;
+    flex-direction: column;
+}
+
 .fi-sidebar-nav {
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-x: hidden;
     overflow-y: auto;
 }
@@ -263,9 +475,80 @@ button.fi-btn[type="submit"]:not(.fi-outlined):not(.fi-color-gray):hover {
     white-space: nowrap;
 }
 
+.fi-sidebar-group-btn .fi-icon,
+.fi-sidebar-group-dropdown-trigger-btn .fi-icon {
+    color: rgb(107 114 128);
+}
+
+.dark .fi-sidebar-group-btn .fi-icon,
+.dark .fi-sidebar-group-dropdown-trigger-btn .fi-icon {
+    color: rgb(156 163 175);
+}
+
 .fi-panel-portal .fi-sidebar.fi-sidebar-open,
 .fi-panel-admin .fi-sidebar.fi-sidebar-open {
     min-width: 14rem;
+}
+
+/* Sidebar sign out — pinned to bottom, native nav item look */
+.scanlink-sidebar-sign-out {
+    flex-shrink: 0;
+    margin-top: auto;
+    padding: 0.75rem 0.75rem 0.875rem;
+    border-top: 1px solid rgb(3 7 18 / 0.06);
+}
+
+.dark .scanlink-sidebar-sign-out {
+    border-top-color: rgb(255 255 255 / 0.06);
+}
+
+.scanlink-sidebar-sign-out .fi-sidebar-nav-groups {
+    margin: 0;
+    gap: 0;
+}
+
+.scanlink-sidebar-sign-out .fi-sidebar-group {
+    margin: 0;
+}
+
+.scanlink-sidebar-sign-out .fi-sidebar-group-items {
+    margin: 0;
+    gap: 0;
+}
+
+.scanlink-sidebar-sign-out .fi-sidebar-item {
+    margin: 0;
+}
+
+.scanlink-sidebar-sign-out .fi-sidebar-item-btn {
+    margin: 0;
+}
+
+.fi-body.fi-body-has-sidebar-collapsible-on-desktop .fi-sidebar:not(.fi-sidebar-open) .scanlink-sidebar-sign-out,
+.fi-body.fi-body-has-sidebar-fully-collapsible-on-desktop .fi-sidebar:not(.fi-sidebar-open) .scanlink-sidebar-sign-out {
+    padding: 0.75rem 0.375rem 0.875rem;
+}
+
+/* Collapse / expand control — hamburger in topbar (AdminLTE-style), not sidebar header */
+.fi-sidebar-header .fi-sidebar-collapse-btn,
+.fi-sidebar-header .fi-icon-btn.fi-sidebar-open-collapse-sidebar-btn,
+.fi-sidebar-header .fi-icon-btn.fi-sidebar-close-collapse-sidebar-btn {
+    display: none !important;
+}
+
+.fi-topbar {
+    gap: 0.75rem;
+}
+
+.fi-topbar-collapse-sidebar-btn-ctn {
+    order: -2;
+    display: flex !important;
+    margin-inline-end: 0.25rem;
+}
+
+.fi-topbar .fi-logo-ctn,
+.fi-topbar-start {
+    order: -1;
 }
 
 /* Collapse / expand control — clear icon on green topbar */

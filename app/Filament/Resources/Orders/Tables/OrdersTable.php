@@ -4,6 +4,8 @@ namespace App\Filament\Resources\Orders\Tables;
 
 use App\Enums\PhysicalOrderStatus;
 use App\Filament\Support\DateRangeTableFilter;
+use App\Filament\Support\SearchTableFilter;
+use App\Filament\Support\TableFilterDefaults;
 use App\Models\Order;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
@@ -15,7 +17,7 @@ class OrdersTable
 {
     public static function configure(Table $table): Table
     {
-        return $table
+        return TableFilterDefaults::apply($table
             ->defaultSort('ordered_on', 'desc')
             ->columns([
                 TextColumn::make('profile_id')
@@ -42,6 +44,7 @@ class OrdersTable
                     ->color(fn (PhysicalOrderStatus $state): string => $state->color()),
             ])
             ->filters([
+                SearchTableFilter::make(['first_name', 'last_name', 'email']),
                 SelectFilter::make('status')
                     ->label('View Orders by Status')
                     ->options(array_merge(
@@ -62,6 +65,6 @@ class OrdersTable
             ])
             ->recordActions([
                 ViewAction::make(),
-            ]);
+            ]));
     }
 }

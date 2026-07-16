@@ -145,5 +145,80 @@
                 stop();
             }
         });
+
+        const saveListPageState = () => {
+            const match = window.location.pathname.match(/^\/admin\/([^/]+)\/?$/);
+
+            if (!match) {
+                return;
+            }
+
+            sessionStorage.setItem('scanlink:list:' + match[1], window.location.href);
+        };
+
+        saveListPageState();
+        document.addEventListener('livewire:navigated', saveListPageState);
+        window.addEventListener('popstate', saveListPageState);
+
+        document.addEventListener('livewire:init', () => {
+            window.Livewire.hook('commit', ({ succeed }) => {
+                succeed(() => {
+                    queueMicrotask(saveListPageState);
+                });
+            });
+        });
+
+        window.scanlinkAdminBack = (button) => {
+            const fallbackUrl = button.dataset.fallbackUrl;
+            const resource = button.dataset.resource;
+            const savedListUrl = resource
+                ? sessionStorage.getItem('scanlink:list:' + resource)
+                : null;
+
+            const navigate = (url) => {
+                if (typeof window.Livewire !== 'undefined' && typeof window.Livewire.navigate === 'function') {
+                    window.Livewire.navigate(url);
+                    return;
+                }
+
+                window.location.href = url;
+            };
+
+            if (savedListUrl) {
+                try {
+                    const saved = new URL(savedListUrl, window.location.origin);
+                    const fallback = new URL(fallbackUrl, window.location.origin);
+
+                    if (saved.pathname === fallback.pathname) {
+                        navigate(savedListUrl);
+                        return;
+                    }
+                } catch (e) {
+                    // ignore malformed stored URL
+                }
+            }
+
+            try {
+                const referrer = new URL(document.referrer, window.location.origin);
+                const fallback = new URL(fallbackUrl, window.location.origin);
+
+                if (
+                    referrer.origin === window.location.origin
+                    && referrer.pathname === fallback.pathname
+                ) {
+                    window.history.back();
+                    return;
+                }
+            } catch (e) {
+                // ignore malformed referrer
+            }
+
+            if (window.history.length > 1) {
+                window.history.back();
+                return;
+            }
+
+            navigate(fallbackUrl);
+        };
     })();
 </script>

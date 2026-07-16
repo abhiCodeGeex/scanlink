@@ -54,28 +54,31 @@ class AdminPanelProvider extends PanelProvider
             ->sidebarFullyCollapsibleOnDesktop()
             ->collapsedSidebarWidth('3.25rem')
             ->icons([
-                PanelsIconAlias::SIDEBAR_COLLAPSE_BUTTON => Heroicon::OutlinedChevronDoubleLeft,
-                PanelsIconAlias::SIDEBAR_EXPAND_BUTTON => Heroicon::OutlinedChevronDoubleRight,
-                PanelsIconAlias::SIDEBAR_COLLAPSE_BUTTON_RTL => Heroicon::OutlinedChevronDoubleRight,
-                PanelsIconAlias::SIDEBAR_EXPAND_BUTTON_RTL => Heroicon::OutlinedChevronDoubleLeft,
+                PanelsIconAlias::SIDEBAR_COLLAPSE_BUTTON => Heroicon::OutlinedBars3,
+                PanelsIconAlias::SIDEBAR_EXPAND_BUTTON => Heroicon::OutlinedBars3,
+                PanelsIconAlias::SIDEBAR_COLLAPSE_BUTTON_RTL => Heroicon::OutlinedBars3,
+                PanelsIconAlias::SIDEBAR_EXPAND_BUTTON_RTL => Heroicon::OutlinedBars3,
             ])
             ->globalSearch()
             ->globalSearchDebounce('400ms')
             ->collapsibleNavigationGroups()
             ->navigationGroups([
-                NavigationGroup::make('Client')->collapsible(),
-                NavigationGroup::make('Product')->collapsible(),
-                NavigationGroup::make('Order')->collapsible(),
-                NavigationGroup::make('Settings')->collapsible(),
-                NavigationGroup::make('Testimonial')->collapsible(),
-                NavigationGroup::make('Gallery')->collapsible(),
+                NavigationGroup::make('Client')->icon(Heroicon::OutlinedBuildingOffice2)->collapsible(),
+                NavigationGroup::make('Order')->icon(Heroicon::OutlinedShoppingCart)->collapsible(),
+                NavigationGroup::make('Settings')->icon(Heroicon::OutlinedCog6Tooth)->collapsible(),
+                NavigationGroup::make('Reports')->icon(Heroicon::OutlinedEnvelopeOpen)->collapsible(),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
                 AdminHome::class,
             ])
+            ->homeUrl(fn (): string => AdminHome::getUrl())
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
+            ->renderHook(
+                PanelsRenderHook::SIDEBAR_FOOTER,
+                fn (): string => view('filament.hooks.sidebar-sign-out')->render(),
+            )
             ->renderHook(
                 PanelsRenderHook::PAGE_HEADER_ACTIONS_BEFORE,
                 fn (): string => view('filament.hooks.admin-back-button')->render(),
@@ -93,8 +96,16 @@ class AdminPanelProvider extends PanelProvider
                 fn (): string => view('filament.hooks.modal-open-fix')->render(),
             )
             ->renderHook(
+                PanelsRenderHook::BODY_END,
+                fn (): string => view('filament.hooks.client-users-scroll')->render(),
+            )
+            ->renderHook(
+                PanelsRenderHook::BODY_END,
+                fn (): string => view('filament.hooks.table-filters')->render(),
+            )
+            ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=12">',
+                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=18">',
             )
             ->widgets([
                 Widgets\AccountWidget::class,
