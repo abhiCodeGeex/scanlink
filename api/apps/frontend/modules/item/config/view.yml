@@ -1,6 +1,0 @@
-## YAML Template.
----
-
-chartSuccess:
-  javascripts:        [chart/js/jquery-ui.js, chart/js/jquery.themeswitcher.js, chart/js/jquery.tooltip.js, chart/js/jquery.ddchart.js]
-  stylesheets:        [chart/style/ddchart.css,chart/style/theme.css]

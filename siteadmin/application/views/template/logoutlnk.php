@@ -1,1 +1,0 @@
-|&nbsp;&nbsp;&nbsp; <a class="arial10-link" href="<?php echo URL::base();?>logout/index" title="Administrator Logout" target="_top"><strong>Administrator Logout</strong></a>&nbsp;&nbsp;&nbsp; 

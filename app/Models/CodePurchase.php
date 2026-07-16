@@ -1,0 +1,109 @@
+<?php
+
+namespace App\Models;
+
+use App\Casts\MysqlEnumBoolean;
+use App\Enums\CodeOrderStatus;
+use App\Models\Concerns\FillsLegacyNotNullDefaults;
+use Database\Factories\CodePurchaseFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+#[Fillable([
+    'client_id',
+    'email',
+    'town',
+    'first_name',
+    'last_name',
+    'company_name',
+    'billing_address',
+    'phone',
+    'postal_code',
+    'no_of_codes',
+    'per_code_amount',
+    'total_amount',
+    'transaction_id',
+    'status',
+    'enable',
+    'exipry_date',
+    'is_reseller_pricing_code',
+    'reseller_client_id',
+    'free_code',
+    'ordered_on',
+])]
+class CodePurchase extends Model
+{
+    /** @use HasFactory<CodePurchaseFactory> */
+    use FillsLegacyNotNullDefaults;
+    use HasFactory;
+
+    protected $table = 'code_purchase';
+
+    /** Live dump has created_at only. */
+    public const UPDATED_AT = null;
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected static function legacyNotNullDefaults(): array
+    {
+        return [
+            'town' => '',
+            'first_name' => '',
+            'last_name' => '',
+            'company_name' => '',
+            'billing_address' => '',
+            'phone' => '',
+            'postal_code' => 0,
+            'no_of_codes' => 0,
+            'per_code_amount' => 0,
+            'total_amount' => 0,
+            'exipry_date' => now()->addYear(),
+            'is_reseller_pricing_code' => '0',
+            'reseller_client_id' => 0,
+            'free_code' => '0',
+        ];
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'per_code_amount' => 'decimal:2',
+            'total_amount' => 'decimal:2',
+            'status' => CodeOrderStatus::class,
+            'enable' => MysqlEnumBoolean::class,
+            'exipry_date' => 'datetime',
+            'free_code' => MysqlEnumBoolean::class,
+            'ordered_on' => 'datetime',
+        ];
+    }
+
+    /**
+     * Live column is ENUM('0','1','2'). Bare integers are MySQL enum indexes, not values.
+     */
+    protected function isResellerPricingCode(): Attribute
+    {
+        return Attribute::make(
+            get: fn (mixed $value): string => (string) ($value ?? '0'),
+            set: fn (mixed $value): string => (string) ($value ?? '0'),
+        );
+    }
+
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(Client::class);
+    }
+
+    public function reseller(): BelongsTo
+    {
+        return $this->belongsTo(Client::class, 'reseller_client_id');
+    }
+
+    public function fullName(): string
+    {
+        return trim("{$this->first_name} {$this->last_name}");
+    }
+}

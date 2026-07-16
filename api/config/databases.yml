@@ -1,7 +1,0 @@
-all:
-  doctrine:
-    class: sfDoctrineDatabase
-    param:
-      dsn: 'mysql:host=galadb1.croyirckzbgv.ap-southeast-2.rds.amazonaws.com;dbname=analytics_new'
-      username: scanlink_analytics_new
-      password: qzE9r4qP6ivL21E2
