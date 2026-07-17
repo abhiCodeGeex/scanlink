@@ -59,7 +59,7 @@ class VocDashboard extends Page
         }
 
         $member = $user->clientMemberships()
-            ->where('status', true)
+            ->active()
             ->orderByDesc('role')
             ->first();
 

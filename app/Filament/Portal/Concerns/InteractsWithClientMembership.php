@@ -21,7 +21,7 @@ trait InteractsWithClientMembership
         }
 
         return once(fn (): ?ClientUser => $user->clientMemberships()
-            ->where('status', true)
+            ->active()
             ->orderByDesc('role')
             ->first());
     }
@@ -129,7 +129,7 @@ trait InteractsWithClientMembership
         }
 
         return $user->clientMemberships()
-            ->where('status', true)
+            ->active()
             ->orderByDesc('role')
             ->first();
     }

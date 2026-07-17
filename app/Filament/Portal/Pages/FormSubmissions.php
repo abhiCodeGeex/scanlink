@@ -185,7 +185,7 @@ class FormSubmissions extends Page
         abort_unless($user, 403);
 
         $member = $user->clientMemberships()
-            ->where('status', true)
+            ->active()
             ->orderByDesc('role')
             ->first();
 

@@ -4,7 +4,6 @@ namespace App\Providers\Filament;
 
 use App\Filament\Portal\Auth\Login;
 use App\Filament\Portal\Auth\Register;
-use App\Filament\Portal\Pages\ContactUs;
 use App\Filament\Portal\Pages\PortalDashboard;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Http\Middleware\EnsurePortalPasswordChanged;
@@ -108,11 +107,7 @@ class ClientPortalPanelProvider extends PanelProvider
                     ->collapsible(),
             ])
             ->navigationItems([
-                NavigationItem::make('Contact us')
-                    ->url(fn (): string => url('/portal/contact'))
-                    ->icon(Heroicon::OutlinedEnvelope)
-                    ->isActiveWhen(fn (): bool => request()->is('portal/contact') || request()->is('portal/contact/*'))
-                    ->sort(-40),
+                // Dashboard → Master Code List (legacy menu.php). Contact us is a discovered page.
                 NavigationItem::make('Dashboard')
                     ->url(fn (): string => ProfileResource::getUrl('index'))
                     ->icon(Heroicon::OutlinedHome)
@@ -124,7 +119,6 @@ class ClientPortalPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Portal/Pages'), for: 'App\\Filament\\Portal\\Pages')
             ->pages([
                 PortalDashboard::class,
-                ContactUs::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Portal/Widgets'), for: 'App\\Filament\\Portal\\Widgets')
             ->renderHook(
@@ -149,7 +143,7 @@ class ClientPortalPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=33">',
+                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=34">',
             )
             ->widgets([])
             ->middleware([

@@ -17,7 +17,7 @@ trait RestrictsToPrimaryClientUser
         }
 
         return $user->clientMemberships()
-            ->where('status', true)
+            ->active()
             ->where('role', ClientUserRole::Primary)
             ->exists();
     }

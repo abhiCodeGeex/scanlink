@@ -80,7 +80,7 @@ class EditAccount extends Page implements HasTable
         }
 
         return $user->clientMemberships()
-            ->where('status', true)
+            ->active()
             ->exists();
     }
 

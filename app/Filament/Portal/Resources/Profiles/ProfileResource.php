@@ -135,7 +135,7 @@ class ProfileResource extends Resource
         }
 
         return $user->clientMemberships()
-            ->where('status', true)
+            ->active()
             ->orderByDesc('role')
             ->first();
     }

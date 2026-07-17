@@ -19,19 +19,19 @@ class ContactUs extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedEnvelope;
 
-    /**
-     * Registered explicitly in ClientPortalPanelProvider so the item always
-     * appears next to Dashboard (avoids discovery/canAccess edge cases).
-     */
-    protected static bool $shouldRegisterNavigation = false;
-
     protected static ?string $navigationLabel = 'Contact us';
 
     protected static ?string $title = 'Contact us';
 
     protected static ?string $slug = 'contact';
 
+    /** Top-level: Contact us | Dashboard | My Account | How to */
     protected static ?int $navigationSort = -40;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return null;
+    }
 
     protected string $view = 'filament.portal.pages.contact-us';
 

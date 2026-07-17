@@ -157,6 +157,7 @@
         class="sl-preview-overlay"
         x-show="previewOpen"
         x-cloak
+        :class="{ 'sl-preview-overlay--open': previewOpen }"
         @keydown.escape.window="closePreview()"
         @click.self="closePreview()"
     >

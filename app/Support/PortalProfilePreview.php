@@ -33,7 +33,7 @@ class PortalProfilePreview
         return ClientUser::query()
             ->where('auth_user_id', $userId)
             ->where('client_id', $profile->client_id)
-            ->where('status', true)
+            ->active()
             ->exists();
     }
 

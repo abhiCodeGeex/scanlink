@@ -124,6 +124,18 @@ class ClientUser extends Model
         return $this->belongsTo(User::class, 'auth_user_id');
     }
 
+    /**
+     * Active memberships only. Live schema stores ENUM('0','1'); binding PHP
+     * true in where() does not match, so always compare to the string member.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<static>
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', '1');
+    }
+
     public function isPrimary(): bool
     {
         return $this->role === ClientUserRole::Primary;

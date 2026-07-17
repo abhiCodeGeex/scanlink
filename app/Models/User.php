@@ -79,7 +79,7 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
             }
 
             return $this->clientMemberships()
-                ->whereIn('status', ['1', 1])
+                ->active()
                 ->exists();
         }
 
@@ -97,7 +97,7 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
                         $q->whereRaw('0 = 1');
                     }
                 })
-                ->where('status', 1)
+                ->active()
                 ->exists();
 
             if (! $portal) {
