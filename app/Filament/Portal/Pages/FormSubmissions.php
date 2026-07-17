@@ -28,6 +28,8 @@ class FormSubmissions extends Page
 
     protected static ?string $slug = 'form-submissions';
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?int $navigationSort = 2;
 
     protected string $view = 'filament.portal.pages.form-submissions';

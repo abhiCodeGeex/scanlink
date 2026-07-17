@@ -35,6 +35,8 @@ class PurchaseFormBuilder extends Page
 
     protected static ?string $slug = 'purchase-form-builder';
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?int $navigationSort = 3;
 
     /**

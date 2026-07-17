@@ -540,6 +540,57 @@ button.fi-btn[type="submit"]:not(.fi-outlined):not(.fi-color-gray):hover {
     gap: 0.75rem;
 }
 
+/* Topbar layout — keep logo, search, and profile menu from overlapping */
+.fi-topbar nav,
+.fi-topbar > div {
+    display: flex !important;
+    flex-wrap: nowrap;
+    align-items: center;
+    width: 100%;
+    column-gap: 0.75rem;
+}
+
+.fi-topbar-start {
+    display: flex !important;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 0 0 auto;
+    min-width: 0;
+}
+
+.fi-topbar-end {
+    display: flex !important;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 0 0 auto;
+    margin-inline-start: auto !important;
+}
+
+.fi-topbar .fi-logo-ctn {
+    flex-shrink: 0;
+    margin-inline-end: 0.25rem;
+}
+
+.fi-topbar .fi-global-search-ctn,
+.fi-topbar [data-global-search-input] {
+    flex: 1 1 16rem;
+    max-width: 22rem;
+    min-width: 10rem;
+}
+
+.fi-topbar .fi-global-search-field {
+    width: 100%;
+}
+
+.fi-topbar .fi-topbar-actions,
+.fi-topbar .fi-user-menu {
+    flex-shrink: 0;
+}
+
+.fi-topbar .fi-user-menu-trigger {
+    margin-inline-start: 0.25rem;
+}
+
 .fi-topbar-collapse-sidebar-btn-ctn {
     order: -2;
     display: flex !important;
@@ -624,3 +675,1225 @@ html:not(.dark) .fi-topbar-collapse-sidebar-btn-ctn .fi-icon-btn:hover {
 [x-cloak] {
     display: none !important;
 }
+
+/* ---------------------------------------------------------------------------
+ * Portal Master Code List — legacy black type tabs + expiry legend
+ * ------------------------------------------------------------------------- */
+/* Hide Filament's default tab strip when legacy toolbar is present */
+.fi-main:has(.sl-mastercode-toolbar) .fi-tabs,
+.fi-page:has(.sl-mastercode-toolbar) .fi-tabs,
+.fi-resource-profiles .fi-tabs,
+.fi-resource-list-records .fi-ta-tabs,
+.fi-page-profiles .fi-tabs {
+    display: none !important;
+}
+
+.sl-mastercode-heading {
+    color: inherit;
+    text-decoration: none;
+    font-weight: inherit;
+}
+
+.sl-mastercode-heading:hover {
+    color: var(--scanlink-green);
+    text-decoration: underline;
+}
+
+.sl-mastercode-toolbar {
+    width: 100%;
+    margin: 0 0 0.75rem;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.sl-user-guide {
+    float: right;
+    margin: 0 10px 8px 0;
+    color: #333;
+    font-size: 13px;
+    line-height: 30px;
+}
+
+.sl-user-guide a {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.sl-user-guide img {
+    vertical-align: middle;
+}
+
+.sl-subnav-wrap {
+    clear: both;
+    overflow: hidden;
+    border-bottom: 1px solid #e5ebe5;
+    padding: 0 0 10px;
+    margin: 0 0 10px;
+}
+
+.sl-sub-navigation {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    float: left;
+    max-width: 100%;
+}
+
+.sl-sub-navigation li {
+    display: block;
+    height: 30px;
+    line-height: 30px;
+    padding: 0 4px 0 10px;
+    border-left: 1px solid #4c4c4c;
+    float: left;
+    position: relative;
+    background: #45484d;
+    background: linear-gradient(to bottom, #45484d 0%, #000000 100%);
+}
+
+.sl-sub-navigation li.first {
+    border-left: none;
+}
+
+.sl-sub-navigation li a {
+    color: #fff;
+    font-size: 13px;
+    font-weight: bold;
+    text-decoration: none;
+    display: inline-block;
+    padding-right: 2px;
+}
+
+.sl-sub-navigation li a:hover,
+.sl-sub-navigation li a.active,
+.sl-sub-navigation li.is-active a {
+    color: #bababa;
+}
+
+.sl-preview-icon-link {
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 2px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.sl-preview-icon {
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+}
+
+.sl-preview-tip {
+    display: none;
+    position: absolute;
+    top: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #003e00;
+    color: #fff;
+    font-size: 11px;
+    padding: 2px 8px;
+    white-space: nowrap;
+    z-index: 20;
+    border-radius: 2px;
+}
+
+.sl-sub-navigation li:hover .sl-preview-tip {
+    display: block;
+}
+
+.sl-colorcode-define {
+    display: inline-block;
+    padding: 5px 0;
+    float: right;
+    font-size: 12px;
+    color: #333;
+}
+
+.sl-mainbox {
+    display: inline-block;
+    margin-left: 12px;
+    vertical-align: middle;
+}
+
+.sl-colorcodebox {
+    min-height: 20px;
+    width: 20px;
+    float: left;
+    margin-right: 5px;
+    border: 1px solid #ccc;
+}
+
+.sl-colorbox-text {
+    float: left;
+    padding-top: 3px;
+}
+
+.sl-colorcodebox.sl-red {
+    background-color: #F5BFB8 !important;
+}
+
+.sl-colorcodebox.sl-orange {
+    background-color: #FBC085 !important;
+}
+
+.sl-colorcodebox.sl-green {
+    background-color: #c9ffc9 !important;
+}
+
+/* Table row expiry colours (legacy mastercode) */
+.fi-ta-row.sl-row-expired,
+tr.sl-row-expired {
+    background-color: #F5BFB8 !important;
+}
+
+.fi-ta-row.sl-row-expiring,
+tr.sl-row-expiring {
+    background-color: #FBC085 !important;
+}
+
+.fi-ta-row.sl-row-active,
+tr.sl-row-active {
+    background-color: #c9ffc9 !important;
+}
+
+/* ---------------------------------------------------------------------------
+ * Portal profile create/edit — legacy two-column template editor
+ * ------------------------------------------------------------------------- */
+.fi-page:has(.sl-profile-editor) {
+    --sl-editor-max: 1160px;
+}
+
+.sl-profile-editor {
+    width: 100%;
+    max-width: var(--sl-editor-max, 1160px);
+    margin: 0 auto;
+    overflow: hidden;
+}
+
+.sl-add-form-left {
+    float: left;
+    width: min(100%, 500px);
+    padding-right: 12px;
+}
+
+.sl-add-form-right {
+    float: right;
+    width: min(100%, 450px);
+    margin: 12px 0 0;
+}
+
+.sl-legacy-preview-sidebar .iphone-preview {
+    width: 340px;
+    height: 1001px;
+    padding: 133px 36px 55px 32px;
+    background: url('/images/iphone.png') no-repeat left top;
+    float: left;
+    box-sizing: content-box;
+}
+
+.sl-legacy-preview-sidebar .iphone-preview-container {
+    width: 320px;
+    height: 480px;
+    overflow: auto;
+    background: #fff;
+}
+
+.sl-iphone-placeholder {
+    padding: 2rem 1rem;
+    text-align: center;
+    color: #666;
+    font-size: 13px;
+}
+
+.sl-qr-block.form-view1 {
+    clear: both;
+    margin: 10px auto 0;
+    width: 87%;
+    overflow: hidden;
+}
+
+.sl-qr-block .sl-qr-image {
+    float: left;
+    width: 175px;
+    height: 175px;
+    object-fit: contain;
+    background: #fff;
+}
+
+.sl-qr-block .sl-qr-actions {
+    float: right;
+    margin: 0;
+}
+
+.sl-qr-block .clear {
+    clear: both;
+}
+
+.sl-qr-download-row {
+    clear: both;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin: 12px 0;
+    width: 100%;
+}
+
+.sl-qr-url-block {
+    clear: both;
+    margin: 8px 0 16px;
+    font-size: 13px;
+}
+
+.qr-url-div {
+    word-break: break-all;
+    background: #f7f7f7;
+    border: 1px solid #ddd;
+    padding: 6px 8px;
+    margin-top: 4px;
+}
+
+.sl-legacy-preview-sidebar .form-builder-box {
+    clear: both;
+    margin: 10px 0 0;
+    padding: 5px 0 5px 0;
+    border-radius: 6px 6px 0 0;
+    border: 1px solid #ccc;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, .1);
+    background: #fff;
+}
+
+.sl-legacy-preview-sidebar .form-builder-title {
+    font-size: 18px;
+    color: #009401;
+    line-height: 34px;
+    padding-left: 10px;
+}
+
+.sl-open-form-builder {
+    display: inline-block;
+    background: linear-gradient(to bottom, #008901 0%, #007a01 100%);
+    color: #fff !important;
+    font-weight: bold;
+    font-size: 13px;
+    text-decoration: none !important;
+    border-radius: 6px;
+    padding: 8px 12px;
+}
+
+.sl-legacy-preview-sidebar #iframe_frm_builder {
+    width: 100%;
+    max-width: 448px;
+    border: 0;
+    background: #fff;
+}
+
+/* Filament sections → legacy SectionTitleBox look */
+.fi-page:has(.sl-profile-editor) .fi-section,
+.fi-page:has(.sl-profile-editor) .fi-sc-section {
+    margin: 0 0 10px !important;
+    padding: 5px 10px !important;
+    border-radius: 6px !important;
+    border: 1px solid #e5e5e5 !important;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, .1) !important;
+    background: #fff !important;
+}
+
+.fi-page:has(.sl-profile-editor) .fi-section-header-heading,
+.fi-page:has(.sl-profile-editor) .fi-sc-section-header-heading {
+    font-size: 18px !important;
+    color: #009401 !important;
+    line-height: 34px !important;
+    font-weight: 600 !important;
+}
+
+.fi-page:has(.sl-profile-editor) .fi-fo-field-wrp-label,
+.fi-page:has(.sl-profile-editor) label {
+    color: #555755;
+}
+
+.button-section .gray-btn,
+.sl-legacy-preview-sidebar .gray-btn {
+    display: inline-block;
+    background: #6b6b6b;
+    color: #fff !important;
+    text-decoration: none !important;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 12px;
+    margin-top: 8px;
+}
+
+@media (max-width: 1100px) {
+    .sl-add-form-left,
+    .sl-add-form-right {
+        float: none;
+        width: 100%;
+        padding-right: 0;
+    }
+
+    .sl-legacy-preview-sidebar .iphone-preview {
+        margin: 0 auto;
+        float: none;
+    }
+}
+
+.sl-preview-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.sl-preview-modal {
+    position: relative;
+    background: #fff;
+    max-width: 920px;
+    width: 100%;
+    max-height: 90vh;
+    overflow: auto;
+    padding: 1.25rem 1.5rem 1.5rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+}
+
+.sl-preview-close {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    border: 0;
+    background: transparent;
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+    color: #333;
+}
+
+.sl-preview-heading {
+    font-size: 18px;
+    font-weight: bold;
+    color: #008c00;
+    margin: 0 0 0.75rem;
+    padding-right: 1.5rem;
+}
+
+.sl-preview-desc {
+    font-size: 13px;
+    color: #444;
+    margin: 0 0 1rem;
+    line-height: 1.45;
+}
+
+.sl-preview-image {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
+}
+
+@media (max-width: 1100px) {
+    .sl-colorcode-define {
+        float: none;
+        clear: both;
+        display: block;
+        padding-top: 10px;
+    }
+
+    .sl-sub-navigation {
+        float: none;
+    }
+}
+
+.sl-action-bar {
+    clear: both;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin: 0 0 1rem;
+    padding: 0.35rem 0 0.75rem;
+}
+
+.sl-analytics-btn {
+    background-image: url('/images/multiple_code_analytic_btn.png') !important;
+    background-repeat: no-repeat !important;
+    background-position: center !important;
+    background-size: contain !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: transparent !important;
+    width: 142px;
+    height: 44px;
+    padding: 0 !important;
+    text-indent: -9999px;
+    overflow: hidden;
+}
+
+.sl-add-code-btn {
+    display: inline-block;
+    background: linear-gradient(to bottom, #008901 0%, #007a01 100%);
+    color: #fff !important;
+    font-weight: bold;
+    font-size: 14px;
+    text-transform: uppercase;
+    text-decoration: none !important;
+    border: 1px solid #006201;
+    border-radius: 6px;
+    padding: 0.55rem 1.1rem;
+    line-height: 1.2;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.sl-add-code-btn:hover {
+    background: linear-gradient(to bottom, #00a001 0%, #008901 100%);
+    color: #fff !important;
+}
+
+/* Header action buttons — match legacy green CTAs */
+.fi-resource-profiles .fi-header-actions .fi-btn,
+.fi-page:has(.sl-mastercode-toolbar) .fi-header-actions .fi-ac-btn-action {
+    background: linear-gradient(to bottom, #008901 0%, #007a01 100%) !important;
+    color: #fff !important;
+    border: 1px solid #006201 !important;
+    border-radius: 6px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    font-size: 13px !important;
+}
+
+.fi-resource-profiles .fi-ta-actions .fi-icon-btn {
+    color: #444;
+}
+
+/* === FORCE legacy profile editor: form left + iPhone right (v23) === */
+
+/* Let the page content use full width like old scanlink-container */
+.fi-page:has(.sl-profile-editor) .fi-page-content,
+.fi-page:has(.sl-profile-editor) .fi-page-main,
+.fi-page:has(.sl-profile-editor) .fi-main,
+.fi-resource-profiles:has(.sl-profile-editor) .fi-page-content {
+    max-width: none !important;
+    width: 100% !important;
+}
+
+.fi-page:has(.sl-profile-editor) .fi-page-content {
+    display: block !important;
+}
+
+.sl-profile-editor {
+    width: 970px !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    overflow: hidden !important;
+    display: block !important;
+    clear: both !important;
+    /* CSS grid is more reliable than floats against Filament wrappers */
+    display: grid !important;
+    grid-template-columns: 500px 450px !important;
+    grid-template-areas: "form preview" !important;
+    column-gap: 20px !important;
+    align-items: start !important;
+}
+
+.sl-profile-editor .add-form-left,
+.sl-profile-editor .sl-add-form-left {
+    grid-area: form !important;
+    float: none !important;
+    width: 500px !important;
+    max-width: 500px !important;
+    padding-right: 0 !important;
+    display: block !important;
+}
+
+.sl-profile-editor .add-form-right,
+.sl-profile-editor .sl-add-form-right {
+    grid-area: preview !important;
+    float: none !important;
+    width: 450px !important;
+    max-width: 450px !important;
+    margin: 12px 0 0 !important;
+    display: block !important;
+}
+
+/* Kill Filament's top-level 2-col section masonry — stack SectionTitleBox cards */
+.sl-add-form-left > form > .fi-sc.fi-grid,
+.sl-add-form-left > .fi-sc.fi-grid,
+.sl-add-form-left .fi-sc:not(.fi-section-content):not(.fi-sc-section) > .fi-sc.fi-grid,
+.sl-profile-editor .sl-add-form-left .fi-sc.fi-grid:not(.fi-section-content) {
+    --cols-default: minmax(0, 1fr) !important;
+    --cols-lg: minmax(0, 1fr) !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    width: 100% !important;
+}
+
+/* Each section card spans full left column */
+.sl-add-form-left > .fi-sc > .fi-grid-col,
+.sl-add-form-left form > .fi-sc > .fi-grid-col,
+.sl-add-form-left .fi-sc.fi-grid:not(.fi-section-content) > .fi-grid-col {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.sl-legacy-preview-sidebar .iphone-preview {
+    width: 340px !important;
+    height: 1001px !important;
+    padding: 133px 36px 55px 32px !important;
+    background: url('/images/iphone.png') no-repeat left top !important;
+    float: left !important;
+    box-sizing: content-box !important;
+    display: block !important;
+}
+
+.sl-legacy-preview-sidebar .iphone-preview-container {
+    width: 320px !important;
+    height: 480px !important;
+    overflow: auto !important;
+    background: #fff !important;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.sl-legacy-preview-sidebar .iphone-preview-container::-webkit-scrollbar {
+    display: none;
+}
+
+.fi-page:has(.sl-profile-editor) .fi-section,
+.fi-page:has(.sl-profile-editor) .fi-sc-section {
+    margin: 0 0 10px !important;
+    padding: 5px 10px !important;
+    border-radius: 6px !important;
+    border: 1px solid #e5e5e5 !important;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, .1) !important;
+    background: #fff !important;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.fi-page:has(.sl-profile-editor) .fi-section-header-heading,
+.fi-page:has(.sl-profile-editor) .fi-sc-section-header-heading {
+    font-size: 18px !important;
+    color: #009401 !important;
+    line-height: 34px !important;
+    font-weight: 600 !important;
+}
+
+/* Inputs closer to legacy .text-fi look */
+.fi-page:has(.sl-profile-editor) .fi-input,
+.fi-page:has(.sl-profile-editor) .fi-textarea,
+.fi-page:has(.sl-profile-editor) select.fi-select-input {
+    border: 1px solid #ccc !important;
+    border-radius: 3px !important;
+    background: #fff !important;
+}
+
+@media (max-width: 1100px) {
+    .sl-profile-editor {
+        display: block !important;
+        width: 100% !important;
+        grid-template-columns: none !important;
+        grid-template-areas: none !important;
+    }
+
+    .sl-profile-editor .add-form-left,
+    .sl-profile-editor .sl-add-form-left,
+    .sl-profile-editor .add-form-right,
+    .sl-profile-editor .sl-add-form-right {
+        float: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        grid-area: auto !important;
+    }
+}
+
+/* ---------------------------------------------------------------------------
+ * Portal Edit Profile (legacy profile/index layout)
+ * ------------------------------------------------------------------------- */
+.sl-edit-account {
+    max-width: 980px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.sl-edit-account__profile,
+.sl-edit-account__col,
+.sl-edit-account__users {
+    width: 100%;
+}
+
+.sl-edit-account__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    align-items: stretch;
+}
+
+.sl-edit-account__row--single {
+    grid-template-columns: minmax(0, 470px);
+}
+
+.sl-edit-account__col {
+    display: flex;
+    min-width: 0;
+}
+
+.sl-edit-account__form {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    flex: 1 1 auto;
+}
+
+.sl-edit-account__form > .fi-sc,
+.sl-edit-account__form > .fi-section,
+.sl-edit-account__form > .fi-sc-section {
+    flex: 1 1 auto;
+}
+
+.sl-edit-account .fi-section,
+.sl-edit-account .fi-sc-section {
+    margin: 0 !important;
+    height: 100%;
+    border: 1px solid #e5e5e5 !important;
+    border-radius: 6px !important;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.06) !important;
+    background: #fff !important;
+}
+
+.sl-edit-account .fi-section-header-heading,
+.sl-edit-account .fi-sc-section-header-heading {
+    color: #006201 !important;
+    font-size: 1.25rem !important;
+    line-height: 1.5 !important;
+    font-weight: 600 !important;
+}
+
+.sl-edit-account .fi-section-content,
+.sl-edit-account .fi-sc-section-content {
+    padding-bottom: 0.75rem !important;
+}
+
+.sl-edit-account__actions {
+    margin-top: 0.75rem;
+    padding: 0 0.15rem;
+}
+
+/* Filament puts the ring on .fi-input-wrp — do NOT also border the inner input
+   (that creates the broken-corner / double-border look). */
+.sl-edit-account .fi-input-wrp {
+    background-color: #ffffff !important;
+    border: 1px solid #ccc !important;
+    border-radius: 3px !important;
+    box-shadow: none !important;
+    --tw-ring-inset: /*!*/;
+    --tw-ring-offset-width: 0px !important;
+    --tw-ring-offset-color: transparent !important;
+    --tw-ring-color: transparent !important;
+    --tw-ring-offset-shadow: 0 0 #0000 !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+    outline: none !important;
+}
+
+.sl-edit-account .fi-input-wrp:focus-within {
+    border-color: #008c00 !important;
+    box-shadow: none !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+}
+
+.sl-edit-account .fi-input,
+.sl-edit-account .fi-textarea,
+.sl-edit-account input[type='text'],
+.sl-edit-account input[type='email'],
+.sl-edit-account input[type='password'],
+.sl-edit-account input[type='number'] {
+    background-color: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+/* Manage User — tighter header, no empty toolbar gap */
+.sl-edit-account__users .fi-ta-header {
+    gap: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+}
+
+.sl-edit-account__users .fi-ta-header-heading {
+    color: #006201 !important;
+    font-size: 1.25rem !important;
+    font-weight: 600 !important;
+}
+
+.sl-edit-account__users .fi-ta-header-toolbar:empty,
+.sl-edit-account__users .fi-ta-actions:empty {
+    display: none !important;
+}
+
+.sl-edit-account__users .fi-ta-ctn {
+    border: 1px solid #e5e5e5 !important;
+    border-radius: 6px !important;
+    background: #fff !important;
+    overflow: hidden;
+}
+
+.sl-edit-account__users .fi-ta-table th {
+    background: #f8f8f8 !important;
+    font-size: 13px !important;
+}
+
+.sl-edit-account__users .fi-ta-table th,
+.sl-edit-account__users .fi-ta-table td {
+    border-right: 1px solid #e5ebe5 !important;
+    border-bottom: 1px solid #e5ebe5 !important;
+    padding: 10px 12px !important;
+}
+
+@media (max-width: 900px) {
+    .sl-edit-account__row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Manage User — legacy edit.png tool icon */
+.sl-manage-user-edit-icon {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* Edit User modal — match legacy colorbox layout */
+.sl-edit-user-modal .fi-modal-header-heading {
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    color: #333 !important;
+}
+
+.sl-edit-user-modal .fi-modal-content {
+    max-height: min(70vh, 620px);
+    overflow-y: auto;
+}
+
+.sl-edit-user-modal .fi-fo-field-wrp {
+    gap: 0.35rem !important;
+}
+
+.sl-edit-user-modal .fi-input-wrp {
+    background-color: #ffffff !important;
+    border: 1px solid #ccc !important;
+    border-radius: 2px !important;
+    box-shadow: none !important;
+    max-width: 235px;
+}
+
+.sl-edit-user-modal .fi-btn[type='submit'],
+.sl-edit-user-modal .fi-modal-footer .fi-btn:not(.fi-color-gray) {
+    background-color: #008c00 !important;
+    border-color: #008c00 !important;
+    color: #fff !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    border-radius: 2px !important;
+    padding-inline: 1.25rem !important;
+}
+
+.sl-edit-user-perms {
+    margin-top: 0.75rem;
+    margin-bottom: 0.5rem;
+    align-items: end;
+}
+
+.sl-edit-user-perms .fi-fo-field-wrp {
+    align-items: center !important;
+}
+
+.sl-edit-user-perms .fi-checkbox-input {
+    margin-top: 0.35rem;
+}
+
+.sl-edit-user-perm {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    min-height: 42px;
+}
+
+.sl-edit-user-perm img {
+    display: block;
+    max-height: 36px;
+    width: auto;
+}
+
+.sl-edit-user-profiles {
+    margin-top: 0.75rem;
+    width: 100%;
+}
+
+.sl-edit-user-profiles[data-disabled='1'] {
+    opacity: 0.65;
+    pointer-events: none;
+}
+
+.sl-edit-user-profiles__heading {
+    margin: 0 0 0.65rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #222;
+}
+
+.sl-edit-user-profiles__table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #e5ebe5;
+}
+
+.sl-edit-user-profiles__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.sl-edit-user-profiles__table th {
+    background: linear-gradient(to bottom, #ffffff 0%, #f4f4f4 100%);
+    border-right: 1px solid #e5ebe5;
+    border-bottom: 1px solid #e5ebe5;
+    padding: 12px 5px;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: left;
+}
+
+.sl-edit-user-profiles__table td {
+    border-right: 1px solid #e5ebe5;
+    border-bottom: 1px solid #e5ebe5;
+    padding: 10px 5px;
+    vertical-align: middle;
+}
+
+.sl-edit-user-profiles__col-no {
+    width: 10%;
+    text-align: center !important;
+}
+
+.sl-edit-user-profiles__col-name {
+    width: 55%;
+}
+
+.sl-edit-user-profiles__col-expiry,
+.sl-edit-user-profiles__col-select {
+    width: 20%;
+    text-align: center !important;
+}
+
+.sl-edit-user-profiles__expiry,
+.sl-edit-user-profiles__select {
+    text-align: center;
+}
+
+.sl-edit-user-profiles__select-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.sl-edit-user-profiles__blocked {
+    margin-right: 4px;
+    vertical-align: middle;
+}
+
+.sl-edit-user-profiles__row--green {
+    background-color: #c9ffc9 !important;
+}
+
+.sl-edit-user-profiles__row--orange {
+    background-color: #fbc085 !important;
+}
+
+.sl-edit-user-profiles__row--red {
+    background-color: #f5bfb8 !important;
+}
+
+.sl-edit-user-profiles__empty {
+    text-align: center;
+    color: #666;
+    padding: 1rem !important;
+}
+
+/* Portal Contact us — shrink-wrap Filament page card to the form (no empty right/bottom) */
+.fi-page:has(.sl-portal-contact) > .fi-header,
+.fi-page:has(.sl-portal-contact) .fi-header:not(:has(.fi-btn)) {
+    display: none !important;
+}
+
+.fi-main:has(.sl-portal-contact),
+.fi-main:has(.sl-portal-contact) .fi-main-ctn,
+.fi-page:has(.sl-portal-contact),
+.fi-page:has(.sl-portal-contact) .fi-page-header-main-ctn,
+.fi-page:has(.sl-portal-contact) .fi-page-main,
+.fi-page:has(.sl-portal-contact) .fi-page-content {
+    width: fit-content !important;
+    max-width: 100% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    flex: 0 0 auto !important;
+    align-self: flex-start !important;
+    flex-grow: 0 !important;
+}
+
+.fi-page:has(.sl-portal-contact) .fi-page-content {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+}
+
+.sl-portal-contact {
+    width: max-content;
+    max-width: min(820px, calc(100vw - 14rem));
+    margin: 0;
+    padding: 1.15rem 1.35rem 1.25rem;
+    overflow: visible;
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+    box-sizing: border-box;
+}
+
+.sl-portal-contact__title {
+    margin: 0 0 0.85rem;
+    color: #333;
+    font-size: 1.35rem;
+    font-weight: 700;
+    font-family: Verdana, Arial, sans-serif;
+    line-height: 1.3;
+}
+
+.sl-portal-contact__flash {
+    margin: 0 0 0.75rem;
+}
+
+.sl-portal-contact__error {
+    color: #f00;
+    font-size: 12px;
+}
+
+.sl-portal-contact__ok {
+    color: #35d10a;
+    font-size: 12px;
+}
+
+.sl-portal-contact__layout {
+    display: grid;
+    grid-template-columns: 420px 290px;
+    gap: 1.5rem 2rem;
+    align-items: start;
+    width: max-content;
+    max-width: 100%;
+}
+
+.sl-portal-contact__form {
+    width: 420px;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.sl-portal-contact__fields {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.sl-portal-contact__fields li {
+    margin: 0 0 10px;
+    padding: 0;
+}
+
+.sl-portal-contact__fields label {
+    display: block;
+    font-weight: normal;
+    color: #727171;
+    font-family: Verdana, Arial, sans-serif;
+    font-size: 13px;
+    margin-bottom: 4px;
+}
+
+.sl-portal-contact__input {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: 32px;
+    line-height: 32px;
+    padding: 5px 10px;
+    box-sizing: border-box;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 14px;
+    color: #333;
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 6px;
+    box-shadow: inset 3px 3px 5px 0 rgba(0, 0, 0, 0.1);
+    outline: 0;
+}
+
+.sl-portal-contact__textarea {
+    height: 72px;
+    line-height: 1.35;
+    resize: vertical;
+    min-height: 50px;
+}
+
+.sl-portal-contact__captcha {
+    display: block;
+    margin: 4px 0 8px;
+    border: 1px solid #ddd;
+}
+
+.sl-portal-contact__send {
+    display: inline-block;
+    margin-top: 4px;
+    min-width: 90px;
+    height: 36px;
+    line-height: 36px;
+    padding: 0 18px;
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #fff;
+    border: 1px solid #006201;
+    border-radius: 6px;
+    cursor: pointer;
+    background: linear-gradient(to bottom, #008901 0%, #007a01 100%);
+}
+
+.sl-portal-contact__send:disabled {
+    opacity: 0.7;
+    cursor: wait;
+}
+
+.sl-portal-contact__box {
+    width: 290px;
+    max-width: 100%;
+    margin: 2.1rem 0 0;
+    padding: 38px 20px 20px;
+    color: #727171;
+    border: 1px solid #ececec;
+    border-radius: 6px;
+    position: relative;
+    background: #fff;
+    box-sizing: border-box;
+}
+
+.sl-portal-contact__box-title {
+    width: calc(100% + 8px);
+    max-width: 280px;
+    text-align: center;
+    height: 60px;
+    color: #5a5a5a;
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+    background: #f4f4f4;
+    border-radius: 6px;
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+}
+
+.sl-portal-contact__box-title img {
+    vertical-align: middle;
+    max-height: 30px;
+    width: auto;
+}
+
+.sl-portal-contact__box-section {
+    padding: 0 0 12px;
+    margin: 0 0 12px;
+    border-bottom: 1px solid #ececec;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.sl-portal-contact__box-section--last {
+    border-bottom: 0;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.sl-portal-contact__tel {
+    display: block;
+    padding: 8px 0 8px 58px;
+    min-height: 28px;
+    background: url('../../images/tel-icon.png') no-repeat 6px top;
+    color: #222;
+    font-size: 16px;
+    font-weight: normal;
+}
+
+.sl-portal-contact__address {
+    display: block;
+    padding: 8px 0 0 58px;
+    min-height: 48px;
+    background: url('../../images/email-icon.png') no-repeat 6px top;
+    color: #555;
+    font-size: 12px;
+    line-height: 1.45;
+    font-weight: normal;
+}
+
+.sl-portal-contact__address strong {
+    font-size: 14px;
+    color: #5a5a5a;
+}
+
+@media (max-width: 900px) {
+    .fi-main:has(.sl-portal-contact),
+    .fi-main:has(.sl-portal-contact) .fi-main-ctn,
+    .fi-page:has(.sl-portal-contact),
+    .fi-page:has(.sl-portal-contact) .fi-page-header-main-ctn,
+    .fi-page:has(.sl-portal-contact) .fi-page-main,
+    .fi-page:has(.sl-portal-contact) .fi-page-content,
+    .sl-portal-contact {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .sl-portal-contact__layout {
+        grid-template-columns: 1fr;
+        width: 100%;
+        gap: 2.25rem;
+    }
+
+    .sl-portal-contact__form,
+    .sl-portal-contact__box {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .sl-portal-contact__box {
+        margin-top: 2.25rem;
+    }
+}
+
+

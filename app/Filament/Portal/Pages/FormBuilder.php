@@ -3,6 +3,7 @@
 namespace App\Filament\Portal\Pages;
 
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
+use App\Models\EquipmentType;
 use App\Models\FormBuilderQuestion;
 use App\Models\FormBuilderQuestionType;
 use App\Models\Profile;
@@ -30,6 +31,8 @@ class FormBuilder extends Page
     protected static ?string $title = 'Form Builder';
 
     protected static ?string $slug = 'form-builder';
+
+    protected static bool $shouldRegisterNavigation = false;
 
     protected static ?int $navigationSort = 1;
 
@@ -149,11 +152,107 @@ class FormBuilder extends Page
         $this->questions = collect();
         $this->paletteGroups = $this->formBuilder->paletteGroups();
 
-        $firstProfileId = $this->clientProfileOptions()->keys()->first();
+        $requestedProfileId = (int) (request()->query('profile') ?: request()->query('profile_id') ?: 0);
+
+        if ($requestedProfileId > 0) {
+            try {
+                $this->selectProfile($requestedProfileId);
+
+                return;
+            } catch (\Throwable) {
+                // Fall through to default profile selection.
+            }
+        }
+
+        $firstProfileId = $this->formProfileOptions()->keys()->first()
+            ?: $this->clientProfileOptions()->keys()->first();
 
         if ($firstProfileId) {
             $this->selectProfile((int) $firstProfileId);
         }
+    }
+
+    /**
+     * Prefer Form/Survey/Checklist profiles (live Form Builder entry point),
+     * then any other active profiles for this client.
+     *
+     * @return Collection<int|string, string>
+     */
+    public function formProfileOptions(): Collection
+    {
+        $client = $this->currentClient();
+
+        if (! $client) {
+            return collect();
+        }
+
+        $surveyTypeId = EquipmentType::query()->where('slag', 'survey')->value('id');
+
+        $surveyOptions = Profile::selectOptionsForClient((int) $client->id, function ($query) use ($surveyTypeId): void {
+            if ($surveyTypeId) {
+                $query->where('type_id', $surveyTypeId);
+            }
+        });
+
+        if ($surveyOptions->isNotEmpty()) {
+            return $surveyOptions;
+        }
+
+        return $this->clientProfileOptions();
+    }
+
+    public function participantsUrl(): string
+    {
+        $url = ManageParticipants::getUrl();
+
+        if ($this->selectedProfileId) {
+            $url .= '?profile='.$this->selectedProfileId;
+        }
+
+        return $url;
+    }
+
+    public function formLibraryUrl(): string
+    {
+        return FormLibrary::getUrl();
+    }
+
+    public function formSubmissionsUrl(): string
+    {
+        $url = FormSubmissions::getUrl();
+
+        if ($this->selectedProfileId) {
+            $url .= '?profile='.$this->selectedProfileId;
+        }
+
+        return $url;
+    }
+
+    /**
+     * Live behaviour: Line Divider / Blank Space drop straight onto the canvas.
+     */
+    public function quickAdd(int $typeId): void
+    {
+        if (! in_array($typeId, [13, 14], true)) {
+            $this->openComposer($typeId);
+
+            return;
+        }
+
+        $profile = $this->resolveProfile();
+
+        $this->formBuilder->saveQuestion($profile, [
+            'question_type_id' => $typeId,
+            'question_text' => $typeId === 13 ? '—' : '',
+            'is_mandatory' => false,
+        ]);
+
+        Notification::make()
+            ->title($typeId === 13 ? 'Line divider added' : 'Blank space added')
+            ->success()
+            ->send();
+
+        $this->loadProfileData();
     }
 
     public function selectProfile(?int $profileId): void
@@ -202,6 +301,12 @@ class FormBuilder extends Page
 
     public function openComposer(int $typeId): void
     {
+        if (in_array($typeId, [13, 14], true)) {
+            $this->quickAdd($typeId);
+
+            return;
+        }
+
         $this->composingTypeId = $typeId;
         $this->editingQuestionId = null;
         $this->resetComposerFields();
@@ -320,10 +425,14 @@ class FormBuilder extends Page
         $type = FormBuilderQuestionType::query()->find($typeId);
         $isDisplay = $type?->isDisplayOnly() ?? false;
 
-        if (! $isDisplay && trim($this->composerQuestionText) === '' && ! in_array($typeId, [11], true)) {
+        if (! $isDisplay && trim($this->composerQuestionText) === '' && ! in_array($typeId, [11, 13, 14, 22, 24], true)) {
             Notification::make()->title('Question text is required')->danger()->send();
 
             return;
+        }
+
+        if ($typeId === 22 && trim($this->composerQuestionText) === '') {
+            $this->composerQuestionText = 'SWMS Hazard / Risk';
         }
 
         if ($typeId === 11 && $this->composerImageUpload instanceof TemporaryUploadedFile) {

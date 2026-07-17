@@ -104,6 +104,10 @@ class AdminPanelProvider extends PanelProvider
                 fn (): string => view('filament.hooks.table-filters')->render(),
             )
             ->renderHook(
+                PanelsRenderHook::BODY_END,
+                fn (): string => view('filament.hooks.form-validation-scroll')->render(),
+            )
+            ->renderHook(
                 PanelsRenderHook::HEAD_END,
                 fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=18">',
             )

@@ -56,6 +56,10 @@
         .fb-layout { display: grid; grid-template-columns: 1fr; gap: 1rem; }
         .fb-layout--preview { grid-template-columns: 1fr 320px; }
         @media (max-width: 1200px) { .fb-layout--preview { grid-template-columns: 1fr; } }
+        .fb-live-shell { display: grid; grid-template-columns: minmax(240px, 300px) minmax(0, 1fr); gap: 1rem; align-items: start; }
+        @media (max-width: 1100px) { .fb-live-shell { grid-template-columns: 1fr; } }
+        .fb-live-settings .fb-heading { font-size: .95rem; }
+        .fb-live-builder { min-width: 0; }
         .fb-preview { border: 1px solid rgb(209 213 219); border-radius: 12px; padding: 1rem; background: #f5f5f5; max-height: 600px; overflow-y: auto; }
         .dark .fb-preview { border-color: rgb(75 85 99); background: rgb(17 24 39); }
         .fb-preview-phone { max-width: 320px; margin: 0 auto; background: #fff; border-radius: 16px; padding: 1rem; box-shadow: 0 4px 12px rgb(0 0 0 / .12); }
@@ -90,21 +94,23 @@
     </div>
 
     <div class="fb-root space-y-4">
-        {{-- Profile selector --}}
+        {{-- Profile selector + shortcuts (live opens builder for a survey profile) --}}
         <div class="fb-card">
             <div class="fb-toolbar">
-                <div style="flex:1; max-width: 360px;">
-                    <label class="fb-label">Profile</label>
+                <div style="flex:1; max-width: 420px;">
+                    <label class="fb-label">Form / Survey profile</label>
                     <select wire:model.live="selectedProfileId" class="fb-select">
                         <option value="">Select profile…</option>
-                        @foreach ($this->clientProfileOptions() as $id => $name)
+                        @foreach ($this->formProfileOptions() as $id => $name)
                             <option value="{{ $id }}">{{ $name }}</option>
                         @endforeach
                     </select>
                 </div>
                 <div style="display:flex; gap:.5rem; flex-wrap:wrap;">
+                    <a href="{{ $this->formLibraryUrl() }}" class="fb-btn fb-btn-secondary" style="text-decoration:none;">Form Library</a>
+                    <a href="{{ $this->formSubmissionsUrl() }}" class="fb-btn fb-btn-secondary" style="text-decoration:none;" @class(['pointer-events-none opacity-50' => ! $selectedProfileId])>Form Submissions</a>
                     <button type="button" class="fb-btn fb-btn-secondary" wire:click="togglePreview">
-                        {{ $showPreview ? 'Hide preview' : 'Live preview' }}
+                        {{ $showPreview ? 'Hide preview' : 'Form preview' }}
                     </button>
                     <button type="button" class="fb-btn fb-btn-secondary" wire:click="saveToLibrary" @disabled(! $selectedProfileId)>
                         Save to library
@@ -114,69 +120,67 @@
         </div>
 
         @if ($selectedProfileId)
-            {{-- Form settings --}}
-            <div class="fb-card">
-                <h3 class="fb-heading">Form settings</h3>
-                <div class="fb-settings-grid">
-                    <div>
-                        <label class="fb-label">Form title</label>
-                        <input type="text" wire:model="formTitle" class="fb-input" placeholder="Form title">
-                    </div>
-                    <div>
-                        <label class="fb-label">Email tag</label>
-                        <input type="text" wire:model="formEmailTag" class="fb-input" placeholder="Email subject tag">
-                    </div>
-                    <div>
-                        <label class="fb-label">Submission format</label>
-                        <select wire:model="formSubmissionFormat" class="fb-select">
-                            <option value="0">Email only</option>
-                            <option value="1">Email + PDF notice</option>
-                        </select>
-                    </div>
-                    <div style="display:flex; flex-direction:column; gap:.5rem; justify-content:center;">
+            <div class="fb-live-shell">
+                {{-- LEFT: Form Name / Recipients / Email Tag (live left column) --}}
+                <div class="fb-card fb-live-settings">
+                    <h3 class="fb-heading">Form Name</h3>
+                    <input type="text" wire:model="formTitle" class="fb-input" placeholder="Form name">
+
+                    <h3 class="fb-heading" style="margin-top:1.25rem;">Recipients Email</h3>
+                    @foreach ($recipients as $index => $email)
+                        <div class="fb-recipient-row" wire:key="recipient-{{ $index }}">
+                            <input type="email" wire:model="recipients.{{ $index }}" class="fb-input" placeholder="email@example.com">
+                            <button type="button" class="fb-btn fb-btn-danger fb-btn-sm" wire:click="removeRecipient({{ $index }})">Remove</button>
+                        </div>
+                    @endforeach
+                    <button type="button" class="fb-btn fb-btn-secondary fb-btn-sm" wire:click="addRecipient">Add Another</button>
+
+                    <h3 class="fb-heading" style="margin-top:1.25rem;">Email Tag <span style="font-weight:500;text-transform:none;letter-spacing:0;">(optional)</span></h3>
+                    <input type="text" wire:model="formEmailTag" class="fb-input" placeholder="Email subject tag">
+
+                    <div style="margin-top:1rem; display:flex; flex-direction:column; gap:.5rem;">
                         <label style="display:flex; align-items:center; gap:.5rem; font-size:.875rem;">
-                            <input type="checkbox" wire:model="formIsEnable"> Form enabled
+                            <input type="checkbox" wire:model="formIsEnable"> Enable form
                         </label>
                         <label style="display:flex; align-items:center; gap:.5rem; font-size:.875rem;">
                             <input type="checkbox" wire:model="formActive"> Form active on scan page
                         </label>
-                    </div>
-                </div>
-                <div style="margin-top:.75rem;">
-                    <label class="fb-label">Recipients</label>
-                    @foreach ($recipients as $index => $email)
-                        <div class="fb-recipient-row" wire:key="recipient-{{ $index }}">
-                            <input type="email" wire:model="recipients.{{ $index }}" class="fb-input" placeholder="email@example.com">
-                            <button type="button" class="fb-btn fb-btn-danger fb-btn-sm" wire:click="removeRecipient({{ $index }})">×</button>
+                        <div>
+                            <label class="fb-label">Submission format</label>
+                            <select wire:model="formSubmissionFormat" class="fb-select">
+                                <option value="0">Email only</option>
+                                <option value="1">Email + PDF notice</option>
+                            </select>
                         </div>
-                    @endforeach
-                    <button type="button" class="fb-btn fb-btn-secondary fb-btn-sm" wire:click="addRecipient">+ Add recipient</button>
-                </div>
-                <div style="margin-top:1rem;">
-                    <button type="button" class="fb-btn fb-btn-primary" wire:click="saveSettings">Save settings</button>
-                </div>
+                    </div>
 
-                @if ($this->profilesWithExistingForms()->isNotEmpty())
-                    <div class="fb-copy-row">
-                        <div style="flex:1; min-width:200px;">
-                            <label class="fb-label">Use an existing form</label>
+                    <div style="margin-top:1rem; display:flex; flex-direction:column; gap:.5rem;">
+                        <button type="button" class="fb-btn fb-btn-primary" wire:click="saveSettings">Save form settings</button>
+                        <a href="{{ $this->participantsUrl() }}" class="fb-btn fb-btn-secondary" style="text-decoration:none; justify-content:center;">
+                            Add/Edit Participant List
+                        </a>
+                    </div>
+
+                    @if ($this->profilesWithExistingForms()->isNotEmpty())
+                        <div class="fb-copy-row" style="flex-direction:column; align-items:stretch;">
+                            <label class="fb-label">Select from existing form</label>
                             <select wire:model="copyFromProfileId" class="fb-select">
                                 <option value="">Select profile with form…</option>
                                 @foreach ($this->profilesWithExistingForms() as $id => $name)
                                     <option value="{{ $id }}">{{ $name }}</option>
                                 @endforeach
                             </select>
+                            <button type="button" class="fb-btn fb-btn-secondary" wire:click="copyFromProfile" @disabled(! $copyFromProfileId)>
+                                Use selected form
+                            </button>
                         </div>
-                        <button type="button" class="fb-btn fb-btn-secondary" wire:click="copyFromProfile" @disabled(! $copyFromProfileId)>
-                            Copy form
-                        </button>
-                    </div>
-                @endif
-            </div>
+                    @endif
+                </div>
 
-            <div class="fb-layout {{ $showPreview ? 'fb-layout--preview' : '' }}">
-                <div>
-                    {{-- Palette --}}
+                {{-- RIGHT: Palette + canvas (live main builder) --}}
+                <div class="fb-live-builder">
+                    <h3 class="fb-heading" style="text-align:center;">Click and drag an element on to your form</h3>
+
                     <div class="fb-palette">
                         @foreach (['question' => 'Question Tools', 'format' => 'Format Tools', 'answer' => 'Answer Tools'] as $group => $title)
                             <div class="fb-palette-col fb-palette-col--{{ $group }}">
@@ -253,6 +257,12 @@
                                         </div>
                                     </div>
                                 </div>
+                            @endif
+
+                            @if ($composingTypeId === 22)
+                                <p style="font-size:.8125rem;color:#6b7280;margin:.5rem 0;">
+                                    SWMS fields (Task / Hazards / Risk before &amp; after) appear on the scan page for respondents. Set the section label below.
+                                </p>
                             @endif
 
                             @if (in_array($composingTypeId, [3, 4, 5], true))
@@ -394,7 +404,7 @@
                                     <input type="checkbox" wire:model="composerIsMandatory"> Mandatory
                                 </label>
                                 <label style="display:flex; align-items:center; gap:.5rem; font-size:.875rem;">
-                                    <input type="checkbox" wire:model="composerIsLogchecked"> Show in submission log
+                                    <input type="checkbox" wire:model="composerIsLogchecked"> Record entry on Form Submission Log
                                 </label>
                             </div>
 
@@ -407,132 +417,129 @@
 
                             <div style="margin-top:1rem;">
                                 <button type="button" class="fb-btn fb-btn-primary" wire:click="saveQuestion">
-                                    {{ $editingQuestionId ? 'Update question' : 'Save question' }}
+                                    {{ $editingQuestionId ? 'Update' : 'Save' }}
                                 </button>
                             </div>
                         </div>
                     @endif
                     </div>
 
-                    {{-- Canvas --}}
-                    <div class="fb-card fb-canvas-drop" style="margin-top:1rem;" id="fb-canvas-drop-zone">
-                        <div class="fb-canvas-title">CREATE YOUR FORM HERE</div>
+                    <div class="fb-layout {{ $showPreview ? 'fb-layout--preview' : '' }}" style="margin-top:1rem;">
+                        <div class="fb-card fb-canvas-drop" id="fb-canvas-drop-zone">
+                            <div class="fb-canvas-title">Create your form here</div>
 
-                        @if ($questions->isEmpty())
-                            <div class="fb-empty">
-                                <p>No questions yet. Pick a tool from the palette above to get started.</p>
-                                <div class="fb-empty-cta">
-                                    @if (($paletteGroups['question'] ?? collect())->isNotEmpty())
-                                        <button type="button" class="fb-btn fb-btn-primary" wire:click="openComposer({{ $paletteGroups['question']->first()->question_type_id }})">
-                                            Add your first question
-                                        </button>
-                                    @endif
+                            @if ($questions->isEmpty())
+                                <div class="fb-empty">
+                                    <p>No questions yet. Drag a tool from the palette above onto this area.</p>
                                 </div>
-                            </div>
-                        @else
-                            <div id="fb-question-canvas" class="fb-question-list" wire:ignore.self>
-                                @foreach ($questions as $question)
-                                    <div
-                                        class="fb-box {{ $question->boxClass() }}"
-                                        data-question-id="{{ $question->question_id }}"
-                                        wire:key="q-{{ $question->question_id }}"
-                                    >
-                                        <span class="fb-box-handle" title="Drag to reorder">⠿</span>
-                                        <div class="fb-box-body">
-                                            <div class="fb-box-type">{{ $question->typeName() }}</div>
-                                            <div class="fb-box-text">
-                                                {!! \Illuminate\Support\Str::limit(strip_tags($question->question_text), 120) !!}
-                                                @if ($question->is_mandatory)
-                                                    <span class="fb-badge">Mandatory</span>
-                                                @endif
+                            @else
+                                <div id="fb-question-canvas" class="fb-question-list" wire:ignore.self>
+                                    @foreach ($questions as $question)
+                                        <div
+                                            class="fb-box {{ $question->boxClass() }}"
+                                            data-question-id="{{ $question->question_id }}"
+                                            wire:key="q-{{ $question->question_id }}"
+                                        >
+                                            <span class="fb-box-handle" title="Drag to reorder">⠿</span>
+                                            <div class="fb-box-body">
+                                                <div class="fb-box-type">{{ $question->typeName() }}</div>
+                                                <div class="fb-box-text">
+                                                    {!! \Illuminate\Support\Str::limit(strip_tags($question->question_text), 120) !!}
+                                                    @if ($question->is_mandatory)
+                                                        <span class="fb-badge">Mandatory</span>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                            <div class="fb-box-actions">
+                                                <button type="button" class="fb-btn fb-btn-secondary fb-btn-sm" wire:click="editQuestion({{ $question->question_id }})">Edit</button>
+                                                <button type="button" class="fb-btn fb-btn-danger fb-btn-sm" wire:click="deleteQuestion({{ $question->question_id }})" wire:confirm="Remove this question?">Delete</button>
                                             </div>
                                         </div>
-                                        <div class="fb-box-actions">
-                                            <button type="button" class="fb-btn fb-btn-secondary fb-btn-sm" wire:click="editQuestion({{ $question->question_id }})">Edit</button>
-                                            <button type="button" class="fb-btn fb-btn-danger fb-btn-sm" wire:click="deleteQuestion({{ $question->question_id }})" wire:confirm="Remove this question?">Delete</button>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </div>
+
+                        @if ($showPreview)
+                            <div class="fb-preview">
+                                <div class="fb-preview-phone">
+                                    <h4>{{ $formTitle ?: 'Form preview' }}</h4>
+                                    @forelse ($questions as $question)
+                                        @php $tid = (int) $question->question_type_id; @endphp
+                                        <div class="fb-preview-field">
+                                            @if (in_array($tid, [2, 13, 14], true))
+                                                <div>{!! $question->question_text !!}</div>
+                                            @elseif (in_array($tid, [20, 21, 23], true))
+                                                <a href="#" onclick="return false;" style="display:inline-block;background:#{{ $question->button_colour ?: '007A01' }};color:#fff;padding:.4rem .75rem;border-radius:6px;text-decoration:none;font-size:.8125rem;">
+                                                    {{ $question->doc_title ?: $question->question_text ?: 'Link' }}
+                                                </a>
+                                            @elseif ($tid === 3 && $question->options->isNotEmpty())
+                                                <label>{{ $question->question_text }}@if($question->is_mandatory)*@endif</label>
+                                                @foreach ($question->options as $opt)
+                                                    <label style="font-weight:400;display:block;"><input type="radio" disabled> {{ $opt->option_name }}</label>
+                                                @endforeach
+                                            @elseif ($tid === 4 && $question->options->isNotEmpty())
+                                                <label>{{ $question->question_text }}</label>
+                                                @foreach ($question->options as $opt)
+                                                    <label style="font-weight:400;display:block;"><input type="checkbox" disabled> {{ $opt->option_name }}</label>
+                                                @endforeach
+                                            @elseif ($tid === 5 && $question->options->isNotEmpty())
+                                                <label>{{ $question->question_text }}@if($question->is_mandatory)*@endif</label>
+                                                <select disabled><option>Select…</option>@foreach($question->options as $opt)<option>{{ $opt->option_name }}</option>@endforeach</select>
+                                            @elseif ($tid === 6)
+                                                <label>{{ $question->question_text }}</label>
+                                                @php
+                                                    $from = (int) ($question->options->firstWhere('question_option_type_id', 1)?->option_name ?? 1);
+                                                    $to = (int) ($question->options->firstWhere('question_option_type_id', 2)?->option_name ?? 5);
+                                                @endphp
+                                                <select disabled>@for($i = $from; $i <= $to; $i++)<option>{{ $i }}</option>@endfor</select>
+                                            @elseif ($tid === 11 && ($question->image_url || $question->question_text))
+                                                @php
+                                                    $imgUrl = \App\Support\FormBuilderMedia::url($question->image_url)
+                                                        ?: \App\Support\FormBuilderMedia::url($question->question_text);
+                                                    $imgAlign = \App\Support\FormBuilderMedia::alignCss($question->image_align);
+                                                @endphp
+                                                <div style="text-align:{{ $imgAlign }};">
+                                                    @if ($question->image_title)
+                                                        <p style="font-weight:600;font-size:.8125rem;">{{ $question->image_title }}</p>
+                                                    @endif
+                                                    @if ($imgUrl)
+                                                        <img src="{{ $imgUrl }}" alt="{{ $question->image_title ?: 'Image' }}" style="max-width:100%;border-radius:6px;">
+                                                    @endif
+                                                </div>
+                                            @elseif ($tid === 15 || $tid === 16)
+                                                <label>{{ $question->question_text }}@if($question->is_mandatory)*@endif</label>
+                                                <textarea rows="2" disabled></textarea>
+                                            @elseif ($tid === 8)
+                                                <label>{{ $question->question_text }}@if($question->is_mandatory)*@endif</label>
+                                                <input type="date" disabled>
+                                            @elseif ($tid === 9)
+                                                <label>{{ $question->question_text }}@if($question->is_mandatory)*@endif</label>
+                                                <input type="time" disabled>
+                                            @elseif ($tid === 17)
+                                                <label>{{ $question->question_text }}</label>
+                                                <input type="file" disabled>
+                                            @elseif ($tid === 22)
+                                                <label>{{ $question->question_text ?: 'SWMS Hazard / Risk' }}</label>
+                                                <input type="text" disabled placeholder="Task / activity">
+                                                <textarea rows="2" disabled placeholder="Hazards"></textarea>
+                                            @else
+                                                <label>{{ $question->question_text }}@if($question->is_mandatory)*@endif</label>
+                                                <input type="text" disabled>
+                                            @endif
                                         </div>
-                                    </div>
-                                @endforeach
+                                    @empty
+                                        <p style="font-size:.8125rem;color:#888;">Add questions to see preview.</p>
+                                    @endforelse
+                                </div>
                             </div>
                         @endif
                     </div>
                 </div>
-
-                {{-- Live preview --}}
-                @if ($showPreview)
-                    <div class="fb-preview">
-                        <div class="fb-preview-phone">
-                            <h4>{{ $formTitle ?: 'Form preview' }}</h4>
-                            @forelse ($questions as $question)
-                                @php $tid = (int) $question->question_type_id; @endphp
-                                <div class="fb-preview-field">
-                                    @if (in_array($tid, [2, 13, 14], true))
-                                        <div>{!! $question->question_text !!}</div>
-                                    @elseif (in_array($tid, [20, 21, 23], true))
-                                        <a href="#" onclick="return false;" style="display:inline-block;background:#{{ $question->button_colour ?: '007A01' }};color:#fff;padding:.4rem .75rem;border-radius:6px;text-decoration:none;font-size:.8125rem;">
-                                            {{ $question->doc_title ?: $question->question_text ?: 'Link' }}
-                                        </a>
-                                    @elseif ($tid === 3 && $question->options->isNotEmpty())
-                                        <label>{{ $question->question_text }}@if($question->is_mandatory)*@endif</label>
-                                        @foreach ($question->options as $opt)
-                                            <label style="font-weight:400;display:block;"><input type="radio" disabled> {{ $opt->option_name }}</label>
-                                        @endforeach
-                                    @elseif ($tid === 4 && $question->options->isNotEmpty())
-                                        <label>{{ $question->question_text }}</label>
-                                        @foreach ($question->options as $opt)
-                                            <label style="font-weight:400;display:block;"><input type="checkbox" disabled> {{ $opt->option_name }}</label>
-                                        @endforeach
-                                    @elseif ($tid === 5 && $question->options->isNotEmpty())
-                                        <label>{{ $question->question_text }}@if($question->is_mandatory)*@endif</label>
-                                        <select disabled><option>Select…</option>@foreach($question->options as $opt)<option>{{ $opt->option_name }}</option>@endforeach</select>
-                                    @elseif ($tid === 6)
-                                        <label>{{ $question->question_text }}</label>
-                                        @php
-                                            $from = (int) ($question->options->firstWhere('question_option_type_id', 1)?->option_name ?? 1);
-                                            $to = (int) ($question->options->firstWhere('question_option_type_id', 2)?->option_name ?? 5);
-                                        @endphp
-                                        <select disabled>@for($i = $from; $i <= $to; $i++)<option>{{ $i }}</option>@endfor</select>
-                                    @elseif ($tid === 11 && ($question->image_url || $question->question_text))
-                                        @php
-                                            $imgUrl = \App\Support\FormBuilderMedia::url($question->image_url)
-                                                ?: \App\Support\FormBuilderMedia::url($question->question_text);
-                                            $imgAlign = \App\Support\FormBuilderMedia::alignCss($question->image_align);
-                                        @endphp
-                                        <div style="text-align:{{ $imgAlign }};">
-                                            @if ($question->image_title)
-                                                <p style="font-weight:600;font-size:.8125rem;">{{ $question->image_title }}</p>
-                                            @endif
-                                            @if ($imgUrl)
-                                                <img src="{{ $imgUrl }}" alt="{{ $question->image_title ?: 'Image' }}" style="max-width:100%;border-radius:6px;">
-                                            @endif
-                                        </div>
-                                    @elseif ($tid === 15 || $tid === 16)
-                                        <label>{{ $question->question_text }}@if($question->is_mandatory)*@endif</label>
-                                        <textarea rows="2" disabled></textarea>
-                                    @elseif ($tid === 8)
-                                        <label>{{ $question->question_text }}@if($question->is_mandatory)*@endif</label>
-                                        <input type="date" disabled>
-                                    @elseif ($tid === 9)
-                                        <label>{{ $question->question_text }}@if($question->is_mandatory)*@endif</label>
-                                        <input type="time" disabled>
-                                    @elseif ($tid === 17)
-                                        <label>{{ $question->question_text }}</label>
-                                        <input type="file" disabled>
-                                    @else
-                                        <label>{{ $question->question_text }}@if($question->is_mandatory)*@endif</label>
-                                        <input type="text" disabled>
-                                    @endif
-                                </div>
-                            @empty
-                                <p style="font-size:.8125rem;color:#888;">Add questions to see preview.</p>
-                            @endforelse
-                        </div>
-                    </div>
-                @endif
             </div>
         @else
             <div class="fb-card">
-                <p style="color:rgb(107 114 128); font-size:.875rem;">Select a profile to build its form.</p>
+                <p style="color:rgb(107 114 128); font-size:.875rem;">Select a Form/Survey profile to build its form (same entry point as live Form Builder).</p>
             </div>
         @endif
     </div>

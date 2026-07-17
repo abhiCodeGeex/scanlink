@@ -1,23 +1,27 @@
 <?php
 
+use App\Http\Controllers\CaptchaController;
 use App\Http\Controllers\MarketingController;
 use App\Http\Controllers\MobileProfileController;
 use App\Http\Controllers\PayPalNotifyController;
+use App\Http\Controllers\PortalAuthController;
 use App\Services\YouTubeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [MarketingController::class, 'home'])->name('marketing.home');
+Route::post('/portal-login', [PortalAuthController::class, 'login'])->name('marketing.portal-login');
 
 Route::get('/contact', [MarketingController::class, 'contact'])->name('marketing.contact');
 Route::post('/contact', [MarketingController::class, 'submitContact'])->name('marketing.contact.submit');
+Route::get('/captcha/default', CaptchaController::class)->name('marketing.captcha');
 Route::get('/how-to', [MarketingController::class, 'howTo'])->name('marketing.how-to');
 Route::get('/pricing', [MarketingController::class, 'pricing'])->name('marketing.pricing');
 Route::get('/faq', [MarketingController::class, 'faq'])->name('marketing.faq');
 Route::get('/privacy', [MarketingController::class, 'privacy'])->name('marketing.privacy');
 Route::get('/terms', [MarketingController::class, 'terms'])->name('marketing.terms');
 
-Route::get('/voclogin', fn () => redirect('/portal/login'));
+Route::get('/voclogin', fn () => redirect()->to(route('marketing.home').'#login'));
 
 Route::post('/notify/paypal', PayPalNotifyController::class);
 

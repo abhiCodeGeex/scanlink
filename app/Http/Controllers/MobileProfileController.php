@@ -12,7 +12,9 @@ use App\Models\Profile;
 use App\Models\VisitorContact;
 use App\Services\AnalyticsApiService;
 use App\Services\FormBuilderService;
+use App\Services\MobileProfileViewResolver;
 use App\Services\ProfileQrService;
+use App\Support\PortalProfilePreview;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -25,23 +27,28 @@ use Illuminate\View\View;
 
 class MobileProfileController extends Controller
 {
-    public function show(string $clientUrl, int $profileId, ProfileQrService $qrService, AnalyticsApiService $analytics): View|RedirectResponse
+    public function show(string $clientUrl, int $profileId, ProfileQrService $qrService, AnalyticsApiService $analytics, MobileProfileViewResolver $views): View|RedirectResponse
     {
         $profile = $this->resolveProfile($clientUrl, $profileId, eager: true);
+        $portalPreview = PortalProfilePreview::canBypassScanRestrictions($profile);
 
-        if ($profile->isExpired()) {
+        if ($profile->isExpired() && ! $portalPreview) {
             return view('scan.expired', compact('profile'));
         }
 
         if ($redirectUrl = $this->codeRedirectUrl($profile)) {
-            return redirect()->away($redirectUrl);
+            if (! $portalPreview) {
+                return redirect()->away($redirectUrl);
+            }
         }
 
-        if ($profile->protect && ! $this->isUnlocked($profile)) {
+        if ($profile->protect && ! $portalPreview && ! $this->isUnlocked($profile)) {
             return view('scan.password', compact('profile', 'clientUrl'));
         }
 
-        $analytics->registerUrl($qrService->profileUrl($profile));
+        if (! $portalPreview) {
+            $analytics->registerUrl($qrService->profileUrl($profile));
+        }
 
         $questions = FormBuilderQuestion::query()
             ->with(['questionType', 'options'])
@@ -49,14 +56,18 @@ class MobileProfileController extends Controller
             ->orderBy('question_order')
             ->get();
 
-        return view('scan.show', [
+        $payload = [
             'profile' => $profile,
             'clientUrl' => $clientUrl,
             'questions' => $questions,
-            'needsVisitorInfo' => $this->needsVisitorInfo($profile),
+            'nameHeading' => $views->nameHeading($profile),
+            'portalPreview' => $portalPreview,
+            'needsVisitorInfo' => $portalPreview ? false : $this->needsVisitorInfo($profile),
             'publicMediaUrl' => fn (?string $path): ?string => \App\Support\PublicMediaPath::url($path),
             'youtubeEmbedUrl' => fn (string $videoName): ?string => $this->youtubeEmbedUrl($videoName),
-        ]);
+        ];
+
+        return view($views->viewFor($profile), $payload);
     }
 
     public function unlock(Request $request, string $clientUrl, int $profileId): RedirectResponse

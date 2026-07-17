@@ -28,6 +28,8 @@ class VocDashboard extends Page
 
     protected static ?string $slug = 'voc-dashboard';
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?int $navigationSort = -10;
 
     protected string $view = 'filament.portal.pages.voc-dashboard';

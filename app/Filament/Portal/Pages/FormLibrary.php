@@ -32,6 +32,8 @@ class FormLibrary extends Page implements HasTable
 
     protected static ?string $slug = 'form-library';
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?int $navigationSort = 3;
 
     protected string $view = 'filament.portal.pages.form-library';

@@ -79,7 +79,7 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
             }
 
             return $this->clientMemberships()
-                ->where('status', true)
+                ->whereIn('status', ['1', 1])
                 ->exists();
         }
 

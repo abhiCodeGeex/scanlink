@@ -49,10 +49,17 @@ class FormBuilderService
     {
         $types = $this->activeTypes();
 
+        $group = function (string $name) use ($types): Collection {
+            return $types
+                ->filter(fn (FormBuilderQuestionType $t): bool => $t->paletteGroup() === $name)
+                ->sortBy(fn (FormBuilderQuestionType $t): int => $t->paletteSortOrder())
+                ->values();
+        };
+
         return [
-            'question' => $types->filter(fn (FormBuilderQuestionType $t) => $t->paletteGroup() === 'question')->values(),
-            'format' => $types->filter(fn (FormBuilderQuestionType $t) => $t->paletteGroup() === 'format')->values(),
-            'answer' => $types->filter(fn (FormBuilderQuestionType $t) => $t->paletteGroup() === 'answer')->values(),
+            'question' => $group('question'),
+            'format' => $group('format'),
+            'answer' => $group('answer'),
         ];
     }
 

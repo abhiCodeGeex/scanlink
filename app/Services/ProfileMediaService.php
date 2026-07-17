@@ -19,7 +19,7 @@ class ProfileMediaService
         $profile->loadMissing('client');
 
         if (! empty($uploads['logo_upload'])) {
-            $this->syncLogo($profile, $uploads['logo_upload']);
+            $this->syncLogo($profile, (string) $uploads['logo_upload']);
         }
 
         if (! empty($uploads['picture_uploads'])) {
@@ -42,7 +42,7 @@ class ProfileMediaService
         $profile->logos()->create([
             'client_id' => $profile->client_id,
             'user_id' => $profile->user_id,
-            'logo_name' => basename($path),
+            'logo_name' => $this->relativeStoragePath($path),
             'is_temp' => false,
         ]);
     }
@@ -56,7 +56,8 @@ class ProfileMediaService
             $profile->pictures()->create([
                 'client_id' => $profile->client_id,
                 'user_id' => $profile->user_id,
-                'picture_name' => basename($path),
+                'picture_name' => $this->relativeStoragePath((string) $path),
+                'txt_footer' => '',
                 'is_temp' => false,
             ]);
         }
@@ -68,11 +69,17 @@ class ProfileMediaService
     protected function syncDocuments(Profile $profile, array $paths): void
     {
         foreach ($paths as $path) {
+            $relative = $this->relativeStoragePath((string) $path);
+            $basename = basename($relative);
+
             $profile->documents()->create([
                 'client_id' => $profile->client_id,
                 'user_id' => $profile->user_id,
-                'doc_name' => basename($path),
-                'name' => basename($path),
+                'doc_name' => $relative,
+                'name' => pathinfo($basename, PATHINFO_FILENAME) ?: $basename,
+                'btn_color' => '',
+                'txt_align' => 'left',
+                'sort_order' => 0,
                 'is_temp' => false,
             ]);
         }
@@ -95,10 +102,15 @@ class ProfileMediaService
             $profile->videos()->create([
                 'client_id' => $profile->client_id,
                 'user_id' => $profile->user_id,
-                'title' => $video['title'] ?? null,
+                'title' => filled($video['title'] ?? null) ? (string) $video['title'] : '',
                 'video_name' => $videoId,
                 'is_extra' => false,
             ]);
         }
+    }
+
+    protected function relativeStoragePath(string $path): string
+    {
+        return ltrim(str_replace(['storage/', 'public/'], '', $path), '/');
     }
 }

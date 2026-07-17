@@ -28,14 +28,51 @@ class FormBuilderQuestionType extends Model
         return $this->hasMany(FormBuilderQuestion::class, 'question_type_id', 'question_type_id');
     }
 
-    /** Palette group: 0 = Question (green), 1 = Format (orange), 2 = Answer (blue). */
+    /**
+     * Palette group matching live ScanLink form builder menus.
+     *
+     * Live hard-codes tool placement (not always the same as DB `type`):
+     * Question (green), Format (orange), Answer (blue).
+     */
     public function paletteGroup(): string
     {
+        $id = (int) $this->question_type_id;
+
+        if (in_array($id, [2, 25], true)) {
+            return 'question';
+        }
+
+        if (in_array($id, [13, 14, 22, 24, 11, 16, 17, 18, 19, 20, 21], true)) {
+            return 'format';
+        }
+
+        if (in_array($id, [1, 3, 4, 5, 6, 7, 8, 9, 15, 23], true)) {
+            return 'answer';
+        }
+
         return match ((int) $this->type) {
             1 => 'format',
             2 => 'answer',
             default => 'question',
         };
+    }
+
+    /**
+     * Sort order within a palette column (live formbuilder menu order).
+     */
+    public function paletteSortOrder(): int
+    {
+        $orders = [
+            'question' => [2, 25],
+            'format' => [13, 14, 22, 24, 11, 16, 17, 18, 19, 20, 21],
+            'answer' => [1, 3, 4, 5, 6, 7, 8, 9, 15, 23],
+        ];
+
+        $group = $this->paletteGroup();
+        $list = $orders[$group] ?? [];
+        $index = array_search((int) $this->question_type_id, $list, true);
+
+        return $index === false ? 999 : $index;
     }
 
     public function paletteColor(): string

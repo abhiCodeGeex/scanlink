@@ -35,6 +35,8 @@ class TeamUsers extends Page implements HasTable
 
     protected static ?string $slug = 'team-users';
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?int $navigationSort = 3;
 
     protected string $view = 'filament.portal.pages.team-users';

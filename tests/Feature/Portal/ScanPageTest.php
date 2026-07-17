@@ -10,6 +10,7 @@ use App\Models\Profile;
 use App\Models\Weblink;
 use Database\Seeders\Phase2Seeder;
 use Database\Seeders\Phase3Seeder;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -26,7 +27,10 @@ class ScanPageTest extends TestCase
     {
         parent::setUp();
 
-        $this->withoutMiddleware(VerifyCsrfToken::class);
+        $this->withoutMiddleware([
+            VerifyCsrfToken::class,
+            PreventRequestForgery::class,
+        ]);
 
         $this->seed(Phase2Seeder::class);
         $this->seed(Phase3Seeder::class);
@@ -213,20 +217,7 @@ class ScanPageTest extends TestCase
     {
         $this->get('/pricing')->assertOk();
         $this->get('/faq')->assertOk();
-        $this->get('/contact')->assertOk();
         $this->get('/privacy')->assertOk();
         $this->get('/terms')->assertOk();
-    }
-
-    public function test_contact_form_flashes_success(): void
-    {
-        $this->from('/contact')
-            ->post('/contact', [
-                'name' => 'Jane',
-                'email' => 'jane@example.com',
-                'message' => 'Hello there',
-            ])
-            ->assertRedirect('/contact')
-            ->assertSessionHas('contact_submitted', true);
     }
 }

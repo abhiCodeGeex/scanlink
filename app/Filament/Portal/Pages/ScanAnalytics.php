@@ -28,6 +28,8 @@ class ScanAnalytics extends Page
 
     protected static ?string $slug = 'scan-analytics';
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?int $navigationSort = 3;
 
     protected string $view = 'filament.portal.pages.scan-analytics';

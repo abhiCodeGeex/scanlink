@@ -22,7 +22,7 @@ class CodeBalance extends Page
 
     protected static ?string $slug = 'code-balance';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 3;
 
     protected string $view = 'filament.portal.pages.code-balance';
 
@@ -34,7 +34,7 @@ class CodeBalance extends Page
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Account';
+        return 'My Account';
     }
 
     public function mount(): void

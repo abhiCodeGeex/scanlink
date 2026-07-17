@@ -39,6 +39,8 @@ class ManageParticipants extends Page
 
     protected static ?string $slug = 'participants';
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?int $navigationSort = 2;
 
     protected string $view = 'filament.portal.pages.manage-participants';

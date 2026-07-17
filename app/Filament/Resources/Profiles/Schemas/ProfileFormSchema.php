@@ -76,8 +76,8 @@ class ProfileFormSchema
                         ->label('Code Type')
                         ->options(collect(ProfileCodeType::cases())->mapWithKeys(fn (ProfileCodeType $t) => [$t->value => $t->label()])),
                     Toggle::make('show_header')->label('Show header in mobile'),
-                    Toggle::make('protect')->label('Password protect?'),
-                    TextInput::make('password')->label('Password')->password()->revealable(),
+                    self::protectToggle(),
+                    self::passwordField(),
                     Toggle::make('display_share_link')->label('Display share links'),
                 ]),
             Section::make('Media')
@@ -153,30 +153,53 @@ class ProfileFormSchema
         $slug = self::slugFor($typeId);
 
         return match ($slug) {
+            'location' => [
+                TextInput::make('name')->label('Location name')->required(),
+                TextInput::make('address')->label('Address')->columnSpanFull(),
+                TextInput::make('url')->label('Map Link')->url(),
+                Textarea::make('description')->label('Description')->columnSpanFull(),
+                Textarea::make('notes')->label('Notes')->columnSpanFull(),
+            ],
             'plant' => [
                 TextInput::make('name')->label('Make / Model')->required(),
                 TextInput::make('identification')->label('ID'),
                 TextInput::make('serial_no')->label('Serial No.'),
                 Textarea::make('description')->label('Description')->columnSpanFull(),
-                Textarea::make('notes')->label('Notes')->columnSpanFull(),
+                Textarea::make('notes')->label('Note')->columnSpanFull(),
             ],
-            'location' => [
+            'asset' => [
                 TextInput::make('name')->label('Name')->required(),
-                Textarea::make('address')->label('Address')->columnSpanFull(),
                 Textarea::make('description')->label('Description')->columnSpanFull(),
-                Textarea::make('notes')->label('Notes')->columnSpanFull(),
+                Textarea::make('address')->label('Address')->columnSpanFull(),
+                TextInput::make('telephone')->label('Telephone'),
+                TextInput::make('identification')->label('Email / ID'),
             ],
-            'asset', 'product' => [
-                TextInput::make('name')->label($slug === 'product' ? 'Product name' : 'Name')->required(),
+            'product' => [
+                TextInput::make('name')->label('Product name')->required(),
                 TextInput::make('identification')->label('Identification'),
-                Textarea::make('address')->label('Address')->columnSpanFull(),
-                TextInput::make('serial_no')->label('Serial No.')->visible($slug === 'product'),
+                TextInput::make('serial_no')->label('Serial No.'),
                 Textarea::make('description')->label('Description')->columnSpanFull(),
                 Textarea::make('notes')->label('Notes')->columnSpanFull(),
             ],
-            'procedure', 'misc' => [
+            'procedure' => [
+                TextInput::make('name')->label('Title')->required(),
+                Textarea::make('description')->label('Description')->columnSpanFull(),
+                Textarea::make('notes')->label('Notes')->columnSpanFull(),
+            ],
+            'misc' => [
                 TextInput::make('name')->label('Name')->required(),
                 Textarea::make('description')->label('Description')->columnSpanFull(),
+            ],
+            'exhibit' => [
+                TextInput::make('name')->label('Exhibit name')->required(),
+                TextInput::make('code_profile_name')->label('Code profile name'),
+                Textarea::make('description')->label('Description')->columnSpanFull(),
+                Textarea::make('notes')->label('Notes')->columnSpanFull(),
+            ],
+            'voc' => [
+                TextInput::make('name')->label('Name')->required(),
+                TextInput::make('code_profile_name')->label('Code profile name'),
+                Textarea::make('description')->label('Profile information')->columnSpanFull(),
                 Textarea::make('notes')->label('Notes')->columnSpanFull(),
             ],
             'people' => [
@@ -240,6 +263,26 @@ class ProfileFormSchema
 
     /** @var array<int, string|null> */
     private static array $slugCache = [];
+
+    public static function protectToggle(): Toggle
+    {
+        return Toggle::make('protect')
+            ->label('Password protect?')
+            ->live();
+    }
+
+    public static function passwordField(): TextInput
+    {
+        return TextInput::make('password')
+            ->label('Password')
+            ->password()
+            ->revealable()
+            ->visible(fn (Get $get): bool => (bool) $get('protect'))
+            ->required(fn (Get $get, string $operation): bool => (bool) $get('protect') && $operation === 'create')
+            ->helperText('Leave blank when editing to keep the existing code password.')
+            ->dehydrated(fn (?string $state): bool => filled($state))
+            ->dehydrateStateUsing(fn (?string $state): string => (string) ($state ?? ''));
+    }
 
     private static function slugFor(?int $typeId): ?string
     {

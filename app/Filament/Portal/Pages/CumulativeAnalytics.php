@@ -28,6 +28,8 @@ class CumulativeAnalytics extends Page
 
     protected static ?string $slug = 'cumulative-analytics';
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?int $navigationSort = 5;
 
     protected string $view = 'filament.portal.pages.cumulative-analytics';
@@ -50,9 +52,23 @@ class CumulativeAnalytics extends Page
 
     public function mount(): void
     {
+        $profileIds = request()->query('profiles');
+
+        $ids = [];
+
+        if (is_string($profileIds) && $profileIds !== '') {
+            $ids = array_values(array_filter(array_map('intval', explode(',', $profileIds))));
+        }
+
+        $this->selectedProfileIds = $ids;
+
         $this->form->fill([
-            'selectedProfileIds' => [],
+            'selectedProfileIds' => $ids,
         ]);
+
+        if ($ids !== []) {
+            $this->loadCombinedAnalytics(app(AnalyticsApiService::class));
+        }
     }
 
     protected function getHeaderActions(): array

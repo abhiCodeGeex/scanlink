@@ -2,21 +2,76 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\UserType;
+use App\Mail\ContactUsMessage;
 use App\Models\CodePrising;
 use App\Models\Gallery;
 use App\Models\Setting;
 use App\Models\Testimonial;
+use App\Models\User;
+use App\Services\ContactCaptchaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 class MarketingController extends Controller
 {
-    public function contact(): View
+    /**
+     * @return list<array{title: string, url: string}>
+     */
+    protected function howToLinks(): array
     {
+        return [
+            ['title' => 'Create a ScanLink account', 'url' => 'https://www.youtube.com/embed/9aTjweHyAWw?rel=0'],
+            ['title' => 'Getting Started', 'url' => 'https://www.youtube.com/embed/o6NxTt0CmYI?rel=0'],
+            ['title' => 'Register a new code', 'url' => 'https://www.youtube.com/embed/GZ12nXTO7_w?rel=0'],
+            ['title' => 'Upload a logo', 'url' => 'https://www.youtube.com/embed/hGrBYsys2Oo?rel=0'],
+            ['title' => 'Upload a video', 'url' => 'https://www.youtube.com/embed/H33caspIlcc?rel=0'],
+            ['title' => 'Add text and phone numbers', 'url' => 'https://www.youtube.com/embed/CZx8xplEfoU?rel=0'],
+            ['title' => 'Upload pictures', 'url' => 'https://www.youtube.com/embed/GshHCp9F0wU?rel=0'],
+            ['title' => 'Upload documents', 'url' => 'https://www.youtube.com/embed/ujiEr65yg30?rel=0'],
+            ['title' => 'Add web link buttons', 'url' => 'https://www.youtube.com/embed/id0I8j8RTuY?rel=0'],
+            ['title' => 'Add social media and email share buttons', 'url' => 'https://www.youtube.com/embed/qOi6tSBsII4?rel=0'],
+            ['title' => 'Create pop up messages to collect data', 'url' => 'https://www.youtube.com/embed/C_vH14MFtXA?rel=0'],
+            ['title' => 'Select a code type - QR or Data matrix', 'url' => 'https://www.youtube.com/embed/jCeyQOfm7uc?rel=0'],
+            ['title' => 'Feature code profile number on mobile display', 'url' => 'https://www.youtube.com/embed/eJtzHbZoCPw?rel=0'],
+            ['title' => 'Password protect a code profile', 'url' => 'https://www.youtube.com/embed/KcXJnxuMVyc?rel=0'],
+            ['title' => 'Link a code to a URL', 'url' => 'https://www.youtube.com/embed/uEDTnBPUk28?rel=0'],
+            ['title' => 'Delete a code profile', 'url' => 'https://www.youtube.com/embed/Gu12cnKn16s?rel=0'],
+            ['title' => 'View and download scan activity', 'url' => 'https://www.youtube.com/embed/Y0bVkzDA5Rc?rel=0'],
+            ['title' => 'Create a form', 'url' => 'https://www.youtube.com/embed/cYQnzxkp528?rel=0'],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function marketingLayoutData(): array
+    {
+        $user = Auth::user();
+        $isPortalUser = $user instanceof User && $user->user_type === UserType::Portal;
+
+        return [
+            'howToLinks' => $this->howToLinks(),
+            'isPortalUser' => $isPortalUser,
+            'portalUserEmail' => $isPortalUser ? $user->email : null,
+        ];
+    }
+
+    public function contact(): View|RedirectResponse
+    {
+        $user = Auth::user();
+
+        // Logged-in portal users use the Filament contact page (sidebar/header theme).
+        if ($user instanceof User && $user->user_type === UserType::Portal) {
+            return redirect('/portal/contact');
+        }
+
         return view('marketing.contact', [
+            ...$this->marketingLayoutData(),
             'contactEmail' => Setting::valueFor('contact_email') ?? 'admin@scanlink.com',
         ]);
     }
@@ -43,30 +98,34 @@ class MarketingController extends Controller
         return view('marketing.terms');
     }
 
-    public function submitContact(Request $request): RedirectResponse|View
+    public function submitContact(Request $request, ContactCaptchaService $captcha): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255'],
-            'message' => ['required', 'string', 'max:5000'],
-        ]);
+        $name = trim((string) $request->input('name', ''));
+        $email = trim((string) $request->input('email', ''));
+        $comments = trim((string) ($request->input('comments') ?? $request->input('message', '')));
+        $captchaAnswer = trim((string) $request->input('captcha', ''));
+
+        if ($name === '' || $email === '' || $comments === '' || $captchaAnswer === '') {
+            return redirect()
+                ->route('marketing.contact')
+                ->withInput($request->except('captcha'))
+                ->withErrors(['form' => 'All fields are required...']);
+        }
+
+        if (! $captcha->valid($captchaAnswer)) {
+            return redirect()
+                ->route('marketing.contact')
+                ->withInput($request->except('captcha'))
+                ->withErrors(['captcha' => 'Invalid Verification Code...']);
+        }
 
         $contactEmail = Setting::valueFor('contact_email') ?? 'admin@scanlink.com';
 
         try {
-            $body = "Contact form submission\n\n"
-                ."Name: {$validated['name']}\n"
-                ."Email: {$validated['email']}\n\n"
-                .$validated['message'];
-
-            Mail::raw($body, function ($message) use ($contactEmail, $validated): void {
-                $message->to($contactEmail)
-                    ->replyTo($validated['email'], $validated['name'])
-                    ->subject('ScanLink contact form: '.$validated['name']);
-            });
+            Mail::to($contactEmail)->send(new ContactUsMessage($name, $email, $comments));
         } catch (\Throwable $exception) {
             Log::warning('Contact form mail failed', [
-                'email' => $validated['email'],
+                'email' => $email,
                 'message' => $exception->getMessage(),
             ]);
         }
@@ -81,6 +140,14 @@ class MarketingController extends Controller
         return view('marketing.home', [
             'testimonials' => Testimonial::query()->latest('id')->limit(6)->get(),
             'gallery' => Gallery::query()->latest('id')->limit(8)->get(),
+            'howToLinks' => [
+                ['title' => 'Create a ScanLink account', 'url' => 'https://www.youtube.com/watch?v=9aTjweHyAWw'],
+                ['title' => 'Getting Started', 'url' => 'https://www.youtube.com/watch?v=o6NxTt0CmYI'],
+                ['title' => 'Register a new code', 'url' => 'https://www.youtube.com/watch?v=GZ12nXTO7_w'],
+                ['title' => 'Upload a logo', 'url' => 'https://www.youtube.com/watch?v=hGrBYsys2Oo'],
+                ['title' => 'Upload a video', 'url' => 'https://www.youtube.com/watch?v=H33caspIlcc'],
+                ['title' => 'Create a form', 'url' => 'https://www.youtube.com/watch?v=cYQnzxkp528'],
+            ],
         ]);
     }
 

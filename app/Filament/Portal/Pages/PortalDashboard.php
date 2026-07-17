@@ -19,6 +19,9 @@ class PortalDashboard extends Page
 
     protected static ?string $slug = 'dashboard';
 
+    /** Live "Dashboard" is Master Code List — keep this page off the sidebar. */
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?int $navigationSort = -20;
 
     protected string $view = 'filament.portal.pages.portal-dashboard';

@@ -3,23 +3,25 @@
 namespace App\Filament\Portal\Resources\Profiles\Tables;
 
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
+use App\Filament\Portal\Pages\CumulativeAnalytics;
 use App\Filament\Portal\Pages\FormSubmissions;
 use App\Filament\Portal\Pages\OrderLabel;
 use App\Filament\Portal\Pages\ScanAnalytics;
 use App\Filament\Portal\Pages\VisitorLog;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Models\Profile;
+use App\Services\CodeProfileRenewalService;
 use App\Services\ProfileQrService;
 use Filament\Actions\Action;
-use Filament\Actions\ActionGroup;
+use Filament\Actions\BulkAction;
 use Filament\Actions\DeleteAction;
-use Filament\Actions\EditAction;
-use Filament\Actions\ViewAction;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
-use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\HtmlString;
 
 class PortalProfilesTable
 {
@@ -27,84 +29,189 @@ class PortalProfilesTable
     {
         return $table
             ->defaultSort('id', 'desc')
+            ->searchable()
+            ->searchPlaceholder('Search')
+            ->recordClasses(fn (Profile $record): string => $record->expiryStatusClass())
             ->columns([
                 TextColumn::make('id')
                     ->label('Profile No.')
-                    ->sortable(),
-                TextColumn::make('equipmentType.name')
-                    ->label('Type')
-                    ->sortable(),
-                TextColumn::make('name')
-                    ->label('Name')
-                    ->searchable(['name', 'code_profile_name', 'identification', 'form_title', 'name2'])
                     ->sortable()
-                    ->getStateUsing(fn (Profile $record): string => $record->displayLabel()),
+                    ->searchable()
+                    ->alignCenter(),
+                TextColumn::make('code_profile_name')
+                    ->label('Code Profile Name')
+                    ->sortable()
+                    ->searchable(['name', 'code_profile_name', 'identification', 'form_title', 'name2', 'address'])
+                    ->getStateUsing(fn (Profile $record): string => filled(trim((string) $record->code_profile_name))
+                        ? (string) $record->code_profile_name
+                        : $record->displayLabel())
+                    ->wrap(),
+                TextColumn::make('address')
+                    ->label('Address')
+                    ->toggleable()
+                    ->placeholder('—')
+                    ->wrap(),
                 TextColumn::make('expired_at')
-                    ->label('Expires')
-                    ->dateTime('d/m/Y')
-                    ->placeholder('-'),
+                    ->label('Code expiry date')
+                    ->sortable()
+                    ->alignCenter()
+                    ->formatStateUsing(function (Profile $record): string {
+                        if ((bool) $record->free_code) {
+                            return 'N/A';
+                        }
+
+                        return $record->expired_at?->format('d/m/Y') ?? '—';
+                    }),
             ])
             ->filters([
                 Filter::make('name')
                     ->label('Filter')
                     ->schema([
                         \Filament\Forms\Components\TextInput::make('name')
-                            ->label('Filter'),
+                            ->label('Search'),
                     ])
                     ->query(fn (Builder $query, array $data): Builder => $query->when(
                         filled($data['name'] ?? null),
-                        fn (Builder $q): Builder => $q->where('name', 'like', '%'.$data['name'].'%'),
+                        fn (Builder $q): Builder => $q->where(function (Builder $inner) use ($data): void {
+                            $term = '%'.$data['name'].'%';
+                            $inner->where('name', 'like', $term)
+                                ->orWhere('code_profile_name', 'like', $term)
+                                ->orWhere('identification', 'like', $term)
+                                ->orWhere('address', 'like', $term);
+                        }),
                     )),
-                SelectFilter::make('type_id')
-                    ->label('Type')
-                    ->relationship('equipmentType', 'name'),
+            ])
+            ->bulkActions([
+                BulkAction::make('multipleCodeAnalytics')
+                    ->label('Multiple Code Analytics')
+                    ->icon('heroicon-o-chart-pie')
+                    ->color('success')
+                    ->deselectRecordsAfterCompletion()
+                    ->action(function (Collection $records) {
+                        if ($records->isEmpty()) {
+                            Notification::make()
+                                ->title('No code profiles have been selected')
+                                ->danger()
+                                ->send();
+
+                            return null;
+                        }
+
+                        $expired = $records->contains(
+                            fn (Profile $profile): bool => $profile->expiryStatusClass() === 'sl-row-expired'
+                        );
+
+                        if ($expired) {
+                            Notification::make()
+                                ->title("Please don't select expired profile")
+                                ->danger()
+                                ->send();
+
+                            return null;
+                        }
+
+                        return redirect()->to(
+                            CumulativeAnalytics::getUrl(['profiles' => $records->pluck('id')->implode(',')])
+                        );
+                    }),
+                BulkAction::make('renewSelectedCodes')
+                    ->label('Renew Selected Codes')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('Renew selected codes')
+                    ->deselectRecordsAfterCompletion()
+                    ->visible(fn (): bool => InteractsWithClientMembership::portalMembership()?->isPrimary() ?? false)
+                    ->action(function (Collection $records): void {
+                        $renewable = $records->filter(fn (Profile $profile): bool => ! (bool) $profile->free_code);
+
+                        if ($renewable->isEmpty()) {
+                            Notification::make()
+                                ->title('Please select the code to be renew.')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        $clientId = (int) $renewable->first()->client_id;
+                        $order = app(CodeProfileRenewalService::class)->renew($renewable, $clientId);
+
+                        Notification::make()
+                            ->title('Codes renewed')
+                            ->body(new HtmlString($renewable->count().' code(s) renewed — order #'.$order->id))
+                            ->success()
+                            ->send();
+                    }),
             ])
             ->recordActions([
-                ActionGroup::make([
-                    ViewAction::make(),
-                    EditAction::make()
-                        ->url(fn (Profile $record): string => ProfileResource::getUrl('edit', ['record' => $record])),
-                    Action::make('downloadQr')
-                        ->label('Download QR')
-                        ->icon('heroicon-o-arrow-down-tray')
-                        ->visible(fn (): bool => InteractsWithClientMembership::memberCanDownload(
-                            InteractsWithClientMembership::portalMembership(),
-                        ))
-                        ->action(fn (Profile $record): mixed => app(ProfileQrService::class)->downloadQrImage($record)),
-                    Action::make('scanAnalytics')
-                        ->label('Scan Analytics')
-                        ->icon('heroicon-o-chart-bar')
-                        ->visible(fn (): bool => InteractsWithClientMembership::memberCanAccessAnalytics(
-                            InteractsWithClientMembership::portalMembership(),
-                        ))
-                        ->url(fn (Profile $record): string => ScanAnalytics::getUrl().'?profile='.$record->id),
-                    Action::make('visitorLog')
-                        ->label('Visitor Log')
-                        ->icon('heroicon-o-user-group')
-                        ->visible(fn (): bool => InteractsWithClientMembership::memberCanAccessVisitorLog(
-                            InteractsWithClientMembership::portalMembership(),
-                        ))
-                        ->url(fn (Profile $record): string => VisitorLog::getUrl().'?profile='.$record->id),
-                    Action::make('formSubmissions')
-                        ->label('Form Submissions')
-                        ->icon('heroicon-o-inbox-arrow-down')
-                        ->visible(fn (): bool => InteractsWithClientMembership::memberCanAccessFormSubmissions(
-                            InteractsWithClientMembership::portalMembership(),
-                        ))
-                        ->url(fn (Profile $record): string => FormSubmissions::getUrl().'?profile='.$record->id),
-                    Action::make('orderLabels')
-                        ->label('Order Labels')
-                        ->icon('heroicon-o-tag')
-                        ->visible(fn (): bool => InteractsWithClientMembership::memberCanOrderLabel(
-                            InteractsWithClientMembership::portalMembership(),
-                        ))
-                        ->url(fn (Profile $record): string => OrderLabel::getUrl().'?profile='.$record->id),
-                    DeleteAction::make()
-                        ->label('Archive')
-                        ->requiresConfirmation()
-                        ->modalHeading('Archive profile')
-                        ->action(fn (Profile $record) => $record->update(['deleted' => true])),
-                ]),
-            ]);
+                Action::make('edit')
+                    ->label('Edit')
+                    ->iconButton()
+                    ->tooltip('Edit')
+                    ->icon('heroicon-o-pencil-square')
+                    ->url(fn (Profile $record): string => ProfileResource::getUrl('edit', ['record' => $record]))
+                    ->visible(fn (): bool => InteractsWithClientMembership::memberCanEditCode(
+                        InteractsWithClientMembership::portalMembership(),
+                    )),
+                Action::make('scanAnalytics')
+                    ->label('Scanalytics')
+                    ->iconButton()
+                    ->tooltip('Scanalytics')
+                    ->icon('heroicon-o-chart-bar')
+                    ->url(fn (Profile $record): string => ScanAnalytics::getUrl(['profile' => $record->id]))
+                    ->visible(fn (): bool => InteractsWithClientMembership::memberCanAccessAnalytics(
+                        InteractsWithClientMembership::portalMembership(),
+                    )),
+                Action::make('formSubmissions')
+                    ->label('Form Submissions')
+                    ->iconButton()
+                    ->tooltip('Form Submissions')
+                    ->icon('heroicon-o-clipboard-document-list')
+                    ->url(fn (Profile $record): string => FormSubmissions::getUrl(['profile' => $record->id]))
+                    ->visible(fn (): bool => InteractsWithClientMembership::memberCanAccessFormSubmissions(
+                        InteractsWithClientMembership::portalMembership(),
+                    )),
+                Action::make('downloadQr')
+                    ->label('Download QR/DM Code')
+                    ->iconButton()
+                    ->tooltip('Download QR/DM Code')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->action(fn (Profile $record): mixed => app(ProfileQrService::class)->downloadQrImage($record))
+                    ->visible(fn (): bool => InteractsWithClientMembership::memberCanDownload(
+                        InteractsWithClientMembership::portalMembership(),
+                    )),
+                Action::make('orderLabels')
+                    ->label('Order Labels')
+                    ->iconButton()
+                    ->tooltip('Order Labels')
+                    ->icon('heroicon-o-tag')
+                    ->url(fn (Profile $record): string => OrderLabel::getUrl(['profile' => $record->id]))
+                    ->visible(fn (): bool => InteractsWithClientMembership::memberCanOrderLabel(
+                        InteractsWithClientMembership::portalMembership(),
+                    )),
+                Action::make('visitorLog')
+                    ->label('View visitor log')
+                    ->iconButton()
+                    ->tooltip('View visitor log')
+                    ->icon('heroicon-o-table-cells')
+                    ->url(fn (Profile $record): string => VisitorLog::getUrl(['profile' => $record->id]))
+                    ->visible(fn (): bool => InteractsWithClientMembership::memberCanAccessVisitorLog(
+                        InteractsWithClientMembership::portalMembership(),
+                    )),
+                DeleteAction::make()
+                    ->label('Delete')
+                    ->iconButton()
+                    ->tooltip('Delete')
+                    ->icon('heroicon-o-trash')
+                    ->requiresConfirmation()
+                    ->modalHeading('Are you sure you want to delete this code?')
+                    ->action(fn (Profile $record) => $record->update(['deleted' => true]))
+                    ->visible(fn (): bool => InteractsWithClientMembership::memberCanDeleteCode(
+                        InteractsWithClientMembership::portalMembership(),
+                    )),
+            ])
+            ->emptyStateHeading('No Profile Found..!')
+            ->emptyStateDescription('Use “Add a New Code” to create a code profile.');
     }
 }

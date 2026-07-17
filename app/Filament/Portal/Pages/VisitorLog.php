@@ -24,6 +24,8 @@ class VisitorLog extends Page
 
     protected static ?string $slug = 'visitor-log';
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?int $navigationSort = 4;
 
     protected string $view = 'filament.portal.pages.visitor-log';

@@ -18,7 +18,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'shorturl', 'url', 'protect', 'password', 'code_type', 'color_code', 'show_header',
     'buttonbackcolor', 'buttonfontcolor', 'enable_data_collection', 'set_up_compulsory',
     'data_collection_mobile', 'data_collection_email', 'data_collection_name',
-    'data_collection_content', 'display_share_link', 'application', 'activate_bridge_graphic',
+    'data_collection_surname', 'data_collection_content', 'data_collection_btn_text',
+    'data_collection_btn_color', 'display_share_link', 'application', 'activate_bridge_graphic',
     'deleted', 'update_or_not', 'code_purchase_id', 'form_id', 'form_title',
     'form_active', 'form_is_enable', 'form_submission_format', 'form_email_tag',
     'pop_up_formbuilder', 'free_code', 'is_reseller_code',
@@ -34,9 +35,65 @@ class Profile extends Model
     {
         // Live dump uses zero-dates; Carbon date casts reject them.
         static::creating(function (Profile $profile): void {
+            // NOT NULL date columns + NO_ZERO_DATE sql_mode: store a sentinel blank date.
             foreach (['activation_start_date', 'activation_end_date', 'voc_dob'] as $column) {
-                if (! array_key_exists($column, $profile->getAttributes()) || $profile->getAttributes()[$column] === null) {
-                    $profile->attributes[$column] = '0000-00-00';
+                $raw = $profile->getAttributes()[$column] ?? null;
+
+                if ($raw === null || $raw === '' || $raw === '0000-00-00') {
+                    $profile->attributes[$column] = '1970-01-01';
+                }
+            }
+        });
+
+        static::retrieved(function (Profile $profile): void {
+            foreach (['activation_start_date', 'activation_end_date', 'voc_dob'] as $column) {
+                $raw = $profile->getAttributes()[$column] ?? null;
+
+                if (in_array((string) $raw, ['0000-00-00', '1970-01-01'], true)) {
+                    $profile->attributes[$column] = null;
+                }
+            }
+        });
+
+        static::saving(function (Profile $profile): void {
+            foreach (['activation_start_date', 'activation_end_date', 'voc_dob'] as $column) {
+                if (! array_key_exists($column, $profile->getAttributes())) {
+                    continue;
+                }
+
+                $raw = $profile->getAttributes()[$column];
+
+                if ($raw === null || $raw === '') {
+                    $profile->attributes[$column] = '1970-01-01';
+                }
+            }
+
+            // Live DB: password is NOT NULL with no default. Filament sends null when blank.
+            if (array_key_exists('password', $profile->getAttributes())) {
+                if ($profile->attributes['password'] === null) {
+                    if ($profile->exists) {
+                        unset($profile->attributes['password']);
+                    } else {
+                        $profile->attributes['password'] = '';
+                    }
+                }
+            }
+
+            if (! $profile->protect && array_key_exists('password', $profile->getAttributes())) {
+                $profile->attributes['password'] = '';
+            }
+
+            // Filament may send null for optional legacy NOT NULL text/int columns.
+            foreach (static::legacyNotNullDefaults() as $column => $default) {
+                if ($column === 'password') {
+                    continue;
+                }
+
+                if (
+                    array_key_exists($column, $profile->getAttributes())
+                    && $profile->attributes[$column] === null
+                ) {
+                    $profile->attributes[$column] = $default;
                 }
             }
         });
@@ -113,12 +170,17 @@ class Profile extends Model
     protected function casts(): array
     {
         return [
-            'protect' => 'boolean',
-            'show_header' => 'boolean',
-            'enable_data_collection' => 'boolean',
-            'set_up_compulsory' => 'boolean',
-            'display_share_link' => 'boolean',
-            'activate_bridge_graphic' => 'boolean',
+            'protect' => \App\Casts\LegacyZeroOne::class,
+            'show_header' => \App\Casts\LegacyZeroOne::class.':true',
+            'enable_data_collection' => \App\Casts\LegacyZeroOne::class.':true',
+            'set_up_compulsory' => \App\Casts\LegacyZeroOne::class,
+            'data_collection_name' => \App\Casts\LegacyZeroOne::class,
+            'data_collection_surname' => \App\Casts\LegacyZeroOne::class,
+            'data_collection_email' => \App\Casts\LegacyZeroOne::class.':true',
+            'data_collection_mobile' => \App\Casts\LegacyZeroOne::class.':true',
+            'display_share_link' => \App\Casts\LegacyZeroOne::class.':true',
+            'activate_bridge_graphic' => \App\Casts\LegacyZeroOne::class.':true',
+            'link_button' => \App\Casts\LegacyZeroOne::class.':true',
             'deleted' => 'boolean',
             'update_or_not' => 'boolean',
             'form_active' => 'boolean',
@@ -289,7 +351,39 @@ class Profile extends Model
 
     public function isExpired(): bool
     {
-        return $this->expired_at !== null && $this->expired_at->isPast();
+        if ($this->expired_at === null) {
+            return false;
+        }
+
+        if ((bool) $this->free_code) {
+            $renewalRequired = (bool) ($this->getAttribute('renewal_required') ?? false);
+
+            if (! $renewalRequired) {
+                return false;
+            }
+        }
+
+        return $this->expired_at->isPast();
+    }
+
+    /**
+     * Legacy mastercode row colour class (red / orange / green).
+     */
+    public function expiryStatusClass(): string
+    {
+        if ((bool) $this->free_code || $this->expired_at === null) {
+            return 'sl-row-active';
+        }
+
+        if ($this->expired_at->isPast()) {
+            return 'sl-row-expired';
+        }
+
+        if ($this->expired_at->lte(now()->addDays(30))) {
+            return 'sl-row-expiring';
+        }
+
+        return 'sl-row-active';
     }
 
     public function typeSlug(): ?string

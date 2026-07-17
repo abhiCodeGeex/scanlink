@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Portal;
 
-use App\Enums\ClientUserRole;
 use App\Enums\UserType;
 use App\Models\Client;
 use App\Models\ClientUser;
@@ -14,9 +13,27 @@ class PortalAuthTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_portal_auth_pages_are_available(): void
+    public function test_marketing_home_shows_login_form(): void
     {
-        $this->get('/portal/login')->assertOk();
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('Create', false)
+            ->assertSee('Connect', false)
+            ->assertSee('Measure', false)
+            ->assertSee('Login')
+            ->assertSee('name="email"', false)
+            ->assertSee('name="password"', false)
+            ->assertSee('Express Code Generator');
+    }
+
+    public function test_portal_login_page_redirects_guests_to_marketing_home(): void
+    {
+        $this->get('/portal/login')
+            ->assertRedirect('/');
+    }
+
+    public function test_portal_register_and_password_reset_remain_available(): void
+    {
         $this->get('/portal/register')->assertOk();
         $this->get('/portal/password-reset/request')->assertOk();
     }
@@ -24,6 +41,34 @@ class PortalAuthTest extends TestCase
     public function test_guest_is_redirected_from_portal_dashboard(): void
     {
         $this->get('/portal')->assertRedirect('/portal/login');
+    }
+
+    public function test_portal_user_can_login_from_marketing_home(): void
+    {
+        $client = Client::factory()->create();
+        $member = ClientUser::factory()->primary()->create([
+            'client_id' => $client->id,
+            'email' => 'portal-user@example.com',
+            'password' => 'Portal@12345',
+            'status' => true,
+            'is_password_change' => false,
+        ]);
+        $member->refresh();
+
+        $user = User::query()->findOrFail($member->auth_user_id);
+        $user->update([
+            'email' => 'portal-user@example.com',
+            'password' => 'Portal@12345',
+            'user_type' => UserType::Portal,
+            'admin_role' => null,
+        ]);
+
+        $this->post('/portal-login', [
+            'email' => 'portal-user@example.com',
+            'password' => 'Portal@12345',
+        ])->assertRedirect('/portal/dashboard');
+
+        $this->assertAuthenticatedAs($user);
     }
 
     public function test_portal_user_can_access_dashboard(): void
@@ -56,8 +101,29 @@ class PortalAuthTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_voclogin_redirects_to_portal_login(): void
+    public function test_voclogin_redirects_to_marketing_home(): void
     {
-        $this->get('/voclogin')->assertRedirect('/portal/login');
+        $this->get('/voclogin')->assertRedirect('/#login');
+    }
+
+    public function test_portal_logout_redirects_to_marketing_home(): void
+    {
+        $client = Client::factory()->create();
+        $member = ClientUser::factory()->primary()->create([
+            'client_id' => $client->id,
+            'email' => 'portal-logout@example.com',
+            'status' => true,
+            'is_password_change' => false,
+        ]);
+        $member->refresh();
+
+        $user = User::query()->findOrFail($member->auth_user_id);
+        $user->update(['user_type' => UserType::Portal, 'admin_role' => null]);
+
+        $this->actingAs($user)
+            ->post('/portal/logout')
+            ->assertRedirect('/');
+
+        $this->assertGuest();
     }
 }

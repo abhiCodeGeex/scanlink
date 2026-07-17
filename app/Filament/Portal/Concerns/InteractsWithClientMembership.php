@@ -110,6 +110,11 @@ trait InteractsWithClientMembership
         return static::memberCanOrderLabel($this->currentClientUser());
     }
 
+    public function canAccessFormBuilder(): bool
+    {
+        return static::memberCanAccessFormBuilder($this->currentClientUser());
+    }
+
     public function canAccessVisitorLog(): bool
     {
         return static::memberCanAccessVisitorLog($this->currentClientUser());

@@ -33,9 +33,18 @@
         .display-html { margin: .5rem 0; line-height: 1.5; }
         .form-link-btn { display: inline-block; padding: .55rem 1rem; border-radius: 8px; color: #fff; text-decoration: none; font-weight: 600; margin: .25rem 0; }
         .signature-wrap canvas { width: 100%; max-width: 320px; height: 120px; border: 1px dashed #ccc; border-radius: 6px; touch-action: none; }
+        @if ($portalPreview ?? false)
+        html, body { height: auto; min-height: 0; overflow-x: hidden; }
+        body.portal-preview { background: #fff; margin: 0; }
+        body.portal-preview .wrap { max-width: 320px; margin: 0; padding: 0.65rem 0.75rem 0.85rem; }
+        body.portal-preview .card { border-radius: 0; box-shadow: none; padding: 0.75rem 0.5rem; margin: 0; }
+        body.portal-preview h1 { font-size: 1.35rem; line-height: 1.25; margin-bottom: 0.5rem; }
+        body.portal-preview p { margin: 0.35rem 0; font-size: 0.92rem; line-height: 1.35; }
+        body.portal-preview .btn { font-size: 0.85rem; padding: 0.45rem 0.75rem; }
+        @endif
     </style>
 </head>
-<body>
+<body @class(['portal-preview' => $portalPreview ?? false])>
 <div class="wrap">
     <div class="card">
         @if (session('form_submitted'))
@@ -58,7 +67,23 @@
             </p>
         @endif
 
-        <h1>{{ $profile->name }}</h1>
+        @php
+            $title = trim((string) ($profile->name ?: $profile->code_profile_name ?: $profile->form_title));
+        @endphp
+        @if ($title !== '')
+            @if (! empty($nameHeading))
+                <p style="font-size:.95rem;font-weight:700;color:#008C00;margin:0 0 .15rem;">{{ $nameHeading }}</p>
+            @endif
+            <h1>{{ $title }}</h1>
+        @endif
+
+        @if ($profile->identification)
+            <p><strong>{{ $profile->typeSlug() === 'plant' ? 'ID' : 'Identification' }}:</strong> {{ $profile->identification }}</p>
+        @endif
+
+        @if ($profile->serial_no)
+            <p><strong>Serial No.:</strong> {{ $profile->serial_no }}</p>
+        @endif
 
         @if ($profile->description)
             <p>{{ $profile->description }}</p>
@@ -66,6 +91,14 @@
 
         @if ($profile->address)
             <p><strong>Address:</strong> {{ $profile->address }}</p>
+            @if ($profile->typeSlug() === 'location')
+                @php
+                    $mapHref = filled($profile->url)
+                        ? $profile->url
+                        : 'https://maps.google.com?q='.urlencode($profile->address);
+                @endphp
+                <p><a class="btn btn-outline" href="{{ $mapHref }}" target="_blank" rel="noopener">View Map</a></p>
+            @endif
         @endif
 
         @if ($profile->notes)

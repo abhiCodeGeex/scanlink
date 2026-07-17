@@ -72,9 +72,7 @@ class ProfileQrService
         $relativePath = config('scanlink.qr_path').'/CSQRIMG'.$profile->id.'.png';
         $fullPath = storage_path('app/public/'.$relativePath);
 
-        if (! is_dir(dirname($fullPath))) {
-            mkdir(dirname($fullPath), 0755, true);
-        }
+        $this->ensureWritableFile($fullPath);
 
         $options = new QROptions([
             'outputType' => QRCode::OUTPUT_IMAGE_PNG,
@@ -93,9 +91,7 @@ class ProfileQrService
         $relativePath = config('scanlink.dm_path').'/DMIMG'.$profile->id.'.png';
         $fullPath = storage_path('app/public/'.$relativePath);
 
-        if (! is_dir(dirname($fullPath))) {
-            mkdir(dirname($fullPath), 0755, true);
-        }
+        $this->ensureWritableFile($fullPath);
 
         // Legacy uses dm_code/index.php — use QR library with compact output as fallback.
         $options = new QROptions([
@@ -327,6 +323,25 @@ class ProfileQrService
             'profile_id' => $profile->id,
             'qrimg_name' => $storagePath,
         ]);
+    }
+
+    protected function ensureWritableFile(string $fullPath): void
+    {
+        $directory = dirname($fullPath);
+
+        if (! is_dir($directory)) {
+            mkdir($directory, 0775, true);
+        }
+
+        @chmod($directory, 0775);
+
+        if (is_file($fullPath) && ! is_writable($fullPath)) {
+            @chmod($fullPath, 0664);
+
+            if (! is_writable($fullPath)) {
+                @unlink($fullPath);
+            }
+        }
     }
 
     protected function shortenUrl(string $url, string $token): ?string

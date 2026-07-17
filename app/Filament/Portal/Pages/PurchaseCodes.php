@@ -31,13 +31,13 @@ class PurchaseCodes extends Page
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShoppingCart;
 
-    protected static ?string $navigationLabel = 'Purchase Codes';
+    protected static ?string $navigationLabel = 'Purchase codes';
 
-    protected static ?string $title = 'Purchase Codes';
+    protected static ?string $title = 'Purchase codes';
 
     protected static ?string $slug = 'purchase-codes';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 4;
 
     /**
      * @var array<string, mixed>|null
@@ -46,7 +46,7 @@ class PurchaseCodes extends Page
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Orders';
+        return 'My Account';
     }
 
     public function mount(): void

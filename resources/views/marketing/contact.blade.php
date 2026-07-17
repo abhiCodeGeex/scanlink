@@ -1,36 +1,96 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Contact — ScanLink</title>
-    <style>
-        body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
-        h1 { color: #008C00; }
-        label { display: block; margin-top: .75rem; font-weight: 600; }
-        input, textarea { width: 100%; padding: .5rem; margin-top: .25rem; box-sizing: border-box; }
-        button { margin-top: 1rem; background: #008C00; color: #fff; border: 0; padding: .6rem 1rem; border-radius: 6px; }
-        .ok { background: #e8f5e9; padding: .75rem; border-radius: 6px; }
-    </style>
-</head>
-<body>
-    <h1>Contact ScanLink</h1>
-    <p>Email: <a href="mailto:{{ $contactEmail }}">{{ $contactEmail }}</a></p>
+@extends('marketing.layout')
 
-    @if (session('contact_submitted'))
-        <p class="ok">Thanks — we received your message.</p>
+@section('title', 'Contact US — ScanLink')
+@section('nav_contact_active', 'active')
+
+@section('content')
+<div class="scanlink-container">
+    <h2 class="page-title">Contact us</h2>
+
+    @if ($errors->any())
+        <div>
+            <label class="error">{{ $errors->first() }}</label>
+            <br/><br/>
+        </div>
+    @elseif (session('contact_submitted'))
+        <div>
+            <label class="ok">Thanks — your enquiry has been sent.</label>
+            <br/><br/>
+        </div>
     @endif
 
-    <form method="post" action="{{ route('marketing.contact.submit') }}">
+    <form
+        class="contact-form"
+        id="frmcontact"
+        name="frmcontact"
+        method="post"
+        action="{{ route('marketing.contact.submit') }}"
+        enctype="multipart/form-data"
+    >
         @csrf
-        <label>Name</label>
-        <input type="text" name="name" required>
-        <label>Email</label>
-        <input type="email" name="email" required>
-        <label>Message</label>
-        <textarea name="message" rows="5" required></textarea>
-        <button type="submit">Send</button>
+        <ul class="form-view clearfix">
+            <li>
+                <label for="yourName">Name:</label>
+                <input
+                    type="text"
+                    name="name"
+                    id="yourName"
+                    value="{{ old('name') }}"
+                    class="text-fi"
+                />
+            </li>
+            <li>
+                <label for="email">Email:</label>
+                <input
+                    type="text"
+                    name="email"
+                    id="email"
+                    value="{{ old('email') }}"
+                    class="text-fi"
+                />
+            </li>
+            <li>
+                <label for="commentsText">Message:</label>
+                <textarea name="comments" id="commentsText">{{ old('comments') }}</textarea>
+            </li>
+            <li>
+                <label>Verification Code:</label>
+                <br/>
+                <img
+                    src="{{ route('marketing.captcha') }}?t={{ time() }}"
+                    alt="Verification code"
+                    class="captcha"
+                    width="150"
+                    height="50"
+                />
+                <img src="{{ asset('images/capcha-img.png') }}" alt="" />
+                <input type="text" class="text-fi" id="captcha" name="captcha" value="" autocomplete="off" />
+            </li>
+            <li>
+                <input id="save" type="submit" name="submit" value="Send">
+                <input type="hidden" name="submitted" id="submitted" value="true"/>
+            </li>
+        </ul>
     </form>
-    <p><a href="{{ route('marketing.home') }}">Back</a></p>
-</body>
-</html>
+
+    <section class="contact-box">
+        <h2 class="title-box">
+            <img src="{{ asset('images/img2.png') }}" alt="" />&nbsp;ScanLink
+        </h2>
+        <section class="brd-btm">
+            Submit your enquiry with the 'contact us' form or
+            alternatively call us during business hours from Monday to Friday on...
+        </section>
+        <section class="brd-btm">
+            <span class="tel-icon">+61 0364314025</span>
+        </section>
+        <section class="last">
+            <span class="email-icon">
+                <h3>ScanLink</h3>
+                5 Wattle Ave,<br/>
+                Emu Heights, Tasmania, 7320
+            </span>
+        </section>
+    </section>
+</div>
+@endsection

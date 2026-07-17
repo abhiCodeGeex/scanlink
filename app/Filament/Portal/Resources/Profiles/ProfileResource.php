@@ -36,9 +36,10 @@ class ProfileResource extends Resource
 
     protected static ?string $slug = 'profiles';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Codes';
+    /** Live My Account submenu item. */
+    protected static string|\UnitEnum|null $navigationGroup = 'My Account';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 2;
 
     protected static ?string $recordTitleAttribute = 'name';
 

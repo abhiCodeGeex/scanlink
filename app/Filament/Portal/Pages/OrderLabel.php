@@ -32,6 +32,8 @@ class OrderLabel extends Page
 
     protected static ?string $slug = 'order-labels';
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?int $navigationSort = 2;
 
     protected string $view = 'filament.portal.pages.order-label';
