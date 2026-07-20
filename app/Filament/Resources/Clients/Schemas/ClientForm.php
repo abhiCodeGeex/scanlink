@@ -45,7 +45,10 @@ class ClientForm
                         DatePicker::make('regi_date')
                             ->label('Registration date')
                             ->required()
-                            ->default(now()),
+                            ->native(false)
+                            ->displayFormat('d-m-Y')
+                            ->maxDate(now())
+                            ->rule('before_or_equal:today'),
                         TextInput::make('email')
                             ->label('Email')
                             ->email()

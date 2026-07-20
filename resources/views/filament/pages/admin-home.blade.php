@@ -1,17 +1,13 @@
 <x-filament-panels::page>
-    <div class="scanlink-home-grid">
-        @foreach ([
-            ['Add Client', route('filament.admin.resources.clients.create'), 'heroicon-o-user-plus'],
-            ['Manage Client', route('filament.admin.resources.clients.index'), 'heroicon-o-building-office-2'],
-            ['Sub Divide Client', \App\Filament\Pages\SubdivideClient::getUrl(), 'heroicon-o-arrows-right-left'],
-        ] as [$label, $url, $icon])
+    <div class="scanlink-dashboard-grid">
+        @foreach ($this->getDashboardTiles() as $tile)
             <a
-                href="{{ $url }}"
-                aria-label="{{ $label }}"
-                class="scanlink-home-tile"
+                href="{{ $tile['url'] }}"
+                aria-label="{{ $tile['label'] }}"
+                class="scanlink-dashboard-tile"
             >
-                <x-filament::icon :icon="$icon" class="scanlink-home-tile-icon" aria-hidden="true" />
-                <span class="scanlink-home-tile-label">{{ $label }}</span>
+                <x-filament::icon :icon="$tile['icon']" class="scanlink-dashboard-tile-icon" aria-hidden="true" />
+                <span class="scanlink-dashboard-tile-label">{{ $tile['label'] }}</span>
             </a>
         @endforeach
     </div>

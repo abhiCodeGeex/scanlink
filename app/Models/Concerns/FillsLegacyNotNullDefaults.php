@@ -15,14 +15,28 @@ trait FillsLegacyNotNullDefaults
 
     protected static function bootFillsLegacyNotNullDefaults(): void
     {
-        static::creating(function (self $model): void {
+        $applyDefaults = function (self $model, bool $onlyNull): void {
             foreach (static::legacyNotNullDefaults() as $column => $default) {
-                $current = $model->getAttribute($column);
+                if (! array_key_exists($column, $model->getAttributes())) {
+                    if (! $onlyNull) {
+                        $model->setAttribute($column, $default);
+                    }
 
-                if ($current === null) {
+                    continue;
+                }
+
+                if ($model->getAttributes()[$column] === null) {
                     $model->setAttribute($column, $default);
                 }
             }
+        };
+
+        static::creating(function (self $model) use ($applyDefaults): void {
+            $applyDefaults($model, onlyNull: false);
+        });
+
+        static::saving(function (self $model) use ($applyDefaults): void {
+            $applyDefaults($model, onlyNull: true);
         });
     }
 }

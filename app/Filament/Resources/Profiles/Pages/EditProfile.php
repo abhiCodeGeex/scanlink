@@ -1,0 +1,55 @@
+<?php
+
+namespace App\Filament\Resources\Profiles\Pages;
+
+use App\Filament\Concerns\HandlesDatabaseSaveFailures;
+use App\Filament\Resources\Profiles\Pages\Concerns\HasProfileQrActions;
+use App\Filament\Resources\Profiles\Pages\Concerns\SyncsProfileAssets;
+use App\Filament\Resources\Profiles\ProfileResource;
+use Filament\Actions\DeleteAction;
+use Filament\Resources\Pages\EditRecord;
+
+class EditProfile extends EditRecord
+{
+    use HandlesDatabaseSaveFailures;
+    use HasProfileQrActions;
+    use SyncsProfileAssets;
+
+    protected static string $resource = ProfileResource::class;
+
+    public function mount(int|string $record): void
+    {
+        parent::mount($record);
+
+        $this->record->loadMissing([
+            'client',
+            'equipmentType',
+            'contacts',
+            'qrImage',
+            'weblinks',
+        ]);
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            ...$this->profileQrHeaderActions(),
+            DeleteAction::make()
+                ->label('Delete')
+                ->color('primary')
+                ->requiresConfirmation()
+                ->modalHeading('Delete this profile?')
+                ->modalDescription('This soft-deletes (archives) the profile. Related media is kept.')
+                ->successNotificationTitle('Profile deleted.')
+                ->action(function (): void {
+                    $this->record->update(['deleted' => true]);
+                    $this->redirect(static::getResource()::getUrl('index'));
+                }),
+        ];
+    }
+
+    protected function afterSave(): void
+    {
+        $this->syncProfileAssets();
+    }
+}

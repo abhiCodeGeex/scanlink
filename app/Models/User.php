@@ -69,8 +69,40 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
 
     public function canAccessPanel(Panel $panel): bool
     {
-        if ($panel->getId() !== 'admin') {
-            return false;
+        if ($panel->getId() === 'portal') {
+            if ($this->user_type === UserType::Voc) {
+                return true;
+            }
+
+            if ($this->user_type !== UserType::Portal) {
+                return false;
+            }
+
+            return $this->clientMemberships()
+                ->active()
+                ->exists();
+        }
+
+        if ($this->user_type instanceof UserType && ! $this->user_type->canAccessAdminPanel()) {
+            // Portal users with legacy enable_admin_access may enter admin.
+            $hasAdminAccessColumn = once(
+                fn (): bool => \Illuminate\Support\Facades\Schema::hasColumn('client_users', 'enable_admin_access'),
+            );
+
+            $portal = $this->clientMemberships()
+                ->where(function ($q) use ($hasAdminAccessColumn): void {
+                    if ($hasAdminAccessColumn) {
+                        $q->where('enable_admin_access', 1);
+                    } else {
+                        $q->whereRaw('0 = 1');
+                    }
+                })
+                ->active()
+                ->exists();
+
+            if (! $portal) {
+                return false;
+            }
         }
 
         if ($this->admin_role instanceof AdminRole) {

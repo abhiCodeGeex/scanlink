@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Filament\Support\FormPlaceholderDefaults;
 use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
@@ -27,7 +28,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(
+            \Filament\Auth\Http\Responses\Contracts\LogoutResponse::class,
+            \App\Http\Responses\FilamentLogoutResponse::class,
+        );
     }
 
     /**
@@ -35,6 +39,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        FormPlaceholderDefaults::register();
+
         Event::listen(CommandStarting::class, function (CommandStarting $event): void {
             $command = $event->command;
 

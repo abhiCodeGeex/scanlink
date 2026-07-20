@@ -39,6 +39,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'access_download',
     'access_label',
     'access_log',
+    'enable_admin_access',
     'show_code_profile_id_to_acc_user',
     'first_name',
     'last_name',
@@ -109,6 +110,7 @@ class ClientUser extends Model
             'access_download' => 'boolean',
             'access_label' => 'boolean',
             'access_log' => 'boolean',
+            'enable_admin_access' => 'boolean',
         ];
     }
 
@@ -120,6 +122,18 @@ class ClientUser extends Model
     public function authUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'auth_user_id');
+    }
+
+    /**
+     * Active memberships only. Live schema stores ENUM('0','1'); binding PHP
+     * true in where() does not match, so always compare to the string member.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<static>
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', '1');
     }
 
     public function isPrimary(): bool

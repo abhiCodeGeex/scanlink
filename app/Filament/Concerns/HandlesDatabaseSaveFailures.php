@@ -2,6 +2,7 @@
 
 namespace App\Filament\Concerns;
 
+use App\Support\FormFieldLabels;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
@@ -53,6 +54,35 @@ trait HandlesDatabaseSaveFailures
     {
         report($exception);
 
+        $sqlMessage = (string) ($exception->errorInfo[2] ?? $exception->getMessage());
+        $column = null;
+
+        if (preg_match("/(?:Field|Column) '([^']+)'/", $sqlMessage, $matches) === 1) {
+            $column = $matches[1];
+        }
+
+        if (
+            $column !== null
+            && (
+                str_contains($sqlMessage, "doesn't have a default value")
+                || str_contains($sqlMessage, 'cannot be null')
+            )
+        ) {
+            $label = FormFieldLabels::for($column);
+            $message = 'Please fill in "'.$label.'". This field is required.';
+
+            Notification::make()
+                ->title('Could not save')
+                ->body($message)
+                ->danger()
+                ->persistent()
+                ->send();
+
+            throw ValidationException::withMessages([
+                FormFieldLabels::formStatePath($column) => $message,
+            ]);
+        }
+
         $message = $this->friendlyDatabaseMessage($exception);
 
         Notification::make()
@@ -67,6 +97,32 @@ trait HandlesDatabaseSaveFailures
         ]);
     }
 
+    protected function notifyDatabaseSaveFailure(QueryException $exception): void
+    {
+        report($exception);
+
+        Notification::make()
+            ->title('Could not save')
+            ->body($this->friendlyDatabaseMessage($exception))
+            ->danger()
+            ->persistent()
+            ->send();
+    }
+
+    protected function notifyAssetSyncFailure(\Throwable $exception, string $context): void
+    {
+        $message = str_contains($exception->getMessage(), 'Permission denied')
+            ? 'Profile saved, but the '.$context.' could not be written on the server. Please retry or ask an administrator to fix storage permissions.'
+            : 'Profile saved, but '.$context.' failed: '.$exception->getMessage();
+
+        Notification::make()
+            ->title('Partial save')
+            ->body($message)
+            ->warning()
+            ->persistent()
+            ->send();
+    }
+
     protected function friendlyDatabaseMessage(QueryException $exception): string
     {
         $sqlMessage = (string) ($exception->errorInfo[2] ?? $exception->getMessage());
@@ -76,7 +132,9 @@ trait HandlesDatabaseSaveFailures
             || str_contains($sqlMessage, 'cannot be null')
         ) {
             if (preg_match("/(?:Field|Column) '([^']+)'/", $sqlMessage, $matches) === 1) {
-                return 'Missing required value for "'.$matches[1].'". Please fill required fields and try again.';
+                $label = FormFieldLabels::for($matches[1]);
+
+                return 'Please fill in "'.$label.'". This field is required.';
             }
         }
 

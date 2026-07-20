@@ -9,6 +9,7 @@ use Filament\Resources\Pages\ManageRelatedRecords;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Support\Htmlable;
+use Livewire\Attributes\On;
 
 class ManageClientUsers extends ManageRelatedRecords
 {
@@ -54,5 +55,17 @@ class ManageClientUsers extends ManageRelatedRecords
     protected function getHeaderActions(): array
     {
         return [];
+    }
+
+    #[On('client-users-table-refresh')]
+    public function refreshUsersTable(): void
+    {
+        if (method_exists($this, 'flushCachedTableRecords')) {
+            $this->flushCachedTableRecords();
+
+            return;
+        }
+
+        $this->resetTable();
     }
 }

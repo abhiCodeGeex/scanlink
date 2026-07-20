@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'client_id',
@@ -100,6 +101,11 @@ class CodePurchase extends Model
     public function reseller(): BelongsTo
     {
         return $this->belongsTo(Client::class, 'reseller_client_id');
+    }
+
+    public function details(): HasMany
+    {
+        return $this->hasMany(CodePurchaseDetail::class, 'code_purchase_id');
     }
 
     public function fullName(): string

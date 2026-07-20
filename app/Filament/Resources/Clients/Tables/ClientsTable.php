@@ -4,13 +4,13 @@ namespace App\Filament\Resources\Clients\Tables;
 
 use App\Filament\Resources\Clients\ClientResource;
 use App\Filament\Support\DateRangeTableFilter;
+use App\Filament\Support\SearchTableFilter;
+use App\Filament\Support\TableFilterDefaults;
 use App\Models\Client;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
-use Filament\Forms\Components\TextInput;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -18,8 +18,8 @@ class ClientsTable
 {
     public static function configure(Table $table): Table
     {
-        return $table
-            ->defaultSort('client_name')
+        return TableFilterDefaults::apply($table
+            ->defaultSort('regi_date', 'desc')
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->withCount('subUsers'))
             ->columns([
                 TextColumn::make('client_name')
@@ -47,16 +47,7 @@ class ClientsTable
                     ->label('URL'),
             ])
             ->filters([
-                Filter::make('client_name')
-                    ->label('Filter')
-                    ->schema([
-                        TextInput::make('value')
-                            ->label('Filter'),
-                    ])
-                    ->query(fn (Builder $query, array $data): Builder => $query->when(
-                        filled($data['value'] ?? null),
-                        fn (Builder $builder): Builder => $builder->where('client_name', 'like', '%'.$data['value'].'%'),
-                    )),
+                SearchTableFilter::make(['client_name', 'email']),
                 DateRangeTableFilter::make('regi_date', 'Date range'),
             ])
             ->recordActions([
@@ -80,6 +71,6 @@ class ClientsTable
                     ->requiresConfirmation()
                     ->modalHeading('Delete this client?')
                     ->modalDescription('This soft-deletes the client. Related data is kept.'),
-            ]);
+            ]));
     }
 }
