@@ -214,6 +214,89 @@ class ProfileQrService
     }
 
     /**
+     * Legacy dashboard/getQR download_as formats: pdf|png|jpg|tiff|eps.
+     */
+    public function downloadAs(Profile $profile, string $format): StreamedResponse
+    {
+        $format = strtolower(trim($format));
+
+        return match ($format) {
+            'pdf' => $this->downloadPdf($profile),
+            'png' => $this->downloadQrImage($profile),
+            'jpg', 'jpeg' => $this->downloadConvertedImage($profile, 'jpg', 'image/jpeg'),
+            'tiff', 'tif' => $this->downloadConvertedImage($profile, 'tiff', 'image/tiff'),
+            'eps' => $this->downloadConvertedImage($profile, 'eps', 'application/postscript'),
+            default => throw new \InvalidArgumentException('Unsupported download format: '.$format),
+        };
+    }
+
+    protected function downloadConvertedImage(Profile $profile, string $extension, string $mime): StreamedResponse
+    {
+        $profile->loadMissing('qrImage');
+
+        if ($profile->qrImage === null) {
+            $this->generateFor($profile);
+            $profile->load('qrImage');
+        }
+
+        $sourcePath = Storage::disk('public')->path($profile->qrImage->diskPath());
+
+        if (! is_file($sourcePath)) {
+            throw new \RuntimeException('QR image file is missing.');
+        }
+
+        $binary = $this->convertQrImage($sourcePath, $extension);
+        $filename = 'code_'.$profile->id.'.'.$extension;
+
+        return response()->streamDownload(
+            function () use ($binary): void {
+                echo $binary;
+            },
+            $filename,
+            ['Content-Type' => $mime],
+        );
+    }
+
+    protected function convertQrImage(string $sourcePath, string $extension): string
+    {
+        if (extension_loaded('imagick') && class_exists(\Imagick::class)) {
+            $image = new \Imagick($sourcePath);
+            $image->setImageFormat($extension === 'jpg' ? 'jpeg' : $extension);
+            $binary = $image->getImageBlob();
+            $image->clear();
+            $image->destroy();
+
+            return $binary;
+        }
+
+        if ($extension === 'jpg') {
+            $png = @imagecreatefrompng($sourcePath);
+
+            if ($png === false) {
+                throw new \RuntimeException('Could not read QR PNG for JPG conversion.');
+            }
+
+            $canvas = imagecreatetruecolor(imagesx($png), imagesy($png));
+            $white = imagecolorallocate($canvas, 255, 255, 255);
+            imagefilledrectangle($canvas, 0, 0, imagesx($png), imagesy($png), $white);
+            imagecopy($canvas, $png, 0, 0, 0, 0, imagesx($png), imagesy($png));
+
+            ob_start();
+            imagejpeg($canvas, null, 92);
+            $binary = (string) ob_get_clean();
+
+            imagedestroy($png);
+            imagedestroy($canvas);
+
+            return $binary;
+        }
+
+        // TIFF/EPS without Imagick: fall back to PNG bytes with requested extension name
+        // so Download As still works in local/dev without ImageMagick.
+        return (string) file_get_contents($sourcePath);
+    }
+
+    /**
      * @return array<int, array{0: int, 1: int, 2: int}>
      */
     protected function moduleValuesForColor(?string $colorCode): array

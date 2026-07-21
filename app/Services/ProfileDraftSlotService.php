@@ -26,6 +26,34 @@ class ProfileDraftSlotService
     }
 
     /**
+     * When no purchased open slot exists, create a blank open slot so location/add
+     * can always bind a profile_id (legacy Kohana always has profile_id before Form Builder).
+     */
+    public function createOpenSlot(int $clientId, ?int $userId = null, ?int $typeId = null): Profile
+    {
+        if (! $typeId) {
+            throw new \InvalidArgumentException('createOpenSlot requires a valid equipment type_id (FK).');
+        }
+
+        $profile = new Profile;
+        $profile->forceFill([
+            'client_id' => $clientId,
+            'user_id' => $userId ?: null,
+            'type_id' => $typeId,
+            'code_profile_name' => '',
+            'name' => '',
+            'update_or_not' => false,
+            'deleted' => false,
+            'free_code' => true,
+            'expired_at' => now()->addYear(),
+            'activation_start_date' => null,
+            'activation_end_date' => null,
+        ])->save();
+
+        return $profile->fresh();
+    }
+
+    /**
      * Assign equipment type to a blank slot (legacy updateProfileIdForUploadData).
      */
     public function assignType(Profile $profile, int $typeId): Profile
@@ -39,23 +67,27 @@ class ProfileDraftSlotService
         return $profile->fresh(['equipmentType', 'client']);
     }
 
-    public function claimForCreate(int $clientId, ?string $typeSlag): ?Profile
+    public function claimForCreate(int $clientId, ?string $typeSlag, ?int $userId = null): ?Profile
     {
-        $slot = $this->availableSlotForClient($clientId);
+        $typeId = filled($typeSlag)
+            ? EquipmentType::query()->where('slag', $typeSlag)->value('id')
+            : null;
 
-        if (! $slot) {
+        if (! $typeId) {
             return null;
         }
 
-        if (filled($typeSlag)) {
-            $typeId = EquipmentType::query()->where('slag', $typeSlag)->value('id');
+        $typeId = (int) $typeId;
+        $slot = $this->availableSlotForClient($clientId);
 
-            if ($typeId) {
-                return $this->assignType($slot, (int) $typeId);
-            }
+        // Live always has a profile_id before showing the add form + Form Builder iframe.
+        if (! $slot) {
+            $slot = $this->createOpenSlot($clientId, $userId, $typeId);
+
+            return $this->assignType($slot, $typeId);
         }
 
-        return $slot;
+        return $this->assignType($slot, $typeId);
     }
 
     public function finalize(Profile $profile): void

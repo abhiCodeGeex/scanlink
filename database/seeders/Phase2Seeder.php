@@ -6,6 +6,7 @@ use App\Enums\AdminRole;
 use App\Enums\ClientUserRole;
 use App\Enums\CodeOrderStatus;
 use App\Models\Client;
+use App\Models\ClientUser;
 use App\Models\CodePurchase;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -23,11 +24,19 @@ class Phase2Seeder extends Seeder
             ],
         );
 
-        if (Client::query()->exists()) {
+        // Continue seeding when a client row exists but portal users were never created
+        // (e.g. partial seed failure on missing legacy columns).
+        if (Client::query()->exists() && ClientUser::query()->exists()) {
             return;
         }
 
-        $this->seedSampleClients();
+        if (! Client::query()->exists()) {
+            $this->seedSampleClients();
+
+            return;
+        }
+
+        $this->seedUsersForExistingClients();
     }
 
     private function seedSampleClients(): void
@@ -127,5 +136,63 @@ class Phase2Seeder extends Seeder
             'free_code' => true,
             'ordered_on' => now(),
         ]);
+    }
+
+    private function seedUsersForExistingClients(): void
+    {
+        $acme = Client::query()->where('url', 'acme-inspections')->first()
+            ?? Client::query()->orderBy('id')->first();
+
+        if (! $acme) {
+            return;
+        }
+
+        if (! $acme->users()->where('email', 'acme@example.com')->exists()) {
+            $acme->users()->create([
+                'email' => 'acme@example.com',
+                'password' => 'Acme@12345',
+                'role' => ClientUserRole::Primary,
+                'status' => true,
+                'video_upload' => true,
+                'checklist_option' => true,
+                'customqr_option' => false,
+                'is_password_change' => true,
+                'expire_at' => now()->addYear(),
+            ]);
+        }
+
+        if (! $acme->users()->where('email', 'field.tech@acme.example')->exists()) {
+            $acme->users()->create([
+                'email' => 'field.tech@acme.example',
+                'password' => 'SubUser@12345',
+                'role' => ClientUserRole::SubUser,
+                'status' => true,
+                'video_upload' => false,
+                'is_sub_user' => true,
+                'is_password_change' => true,
+                'expire_at' => now()->addMonths(6),
+            ]);
+        }
+
+        if (! CodePurchase::query()->where('client_id', $acme->id)->exists()) {
+            CodePurchase::query()->create([
+                'client_id' => $acme->id,
+                'email' => 'acme@example.com',
+                'town' => 'Sydney',
+                'first_name' => 'Jane',
+                'last_name' => 'Cooper',
+                'company_name' => 'Acme Inspections',
+                'billing_address' => '12 George Street',
+                'phone' => '02 9000 1111',
+                'postal_code' => '2000',
+                'no_of_codes' => 25,
+                'per_code_amount' => 12.50,
+                'total_amount' => 312.50,
+                'status' => CodeOrderStatus::Paid,
+                'enable' => true,
+                'exipry_date' => now()->addYear(),
+                'ordered_on' => now()->subWeek(),
+            ]);
+        }
     }
 }

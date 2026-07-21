@@ -564,6 +564,15 @@ a.regblue{
 }
 
 /*-- CONTACT US --*/
+.contact-form label .required {
+	color: #e53935;
+	font-weight: inherit;
+	font-size: 1em;
+	line-height: inherit;
+	vertical-align: baseline;
+	margin-left: 3px;
+}
+
 .contact-form {
   float:left;
   width:470px;

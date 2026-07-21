@@ -38,4 +38,21 @@ return [
     */
     'label_price_small' => (float) env('SCANLINK_LABEL_PRICE_SMALL', 3),
     'label_price_large' => (float) env('SCANLINK_LABEL_PRICE_LARGE', 5),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Covid check-in Location Description/Type options (legacy LOCATION_DESCRIPTION)
+    |--------------------------------------------------------------------------
+    */
+    'covid_location_descriptions' => [
+        'Outdoor Seating',
+        'Indoor Seating',
+        'Construction site',
+        'Showroom/Retail',
+        'Office',
+        'Vehicle',
+        'Cinema/Theatre',
+        'Gym/Swimming Pool',
+        'Other',
+    ],
 ];

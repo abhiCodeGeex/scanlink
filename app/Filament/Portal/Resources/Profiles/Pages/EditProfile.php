@@ -4,6 +4,7 @@ namespace App\Filament\Portal\Resources\Profiles\Pages;
 
 use App\Filament\Concerns\HandlesDatabaseSaveFailures;
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
+use App\Filament\Portal\Resources\Profiles\Pages\Concerns\HasLegacyFormBuilderSidebar;
 use App\Filament\Portal\Resources\Profiles\Pages\Concerns\HasLegacyProfileEditorLayout;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Filament\Resources\Profiles\Pages\Concerns\HasProfileQrActions;
@@ -14,6 +15,7 @@ use Filament\Resources\Pages\EditRecord;
 class EditProfile extends EditRecord
 {
     use HandlesDatabaseSaveFailures;
+    use HasLegacyFormBuilderSidebar;
     use HasLegacyProfileEditorLayout;
     use HasProfileQrActions;
     use InteractsWithClientMembership;
@@ -41,7 +43,35 @@ class EditProfile extends EditRecord
             'contacts',
             'qrImage',
             'weblinks',
+            'logos',
+            'pictures',
+            'documents',
+            'videos',
         ]);
+
+        $this->loadFormBuilderSidebarState($this->record);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $profile = $this->record->loadMissing(['logos', 'videos']);
+
+        $logo = $profile->logos->first();
+        $data['logo_upload'] = $logo?->logo_name;
+
+        $data['video_titles'] = $profile->videos
+            ->map(fn ($video): array => [
+                'title' => (string) ($video->title ?? ''),
+                'video_name' => (string) ($video->video_name ?? ''),
+            ])
+            ->values()
+            ->all();
+
+        return $data;
     }
 
     public function getTitle(): string|\Illuminate\Contracts\Support\Htmlable
@@ -71,5 +101,6 @@ class EditProfile extends EditRecord
     protected function afterSave(): void
     {
         $this->syncProfileAssets();
+        $this->syncFormBuilderSidebarSettings();
     }
 }

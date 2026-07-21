@@ -6,6 +6,7 @@ use App\Filament\Portal\Concerns\InteractsWithClientMembership;
 use App\Filament\Portal\Pages\CumulativeAnalytics;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Models\EquipmentType;
+use App\Support\LegacyEquipmentTypeLabels;
 use Filament\Actions\Action;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -22,24 +23,6 @@ class ListProfiles extends ListRecords
     protected static string $resource = ProfileResource::class;
 
     protected static ?string $title = 'Master Code List';
-
-    /**
-     * Legacy innermenu order (people/customqr hidden, matching live portal).
-     *
-     * @var list<string>
-     */
-    protected static array $typeTabSlags = [
-        'plant',
-        'location',
-        'asset',
-        'product',
-        'procedure',
-        'misc',
-        'code',
-        'survey',
-        'exhibit',
-        'voc',
-    ];
 
     public function getHeader(): ?View
     {
@@ -131,18 +114,11 @@ class ListProfiles extends ListRecords
      */
     protected function typeTabs(): Collection
     {
-        return EquipmentType::query()
-            ->whereIn('slag', self::$typeTabSlags)
-            ->get()
-            ->sortBy(fn (EquipmentType $type): int => array_search($type->slag, self::$typeTabSlags, true) ?: 999)
-            ->values();
+        return LegacyEquipmentTypeLabels::navTypes();
     }
 
     protected function typeTabLabel(EquipmentType $type): string
     {
-        return match ($type->slag) {
-            'code' => 'URL Link',
-            default => (string) $type->name,
-        };
+        return LegacyEquipmentTypeLabels::labelFor($type);
     }
 }

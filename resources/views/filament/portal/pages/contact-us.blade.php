@@ -16,34 +16,37 @@
             <form wire:submit.prevent="submit" class="sl-portal-contact__form" id="frmcontact">
                 <ul class="sl-portal-contact__fields">
                     <li>
-                        <label for="yourName">Name:</label>
+                        <label for="yourName">Name:<span class="required" aria-hidden="true">*</span></label>
                         <input
                             type="text"
                             wire:model="name"
                             id="yourName"
                             class="sl-portal-contact__input"
+                            required
                         />
                     </li>
                     <li>
-                        <label for="contactEmail">Email:</label>
+                        <label for="contactEmail">Email:<span class="required" aria-hidden="true">*</span></label>
                         <input
                             type="text"
                             wire:model="email"
                             id="contactEmail"
                             class="sl-portal-contact__input"
+                            required
                         />
                     </li>
                     <li>
-                        <label for="commentsText">Message:</label>
+                        <label for="commentsText">Message:<span class="required" aria-hidden="true">*</span></label>
                         <textarea
                             wire:model="comments"
                             id="commentsText"
                             class="sl-portal-contact__input sl-portal-contact__textarea"
                             rows="3"
+                            required
                         ></textarea>
                     </li>
                     <li>
-                        <label>Verification Code:</label>
+                        <label>Verification Code:<span class="required" aria-hidden="true">*</span></label>
                         <br/>
                         <img
                             src="{{ route('marketing.captcha') }}?t={{ $captchaNonce }}"
@@ -59,6 +62,7 @@
                             id="captcha"
                             class="sl-portal-contact__input"
                             autocomplete="off"
+                            required
                         />
                     </li>
                     <li>

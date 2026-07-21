@@ -3,37 +3,26 @@
 namespace App\Filament\Portal\Resources\Profiles\Pages\Concerns;
 
 use App\Filament\Portal\Pages\FormBuilder;
+use App\Filament\Portal\Pages\FormLibrary;
+use App\Filament\Portal\Pages\ManageParticipants;
 use App\Filament\Portal\Pages\OrderLabel;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Models\EquipmentType;
 use App\Models\Profile;
 use App\Services\ProfileQrService;
+use App\Support\LegacyEquipmentTypeLabels;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View as ViewContract;
 use Illuminate\Support\Collection;
 
 trait HasLegacyProfileEditorLayout
 {
+    public string $qrDownloadFormat = '';
+
     public function getView(): string
     {
         return 'filament.portal.profiles.legacy-profile-page';
     }
-
-    /**
-     * @var list<string>
-     */
-    protected static array $editorTypeTabSlags = [
-        'plant',
-        'location',
-        'asset',
-        'product',
-        'procedure',
-        'misc',
-        'code',
-        'survey',
-        'exhibit',
-        'voc',
-    ];
 
     public function getHeader(): ?ViewContract
     {
@@ -70,14 +59,23 @@ trait HasLegacyProfileEditorLayout
         $qrUrl = null;
         $qrImageUrl = null;
         $formBuilderUrl = null;
+        $formBuilderEmbedUrl = null;
         $orderLabelUrl = null;
+        $participantsUrl = null;
+        $formLibraryUrl = null;
 
         if ($record instanceof Profile && $record->exists) {
             $record->loadMissing(['client', 'qrImage', 'equipmentType']);
             $previewUrl = \App\Support\PortalProfilePreview::previewUrl($record);
             $qrUrl = app(ProfileQrService::class)->profileUrl($record);
-            $formBuilderUrl = FormBuilder::getUrl().'?profile='.$record->id;
-            $orderLabelUrl = OrderLabel::getUrl().'?profile='.$record->id;
+            $formBuilderUrl = FormBuilder::getUrl(panel: 'portal').'?profile='.$record->id;
+            $analytics = (int) ($record->enable_form_analytics ? 1 : 0);
+            $formBuilderEmbedUrl = url('/portal/legacy-form-builder')
+                .'?profile_id='.$record->id
+                .'&enable_form_analytics='.$analytics;
+            $orderLabelUrl = OrderLabel::getUrl(panel: 'portal').'?profile='.$record->id;
+            $participantsUrl = ManageParticipants::getUrl(panel: 'portal').'?profile='.$record->id;
+            $formLibraryUrl = FormLibrary::getUrl(panel: 'portal');
 
             if (! $record->qrImage && $record->exists) {
                 try {
@@ -97,11 +95,60 @@ trait HasLegacyProfileEditorLayout
             'qrUrl' => $qrUrl,
             'qrImageUrl' => $qrImageUrl,
             'formBuilderUrl' => $formBuilderUrl,
+            'formBuilderEmbedUrl' => $formBuilderEmbedUrl,
             'orderLabelUrl' => $orderLabelUrl,
+            'participantsUrl' => $participantsUrl,
+            'formLibraryUrl' => $formLibraryUrl,
             'canAccessFormBuilder' => method_exists($this, 'canAccessFormBuilder')
                 ? $this->canAccessFormBuilder()
                 : static::memberCanAccessFormBuilder(static::portalMembership()),
+            'canDownloadQr' => method_exists($this, 'canDownloadQr')
+                ? $this->canDownloadQr()
+                : true,
         ];
+    }
+
+    public function downloadQrCode(): mixed
+    {
+        $record = $this->legacyEditorRecord();
+
+        if (! $record instanceof Profile || ! $record->exists) {
+            return null;
+        }
+
+        if (method_exists($this, 'canDownloadQr') && ! $this->canDownloadQr()) {
+            \Filament\Notifications\Notification::make()
+                ->title('You do not have permission to download codes')
+                ->danger()
+                ->send();
+
+            return null;
+        }
+
+        $format = strtolower(trim($this->qrDownloadFormat));
+
+        if ($format === '') {
+            \Filament\Notifications\Notification::make()
+                ->title('Please select a download format')
+                ->warning()
+                ->send();
+
+            return null;
+        }
+
+        try {
+            return app(ProfileQrService::class)->downloadAs($record, $format);
+        } catch (\Throwable $e) {
+            report($e);
+
+            \Filament\Notifications\Notification::make()
+                ->title('Could not download code')
+                ->body(config('app.debug') ? $e->getMessage() : 'Please try again.')
+                ->danger()
+                ->send();
+
+            return null;
+        }
     }
 
     protected function legacyEditorRecord(): ?Profile
@@ -135,11 +182,7 @@ trait HasLegacyProfileEditorLayout
      */
     protected function editorTypeTabs(): Collection
     {
-        return EquipmentType::query()
-            ->whereIn('slag', self::$editorTypeTabSlags)
-            ->get()
-            ->sortBy(fn (EquipmentType $type): int => array_search($type->slag, self::$editorTypeTabSlags, true) ?: 999)
-            ->values();
+        return LegacyEquipmentTypeLabels::navTypes();
     }
 
     public function getRelationManagers(): array

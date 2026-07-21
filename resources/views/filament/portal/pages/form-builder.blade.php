@@ -216,46 +216,28 @@
                                 <button type="button" class="fb-btn fb-btn-secondary fb-btn-sm" wire:click="cancelComposer">Cancel</button>
                             </div>
 
-                            @unless (in_array($composingTypeId, [2, 13, 14, 20, 21, 23, 25], true))
+                            @if ($composingTypeId === 25)
+                                @include('filament.portal.pages.partials.covid-checkin-composer', [
+                                    'composerCovidBgColor' => $composerCovidBgColor,
+                                    'composerCovidTextColor' => $composerCovidTextColor,
+                                ])
+                            @elseif (! in_array($composingTypeId, [2, 13, 14, 20, 21, 23], true))
                                 <div style="margin-bottom:.75rem;">
                                     <label class="fb-label">Question / label text</label>
                                     <textarea wire:model="composerQuestionText" class="fb-textarea" rows="3"></textarea>
                                 </div>
                             @else
                                 <div style="margin-bottom:.75rem;">
-                                    <label class="fb-label">{{ in_array($composingTypeId, [2, 25], true) ? 'Rich content (HTML supported)' : 'Display HTML / content' }}</label>
+                                    <label class="fb-label">{{ in_array($composingTypeId, [2], true) ? 'Rich content (HTML supported)' : 'Display HTML / content' }}</label>
                                     <textarea
                                         wire:model="composerQuestionText"
                                         class="fb-textarea fb-rich-target"
                                         rows="6"
                                         id="fb-rich-{{ $composingTypeId }}-{{ $editingQuestionId ?? 'new' }}"
                                     ></textarea>
-                                    @if (in_array($composingTypeId, [2, 25], true))
+                                    @if ($composingTypeId === 2)
                                         <p style="font-size:.75rem;color:#6b7280;margin-top:.35rem;">Tip: you can paste HTML or use basic tags like &lt;b&gt;, &lt;p&gt;, &lt;ul&gt;.</p>
                                     @endif
-                                </div>
-                            @endunless
-
-                            @if ($composingTypeId === 25)
-                                <div class="fb-grid-2" style="margin-top:.75rem;">
-                                    <div>
-                                        <label class="fb-label">Background colour</label>
-                                        <div style="display:flex; gap:.5rem; align-items:center;">
-                                            <input type="color" value="{{ str_starts_with($composerCovidBgColor ?: '#ffffff', '#') ? ($composerCovidBgColor ?: '#ffffff') : '#'.ltrim($composerCovidBgColor, '#') }}"
-                                                   oninput="$wire.set('composerCovidBgColor', this.value)"
-                                                   style="width:2.5rem;height:2.5rem;border:none;background:transparent;cursor:pointer;">
-                                            <input type="text" wire:model="composerCovidBgColor" class="fb-input" style="flex:1;">
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label class="fb-label">Text colour</label>
-                                        <div style="display:flex; gap:.5rem; align-items:center;">
-                                            <input type="color" value="{{ str_starts_with($composerCovidTextColor ?: '#222222', '#') ? ($composerCovidTextColor ?: '#222222') : '#'.ltrim($composerCovidTextColor, '#') }}"
-                                                   oninput="$wire.set('composerCovidTextColor', this.value)"
-                                                   style="width:2.5rem;height:2.5rem;border:none;background:transparent;cursor:pointer;">
-                                            <input type="text" wire:model="composerCovidTextColor" class="fb-input" style="flex:1;">
-                                        </div>
-                                    </div>
                                 </div>
                             @endif
 
@@ -399,21 +381,23 @@
                                 </div>
                             @endif
 
-                            <div class="fb-grid-2" style="margin-top:.75rem;">
-                                <label style="display:flex; align-items:center; gap:.5rem; font-size:.875rem;">
-                                    <input type="checkbox" wire:model="composerIsMandatory"> Mandatory
-                                </label>
-                                <label style="display:flex; align-items:center; gap:.5rem; font-size:.875rem;">
-                                    <input type="checkbox" wire:model="composerIsLogchecked"> Record entry on Form Submission Log
-                                </label>
-                            </div>
-
-                            @if ($composerIsLogchecked)
-                                <div style="margin-top:.5rem;">
-                                    <label class="fb-label">Log column title</label>
-                                    <input type="text" wire:model="composerLogColumntitle" class="fb-input">
+                            @unless ($composingTypeId === 25)
+                                <div class="fb-grid-2" style="margin-top:.75rem;">
+                                    <label style="display:flex; align-items:center; gap:.5rem; font-size:.875rem;">
+                                        <input type="checkbox" wire:model="composerIsMandatory"> Mandatory
+                                    </label>
+                                    <label style="display:flex; align-items:center; gap:.5rem; font-size:.875rem;">
+                                        <input type="checkbox" wire:model="composerIsLogchecked"> Record entry on Form Submission Log
+                                    </label>
                                 </div>
-                            @endif
+
+                                @if ($composerIsLogchecked)
+                                    <div style="margin-top:.5rem;">
+                                        <label class="fb-label">Log column title</label>
+                                        <input type="text" wire:model="composerLogColumntitle" class="fb-input">
+                                    </div>
+                                @endif
+                            @endunless
 
                             <div style="margin-top:1rem;">
                                 <button type="button" class="fb-btn fb-btn-primary" wire:click="saveQuestion">
@@ -603,7 +587,7 @@
                 dropZone.classList.remove('fb-canvas-drop--over');
                 const typeId = parseInt(e.dataTransfer.getData('text/plain'), 10);
                 if (typeId > 0) {
-                    $wire.openComposer(typeId);
+                    $wire.quickAdd(typeId);
                 }
             });
         }

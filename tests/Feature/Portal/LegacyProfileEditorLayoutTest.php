@@ -55,7 +55,20 @@ class LegacyProfileEditorLayoutTest extends TestCase
         $response->assertSee('Documents', false);
         $response->assertSee('Web Link', false);
         $response->assertSee('Data Collection', false);
-        $response->assertSee('Location Name', false);
+        $response->assertSee('Location name', false);
+        $response->assertDontSee('Enter an address, then use View Map', false);
+        $response->assertDontSee('GPS Coordinates', false);
+        $response->assertDontSee('Map Link', false);
+        $response->assertSee('Set Code Type', false);
+        $response->assertSee('CONTACT', false);
+        $response->assertSee('TELEPHONE', false);
+        $response->assertSee('Header', false);
+        $response->assertSee('User Access Security', false);
+        $response->assertSee('Share', false);
+        $response->assertSee('Password protect', false);
+        $response->assertSee('Use an existing form', false);
+        $response->assertSee('Enable Form Analytics', false);
+        $response->assertSee('Email only', false);
     }
 
     public function test_location_create_form_accepts_core_fields(): void
@@ -92,14 +105,15 @@ class LegacyProfileEditorLayoutTest extends TestCase
                 'code_profile_name' => 'Hotel Lobby QR',
                 'name' => 'Main Lobby',
                 'address' => '1 Test Street',
-                'url' => 'https://maps.example.com/lobby',
                 'description' => 'Welcome desk location',
                 'notes' => 'Near entrance',
                 'enable_data_collection' => true,
-                'data_collection_name' => 'Full Name',
-                'data_collection_email' => 'Email',
-                'data_collection_mobile' => 'Phone',
+                'data_collection_name' => true,
+                'data_collection_email' => true,
+                'data_collection_mobile' => true,
                 'data_collection_content' => 'Please leave your details',
+                'show_header' => true,
+                'display_share_link' => true,
             ])
             ->call('create')
             ->assertHasNoFormErrors();

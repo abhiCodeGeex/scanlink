@@ -9,11 +9,13 @@ class FormBuilderRecipient extends Model
 {
     protected $table = 'form_builder_recipient';
 
-    protected $primaryKey = 'form_builder_recipient';
+    protected $primaryKey = 'recipient_id';
+
+    public $incrementing = false;
 
     public $timestamps = false;
 
-    protected $fillable = ['form_id', 'recipient_email'];
+    protected $fillable = ['recipient_id', 'form_id', 'recipient_email'];
 
     public function formProfile(): BelongsTo
     {

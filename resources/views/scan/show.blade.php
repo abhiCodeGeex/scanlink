@@ -35,12 +35,20 @@
         .signature-wrap canvas { width: 100%; max-width: 320px; height: 120px; border: 1px dashed #ccc; border-radius: 6px; touch-action: none; }
         @if ($portalPreview ?? false)
         html, body { height: auto; min-height: 0; overflow-x: hidden; }
-        body.portal-preview { background: #fff; margin: 0; }
-        body.portal-preview .wrap { max-width: 320px; margin: 0; padding: 0.65rem 0.75rem 0.85rem; }
-        body.portal-preview .card { border-radius: 0; box-shadow: none; padding: 0.75rem 0.5rem; margin: 0; }
+        body.portal-preview { background: #fff; margin: 0; width: 100%; }
+        body.portal-preview .wrap { max-width: 100%; width: 100%; margin: 0; padding: 0.5rem 0.65rem 0.35rem; box-sizing: border-box; }
+        body.portal-preview .card { border-radius: 0; box-shadow: none; padding: 0.5rem 0.35rem 0.25rem; margin: 0; width: 100%; box-sizing: border-box; }
         body.portal-preview h1 { font-size: 1.35rem; line-height: 1.25; margin-bottom: 0.5rem; }
         body.portal-preview p { margin: 0.35rem 0; font-size: 0.92rem; line-height: 1.35; }
         body.portal-preview .btn { font-size: 0.85rem; padding: 0.45rem 0.75rem; }
+        body.portal-preview h2:last-of-type,
+        body.portal-preview .gallery { margin-bottom: 0; }
+        body.portal-preview .card > :last-child { margin-bottom: 0 !important; }
+        body.portal-preview input,
+        body.portal-preview textarea,
+        body.portal-preview select { width: 100%; max-width: 100%; box-sizing: border-box; }
+        body.portal-preview .gallery { grid-template-columns: 1fr; }
+        body.portal-preview .gallery img { max-width: 100%; height: auto; aspect-ratio: auto; }
         @endif
     </style>
 </head>
@@ -92,12 +100,8 @@
         @if ($profile->address)
             <p><strong>Address:</strong> {{ $profile->address }}</p>
             @if ($profile->typeSlug() === 'location')
-                @php
-                    $mapHref = filled($profile->url)
-                        ? $profile->url
-                        : 'https://maps.google.com?q='.urlencode($profile->address);
-                @endphp
-                <p><a class="btn btn-outline" href="{{ $mapHref }}" target="_blank" rel="noopener">View Map</a></p>
+                {{-- Legacy: View Map is built from address only (no editable Map Link / GPS fields). --}}
+                <p><a class="btn btn-outline" href="https://maps.google.com?q={{ urlencode($profile->address) }}" target="_blank" rel="noopener">View Map</a></p>
             @endif
         @endif
 
@@ -210,7 +214,7 @@
             </div>
         @endif
 
-        @if ($profile->form_active && $questions->isNotEmpty() && ! $needsVisitorInfo)
+        @if (($profile->form_is_enable || $profile->form_active) && $questions->isNotEmpty() && ! $needsVisitorInfo)
             <form method="post" action="{{ route('scan.form', [$clientUrl, $profile->id]) }}" enctype="multipart/form-data" style="margin-top:1.5rem;">
                 @csrf
                 <h2>{{ $profile->form_title ?: 'Form' }}</h2>
@@ -466,19 +470,60 @@
 
                             @case(25)
                                 @php
-                                    $bg = $question->covid_bg_color ?: '#ffffff';
-                                    $fg = $question->covid_text_color ?: '#222222';
+                                    $bg = $question->covid_bg_color ?: 'ffffff';
+                                    $fg = $question->covid_text_color ?: '000000';
+                                    if (! str_starts_with($bg, '#')) {
+                                        $bg = '#'.$bg;
+                                    }
+                                    if (! str_starts_with($fg, '#')) {
+                                        $fg = '#'.$fg;
+                                    }
+                                    $locationTypes = config('scanlink.covid_location_descriptions', []);
                                 @endphp
-                                <div style="background:{{ $bg }};color:{{ $fg }};padding:1rem;border-radius:8px;">
-                                    <div class="display-html">{!! $question->question_text !!}</div>
-                                    <label>Visitor name</label>
-                                    <input type="text" name="answers_meta[{{ $qid }}][visitor_name]" {{ $required }}>
-                                    <label>Visitor phone</label>
-                                    <input type="text" name="answers_meta[{{ $qid }}][visitor_phone]">
-                                    <label>Venue</label>
-                                    <input type="text" name="answers_meta[{{ $qid }}][venue_name]">
-                                    <label>Location</label>
-                                    <input type="text" name="answers_meta[{{ $qid }}][location_description]">
+                                <div class="covid-checkinform" style="padding:10px;background-color:{{ $bg }};color:{{ $fg }};border-radius:8px;">
+                                    @if (filled($question->question_text))
+                                        <div class="display-html" style="color:{{ $fg }};margin-bottom:10px;">{!! $question->question_text !!}</div>
+                                    @endif
+
+                                    <p>
+                                        <span style="color:{{ $fg }};">Visitor name <span style="color:red">*</span></span><br>
+                                        <input class="input-field" type="text" name="answers_meta[{{ $qid }}][visitor_name]" required {{ $required }}>
+                                    </p>
+                                    <p>
+                                        <span style="color:{{ $fg }};">Visitor phone <span style="color:red">*</span></span><br>
+                                        <input class="input-field" type="text" inputmode="numeric" name="answers_meta[{{ $qid }}][visitor_phone]" required>
+                                    </p>
+                                    <p>
+                                        <span style="color:{{ $fg }};">Date <span style="color:red">*</span></span><br>
+                                        <input class="input-field" type="date" name="answers_meta[{{ $qid }}][checkin_date]" required>
+                                    </p>
+                                    <p>
+                                        <span style="color:{{ $fg }};">Time <span style="color:red">*</span></span><br>
+                                        <input class="input-field" type="time" name="answers_meta[{{ $qid }}][checkin_time]" required>
+                                    </p>
+                                    <p>
+                                        <span style="color:{{ $fg }};">Venue name <span style="color:red">*</span></span><br>
+                                        <input class="input-field" type="text" name="answers_meta[{{ $qid }}][venue_name]" required>
+                                    </p>
+                                    <p>
+                                        <span style="color:{{ $fg }};">Venue Address <span style="color:red">*</span></span><br>
+                                        <input class="input-field" type="text" name="answers_meta[{{ $qid }}][venue_address]" required>
+                                    </p>
+                                    <p>
+                                        <span style="color:{{ $fg }};">Location Description/Type <span style="color:red">*</span></span><br>
+                                        <select
+                                            name="answers_meta[{{ $qid }}][location_type]"
+                                            class="input-field location_desc_option"
+                                            required
+                                            onchange="window.slCovidLocationChange && window.slCovidLocationChange(this.value, {{ $qid }}, '{{ $fg }}')"
+                                        >
+                                            <option value="">Select</option>
+                                            @foreach ($locationTypes as $locationType)
+                                                <option value="{{ $locationType }}">{{ $locationType }}</option>
+                                            @endforeach
+                                        </select>
+                                    </p>
+                                    <p class="vehicle_no" id="vehicle_no_{{ $qid }}"></p>
                                 </div>
                                 @break
 
@@ -490,6 +535,21 @@
                 @endforeach
                 <p style="margin-top:1rem;"><button class="btn" type="submit">Submit</button></p>
             </form>
+            <script>
+                window.slCovidLocationChange = function (value, questionId, labelColor) {
+                    const host = document.getElementById('vehicle_no_' + questionId);
+                    if (!host) return;
+                    if (value === 'Vehicle') {
+                        host.innerHTML = '<br><span style="color:' + labelColor + '">Vehicle Registration ID <span style="color:red">*</span></span><br>'
+                            + '<input class="input-field" type="text" name="answers_meta[' + questionId + '][vehicle_or_other]" required />';
+                    } else if (value === 'Other') {
+                        host.innerHTML = '<br><span style="color:' + labelColor + '">Please specify other <span style="color:red">*</span></span><br>'
+                            + '<input class="input-field" type="text" name="answers_meta[' + questionId + '][vehicle_or_other]" required />';
+                    } else {
+                        host.innerHTML = '';
+                    }
+                };
+            </script>
             <script>
                 (function () {
                     const pads = {};

@@ -1,12 +1,7 @@
 @php
     /** @var list<\App\Models\EquipmentType> $types */
     /** @var string|null $activeTab */
-    $labelFor = static function (\App\Models\EquipmentType $type): string {
-        return match ($type->slag) {
-            'code' => 'URL Link',
-            default => (string) $type->name,
-        };
-    };
+    $labelFor = static fn (\App\Models\EquipmentType $type): string => \App\Support\LegacyEquipmentTypeLabels::labelFor($type);
 
     $previewMeta = [
         'plant' => [

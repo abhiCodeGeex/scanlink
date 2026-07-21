@@ -106,7 +106,6 @@ class ProfileFormSchema
                                 ->label('YouTube URL or video ID')
                                 ->helperText('Paste a watch URL or 11-character YouTube ID.'),
                         ])
-                        ->dehydrated(false)
                         ->columnSpanFull(),
                 ]),
             Section::make('Web links')
@@ -154,11 +153,25 @@ class ProfileFormSchema
 
         return match ($slug) {
             'location' => [
-                TextInput::make('name')->label('Location name')->required(),
-                TextInput::make('address')->label('Address')->columnSpanFull(),
-                TextInput::make('url')->label('Map Link')->url(),
-                Textarea::make('description')->label('Description')->columnSpanFull(),
-                Textarea::make('notes')->label('Notes')->columnSpanFull(),
+                TextInput::make('name')->label('Location name:')->required(),
+                TextInput::make('address')
+                    ->label('Address:')
+                    ->columnSpanFull()
+                    ->live(debounce: 400),
+                // Legacy: View Map only appears after an address is entered.
+                Placeholder::make('view_map_link')
+                    ->label('')
+                    ->visible(fn (Get $get): bool => trim((string) $get('address')) !== '')
+                    ->content(function (Get $get): HtmlString {
+                        $address = trim((string) $get('address'));
+                        $href = 'https://maps.google.com?q='.rawurlencode($address);
+
+                        return new HtmlString(
+                            '<a href="'.e($href).'" target="_blank" rel="noopener" class="view-map text-sm font-semibold text-[#008901]">View Map</a>'
+                        );
+                    }),
+                Textarea::make('description')->label('Description:')->columnSpanFull(),
+                Textarea::make('notes')->label('Notes:')->columnSpanFull(),
             ],
             'plant' => [
                 TextInput::make('name')->label('Make / Model')->required(),

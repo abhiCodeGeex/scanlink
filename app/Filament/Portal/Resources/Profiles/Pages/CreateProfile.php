@@ -3,19 +3,23 @@
 namespace App\Filament\Portal\Resources\Profiles\Pages;
 
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
+use App\Filament\Portal\Resources\Profiles\Pages\Concerns\HasLegacyFormBuilderSidebar;
 use App\Filament\Portal\Resources\Profiles\Pages\Concerns\HasLegacyProfileEditorLayout;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Filament\Concerns\HandlesDatabaseSaveFailures;
 use App\Filament\Resources\Profiles\Pages\Concerns\SyncsProfileAssets;
 use App\Models\EquipmentType;
 use App\Services\AnalyticsApiService;
+use App\Services\ProfileDraftSlotService;
 use App\Services\ProfileQrService;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\Schema;
 
 class CreateProfile extends CreateRecord
 {
     use HandlesDatabaseSaveFailures;
+    use HasLegacyFormBuilderSidebar;
     use HasLegacyProfileEditorLayout;
     use InteractsWithClientMembership;
     use SyncsProfileAssets;
@@ -45,41 +49,58 @@ class CreateProfile extends CreateRecord
     {
         $client = $this->currentClient();
         $member = $this->currentClientUser();
-        $typeSlag = request()->query('type');
+        $typeSlag = request()->query('type')
+            ?? request()->input('type')
+            ?? request()->route('type');
 
-        if ($client && filled($typeSlag)) {
-            $slot = app(\App\Services\ProfileDraftSlotService::class)
-                ->claimForCreate($client->id, (string) $typeSlag);
+        // Old portal always opens add with a type + profile_id before Form Builder.
+        // Never leave the user on a blank create page ("Save the profile first").
+        if (! $client) {
+            Notification::make()
+                ->title('No active client account')
+                ->danger()
+                ->send();
 
-            if ($slot) {
-                $this->redirect(ProfileResource::getUrl('edit', ['record' => $slot]));
+            $this->redirect(ProfileResource::getUrl('index', panel: 'portal'), navigate: false);
 
-                return;
-            }
+            return;
         }
 
-        parent::mount();
+        if (blank($typeSlag)) {
+            Notification::make()
+                ->title('Choose a code type first')
+                ->body('Use Add a New Code from the Master Code List (e.g. Location).')
+                ->warning()
+                ->send();
 
-        $fill = [];
+            $this->redirect(ProfileResource::getUrl('index', panel: 'portal'), navigate: false);
 
-        if ($client && $member) {
-            $fill['client_id'] = $client->id;
-            $fill['user_id'] = $member->id;
+            return;
         }
 
-        if (filled($typeSlag)) {
-            $typeId = EquipmentType::query()
-                ->where('slag', $typeSlag)
-                ->value('id');
+        $slot = app(ProfileDraftSlotService::class)
+            ->claimForCreate((int) $client->id, (string) $typeSlag, $member?->id);
 
-            if ($typeId) {
-                $fill['type_id'] = $typeId;
-            }
+        if (! $slot) {
+            Notification::make()
+                ->title('Could not create profile draft')
+                ->danger()
+                ->send();
+
+            $this->redirect(ProfileResource::getUrl('index', panel: 'portal'), navigate: false);
+
+            return;
         }
 
-        if ($fill !== []) {
-            $this->form->fill($fill);
-        }
+        // Full-page redirect so the Form Builder iframe mounts on edit (live Kohana behaviour).
+        $this->redirect(
+            ProfileResource::getUrl(
+                'edit',
+                ['record' => $slot->getKey()],
+                panel: 'portal',
+            ),
+            navigate: false,
+        );
     }
 
     public function getView(): string
@@ -103,6 +124,7 @@ class CreateProfile extends CreateRecord
     protected function afterCreate(): void
     {
         $this->syncProfileAssets();
+        $this->syncFormBuilderSidebarSettings();
 
         /** @var \App\Models\Profile $profile */
         $profile = $this->record;
@@ -124,6 +146,6 @@ class CreateProfile extends CreateRecord
 
     protected function getRedirectUrl(): string
     {
-        return ProfileResource::getUrl('edit', ['record' => $this->record]);
+        return ProfileResource::getUrl('edit', ['record' => $this->record], panel: 'portal');
     }
 }

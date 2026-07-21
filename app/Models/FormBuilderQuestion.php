@@ -13,10 +13,12 @@ class FormBuilderQuestion extends Model
 
     protected $primaryKey = 'question_id';
 
+    public $incrementing = false;
+
     public $timestamps = false;
 
     protected $fillable = [
-        'profile_id', 'form_id', 'question_type_id', 'question_text',
+        'question_id', 'profile_id', 'form_id', 'question_type_id', 'question_text',
         'image_title', 'image_url', 'image_align', 'question_order',
         'button_link_url', 'button_colour', 'doc_title', 'default_value',
         'include_name', 'include_employer', 'include_email', 'include_phone',

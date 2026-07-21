@@ -155,6 +155,30 @@ class MobileProfileController extends Controller
                 continue;
             }
 
+            $question = $questions->get((int) $questionId);
+
+            // Legacy Covid check-in stores fields joined with ::: in fixed order.
+            if ($question && (int) $question->question_type_id === 25) {
+                $parts = [
+                    (string) ($meta['visitor_name'] ?? ''),
+                    (string) ($meta['visitor_phone'] ?? ''),
+                    (string) ($meta['checkin_date'] ?? ''),
+                    (string) ($meta['checkin_time'] ?? ''),
+                    (string) ($meta['venue_name'] ?? ''),
+                    (string) ($meta['venue_address'] ?? ''),
+                    (string) ($meta['location_type'] ?? ''),
+                ];
+
+                $extra = (string) ($meta['vehicle_or_other'] ?? '');
+                if ($extra !== '' || in_array($parts[6], ['Vehicle', 'Other'], true)) {
+                    $parts[] = $extra;
+                }
+
+                $answerMap[$questionId] = implode(':::', $parts);
+
+                continue;
+            }
+
             $parts = [];
             foreach ($meta as $key => $value) {
                 if (filled($value) && is_scalar($value)) {

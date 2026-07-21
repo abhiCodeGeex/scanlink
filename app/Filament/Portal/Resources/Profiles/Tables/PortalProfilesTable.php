@@ -9,6 +9,8 @@ use App\Filament\Portal\Pages\OrderLabel;
 use App\Filament\Portal\Pages\ScanAnalytics;
 use App\Filament\Portal\Pages\VisitorLog;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
+use App\Filament\Support\SearchTableFilter;
+use App\Filament\Support\TableFilterDefaults;
 use App\Models\Profile;
 use App\Services\CodeProfileRenewalService;
 use App\Services\ProfileQrService;
@@ -17,9 +19,7 @@ use Filament\Actions\BulkAction;
 use Filament\Actions\DeleteAction;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\HtmlString;
 
@@ -27,16 +27,22 @@ class PortalProfilesTable
 {
     public static function configure(Table $table): Table
     {
-        return $table
+        return TableFilterDefaults::apply($table
             ->defaultSort('id', 'desc')
             ->searchable()
             ->searchPlaceholder('Search')
+            // Apply filters immediately so state stays in sync when paginating.
+            ->deferFilters(false)
+            ->persistFiltersInSession()
+            ->deferColumnManager(false)
+            ->persistColumnsInSession()
             ->recordClasses(fn (Profile $record): string => $record->expiryStatusClass())
             ->columns([
                 TextColumn::make('id')
                     ->label('Profile No.')
                     ->sortable()
                     ->searchable()
+                    ->toggleable()
                     ->alignCenter(),
                 TextColumn::make('code_profile_name')
                     ->label('Code Profile Name')
@@ -45,6 +51,7 @@ class PortalProfilesTable
                     ->getStateUsing(fn (Profile $record): string => filled(trim((string) $record->code_profile_name))
                         ? (string) $record->code_profile_name
                         : $record->displayLabel())
+                    ->toggleable()
                     ->wrap(),
                 TextColumn::make('address')
                     ->label('Address')
@@ -54,6 +61,7 @@ class PortalProfilesTable
                 TextColumn::make('expired_at')
                     ->label('Code expiry date')
                     ->sortable()
+                    ->toggleable()
                     ->alignCenter()
                     ->formatStateUsing(function (Profile $record): string {
                         if ((bool) $record->free_code) {
@@ -64,22 +72,10 @@ class PortalProfilesTable
                     }),
             ])
             ->filters([
-                Filter::make('name')
-                    ->label('Filter')
-                    ->schema([
-                        \Filament\Forms\Components\TextInput::make('name')
-                            ->label('Search'),
-                    ])
-                    ->query(fn (Builder $query, array $data): Builder => $query->when(
-                        filled($data['name'] ?? null),
-                        fn (Builder $q): Builder => $q->where(function (Builder $inner) use ($data): void {
-                            $term = '%'.$data['name'].'%';
-                            $inner->where('name', 'like', $term)
-                                ->orWhere('code_profile_name', 'like', $term)
-                                ->orWhere('identification', 'like', $term)
-                                ->orWhere('address', 'like', $term);
-                        }),
-                    )),
+                SearchTableFilter::make(
+                    ['name', 'code_profile_name', 'identification', 'address'],
+                    label: 'Search',
+                ),
             ])
             ->bulkActions([
                 BulkAction::make('multipleCodeAnalytics')
@@ -212,6 +208,6 @@ class PortalProfilesTable
                     )),
             ])
             ->emptyStateHeading('No Profile Found..!')
-            ->emptyStateDescription('Use “Add a New Code” to create a code profile.');
+            ->emptyStateDescription('Use “Add a New Code” to create a code profile.'));
     }
 }

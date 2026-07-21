@@ -11,6 +11,7 @@ class FormBuilderMedia
     private const LEGACY_FOLDERS = [
         'images/form_builder_uploaded_images',
         'images/form_builder_uploaded_docs',
+        'images/formbuilder_upload',
         'form-builder/images',
         'form-builder/docs',
     ];
@@ -24,7 +25,11 @@ class FormBuilderMedia
         $normalized = PublicMediaPath::normalize($path);
 
         if ($normalized !== '' && self::storageExists($normalized)) {
-            return PublicMediaPath::url($path);
+            return PublicMediaPath::url($normalized);
+        }
+
+        if ($normalized !== '' && self::publicExists($normalized)) {
+            return asset($normalized);
         }
 
         if (! str_contains($path, '/')) {
@@ -34,10 +39,14 @@ class FormBuilderMedia
                 if (self::storageExists($candidate)) {
                     return PublicMediaPath::url($candidate);
                 }
+
+                if (self::publicExists($candidate)) {
+                    return asset($candidate);
+                }
             }
         }
 
-        return PublicMediaPath::url($path);
+        return PublicMediaPath::url($normalized !== '' ? $normalized : $path);
     }
 
     public static function alignValue(?string $align): string
@@ -130,5 +139,12 @@ class FormBuilderMedia
         } catch (\Throwable) {
             return false;
         }
+    }
+
+    private static function publicExists(string $path): bool
+    {
+        $full = public_path($path);
+
+        return is_file($full);
     }
 }

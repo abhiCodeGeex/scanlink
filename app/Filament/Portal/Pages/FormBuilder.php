@@ -38,6 +38,8 @@ class FormBuilder extends Page
 
     protected string $view = 'filament.portal.pages.form-builder';
 
+    public bool $isEmbed = false;
+
     public ?int $selectedProfileId = null;
 
     /** @var Collection<int, FormBuilderQuestion> */
@@ -149,6 +151,7 @@ class FormBuilder extends Page
 
     public function mount(): void
     {
+        $this->isEmbed = request()->boolean('embed');
         $this->questions = collect();
         $this->paletteGroups = $this->formBuilder->paletteGroups();
 
@@ -164,12 +167,40 @@ class FormBuilder extends Page
             }
         }
 
+        if ($this->isEmbed) {
+            return;
+        }
+
         $firstProfileId = $this->formProfileOptions()->keys()->first()
             ?: $this->clientProfileOptions()->keys()->first();
 
         if ($firstProfileId) {
             $this->selectProfile((int) $firstProfileId);
         }
+    }
+
+    public function getLayout(): string
+    {
+        return $this->isEmbed
+            ? 'layouts.form-builder-embed'
+            : parent::getLayout();
+    }
+
+    public function getView(): string
+    {
+        return $this->isEmbed
+            ? 'filament.portal.pages.form-builder-embed'
+            : $this->view;
+    }
+
+    public function getHeading(): string|Htmlable|null
+    {
+        return $this->isEmbed ? null : parent::getHeading();
+    }
+
+    public function getTitle(): string|Htmlable
+    {
+        return $this->isEmbed ? 'Form Builder' : (static::$title ?? 'Form Builder');
     }
 
     /**
@@ -241,11 +272,23 @@ class FormBuilder extends Page
 
         $profile = $this->resolveProfile();
 
-        $this->formBuilder->saveQuestion($profile, [
-            'question_type_id' => $typeId,
-            'question_text' => $typeId === 13 ? '—' : '',
-            'is_mandatory' => false,
-        ]);
+        try {
+            $this->formBuilder->saveQuestion($profile, [
+                'question_type_id' => $typeId,
+                'question_text' => $typeId === 13 ? '—' : '',
+                'is_mandatory' => false,
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            Notification::make()
+                ->title('Could not add item')
+                ->body(config('app.debug') ? $e->getMessage() : 'Please try again or contact support.')
+                ->danger()
+                ->send();
+
+            return;
+        }
 
         Notification::make()
             ->title($typeId === 13 ? 'Line divider added' : 'Blank space added')
@@ -310,6 +353,14 @@ class FormBuilder extends Page
         $this->composingTypeId = $typeId;
         $this->editingQuestionId = null;
         $this->resetComposerFields();
+
+        // Live Covid check-in defaults: log checkbox on, black text / white bg.
+        if ($typeId === 25) {
+            $this->composerIsLogchecked = true;
+            $this->composerCovidTextColor = '#000000';
+            $this->composerCovidBgColor = '#ffffff';
+            $this->composerIsMandatory = false;
+        }
     }
 
     public function editQuestion(int $questionId): void
@@ -425,7 +476,7 @@ class FormBuilder extends Page
         $type = FormBuilderQuestionType::query()->find($typeId);
         $isDisplay = $type?->isDisplayOnly() ?? false;
 
-        if (! $isDisplay && trim($this->composerQuestionText) === '' && ! in_array($typeId, [11, 13, 14, 22, 24], true)) {
+        if (! $isDisplay && trim($this->composerQuestionText) === '' && ! in_array($typeId, [11, 13, 14, 22, 24, 25], true)) {
             Notification::make()->title('Question text is required')->danger()->send();
 
             return;
@@ -547,12 +598,24 @@ class FormBuilder extends Page
 
         $options = $this->buildOptionsPayload($typeId);
 
-        $this->formBuilder->saveQuestion(
-            $profile,
-            $data,
-            $options,
-            $this->editingQuestionId,
-        );
+        try {
+            $this->formBuilder->saveQuestion(
+                $profile,
+                $data,
+                $options,
+                $this->editingQuestionId,
+            );
+        } catch (\Throwable $e) {
+            report($e);
+
+            Notification::make()
+                ->title('Could not save question')
+                ->body(config('app.debug') ? $e->getMessage() : 'Please try again or contact support.')
+                ->danger()
+                ->send();
+
+            return;
+        }
 
         Notification::make()
             ->title($this->editingQuestionId ? 'Question updated' : 'Question added')
@@ -711,11 +774,6 @@ class FormBuilder extends Page
             $query->whereIn('id', $profileIdsWithQuestions)
                 ->when($this->selectedProfileId, fn ($q) => $q->where('id', '!=', $this->selectedProfileId));
         });
-    }
-
-    public function getTitle(): string|Htmlable
-    {
-        return static::$title ?? 'Form Builder';
     }
 
     protected function loadProfileData(): void

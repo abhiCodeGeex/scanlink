@@ -20,6 +20,7 @@ class FormFieldLabels
         'description' => 'Description',
         'notes' => 'Notes',
         'url' => 'Destination URL',
+        'gps_coordinates' => 'GPS Coordinates',
         'application' => 'Application',
         'telephone' => 'Telephone',
         'name_company' => 'Contact Person / Company',

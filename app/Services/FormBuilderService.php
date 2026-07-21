@@ -119,6 +119,12 @@ class FormBuilderService
                 'location_description' => $data['location_description'] ?? '',
             ];
 
+            $payload = array_filter(
+                $payload,
+                fn (mixed $value, string $key): bool => Schema::hasColumn('form_builder_question', $key),
+                ARRAY_FILTER_USE_BOTH
+            );
+
             if ($questionId) {
                 $question = FormBuilderQuestion::query()->where('profile_id', $profile->id)->findOrFail($questionId);
                 $question->update($payload);
@@ -212,6 +218,8 @@ class FormBuilderService
 
         FormBuilderRecipient::query()->where('form_id', $formId)->delete();
 
+        $nextId = (int) FormBuilderRecipient::query()->max('recipient_id');
+
         foreach ($emails as $email) {
             $email = trim(strtolower($email));
 
@@ -219,7 +227,10 @@ class FormBuilderService
                 continue;
             }
 
+            $nextId++;
+
             FormBuilderRecipient::query()->create([
+                'recipient_id' => max(1, $nextId),
                 'form_id' => $formId,
                 'recipient_email' => $email,
             ]);
@@ -239,7 +250,7 @@ class FormBuilderService
 
         return FormBuilderRecipient::query()
             ->where('form_id', $formId)
-            ->orderBy('form_builder_recipient')
+            ->orderBy('recipient_id')
             ->get();
     }
 
@@ -252,7 +263,7 @@ class FormBuilderService
             'form_title' => $settings['form_title'] ?? $profile->form_title,
             'form_email_tag' => $settings['form_email_tag'] ?? $profile->form_email_tag,
             'form_is_enable' => (bool) ($settings['form_is_enable'] ?? $profile->form_is_enable),
-            'form_active' => (bool) ($settings['form_active'] ?? $profile->form_active),
+            'form_active' => (bool) ($settings['form_is_enable'] ?? $settings['form_active'] ?? $profile->form_active),
             'form_submission_format' => (int) ($settings['form_submission_format'] ?? $profile->form_submission_format ?? 0),
         ]);
 
@@ -347,12 +358,44 @@ class FormBuilderService
             return;
         }
 
-        FormBuilderLibrary::query()->create([
-            'user_id' => $profile->user_id ?: 0,
+        $userId = (int) ($profile->user_id ?: 0);
+        $payload = [
             'form_id' => $formId,
             'form_title' => $profile->form_title ?: ($profile->name ?: 'Form '.$formId),
             'is_deleted' => false,
             'is_deleted_from_library' => false,
-        ]);
+        ];
+
+        // Prefer a real client_users FK; avoid inserting 0 when the column is nullable.
+        if ($userId > 0) {
+            $payload['user_id'] = $userId;
+        } elseif (Schema::hasColumn('form_builder_library', 'user_id')) {
+            $payload['user_id'] = null;
+        }
+
+        if (! $this->libraryUsesAutoIncrement()) {
+            $nextId = (int) FormBuilderLibrary::query()->max('form_builder_library_id') + 1;
+            $payload['form_builder_library_id'] = max(1, $nextId);
+        }
+
+        FormBuilderLibrary::query()->create($payload);
+    }
+
+    protected function libraryUsesAutoIncrement(): bool
+    {
+        if (! Schema::hasTable('form_builder_library')) {
+            return true;
+        }
+
+        try {
+            $column = DB::selectOne(
+                'SELECT EXTRA FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+                ['form_builder_library', 'form_builder_library_id']
+            );
+
+            return $column && str_contains((string) ($column->EXTRA ?? ''), 'auto_increment');
+        } catch (\Throwable) {
+            return false;
+        }
     }
 }

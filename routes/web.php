@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Portal\FormBuilderUploadController;
+use App\Http\Controllers\Portal\LegacyFormBuilderController;
 use App\Http\Controllers\CaptchaController;
 use App\Http\Controllers\MarketingController;
 use App\Http\Controllers\MobileProfileController;
@@ -76,6 +78,25 @@ Route::post('/{clientUrl}/{profileId}/checklist/{itemId}/uncheck', [MobileProfil
     ->name('scan.checklist.uncheck');
 
 Route::middleware(['web', 'auth'])->group(function (): void {
+    Route::get('/portal/legacy-form-builder', [LegacyFormBuilderController::class, 'index'])
+        ->name('portal.legacy-form-builder');
+    Route::match(['get', 'post'], '/portal/legacy-form-builder/render-element', [LegacyFormBuilderController::class, 'renderElement'])
+        ->name('portal.legacy-form-builder.render');
+    Route::match(['get', 'post'], '/portal/legacy-form-builder/remove-element', [LegacyFormBuilderController::class, 'removeElement'])
+        ->name('portal.legacy-form-builder.remove');
+    Route::match(['get', 'post'], '/portal/legacy-form-builder/reorder-element', [LegacyFormBuilderController::class, 'reorderElement'])
+        ->name('portal.legacy-form-builder.reorder');
+    Route::match(['get', 'post'], '/portal/legacy-form-builder/update-enable-form', [LegacyFormBuilderController::class, 'updateEnableForm'])
+        ->name('portal.legacy-form-builder.enable');
+
+    Route::get('/test/temp_image_upload', [FormBuilderUploadController::class, 'imageForm']);
+    Route::get('/test/temp_doc_upload', [FormBuilderUploadController::class, 'docForm']);
+    Route::get('/test/temp_doc_multi_upload', [FormBuilderUploadController::class, 'docMultiForm']);
+    Route::post('/portal/legacy-form-builder/upload-image', [FormBuilderUploadController::class, 'storeImage'])
+        ->name('portal.legacy-form-builder.upload-image');
+    Route::post('/portal/legacy-form-builder/upload-doc', [FormBuilderUploadController::class, 'storeDoc'])
+        ->name('portal.legacy-form-builder.upload-doc');
+
     Route::get('/portal/form-submissions/print/{sessionId}', function (Illuminate\Http\Request $request, string $sessionId) {
         return \App\Filament\Portal\Pages\FormSubmissions::downloadSessionHtml(
             $request->integer('profile'),

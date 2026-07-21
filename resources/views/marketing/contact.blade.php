@@ -30,31 +30,33 @@
         @csrf
         <ul class="form-view clearfix">
             <li>
-                <label for="yourName">Name:</label>
+                <label for="yourName">Name:<span class="required" aria-hidden="true">*</span></label>
                 <input
                     type="text"
                     name="name"
                     id="yourName"
                     value="{{ old('name') }}"
                     class="text-fi"
+                    required
                 />
             </li>
             <li>
-                <label for="email">Email:</label>
+                <label for="email">Email:<span class="required" aria-hidden="true">*</span></label>
                 <input
                     type="text"
                     name="email"
                     id="email"
                     value="{{ old('email') }}"
                     class="text-fi"
+                    required
                 />
             </li>
             <li>
-                <label for="commentsText">Message:</label>
-                <textarea name="comments" id="commentsText">{{ old('comments') }}</textarea>
+                <label for="commentsText">Message:<span class="required" aria-hidden="true">*</span></label>
+                <textarea name="comments" id="commentsText" required>{{ old('comments') }}</textarea>
             </li>
             <li>
-                <label>Verification Code:</label>
+                <label>Verification Code:<span class="required" aria-hidden="true">*</span></label>
                 <br/>
                 <img
                     src="{{ route('marketing.captcha') }}?t={{ time() }}"
@@ -64,7 +66,7 @@
                     height="50"
                 />
                 <img src="{{ asset('images/capcha-img.png') }}" alt="" />
-                <input type="text" class="text-fi" id="captcha" name="captcha" value="" autocomplete="off" />
+                <input type="text" class="text-fi" id="captcha" name="captcha" value="" autocomplete="off" required />
             </li>
             <li>
                 <input id="save" type="submit" name="submit" value="Send">

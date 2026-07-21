@@ -538,37 +538,50 @@ button.fi-btn[type="submit"]:not(.fi-outlined):not(.fi-color-gray):hover {
 
 .fi-topbar {
     gap: 0.75rem;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    min-height: 4rem;
+    height: 4rem;
+    max-height: 4rem;
+    overflow: visible;
+    padding-inline: 1rem;
+    box-sizing: border-box;
 }
 
-/* Topbar layout — keep logo, search, and profile menu from overlapping */
-.fi-topbar nav,
-.fi-topbar > div {
+/* Do NOT force width:100% on topbar children — that stacks logo / search / avatar. */
+.fi-topbar > .fi-topbar-start,
+.fi-topbar > .fi-topbar-end {
     display: flex !important;
-    flex-wrap: nowrap;
-    align-items: center;
-    width: 100%;
-    column-gap: 0.75rem;
-}
-
-.fi-topbar-start {
-    display: flex !important;
-    align-items: center;
-    gap: 0.75rem;
-    flex: 0 0 auto;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    width: auto !important;
+    max-width: none;
     min-width: 0;
 }
 
-.fi-topbar-end {
-    display: flex !important;
-    align-items: center;
-    gap: 0.5rem;
+.fi-topbar-start {
+    gap: 0.75rem;
     flex: 0 0 auto;
+}
+
+.fi-topbar-end {
+    gap: 0.5rem;
+    flex: 1 1 auto;
+    justify-content: flex-end;
     margin-inline-start: auto !important;
 }
 
-.fi-topbar .fi-logo-ctn {
+.fi-topbar > .fi-topbar-open-sidebar-btn,
+.fi-topbar > .fi-topbar-close-sidebar-btn {
+    flex: 0 0 auto;
+}
+
+.fi-topbar .fi-logo-ctn,
+.fi-topbar .fi-logo {
     flex-shrink: 0;
-    margin-inline-end: 0.25rem;
 }
 
 .fi-topbar .fi-global-search-ctn,
@@ -592,14 +605,10 @@ button.fi-btn[type="submit"]:not(.fi-outlined):not(.fi-color-gray):hover {
 }
 
 .fi-topbar-collapse-sidebar-btn-ctn {
-    order: -2;
     display: flex !important;
+    align-items: center;
     margin-inline-end: 0.25rem;
-}
-
-.fi-topbar .fi-logo-ctn,
-.fi-topbar-start {
-    order: -1;
+    flex: 0 0 auto;
 }
 
 /* Collapse / expand control — clear icon on green topbar */
@@ -743,10 +752,11 @@ html:not(.dark) .fi-topbar-collapse-sidebar-btn-ctn .fi-icon-btn:hover {
     display: block;
     height: 30px;
     line-height: 30px;
-    padding: 0 4px 0 10px;
+    padding: 0 3px 0 8px;
     border-left: 1px solid #4c4c4c;
     float: left;
     position: relative;
+    white-space: nowrap;
     background: #45484d;
     background: linear-gradient(to bottom, #45484d 0%, #000000 100%);
 }
@@ -868,6 +878,19 @@ tr.sl-row-active {
     --sl-editor-max: 1160px;
 }
 
+/* Soften Filament page chrome around the legacy editor */
+.fi-page:has(.sl-profile-editor) .fi-header-heading {
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 20px !important;
+    font-weight: bold !important;
+    color: #555755 !important;
+}
+
+.fi-page:has(.sl-profile-editor) .fi-page-main-ctn,
+.fi-page:has(.sl-profile-editor) .fi-page-content {
+    font-family: Arial, Helvetica, sans-serif !important;
+}
+
 .sl-profile-editor {
     width: 100%;
     max-width: var(--sl-editor-max, 1160px);
@@ -898,7 +921,7 @@ tr.sl-row-active {
 
 .sl-legacy-preview-sidebar .iphone-preview-container {
     width: 320px;
-    height: 480px;
+    height: 882px;
     overflow: auto;
     background: #fff;
 }
@@ -923,11 +946,6 @@ tr.sl-row-active {
     height: 175px;
     object-fit: contain;
     background: #fff;
-}
-
-.sl-qr-block .sl-qr-actions {
-    float: right;
-    margin: 0;
 }
 
 .sl-qr-block .clear {
@@ -1001,6 +1019,7 @@ tr.sl-row-active {
     border: 1px solid #e5e5e5 !important;
     box-shadow: inset 0 0 10px rgba(0, 0, 0, .1) !important;
     background: #fff !important;
+    overflow: visible !important;
 }
 
 .fi-page:has(.sl-profile-editor) .fi-section-header-heading,
@@ -1008,25 +1027,378 @@ tr.sl-row-active {
     font-size: 18px !important;
     color: #009401 !important;
     line-height: 34px !important;
-    font-weight: 600 !important;
+    font-weight: normal !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    position: relative !important;
+    overflow: visible !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex-wrap: wrap !important;
 }
 
-.fi-page:has(.sl-profile-editor) .fi-fo-field-wrp-label,
-.fi-page:has(.sl-profile-editor) label {
-    color: #555755;
+/* Legacy orange ? help icon + Video Tutorial hover tooltip */
+.fi-page:has(.sl-profile-editor) .sl-help-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    line-height: 0;
+}
+
+.fi-page:has(.sl-profile-editor) .help-icon {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    vertical-align: text-bottom;
+}
+
+.fi-page:has(.sl-profile-editor) .help-div {
+    display: none;
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 10px);
+    transform: translateX(-50%);
+    z-index: 40;
+    color: #000;
+    border: 3px solid #f7760e;
+    padding: 8px 18px;
+    font-family: Verdana, Arial, sans-serif;
+    font-size: 15px;
+    background: #fff;
+    min-height: 38px;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-help-wrap:hover .help-div,
+.fi-page:has(.sl-profile-editor) .sl-help-wrap:focus-within .help-div {
+    display: block;
+}
+
+.fi-page:has(.sl-profile-editor) .help-div a,
+.fi-page:has(.sl-profile-editor) .help-div a.sl-help-video {
+    color: #000 !important;
+    text-decoration: none !important;
+    font-weight: normal;
+}
+
+.fi-page:has(.sl-profile-editor) .help-div .arrow-bg {
+    background: url('/images/tooltip-arrow.png') left bottom no-repeat;
+    position: absolute;
+    bottom: -27px;
+    left: 50%;
+    margin-left: -20px;
+    height: 28px;
+    width: 40px;
+    z-index: 3;
+    pointer-events: none;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-section-header,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-section-header-text-ctn {
+    overflow: visible !important;
+}
+
+/* Share icons — legacy glossy sprites */
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .shareNav {
+    width: 100%;
+    display: block;
+    text-align: left;
+    clear: both;
+    margin: 10px 0 8px;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .shareNav a {
+    width: 88px;
+    height: 88px;
+    text-indent: -99999px;
+    margin: 0 18px 0 0;
+    display: inline-block;
+    overflow: hidden;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .shareNav a.shareFB {
+    background: url('/images/facebook-icon.jpg') no-repeat top left;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .shareNav a.shareTWT {
+    background: url('/images/twitter-icon.jpg') no-repeat top left;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .shareNav a.shareEML {
+    background: url('/images/email-grn-icon.jpg') no-repeat top left;
+}
+
+/* Hide auto labels that duplicate section titles (e.g. Code Profile Name). */
+.fi-page:has(.sl-profile-editor) .fi-fo-field-wrp-label:has(+ * input[id$="code_profile_name"]),
+.fi-page:has(.sl-profile-editor) label.fi-fo-field-wrp-label:empty,
+.fi-page:has(.sl-profile-editor) .fi-fo-placeholder-label {
+    display: none !important;
+}
+
+/* ---------------------------------------------------------------------------
+ * Left form column — pin-perfect legacy .form-view / .text-fi (NOT form builder,
+ * NOT select/dropboxes)
+ * ------------------------------------------------------------------------- */
+.fi-page:has(.sl-profile-editor) .sl-add-form-left {
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 12px !important;
+    color: #555755 !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-field-wrp-label,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-field-wrp-label span,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left label.fi-fo-field-wrp-label,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fieldset-label,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-checkbox-list-option-label,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-radio-list-option-label {
+    display: block !important;
+    font-weight: normal !important;
+    color: #727171 !important;
+    font-family: Verdana, Arial, sans-serif !important;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+    margin: 0 0 4px !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-field-wrp-hint,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-field-wrp-helper-text,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .hint-info,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .set-activation-period {
+    font-size: 10px !important;
+    color: #c85000 !important;
+    font-weight: normal !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+}
+
+/* Strip Filament input wrapper chrome — apply legacy inset field look */
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-input-wrp:not(:has(select)):not(:has(.fi-select-input)) {
+    background: #fff !important;
+    border: 1px solid #e5e5e5 !important;
+    border-radius: 6px !important;
+    box-shadow: inset 3px 3px 5px 0 rgba(0, 0, 0, .1) !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+    --tw-ring-color: transparent !important;
+    outline: 0 !important;
+    min-height: 32px !important;
+    max-width: 456px !important;
+    width: 100% !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-input-wrp:not(:has(select)):not(:has(.fi-select-input)):focus-within {
+    border-color: #e5e5e5 !important;
+    box-shadow: inset 3px 3px 5px 0 rgba(0, 0, 0, .1) !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-input:not(select):not(.fi-select-input),
+.fi-page:has(.sl-profile-editor) .sl-add-form-left input.fi-input:not([type='checkbox']):not([type='radio']):not([type='file']),
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-textarea,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left textarea.fi-textarea {
+    border: 0 !important;
+    border-radius: 6px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: 0 !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 14px !important;
+    color: #555755 !important;
+    padding: 5px 10px !important;
+    min-height: 32px !important;
+    line-height: 22px !important;
+    width: 100% !important;
+    max-width: 456px !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-textarea,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left textarea.fi-textarea {
+    min-height: 50px !important;
+    height: auto !important;
+    resize: none !important;
+    line-height: 1.35 !important;
+}
+
+/* Half-width CONTACT / TELEPHONE / weblink pairs */
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-grid:has(> .fi-grid-col) > .fi-grid-col {
+    min-width: 0;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-field-wrp[style*='--cols-lg: calc(6'] .fi-input-wrp,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .sm\:fi-grid-col-span-6 .fi-input-wrp,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left [class*='col-span-6'] .fi-input-wrp,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-grid-col[style*='span 6'] .fi-input-wrp {
+    max-width: 206px !important;
+}
+
+/* Flatten Filament repeater / file upload cards to legacy list feel */
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-repeater-item,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-repeater-item,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-file-upload,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-rich-editor {
+    border: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 4px 0 !important;
+    margin: 0 0 8px !important;
+    border-radius: 0 !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-repeater-header,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-repeater-item-header {
+    background: transparent !important;
+    border: 0 !important;
+    padding: 0 0 4px !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-btn:not(.fi-color-danger):not([type='submit']),
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-ac-btn-action:not(.fi-color-danger):not([type='submit']) {
+    background: #fff !important;
+    background-image: linear-gradient(to bottom, #ffffff 0%, #e2e2e2 100%) !important;
+    border: 1px solid #cfcfcf !important;
+    border-radius: 6px !important;
+    color: #555755 !important;
+    font-size: 12px !important;
+    font-weight: bold !important;
+    text-transform: none !important;
+    box-shadow: none !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-btn.fi-color-danger,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-icon-btn.fi-color-danger {
+    color: #b00000 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+/* Legacy full-width Save CTA at bottom of left form */
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-form-actions,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-form-actions .fi-ac {
+    display: block !important;
+    width: 100% !important;
+    max-width: 456px !important;
+    margin: 8px 0 16px !important;
+    padding: 0 !important;
+    justify-content: stretch !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-form-actions .fi-btn,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-form-actions button[type='submit'],
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-btn[type='submit'],
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-btn.fi-color-primary {
+    display: block !important;
+    width: 98% !important;
+    max-width: 456px !important;
+    margin: 5px 0 !important;
+    padding: 8px 0 10px !important;
+    height: auto !important;
+    min-height: 42px !important;
+    line-height: 1.2 !important;
+    text-align: center !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 22px !important;
+    font-weight: bold !important;
+    color: #fff !important;
+    text-transform: none !important;
+    border: 0 !important;
+    border-radius: 5px !important;
+    background: #008901 !important;
+    background-image: linear-gradient(to bottom, #008901 0%, #007a01 100%) !important;
+    box-shadow: none !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-form-actions .fi-btn *,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-btn[type='submit'] * {
+    color: #fff !important;
+}
+
+/* Compact radios / checkboxes spacing (keep native controls; no Uniform dropboxes) */
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-checkbox,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-radio {
+    margin: 2px 0 !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-field-wrp {
+    margin-bottom: 10px !important;
+    gap: 0.25rem !important;
+}
+
+/* Soften section header chrome (no Filament divider bars) */
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-section-header,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-sc-section-header {
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-section-content,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-sc-section-content {
+    padding: 0 !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-section-content-ctn,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-sc-section-content-ctn {
+    gap: 0.35rem !important;
 }
 
 .button-section .gray-btn,
 .sl-legacy-preview-sidebar .gray-btn {
-    display: inline-block;
-    background: #6b6b6b;
-    color: #fff !important;
+    display: block;
+    background: #e8e8e8;
+    background: linear-gradient(to bottom, #f5f5f5 0%, #dcdcdc 100%);
+    color: #333 !important;
     text-decoration: none !important;
-    padding: 8px 14px;
+    padding: 8px 0;
     border-radius: 6px;
+    border: 1px solid #bbb;
     font-weight: bold;
     font-size: 12px;
-    margin-top: 8px;
+    text-align: center;
+    text-transform: uppercase;
+    margin: 0 0 12px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.sl-legacy-preview-sidebar .green-btn,
+.sl-legacy-preview-sidebar .sl-qr-download-btn {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    background: #008901;
+    background: linear-gradient(to bottom, #008901 0%, #007a01 100%);
+    color: #fff !important;
+    text-decoration: none !important;
+    text-transform: uppercase;
+    font-weight: bold;
+    font-size: 12px;
+    border: 1px solid #006201;
+    border-radius: 6px;
+    padding: 10px 0;
+    text-align: center;
+    margin: 0 0 12px;
+    cursor: pointer;
+}
+
+.sl-legacy-preview-sidebar .sl-qr-download-select {
+    display: block;
+    width: 100%;
+    margin: 0 0 12px;
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fff;
+    font-size: 13px;
+}
+
+.sl-qr-block .sl-qr-actions {
+    float: right;
+    width: 180px;
+    margin: 0;
 }
 
 @media (max-width: 1100px) {
@@ -1262,7 +1634,7 @@ tr.sl-row-active {
 
 .sl-legacy-preview-sidebar .iphone-preview-container {
     width: 320px !important;
-    height: 480px !important;
+    height: 882px !important;
     overflow: auto !important;
     background: #fff !important;
     -ms-overflow-style: none;
@@ -1290,16 +1662,15 @@ tr.sl-row-active {
     font-size: 18px !important;
     color: #009401 !important;
     line-height: 34px !important;
-    font-weight: 600 !important;
+    font-weight: normal !important;
+    font-family: Arial, Helvetica, sans-serif !important;
 }
 
-/* Inputs closer to legacy .text-fi look */
-.fi-page:has(.sl-profile-editor) .fi-input,
-.fi-page:has(.sl-profile-editor) .fi-textarea,
-.fi-page:has(.sl-profile-editor) select.fi-select-input {
-    border: 1px solid #ccc !important;
-    border-radius: 3px !important;
-    background: #fff !important;
+/* Inputs — superseded by .sl-add-form-left legacy .text-fi block above.
+ * Keep a light fallback for any field outside left column (rare). */
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-input:not(select):not(.fi-select-input),
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-textarea {
+    background: transparent !important;
 }
 
 @media (max-width: 1100px) {
@@ -1714,6 +2085,15 @@ tr.sl-row-active {
 .sl-portal-contact__fields li {
     margin: 0 0 10px;
     padding: 0;
+}
+
+.sl-portal-contact__fields label .required {
+    color: #e53935;
+    font-weight: inherit;
+    font-size: 1em;
+    line-height: inherit;
+    vertical-align: baseline;
+    margin-left: 3px;
 }
 
 .sl-portal-contact__fields label {

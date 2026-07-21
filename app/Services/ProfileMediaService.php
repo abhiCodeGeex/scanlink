@@ -18,20 +18,34 @@ class ProfileMediaService
     {
         $profile->loadMissing('client');
 
-        if (! empty($uploads['logo_upload'])) {
-            $this->syncLogo($profile, (string) $uploads['logo_upload']);
+        if (array_key_exists('logo_upload', $uploads)) {
+            if (! empty($uploads['logo_upload'])) {
+                $this->syncLogo($profile, (string) $uploads['logo_upload']);
+            }
         }
 
-        if (! empty($uploads['picture_uploads'])) {
-            $this->syncPictures($profile, (array) $uploads['picture_uploads']);
+        if (array_key_exists('picture_uploads', $uploads)) {
+            $profile->pictures()->delete();
+
+            if (! empty($uploads['picture_uploads'])) {
+                $this->syncPictures($profile, (array) $uploads['picture_uploads']);
+            }
         }
 
-        if (! empty($uploads['document_uploads'])) {
-            $this->syncDocuments($profile, (array) $uploads['document_uploads']);
+        if (array_key_exists('document_uploads', $uploads)) {
+            $profile->documents()->delete();
+
+            if (! empty($uploads['document_uploads'])) {
+                $this->syncDocuments($profile, (array) $uploads['document_uploads']);
+            }
         }
 
-        if (! empty($uploads['video_titles'])) {
-            $this->syncVideos($profile, (array) $uploads['video_titles']);
+        if (array_key_exists('video_titles', $uploads)) {
+            $profile->videos()->delete();
+
+            if (! empty($uploads['video_titles'])) {
+                $this->syncVideos($profile, (array) $uploads['video_titles']);
+            }
         }
     }
 
