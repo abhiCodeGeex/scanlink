@@ -25,7 +25,7 @@ class MultipleCodeRenewalTest extends TestCase
             'client_id' => $client->id,
             'email' => 'renewal-user@example.com',
             'status' => true,
-            'is_password_change' => false,
+            'is_password_change' => true,
         ]);
         $member->refresh();
 

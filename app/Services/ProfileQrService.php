@@ -146,11 +146,7 @@ class ProfileQrService
     public function downloadPdf(Profile $profile): StreamedResponse
     {
         $profile->loadMissing(['client', 'qrImage']);
-
-        if ($profile->qrImage === null) {
-            $this->generateFor($profile);
-            $profile->load('qrImage');
-        }
+        $this->ensureQrFile($profile);
 
         $qrAbsolute = Storage::disk('public')->path($profile->qrImage->diskPath());
 
@@ -202,11 +198,7 @@ class ProfileQrService
     public function downloadQrImage(Profile $profile): StreamedResponse
     {
         $profile->loadMissing('qrImage');
-
-        if ($profile->qrImage === null) {
-            $this->generateFor($profile);
-            $profile->load('qrImage');
-        }
+        $this->ensureQrFile($profile);
 
         $path = $profile->qrImage->diskPath();
 
@@ -233,11 +225,7 @@ class ProfileQrService
     protected function downloadConvertedImage(Profile $profile, string $extension, string $mime): StreamedResponse
     {
         $profile->loadMissing('qrImage');
-
-        if ($profile->qrImage === null) {
-            $this->generateFor($profile);
-            $profile->load('qrImage');
-        }
+        $this->ensureQrFile($profile);
 
         $sourcePath = Storage::disk('public')->path($profile->qrImage->diskPath());
 
@@ -255,6 +243,32 @@ class ProfileQrService
             $filename,
             ['Content-Type' => $mime],
         );
+    }
+
+    /**
+     * Live DB often has qrimage rows whose PNG files were never imported.
+     * Regenerate on demand so Download / PDF / format exports keep working.
+     */
+    protected function ensureQrFile(Profile $profile): void
+    {
+        $profile->loadMissing('qrImage');
+
+        $needsGenerate = $profile->qrImage === null;
+
+        if (! $needsGenerate) {
+            $relative = $profile->qrImage->diskPath();
+            $needsGenerate = $relative === '' || ! Storage::disk('public')->exists($relative);
+        }
+
+        if ($needsGenerate) {
+            $this->generateFor($profile);
+            $profile->unsetRelation('qrImage');
+            $profile->load('qrImage');
+        }
+
+        if ($profile->qrImage === null) {
+            throw new \RuntimeException('Unable to generate QR image for profile '.$profile->id);
+        }
     }
 
     protected function convertQrImage(string $sourcePath, string $extension): string

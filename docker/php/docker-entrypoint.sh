@@ -16,11 +16,13 @@ mkdir -p \
 
 # Local Docker: allow php-fpm (www-data) to write on named volumes.
 # Clear root-owned compiled views so Blade can touch() timestamps.
+mkdir -p /tmp/laravel-views
 if [ "$(id -u)" = "0" ]; then
-    chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
+    chown -R www-data:www-data storage bootstrap/cache /tmp/laravel-views 2>/dev/null || true
 fi
-chmod -R 777 storage bootstrap/cache storage/app/public 2>/dev/null || true
+chmod -R 777 storage bootstrap/cache storage/app/public /tmp/laravel-views 2>/dev/null || true
 find storage/framework/views -type f -name '*.php' -delete 2>/dev/null || true
+find /tmp/laravel-views -type f -name '*.php' -delete 2>/dev/null || true
 
 # Serve uploaded QR codes, logos, etc. at /storage/*
 php artisan storage:link --force >/dev/null 2>&1 || true

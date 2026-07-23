@@ -89,16 +89,30 @@ class ForcePasswordChange extends Page
 
         $user->update(['password' => $data['password']]);
 
-        ClientUser::query()
-            ->where('auth_user_id', $user->id)
-            ->update(['is_password_change' => false]);
+        // Legacy flag: 0 = must change, 1 = already changed. Mark every membership
+        // linked by auth user or email so middleware stops redirecting after save.
+        $updated = ClientUser::query()
+            ->where(function ($query) use ($user): void {
+                $query->where('auth_user_id', $user->id)
+                    ->orWhere('email', $user->email);
+            })
+            ->update(['is_password_change' => true]);
+
+        if ($updated === 0) {
+            Notification::make()
+                ->title('Could not update password status for this account.')
+                ->danger()
+                ->send();
+
+            return;
+        }
 
         Notification::make()
             ->title('Password updated')
             ->success()
             ->send();
 
-        $this->redirect(PortalDashboard::getUrl());
+        $this->redirect(\App\Filament\Portal\Resources\Profiles\ProfileResource::getUrl('index', panel: 'portal'));
     }
 
     /**

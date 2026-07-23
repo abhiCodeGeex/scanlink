@@ -152,6 +152,43 @@ class ScanPageTest extends TestCase
             ->assertSee('password protected');
     }
 
+    public function test_plaintext_profile_password_can_unlock(): void
+    {
+        $this->withoutMiddleware();
+
+        $this->profile->update([
+            'protect' => true,
+            'password' => '12345678',
+        ]);
+
+        $this->from("/{$this->client->url}/{$this->profile->id}")
+            ->post("/{$this->client->url}/{$this->profile->id}/unlock", [
+                'password' => '12345678',
+            ])
+            ->assertRedirect("/{$this->client->url}/{$this->profile->id}");
+
+        $this->get("/{$this->client->url}/{$this->profile->id}")
+            ->assertOk()
+            ->assertDontSee('password protected');
+    }
+
+    public function test_wrong_profile_password_stays_locked(): void
+    {
+        $this->withoutMiddleware();
+
+        $this->profile->update([
+            'protect' => true,
+            'password' => '12345678',
+        ]);
+
+        $this->from("/{$this->client->url}/{$this->profile->id}")
+            ->post("/{$this->client->url}/{$this->profile->id}/unlock", [
+                'password' => 'wrong',
+            ])
+            ->assertRedirect()
+            ->assertSessionHasErrors('password');
+    }
+
     public function test_visitor_contact_can_be_stored(): void
     {
         $this->withoutMiddleware();
@@ -164,14 +201,16 @@ class ScanPageTest extends TestCase
 
         $this->from("/{$this->client->url}/{$this->profile->id}")
             ->post("/{$this->client->url}/{$this->profile->id}/visitor", [
-                'user_name' => 'Jane Visitor',
-                'user_email' => 'jane@example.com',
+                'name' => 'Jane',
+                'surname' => 'Visitor',
+                'email' => 'jane@example.com',
             ])->assertRedirect();
 
-        $this->assertDatabaseHas('user_info', [
-            'profile_id' => $this->profile->id,
-            'user_name' => 'Jane Visitor',
-            'user_email' => 'jane@example.com',
+        $this->assertDatabaseHas('contacts', [
+            'id_profile' => $this->profile->id,
+            'name' => 'Jane',
+            'surname' => 'Visitor',
+            'email' => 'jane@example.com',
         ]);
     }
 

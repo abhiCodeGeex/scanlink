@@ -734,9 +734,9 @@ html:not(.dark) .fi-topbar-collapse-sidebar-btn-ctn .fi-icon-btn:hover {
 .sl-subnav-wrap {
     clear: both;
     overflow: hidden;
-    border-bottom: 1px solid #e5ebe5;
-    padding: 0 0 10px;
-    margin: 0 0 10px;
+    border-bottom: none;
+    padding: 0;
+    margin: 0 0 8px;
 }
 
 .sl-sub-navigation {
@@ -744,7 +744,7 @@ html:not(.dark) .fi-topbar-collapse-sidebar-btn-ctn .fi-icon-btn:hover {
     padding: 0;
     margin: 0;
     overflow: hidden;
-    float: left;
+    float: none;
     max-width: 100%;
 }
 
@@ -817,30 +817,35 @@ html:not(.dark) .fi-topbar-collapse-sidebar-btn-ctn .fi-icon-btn:hover {
 }
 
 .sl-colorcode-define {
-    display: inline-block;
-    padding: 5px 0;
-    float: right;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 12px;
+    padding: 0;
+    float: none;
     font-size: 12px;
     color: #333;
 }
 
 .sl-mainbox {
-    display: inline-block;
-    margin-left: 12px;
+    display: inline-flex;
+    align-items: center;
+    margin-left: 0;
     vertical-align: middle;
 }
 
 .sl-colorcodebox {
     min-height: 20px;
     width: 20px;
-    float: left;
+    float: none;
     margin-right: 5px;
     border: 1px solid #ccc;
+    flex-shrink: 0;
 }
 
 .sl-colorbox-text {
-    float: left;
-    padding-top: 3px;
+    float: none;
+    padding-top: 0;
 }
 
 .sl-colorcodebox.sl-red {
@@ -975,21 +980,91 @@ tr.sl-row-active {
     margin-top: 4px;
 }
 
-.sl-legacy-preview-sidebar .form-builder-box {
-    clear: both;
-    margin: 10px 0 0;
-    padding: 5px 0 5px 0;
-    border-radius: 6px 6px 0 0;
-    border: 1px solid #ccc;
-    box-shadow: inset 0 0 10px rgba(0, 0, 0, .1);
-    background: #fff;
+.sl-legacy-preview-sidebar .form-builder-box,
+.sl-legacy-preview-sidebar .form-builder-box.sl-form-builder-panel {
+    clear: both !important;
+    margin: 12px 0 0 !important;
+    padding: 12px 10px 12px !important;
+    border-radius: 6px 6px 0 0 !important;
+    border: 1px solid #ccc !important;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, .1) !important;
+    background: #fff !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
 }
 
 .sl-legacy-preview-sidebar .form-builder-title {
-    font-size: 18px;
-    color: #009401;
-    line-height: 34px;
-    padding-left: 10px;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px 12px !important;
+    font-size: 18px !important;
+    color: #009401 !important;
+    line-height: 1.35 !important;
+    padding: 0 0 10px !important;
+    margin: 0 !important;
+}
+
+.sl-legacy-preview-sidebar .form-builder-title .activate-for-profile {
+    float: none !important;
+    margin-left: auto !important;
+    margin-right: 0 !important;
+    padding: 0 2px 0 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    white-space: nowrap !important;
+}
+
+.sl-legacy-preview-sidebar .existing-item {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: flex-start !important;
+    gap: 6px 10px !important;
+    padding: 8px 0 !important;
+    margin: 0 !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+}
+
+.sl-legacy-preview-sidebar .existing-item > span {
+    display: inline-flex !important;
+    align-items: flex-start !important;
+    gap: 4px !important;
+    max-width: 100% !important;
+}
+
+.sl-legacy-preview-sidebar .existing-item label {
+    line-height: 1.35 !important;
+}
+
+.sl-legacy-preview-sidebar .existing-item--format {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+}
+
+.sl-legacy-preview-sidebar .existing-item--format .existing-item__label {
+    font-weight: 700 !important;
+    color: #555 !important;
+}
+
+.sl-legacy-preview-sidebar .existing-item--format .existing-item__option {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin-right: 12px !important;
+}
+
+.sl-legacy-preview-sidebar .footer-rouded {
+    float: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 10px 16px !important;
 }
 
 .sl-open-form-builder {
@@ -1003,11 +1078,180 @@ tr.sl-row-active {
     padding: 8px 12px;
 }
 
-.sl-legacy-preview-sidebar #iframe_frm_builder {
-    width: 100%;
-    max-width: 448px;
-    border: 0;
+.sl-legacy-preview-sidebar .existing-item label[for="add_existing"] {
+    color: #555755 !important;
+    font-weight: normal !important;
+    cursor: pointer !important;
+    background: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+}
+
+/* Legacy "Use an existing form" modal (colorbox replacement) */
+.sl-existing-form-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 12px;
+    background: rgba(0, 0, 0, 0.55);
+    box-sizing: border-box;
+}
+
+.sl-existing-form-dialog {
+    position: relative;
+    width: min(770px, 100%);
+    max-height: 90vh;
+    overflow: auto;
+    padding: 10px;
     background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+}
+
+.sl-existing-form-close {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    width: 28px;
+    height: 28px;
+    border: 1px solid #ccc;
+    border-radius: 50%;
+    background: #f5f5f5;
+    color: #333;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.sl-existing-form-progress,
+.sl-existing-form-status {
+    margin: 0 0 12px;
+    padding: 8px 10px;
+    color: #555;
+    font-size: 13px;
+}
+
+.sl-existing-form-progress img {
+    vertical-align: middle;
+    margin-right: 6px;
+}
+
+.sl-existing-form-tablist {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    border-bottom: 1px solid #d0d0d0;
+    margin: 8px 0 0;
+}
+
+.sl-existing-form-tab {
+    border: 0;
+    border-radius: 4px 4px 0 0;
+    padding: 8px 12px;
+    background: #888;
+    color: #fff !important;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.sl-existing-form-tab.is-active {
+    background: #008901;
+}
+
+.sl-existing-form-tabpanel {
+    padding: 12px 4px 8px;
+    min-height: 160px;
+}
+
+.sl-existing-form-empty {
+    margin: 16px 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.sl-existing-form-select {
+    border: 0;
+    border-radius: 4px;
+    padding: 6px 14px;
+    background: linear-gradient(to bottom, #008901 0%, #007a01 100%);
+    color: #fff !important;
+    font-weight: bold;
+    font-size: 12px;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.sl-existing-form-actions {
+    display: flex !important;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    float: right !important;
+    width: auto !important;
+}
+
+.sl-existing-form-link {
+    border: 0;
+    background: transparent;
+    color: #008901;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+}
+
+.sl-existing-form-link--danger {
+    color: #a00;
+}
+
+.sl-existing-form-back {
+    border: 0;
+    background: transparent;
+    color: #008901;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0;
+    margin: 8px 0;
+}
+
+.sl-existing-form-preview h2 {
+    margin: 8px 0 16px;
+    font-size: 18px;
+    color: #333;
+}
+
+.sl-existing-form-preview-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+    color: #555;
+    font-size: 14px;
+}
+
+.sl-legacy-preview-sidebar #iframe_container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 8px 0 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+.sl-legacy-preview-sidebar #iframe_frm_builder {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    border: 0 !important;
+    background: #fff !important;
+    overflow-x: hidden !important;
 }
 
 /* Filament sections → legacy SectionTitleBox look */
@@ -1477,11 +1721,13 @@ tr.sl-row-active {
 }
 
 @media (max-width: 1100px) {
-    .sl-colorcode-define {
-        float: none;
-        clear: both;
-        display: block;
-        padding-top: 10px;
+    .sl-mastercode-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .sl-action-bar {
+        justify-content: flex-start;
     }
 
     .sl-sub-navigation {
@@ -1489,15 +1735,93 @@ tr.sl-row-active {
     }
 }
 
+.sl-mastercode-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+    margin: 0 0 0.75rem;
+    padding: 0.35rem 0 0.65rem;
+    border-bottom: 1px solid #e5ebe5;
+}
+
 .sl-action-bar {
-    clear: both;
+    clear: none;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: flex-end;
     gap: 0.5rem;
-    margin: 0 0 1rem;
-    padding: 0.35rem 0 0.75rem;
+    margin: 0;
+    padding: 0;
+    margin-left: auto;
+}
+
+/* Admin Global Settings — legacy single-table form */
+.fi-page:has(.sl-gs) .fi-header-heading:empty {
+    display: none !important;
+}
+
+.fi-page:has(.sl-gs) .fi-header:not(:has(.fi-header-heading:not(:empty))) {
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+.fi-page:has(.sl-fslog) .fi-header:not(:has(.sl-mastercode-heading)):not(:has(.fi-header-heading:not(:empty))),
+.fi-page:has(.sl-vlog) .fi-header:not(:has(.sl-mastercode-heading)):not(:has(.fi-header-heading:not(:empty))),
+.fi-page:has(.sl-sa) .fi-header:not(:has(.sl-mastercode-heading)):not(:has(.fi-header-heading:not(:empty))),
+.fi-page:has(.sl-ol) .fi-header:not(:has(.sl-mastercode-heading)):not(:has(.fi-header-heading:not(:empty))) {
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.fi-page:has(.sl-fslog) .fi-header-heading:empty,
+.fi-page:has(.sl-vlog) .fi-header-heading:empty,
+.fi-page:has(.sl-sa) .fi-header-heading:empty,
+.fi-page:has(.sl-ol) .fi-header-heading:empty {
+    display: none !important;
+}
+
+.fi-page:has(.sl-fslog) .fi-page-content,
+.fi-page:has(.sl-fslog) .fi-page-main-ctn,
+.fi-page:has(.sl-vlog) .fi-page-content,
+.fi-page:has(.sl-vlog) .fi-page-main-ctn,
+.fi-page:has(.sl-sa) .fi-page-content,
+.fi-page:has(.sl-sa) .fi-page-main-ctn,
+.fi-page:has(.sl-ol) .fi-page-content,
+.fi-page:has(.sl-ol) .fi-page-main-ctn {
+    max-width: none !important;
+    width: 100% !important;
+}
+
+.fi-page:has(.sl-fslog) .sl-mastercode-toolbar,
+.fi-page:has(.sl-vlog) .sl-mastercode-toolbar,
+.fi-page:has(.sl-sa) .sl-mastercode-toolbar,
+.fi-page:has(.sl-ol) .sl-mastercode-toolbar {
+    margin-bottom: 1rem;
+}
+
+/* Compact Filament page header under the legacy toolbar (no duplicate CTA row). */
+.fi-page:has(.sl-mastercode-toolbar) > .fi-header,
+.fi-page:has(.sl-mastercode-toolbar) .fi-header:has(.sl-mastercode-heading) {
+    margin-top: 0 !important;
+    margin-bottom: 0.5rem !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    min-height: 0 !important;
+    gap: 0.35rem !important;
+}
+
+.fi-page:has(.sl-mastercode-toolbar) .fi-header-heading {
+    font-size: 1.15rem !important;
+    line-height: 1.3 !important;
+}
+
+.fi-page:has(.sl-mastercode-toolbar) .fi-header-actions:empty,
+.fi-page:has(.sl-mastercode-toolbar) .fi-ac:empty {
+    display: none !important;
 }
 
 .sl-analytics-btn {
@@ -1548,6 +1872,36 @@ tr.sl-row-active {
     font-size: 13px !important;
 }
 
+/* Master Code List row tools — compact, vertically centered */
+.fi-page:has(.sl-mastercode-toolbar) .fi-ta-actions,
+.fi-resource-profiles .fi-ta-actions {
+    display: inline-flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 2px !important;
+    min-height: 28px !important;
+    padding: 0 !important;
+    vertical-align: middle !important;
+}
+
+.fi-page:has(.sl-mastercode-toolbar) .fi-ta-actions .fi-ac-icon-btn-action,
+.fi-page:has(.sl-mastercode-toolbar) .fi-ta-actions .fi-icon-btn,
+.fi-resource-profiles .fi-ta-actions .fi-icon-btn {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    color: #333 !important;
+}
+
+.fi-page:has(.sl-mastercode-toolbar) .fi-ta-actions .fi-icon-btn svg,
+.fi-resource-profiles .fi-ta-actions .fi-icon-btn svg {
+    width: 18px !important;
+    height: 18px !important;
+}
+
 .fi-resource-profiles .fi-ta-actions .fi-icon-btn {
     color: #444;
 }
@@ -1582,6 +1936,13 @@ tr.sl-row-active {
     align-items: start !important;
 }
 
+/* VOC / Exhibit / Misc CKEditor toolbars/dropdowns must not be clipped */
+.sl-profile-editor--voc,
+.sl-profile-editor--exhibit,
+.sl-profile-editor--misc {
+    overflow: visible !important;
+}
+
 .sl-profile-editor .add-form-left,
 .sl-profile-editor .sl-add-form-left {
     grid-area: form !important;
@@ -1600,6 +1961,8 @@ tr.sl-row-active {
     max-width: 450px !important;
     margin: 12px 0 0 !important;
     display: block !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
 }
 
 /* Kill Filament's top-level 2-col section masonry — stack SectionTitleBox cards */
@@ -2259,6 +2622,150 @@ tr.sl-row-active {
     .sl-portal-contact__box {
         margin-top: 2.25rem;
     }
+}
+
+/* ===== URL Link (code) editor — match legacy code/index.php ===== */
+.sl-profile-editor--code .sl-add-form-left .sl-code-url-form .fi-section-header,
+.sl-profile-editor--code .sl-add-form-left .sl-code-url-form .fi-sc-section-header {
+    display: none !important;
+}
+
+.sl-profile-editor--code .SectionTitleCode {
+    color: #000;
+    font-size: 18px;
+    line-height: 34px;
+    font-weight: 700;
+    margin: 0 0 8px;
+}
+
+.sl-profile-editor--code .codelabel {
+    position: relative;
+    display: inline-block;
+    padding-right: 22px;
+    line-height: 22px;
+    min-height: 22px;
+    cursor: help;
+}
+
+.sl-profile-editor--code .codelabel::after {
+    content: '?';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #4caf50;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+}
+
+.sl-profile-editor--code .sl-code-dc-fields {
+    margin: 4px 0 10px !important;
+    max-width: 380px;
+}
+
+.sl-profile-editor--code .sl-code-dc-fields .fi-fo-field-wrp {
+    margin-bottom: 2px !important;
+}
+
+.sl-profile-editor--code .sl-code-dc-compulsory {
+    margin-top: 2px !important;
+}
+
+.sl-profile-editor--code .sl-code-colour-type-row {
+    align-items: start !important;
+    margin-top: 8px !important;
+}
+
+.sl-profile-editor--code .sl-code-type-radios .fi-fo-radio,
+.sl-profile-editor--code .sl-code-type-radios .fi-radio-list {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+}
+
+.sl-profile-editor--code .sl-add-form-left .fi-form-actions {
+    max-width: 150px !important;
+    margin: 16px auto !important;
+    text-align: center !important;
+}
+
+.sl-profile-editor--code .sl-add-form-left .fi-form-actions .fi-btn,
+.sl-profile-editor--code .sl-add-form-left .fi-form-actions button[type='submit'] {
+    width: 150px !important;
+    max-width: 150px !important;
+    margin: 0 auto !important;
+    font-size: 16px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.02em;
+}
+
+.sl-profile-editor--code .add-form-right-code,
+.sl-profile-editor--code .sl-add-form-right {
+    margin-top: 0 !important;
+}
+
+.sl-profile-editor--code .sl-add-form-left input.codeTextApplication,
+.sl-profile-editor--code .sl-add-form-left .codeTextApplication {
+    max-width: 220px !important;
+}
+
+/* ===== Survey editor — match legacy survey/index.php ===== */
+.sl-profile-editor--survey {
+    grid-template-columns: 460px 450px !important;
+}
+
+.sl-profile-editor--survey .sl-add-form-left,
+.sl-profile-editor--survey .sl-add-form-left--survey {
+    width: 460px !important;
+    max-width: 460px !important;
+}
+
+.sl-profile-editor--survey .sl-add-form-left .fi-form-actions {
+    max-width: 150px !important;
+    margin: 16px auto !important;
+    text-align: center !important;
+}
+
+.sl-profile-editor--survey .sl-add-form-left .fi-form-actions .fi-btn,
+.sl-profile-editor--survey .sl-add-form-left .fi-form-actions button[type='submit'] {
+    width: 150px !important;
+    max-width: 150px !important;
+    margin: 0 auto !important;
+    font-size: 16px !important;
+    text-transform: uppercase !important;
+}
+
+.sl-profile-editor--survey .sl-survey-form-builder {
+    width: 100%;
+    max-width: 458px;
+    margin-top: 8px;
+}
+
+.sl-profile-editor--survey .sl-survey-save-wrap {
+    margin: 16px 0 24px;
+    list-style: none;
+    padding: 0;
+}
+
+.sl-profile-editor--survey .sl-survey-save-btn {
+    display: inline-block;
+    width: 150px;
+    padding: 8px 0 10px;
+    border: 0;
+    border-radius: 5px;
+    background: #008901;
+    background-image: linear-gradient(to bottom, #008901 0%, #007a01 100%);
+    color: #fff !important;
+    font-size: 16px;
+    font-weight: bold;
+    text-transform: uppercase;
+    cursor: pointer;
 }
 
 

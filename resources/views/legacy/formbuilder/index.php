@@ -523,12 +523,16 @@
 		$('#iframe_current_height').val($p('#iframe_frm_builder').height()); ///new hidden
 		$('#div_drop_area_current_height').val($('#div_drop_area').css('height')); //new hidden
 
-		$p('body').on('click', '.expand-reduce', function() {
-			if (window.parent != null) {
+		// Expand/Reduce is handled on the parent portal page (no jQuery there).
+		if ($p && $p !== $) {
+			$p('body').off('click.slExpandReduce', '.expand-reduce').on('click.slExpandReduce', '.expand-reduce', function() {
+				var $label = $p('#sl-expand-reduce-label');
+				if (! $label.length) {
+					$label = $p(this).closest('.footer-rouded').find('span.expand-reduce').first();
+				}
 				iframe_height = $p('#iframe_frm_builder').height();
 
-				if ($(this).parent().children('span').text() == "Expand Window") {
-					//$p('#iframe_frm_builder').height($(".ui-widget-content ol").prop('scrollHeight')+iframe_height);
+				if ($label.text().trim() == "Expand Window") {
 					$p('#iframe_frm_builder').height($(".ui-widget-content ol").prop('scrollHeight') + $('.top-part').height());
 
 					div_drop_area_current_height = $('#div_drop_area_current_height').val().split('px');
@@ -536,17 +540,17 @@
 					if (div_drop_area_current_height[0] < $('.ui-droppable').prop('scrollHeight'))
 						$('#div_drop_area').css('height', ($('.ui-droppable').prop('scrollHeight')));
 
-					$(this).parent().children('span').text('Reduce Window');
+					$label.text('Reduce Window');
 					$p('#expand_reduce_img').attr('src', '<?php echo rtrim(url('/'), '/'); ?>/images/reduce_window.png');
 
 				} else {
 					$p('#iframe_frm_builder').height($('#iframe_current_height').val());
 					$('#div_drop_area').css('height', $('#div_drop_area_current_height').val());
-					$(this).parent().children('span').text('Expand Window');
+					$label.text('Expand Window');
 					$p('#expand_reduce_img').attr('src', '<?php echo rtrim(url('/'), '/'); ?>/images/expand_window.png');
 				}
-			}
-		});
+			});
+		}
 
 		$p('#enable_form').on('click', function() {
 			if ($(this).prop('checked') == true)
@@ -718,7 +722,7 @@
 						<span>
 							<img src="<?php echo rtrim(url('/'), '/'); ?>/form-builder/images/arrow.jpg" alt="" class="after" />
 							Create your form here
-							<img src="<?php echo rtrim(url('/'), '/'); ?>/form-builder/images/arrow.jpg" alt="" class=" before" />
+							<img src="<?php echo rtrim(url('/'), '/'); ?>/form-builder/images/arrow.jpg" alt="" class="before" />
 						</span>
 					</div>
 				</div>

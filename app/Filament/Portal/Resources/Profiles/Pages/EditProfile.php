@@ -58,18 +58,36 @@ class EditProfile extends EditRecord
      */
     protected function mutateFormDataBeforeFill(array $data): array
     {
-        $profile = $this->record->loadMissing(['logos', 'videos']);
+        $profile = $this->record->loadMissing(['logos', 'logosExtra', 'videos', 'equipmentType']);
 
         $logo = $profile->logos->first();
         $data['logo_upload'] = $logo?->logo_name;
 
+        $logoExtra = $profile->logosExtra->first();
+        $data['logo_extra_upload'] = $logoExtra?->logo_name;
+
         $data['video_titles'] = $profile->videos
+            ->where('is_extra', false)
             ->map(fn ($video): array => [
                 'title' => (string) ($video->title ?? ''),
                 'video_name' => (string) ($video->video_name ?? ''),
             ])
             ->values()
             ->all();
+
+        $data['video_extra_titles'] = $profile->videos
+            ->where('is_extra', true)
+            ->map(fn ($video): array => [
+                'title' => (string) ($video->title ?? ''),
+                'video_name' => (string) ($video->video_name ?? ''),
+            ])
+            ->values()
+            ->all();
+
+        // Legacy code/index.php defaults destination_url to "http://".
+        if (($profile->equipmentType?->slag === 'code') && blank($data['url'] ?? null)) {
+            $data['url'] = 'http://';
+        }
 
         return $data;
     }
@@ -102,5 +120,29 @@ class EditProfile extends EditRecord
     {
         $this->syncProfileAssets();
         $this->syncFormBuilderSidebarSettings();
+    }
+
+    /**
+     * @return array<\Filament\Actions\Action>
+     */
+    protected function getFormActions(): array
+    {
+        $slag = $this->record?->equipmentType?->slag;
+
+        // Survey Save is rendered under Form Builder in legacy-profile-page.
+        if ($slag === 'survey') {
+            return [];
+        }
+
+        if ($slag === 'code') {
+            return [
+                $this->getSaveFormAction()->label('SAVE'),
+            ];
+        }
+
+        return [
+            $this->getSaveFormAction(),
+            $this->getCancelFormAction(),
+        ];
     }
 }

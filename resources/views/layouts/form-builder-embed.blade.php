@@ -8,8 +8,34 @@
     @filamentStyles
     @livewireStyles
     <style>
-        html, body { margin: 0; padding: 0; background: #fff; overflow-x: hidden; }
-        body { font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #333; }
+        html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #fff !important;
+            overflow-x: hidden !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+        }
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 13px;
+            color: #333;
+        }
+        *, *::before, *::after { box-sizing: border-box !important; }
+        /* Neutralize Filament/Livewire chrome in embed iframe */
+        .fi-body, .fi-simple-layout, .fi-simple-main, .fi-page,
+        .fi-page-main, .fi-page-content, .fi-main, .fi-main-ctn,
+        [wire\:id] {
+            margin: 0 !important;
+            padding: 0 !important;
+            max-width: 100% !important;
+            width: 100% !important;
+            overflow-x: hidden !important;
+            box-shadow: none !important;
+            background: transparent !important;
+            border: 0 !important;
+        }
     </style>
 </head>
 <body>

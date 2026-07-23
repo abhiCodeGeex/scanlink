@@ -3,139 +3,268 @@
         $sessions = $this->paginatedSessions();
     @endphp
 
+    {{-- Do NOT load public/styles/style.css here — it breaks Filament sidebar/main padding. --}}
     <style>
-        .fs-root { --fs-green: #008C00; }
-        .fs-card { border-radius: 12px; border: 1px solid rgb(229 231 235); background: #fff; padding: 1.25rem; box-shadow: 0 1px 3px rgb(0 0 0 / 0.06); }
-        .dark .fs-card { border-color: rgb(55 65 81); background: rgb(17 24 39); }
-        .fs-toolbar { display: flex; flex-wrap: wrap; gap: .75rem; align-items: flex-end; justify-content: space-between; margin-bottom: 1rem; }
-        .fs-label { display: block; font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: rgb(107 114 128); margin-bottom: .35rem; }
-        .fs-select { border-radius: 8px; border: 1px solid rgb(209 213 219); padding: .5rem .75rem; font-size: .875rem; min-width: 240px; }
-        .dark .fs-select { border-color: rgb(75 85 99); background: rgb(31 41 55); color: #fff; }
-        .fs-btn { display: inline-flex; align-items: center; border-radius: 8px; padding: .45rem .85rem; font-size: .8125rem; font-weight: 600; cursor: pointer; border: none; }
-        .fs-btn-primary { background: var(--fs-green); color: #fff; }
-        .fs-btn-secondary { background: rgb(243 244 246); color: rgb(55 65 81); }
-        .dark .fs-btn-secondary { background: rgb(55 65 81); color: #fff; }
-        .fs-btn-danger { background: rgb(220 38 38); color: #fff; }
-        .fs-btn-sm { padding: .3rem .55rem; font-size: .75rem; }
-        .fs-table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid rgb(229 231 235); }
-        .dark .fs-table-wrap { border-color: rgb(55 65 81); }
-        .fs-table { width: 100%; border-collapse: collapse; font-size: .8125rem; }
-        .fs-table thead { background: rgb(0 140 0 / .08); }
-        .dark .fs-table thead { background: rgb(0 140 0 / .15); }
-        .fs-table th { padding: .65rem .75rem; text-align: left; font-weight: 700; font-size: .6875rem; text-transform: uppercase; letter-spacing: .04em; color: var(--fs-green); white-space: nowrap; }
-        .fs-table td { padding: .65rem .75rem; border-top: 1px solid rgb(229 231 235); vertical-align: top; }
-        .dark .fs-table td { border-color: rgb(55 65 81); }
-        .fs-table tbody tr:hover { background: rgb(0 140 0 / .03); }
-        .fs-detail { background: rgb(249 250 251); padding: 1rem; }
-        .dark .fs-detail { background: rgb(31 41 55); }
-        .fs-detail-grid { display: grid; grid-template-columns: 1fr 2fr; gap: .35rem .75rem; font-size: .8125rem; }
-        .fs-detail-grid dt { font-weight: 600; color: rgb(75 85 99); }
-        .fs-pagination { display: flex; gap: .5rem; align-items: center; justify-content: flex-end; margin-top: 1rem; font-size: .8125rem; }
-        .fs-log-col { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .sl-fslog {
+            font-family: Arial, Helvetica, sans-serif;
+            color: #333;
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+            padding: 0 0 1.5rem;
+            box-sizing: border-box;
+        }
+        .sl-fslog__panel {
+            background: #fff;
+            border: 1px solid #e5ebe5;
+            border-radius: 4px;
+            padding: 18px 22px 24px;
+            box-sizing: border-box;
+        }
+        .sl-fslog__head {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        .sl-fslog__title {
+            margin: 0;
+            font-size: 20px;
+            font-weight: bold;
+            color: #555755;
+            line-height: 1.25;
+        }
+        .sl-fslog__profile {
+            margin-top: 4px;
+            font-size: 14px;
+            color: #444;
+        }
+        .sl-fslog__toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 10px 14px;
+            margin: 0 0 16px;
+            padding: 4px 0 12px;
+            border-bottom: 1px solid #eee;
+        }
+        .sl-fslog__toolbar label {
+            font-size: 13px;
+            font-weight: bold;
+            color: #5f5f5f;
+            margin-right: 4px;
+        }
+        .sl-fslog__toolbar input[type="text"] {
+            width: 100px;
+            padding: 6px 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 13px;
+            background: #fff;
+        }
+        .sl-fslog__btn {
+            display: inline-block;
+            background: #008901;
+            color: #fff !important;
+            font-weight: bold;
+            font-size: 13px;
+            text-transform: uppercase;
+            text-decoration: none !important;
+            border: 1px solid #006201;
+            border-radius: 5px;
+            padding: 8px 14px;
+            cursor: pointer;
+            line-height: 1.2;
+        }
+        .sl-fslog__btn:hover { background: #00a001; }
+        .sl-fslog__btn--wide { min-width: 115px; text-align: center; }
+        .sl-fslog table.listing-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            font-size: 13px;
+        }
+        .sl-fslog table.listing-table th {
+            background: #e8e8e8;
+            color: #333;
+            font-weight: bold;
+            padding: 10px 8px;
+            border-bottom: 1px solid #ccc;
+            text-align: left;
+        }
+        .sl-fslog table.listing-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #eee;
+            vertical-align: middle;
+        }
+        .sl-fslog table.listing-table tr:nth-child(even) td { background: #f7faf7; }
+        .sl-fslog__empty {
+            text-align: center;
+            color: #5286BE;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 28px 12px;
+        }
+        .sl-fslog__paging {
+            text-align: center;
+            padding: 14px 0 0;
+            font-size: 13px;
+        }
+        .sl-fslog__paging button {
+            margin: 0 4px;
+            background: #008901;
+            color: #fff;
+            border: 0;
+            border-radius: 4px;
+            padding: 4px 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .sl-fslog .form-submission-table { width: auto; margin: 0 auto; }
+        .sl-fslog .form-submission-table td {
+            border: 0 !important;
+            padding: 0 6px !important;
+            background: transparent !important;
+        }
+        .sl-fslog .form-submission-table a {
+            background: url("{{ asset('images/icons_submissions.png') }}") no-repeat left top;
+            width: 22px;
+            height: 24px;
+            display: block;
+            text-indent: -9999px;
+            overflow: hidden;
+        }
+        .sl-fslog .form-submission-table a.view { background-position: -11px -24px; }
+        .sl-fslog .form-submission-table a.view:hover { background-position: -11px 0; }
+        .sl-fslog .form-submission-table a.download { background-position: -53px -24px; }
+        .sl-fslog .form-submission-table a.download:hover { background-position: -53px 0; }
+        .sl-fslog .form-submission-table a.delete { background-position: -104px -25px; }
+        .sl-fslog .form-submission-table a.delete:hover { background-position: -104px 0; }
     </style>
 
-    <div class="fs-root space-y-4">
-        <div class="fs-card">
-            <div class="fs-toolbar">
+    <div class="sl-fslog">
+        <div class="sl-fslog__panel">
+            <div class="sl-fslog__head">
                 <div>
-                    <label class="fs-label">Profile</label>
-                    <select wire:model.live="selectedProfileId" class="fs-select">
-                        <option value="">Select profile</option>
-                        @foreach ($this->clientProfileOptions() as $id => $name)
-                            <option value="{{ $id }}">{{ $name }}</option>
-                        @endforeach
-                    </select>
+                    <h3 class="sl-fslog__title">Form Submission Log</h3>
+                    @if ($selectedProfileId)
+                        <div class="sl-fslog__profile">
+                            Profile {{ $selectedProfileId }}.
+                            @if ($profileName) {{ $profileName }} @endif
+                        </div>
+                    @endif
                 </div>
-                @if ($selectedProfileId)
-                    <button type="button" class="fs-btn fs-btn-primary" wire:click="exportCsv">
-                        Export CSV
-                    </button>
-                @endif
             </div>
-        </div>
 
-        @if ($sessions && $sessions->count() > 0)
-            <div class="fs-card" style="padding:0;">
-                <div class="fs-table-wrap">
-                    <table class="fs-table">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Date / Time</th>
-                                @foreach ($logQuestions as $logQ)
-                                    <th class="fs-log-col" title="{{ $logQ->log_columntitle ?: $logQ->question_text }}">
-                                        {{ \Illuminate\Support\Str::limit($logQ->log_columntitle ?: $logQ->question_text, 24) }}
-                                    </th>
-                                @endforeach
-                                <th>Answers</th>
-                                <th style="text-align:right;">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+            @if ($selectedProfileId)
+                <div class="sl-fslog__toolbar">
+                    <button type="button" class="sl-fslog__btn sl-fslog__btn--wide" wire:click="downloadAll">DOWNLOAD ALL</button>
+
+                    <span>
+                        <label for="from_date">From Date</label>
+                        <input id="from_date" type="text" wire:model="fromDate" placeholder="dd/mm/yyyy" autocomplete="off">
+                    </span>
+                    <span>
+                        <label for="to_date">To Date</label>
+                        <input id="to_date" type="text" wire:model="toDate" placeholder="dd/mm/yyyy" autocomplete="off">
+                    </span>
+
+                    <button type="button" class="sl-fslog__btn" wire:click="search">SEARCH</button>
+                    <a class="sl-fslog__btn" href="{{ $this->returnToListUrl() }}">RETURN TO LIST</a>
+                </div>
+
+                <table class="listing-table" width="100%" cellspacing="0" cellpadding="0">
+                    <thead>
+                        <tr>
+                            <th width="8%" align="center">No.</th>
+                            <th width="14%">Date / Time</th>
+                            @foreach ($logQuestions as $logQ)
+                                @if ((int) $logQ->question_type_id === 25)
+                                    <th>Name</th>
+                                    <th>Phone</th>
+                                    <th>Venue Address</th>
+                                    <th>Location Description/Type</th>
+                                    <th>Vehicle Reg No</th>
+                                @else
+                                    <th>{{ $logQ->log_columntitle ?: \Illuminate\Support\Str::limit(strip_tags((string) $logQ->question_text), 40) }}</th>
+                                @endif
+                            @endforeach
+                            <th width="16%" style="text-align:center;">Options</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if ($sessions && $sessions->count() > 0)
                             @foreach ($sessions as $index => $session)
                                 @php
                                     $rowNum = ($sessions->currentPage() - 1) * $sessions->perPage() + $index + 1;
                                 @endphp
-                                <tr wire:key="session-{{ $session->session_id }}">
-                                    <td>{{ $rowNum }}</td>
-                                    <td>{{ \Illuminate\Support\Carbon::parse($session->submitted_at)->format('d M Y H:i') }}</td>
+                                <tr wire:key="fs-{{ $session->session_id }}">
+                                    <td align="center">{{ $rowNum }}</td>
+                                    <td>
+                                        {{ \Illuminate\Support\Carbon::parse($session->submitted_at)->format('d/m/Y H:i') }}
+                                    </td>
                                     @foreach ($logQuestions as $logQ)
-                                        <td class="fs-log-col" title="{{ $this->answerForSession($session, $logQ->question_id) }}">
-                                            {{ \Illuminate\Support\Str::limit($this->answerForSession($session, $logQ->question_id), 40) }}
-                                        </td>
+                                        @php $raw = $this->answerForSession($session, (int) $logQ->question_id); @endphp
+                                        @if ((int) $logQ->question_type_id === 25)
+                                            @foreach ($this->covidCells($raw) as $cell)
+                                                <td align="center">{!! nl2br(e($cell)) !!}</td>
+                                            @endforeach
+                                        @else
+                                            <td align="center">{{ $raw }}</td>
+                                        @endif
                                     @endforeach
-                                    <td>{{ $session->answer_count }}</td>
-                                    <td style="text-align:right; white-space:nowrap;">
-                                        <button type="button" class="fs-btn fs-btn-secondary fs-btn-sm" wire:click="viewSession('{{ $session->session_id }}')">
-                                            {{ $viewSessionId === $session->session_id ? 'Hide' : 'View' }}
-                                        </button>
-                                        <a href="{{ $this->printSessionUrl($session->session_id) }}" target="_blank" rel="noopener" class="fs-btn fs-btn-secondary fs-btn-sm" style="text-decoration:none;">
-                                            Print / PDF
-                                        </a>
-                                        <button type="button" class="fs-btn fs-btn-danger fs-btn-sm" wire:click="deleteSession('{{ $session->session_id }}')" wire:confirm="Delete this submission?">
-                                            Delete
-                                        </button>
+                                    <td>
+                                        <table class="form-submission-table" cellspacing="0" cellpadding="0">
+                                            <tr>
+                                                <td>
+                                                    <a class="view" href="{{ $this->viewUrl($session->session_id) }}" title="View Submission Response">View</a>
+                                                </td>
+                                                <td>
+                                                    <a class="download" href="{{ $this->printSessionUrl($session->session_id) }}" target="_blank" rel="noopener" title="Download Submission Response">Download</a>
+                                                </td>
+                                                @if ($this->canDeleteCode())
+                                                    <td>
+                                                        <a
+                                                            class="delete"
+                                                            href="#"
+                                                            title="Delete Response"
+                                                            wire:click.prevent="deleteSession('{{ $session->session_id }}')"
+                                                            wire:confirm="Are you sure to delete this?"
+                                                        >Delete</a>
+                                                    </td>
+                                                @endif
+                                            </tr>
+                                        </table>
                                     </td>
                                 </tr>
-                                @if ($viewSessionId === $session->session_id)
-                                    <tr wire:key="detail-{{ $session->session_id }}">
-                                        <td colspan="{{ 4 + $logQuestions->count() }}" class="fs-detail">
-                                            <strong style="color:var(--fs-green); display:block; margin-bottom:.5rem;">Submission detail</strong>
-                                            <dl class="fs-detail-grid">
-                                                @foreach ($this->sessionAnswers($session->session_id) as $answer)
-                                                    <dt>{{ $answer->question?->question_text ?? 'Question #'.$answer->question_id }}</dt>
-                                                    <dd>{{ $answer->question_answer ?: '—' }}</dd>
-                                                @endforeach
-                                            </dl>
-                                        </td>
-                                    </tr>
-                                @endif
                             @endforeach
-                        </tbody>
-                    </table>
-                </div>
-
-                @if ($sessions->hasPages())
-                    <div class="fs-pagination" style="padding:1rem;">
-                        <span>Page {{ $sessions->currentPage() }} of {{ $sessions->lastPage() }} ({{ $sessions->total() }} submissions)</span>
-                        @if ($sessions->onFirstPage())
-                            <span class="fs-btn fs-btn-secondary fs-btn-sm" style="opacity:.5;">Previous</span>
                         @else
-                            <button type="button" class="fs-btn fs-btn-secondary fs-btn-sm" wire:click="goToPage({{ $sessions->currentPage() - 1 }})">Previous</button>
+                            <tr>
+                                <td colspan="{{ 3 + $logQuestions->sum(fn ($q) => (int) $q->question_type_id === 25 ? 5 : 1) }}" class="sl-fslog__empty">
+                                    No Results Found
+                                </td>
+                            </tr>
+                        @endif
+                    </tbody>
+                </table>
+
+                @if ($sessions && $sessions->hasPages())
+                    <div class="sl-fslog__paging">
+                        <span>Page {{ $sessions->currentPage() }} of {{ $sessions->lastPage() }}</span>
+                        @if (! $sessions->onFirstPage())
+                            <button type="button" wire:click="goToPage({{ $sessions->currentPage() - 1 }})">Prev</button>
                         @endif
                         @if ($sessions->hasMorePages())
-                            <button type="button" class="fs-btn fs-btn-secondary fs-btn-sm" wire:click="goToPage({{ $sessions->currentPage() + 1 }})">Next</button>
-                        @else
-                            <span class="fs-btn fs-btn-secondary fs-btn-sm" style="opacity:.5;">Next</span>
+                            <button type="button" wire:click="goToPage({{ $sessions->currentPage() + 1 }})">Next</button>
                         @endif
                     </div>
                 @endif
-            </div>
-        @elseif ($selectedProfileId)
-            <div class="fs-card">
-                <p style="font-size:.875rem; color:rgb(107 114 128);">No form submissions yet for this profile.</p>
-            </div>
-        @endif
+            @else
+                <div class="sl-fslog__empty">No Form Submissions Found!</div>
+            @endif
+        </div>
     </div>
-
 </x-filament-panels::page>

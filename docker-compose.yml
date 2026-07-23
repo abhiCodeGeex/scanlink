@@ -25,6 +25,9 @@ services:
     environment:
       APP_ENV: local
       APP_DEBUG: "false"
+      # Keep Blade compiles off the shared volume — root-owned views from
+      # `docker exec` otherwise cause php-fpm touch() 500s (Utime failed).
+      VIEW_COMPILED_PATH: /tmp/laravel-views
       DB_HOST: mysql
       DB_PORT: "3306"
       DB_DATABASE: scanlink_laravel

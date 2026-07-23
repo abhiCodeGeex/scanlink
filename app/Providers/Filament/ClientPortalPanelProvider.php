@@ -119,6 +119,8 @@ class ClientPortalPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Portal/Pages'), for: 'App\\Filament\\Portal\\Pages')
             ->pages([
                 PortalDashboard::class,
+                \App\Filament\Portal\Pages\FormSubmissions::class,
+                \App\Filament\Portal\Pages\FormSubmissionView::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Portal/Widgets'), for: 'App\\Filament\\Portal\\Widgets')
             ->renderHook(
@@ -143,7 +145,7 @@ class ClientPortalPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=37">',
+                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=45">',
             )
             ->widgets([])
             ->middleware([

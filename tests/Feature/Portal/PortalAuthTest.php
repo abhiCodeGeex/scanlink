@@ -51,7 +51,7 @@ class PortalAuthTest extends TestCase
             'email' => 'portal-user@example.com',
             'password' => 'Portal@12345',
             'status' => true,
-            'is_password_change' => false,
+            'is_password_change' => true,
         ]);
         $member->refresh();
 
@@ -66,19 +66,38 @@ class PortalAuthTest extends TestCase
         $this->post('/portal-login', [
             'email' => 'portal-user@example.com',
             'password' => 'Portal@12345',
-        ])->assertRedirect('/portal/dashboard');
+        ])->assertRedirect('/portal/profiles');
 
         $this->assertAuthenticatedAs($user);
     }
 
-    public function test_portal_user_can_access_dashboard(): void
+    public function test_portal_user_can_access_master_code_list(): void
     {
         $client = Client::factory()->create();
         $member = ClientUser::factory()->primary()->create([
             'client_id' => $client->id,
             'email' => 'portal-user@example.com',
             'status' => true,
-            'is_password_change' => false,
+            'is_password_change' => true,
+        ]);
+        $member->refresh();
+
+        $user = User::query()->findOrFail($member->auth_user_id);
+        $user->update(['user_type' => UserType::Portal, 'admin_role' => null]);
+
+        $this->actingAs($user)
+            ->get('/portal/profiles')
+            ->assertOk();
+    }
+
+    public function test_portal_dashboard_redirects_to_master_code_list(): void
+    {
+        $client = Client::factory()->create();
+        $member = ClientUser::factory()->primary()->create([
+            'client_id' => $client->id,
+            'email' => 'portal-user@example.com',
+            'status' => true,
+            'is_password_change' => true,
         ]);
         $member->refresh();
 
@@ -87,7 +106,7 @@ class PortalAuthTest extends TestCase
 
         $this->actingAs($user)
             ->get('/portal/dashboard')
-            ->assertOk();
+            ->assertRedirect('/portal/profiles');
     }
 
     public function test_admin_user_cannot_access_portal_without_membership(): void
@@ -97,7 +116,7 @@ class PortalAuthTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->get('/portal/dashboard')
+            ->get('/portal/profiles')
             ->assertForbidden();
     }
 
@@ -113,7 +132,7 @@ class PortalAuthTest extends TestCase
             'client_id' => $client->id,
             'email' => 'portal-logout@example.com',
             'status' => true,
-            'is_password_change' => false,
+            'is_password_change' => true,
         ]);
         $member->refresh();
 
@@ -125,5 +144,59 @@ class PortalAuthTest extends TestCase
             ->assertRedirect('/');
 
         $this->assertGuest();
+    }
+
+    public function test_portal_user_must_change_password_when_flag_is_false(): void
+    {
+        $client = Client::factory()->create();
+        $member = ClientUser::factory()->primary()->create([
+            'client_id' => $client->id,
+            'email' => 'force-pwd@example.com',
+            'status' => true,
+            'is_password_change' => false,
+        ]);
+        $member->refresh();
+
+        $user = User::query()->findOrFail($member->auth_user_id);
+        $user->update(['user_type' => UserType::Portal, 'admin_role' => null]);
+
+        $this->actingAs($user)
+            ->get('/portal/profiles')
+            ->assertRedirect('/portal/force-password-change');
+    }
+
+    public function test_force_password_change_clears_flag_and_allows_portal(): void
+    {
+        $client = Client::factory()->create();
+        $member = ClientUser::factory()->primary()->create([
+            'client_id' => $client->id,
+            'email' => 'force-pwd-save@example.com',
+            'status' => true,
+            'is_password_change' => false,
+        ]);
+        $member->refresh();
+
+        $user = User::query()->findOrFail($member->auth_user_id);
+        $user->update([
+            'password' => 'OldPass@123',
+            'user_type' => UserType::Portal,
+            'admin_role' => null,
+        ]);
+
+        \Livewire\Livewire::actingAs($user)
+            ->test(\App\Filament\Portal\Pages\ForcePasswordChange::class)
+            ->fillForm([
+                'password' => 'NewPass@12345',
+                'password_confirmation' => 'NewPass@12345',
+            ])
+            ->call('updatePassword')
+            ->assertHasNoFormErrors()
+            ->assertRedirect('/portal/profiles');
+
+        $this->assertTrue((bool) $member->fresh()->is_password_change);
+
+        $this->actingAs($user->fresh())
+            ->get('/portal/profiles')
+            ->assertOk();
     }
 }

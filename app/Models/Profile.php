@@ -15,7 +15,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'client_id', 'user_id', 'type_id', 'name', 'code_profile_name', 'identification',
     'serial_no', 'address', 'description', 'notes', 'name_company', 'telephone',
+    'mobile', 'email', 'name2', 'description2',
     'gps_coordinates', 'shorturl', 'url', 'protect', 'password', 'code_type', 'color_code', 'show_header',
+    'show_name', 'show_description', 'show_address', 'show_telephone', 'show_mobile', 'show_email', 'show_url',
     'buttonbackcolor', 'buttonfontcolor', 'enable_data_collection', 'set_up_compulsory',
     'data_collection_mobile', 'data_collection_email', 'data_collection_name',
     'data_collection_surname', 'data_collection_content', 'data_collection_btn_text',
@@ -24,6 +26,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'form_active', 'form_is_enable', 'form_submission_format', 'form_email_tag',
     'pop_up_formbuilder', 'free_code', 'is_reseller_code', 'enable_form_analytics',
     'expired_at', 'activation_start_date', 'activation_end_date',
+    'voc_first_name', 'voc_last_name', 'voc_address', 'voc_town', 'voc_state', 'voc_phone', 'voc_dob',
+    'voc_known_allergies', 'voc_blood_type', 'voc_next_of_kin', 'voc_contact_phone',
+    'voc_employer', 'voc_emp_address', 'voc_emp_town', 'voc_emp_state', 'voc_emp_phone',
+    'voc_email_text', 'voc_email_url', 'voc_email_sign_line1', 'voc_email_sign_line2',
+    'voc_title_bar_enable', 'voc_title_bar_text', 'voc_title_bar_colour',
 ])]
 class Profile extends Model
 {
@@ -172,6 +179,14 @@ class Profile extends Model
         return [
             'protect' => \App\Casts\LegacyZeroOne::class,
             'show_header' => \App\Casts\LegacyZeroOne::class.':true',
+            'show_name' => \App\Casts\LegacyZeroOne::class.':true',
+            'show_description' => \App\Casts\LegacyZeroOne::class.':true',
+            'show_address' => \App\Casts\LegacyZeroOne::class.':true',
+            'show_telephone' => \App\Casts\LegacyZeroOne::class.':true',
+            'show_mobile' => \App\Casts\LegacyZeroOne::class.':true',
+            'show_email' => \App\Casts\LegacyZeroOne::class.':true',
+            'show_url' => \App\Casts\LegacyZeroOne::class.':true',
+            'voc_title_bar_enable' => \App\Casts\LegacyZeroOne::class.':true',
             'enable_data_collection' => \App\Casts\LegacyZeroOne::class.':true',
             'set_up_compulsory' => \App\Casts\LegacyZeroOne::class,
             'data_collection_name' => \App\Casts\LegacyZeroOne::class,
@@ -195,6 +210,7 @@ class Profile extends Model
             'expired_at' => 'datetime',
             'activation_start_date' => 'date',
             'activation_end_date' => 'date',
+            'voc_dob' => 'date',
         ];
     }
 
@@ -223,9 +239,19 @@ class Profile extends Model
         return $this->hasMany(Logo::class);
     }
 
+    public function logosExtra(): HasMany
+    {
+        return $this->hasMany(LogoExtra::class);
+    }
+
     public function pictures(): HasMany
     {
         return $this->hasMany(Picture::class);
+    }
+
+    public function picturesExtra(): HasMany
+    {
+        return $this->hasMany(PictureExtra::class);
     }
 
     public function documents(): HasMany
@@ -236,6 +262,16 @@ class Profile extends Model
     public function videos(): HasMany
     {
         return $this->hasMany(Video::class);
+    }
+
+    public function videosPrimary(): HasMany
+    {
+        return $this->hasMany(Video::class)->where('is_extra', false);
+    }
+
+    public function videosExtra(): HasMany
+    {
+        return $this->hasMany(Video::class)->where('is_extra', true);
     }
 
     public function weblinks(): HasMany
@@ -281,6 +317,11 @@ class Profile extends Model
     public function vocRecipients(): HasMany
     {
         return $this->hasMany(VocRecipient::class);
+    }
+
+    public function vocUsers(): HasMany
+    {
+        return $this->hasMany(VocUser::class);
     }
 
     public function qrImage(): \Illuminate\Database\Eloquent\Relations\HasOne

@@ -1,18 +1,155 @@
 <x-filament-panels::page>
     {{-- Legacy ScanLink create/edit: form left (500px), iPhone + Form Builder right (450px) --}}
-    <link rel="stylesheet" href="{{ asset('styles/style.css') }}?v=legacy-profile-5">
-    <link rel="stylesheet" href="{{ asset('css/filament/scanlink-theme.css') }}?v=legacy-profile-5">
+    <link rel="stylesheet" href="{{ asset('styles/style.css') }}?v=legacy-profile-16">
+    <link rel="stylesheet" href="{{ asset('css/filament/scanlink-theme.css') }}?v=legacy-profile-16">
 
-    <div class="scanlink-container sl-profile-editor clearfix">
+    @php
+        $previewData = $this->legacyPreviewData();
+        $isUrlLinkCode = ! empty($previewData['isUrlLinkCode']);
+        $isSurvey = ! empty($previewData['isSurvey']);
+        $isVoc = ! empty($previewData['isVoc']);
+        $isExhibit = ! empty($previewData['isExhibit']);
+        $isMisc = ! empty($previewData['isMisc']);
+        $usesCkEditor = $isVoc || $isExhibit || $isMisc;
+        $editorClass = trim(
+            ($isUrlLinkCode ? 'sl-profile-editor--code' : '')
+            .' '.($isSurvey ? 'sl-profile-editor--survey' : '')
+            .' '.($isVoc ? 'sl-profile-editor--voc' : '')
+            .' '.($isExhibit ? 'sl-profile-editor--exhibit' : '')
+            .' '.($isMisc ? 'sl-profile-editor--misc' : '')
+        );
+    @endphp
+    <div class="scanlink-container sl-profile-editor clearfix {{ $editorClass }}">
         {{-- DOM order matches legacy: right column first, left second --}}
-        <section class="add-form-right sl-add-form-right">
-            @include('filament.portal.profiles.legacy-preview-sidebar', $this->legacyPreviewData())
+        <section class="add-form-right sl-add-form-right {{ $isUrlLinkCode ? 'add-form-right-code' : '' }}">
+            @include('filament.portal.profiles.legacy-preview-sidebar', $previewData)
         </section>
 
-        <section class="add-form-left sl-add-form-left">
+        <section class="add-form-left sl-add-form-left {{ $isSurvey ? 'sl-add-form-left--survey' : '' }}">
             {{ $this->content }}
+
+            {{-- Legacy survey/index.php: Form Builder then Save under Logo on the LEFT. --}}
+            @if ($isSurvey)
+                @include('filament.portal.profiles.legacy-form-builder-panel', array_merge($previewData, [
+                    'formBuilderHelpVideo' => 'https://www.youtube.com/embed/CfLEhcgvgrA?rel=0',
+                    'formBuilderPanelClass' => 'sl-survey-form-builder',
+                ]))
+                <ul class="form-view clearfix sl-survey-save-wrap">
+                    <li style="text-align:center;">
+                        <button
+                            type="button"
+                            class="green-btn sl-survey-save-btn"
+                            wire:click="save"
+                            wire:loading.attr="disabled"
+                        >SAVE</button>
+                    </li>
+                </ul>
+            @endif
         </section>
     </div>
+
+    @if ($usesCkEditor)
+        <script src="{{ asset('ckeditor/ckeditor.js') }}"></script>
+        <style>
+            .sl-profile-editor--voc .cke,
+            .sl-profile-editor--exhibit .cke,
+            .sl-profile-editor--misc .cke {
+                max-width: 456px !important;
+                margin: 4px 0 10px !important;
+            }
+            .sl-profile-editor--voc .cke_chrome,
+            .sl-profile-editor--exhibit .cke_chrome,
+            .sl-profile-editor--misc .cke_chrome {
+                border: 1px solid #ccc !important;
+                visibility: visible !important;
+            }
+            .sl-profile-editor--voc textarea.sl-ckeditor,
+            .sl-profile-editor--exhibit textarea.sl-ckeditor,
+            .sl-profile-editor--misc textarea.sl-ckeditor {
+                min-height: 80px !important;
+                max-width: 456px !important;
+            }
+            .sl-profile-editor--exhibit,
+            .sl-profile-editor--misc {
+                overflow: visible !important;
+            }
+        </style>
+        <script>
+            (function () {
+                function syncEditorsToTextareas() {
+                    if (typeof CKEDITOR === 'undefined') {
+                        return;
+                    }
+                    Object.keys(CKEDITOR.instances || {}).forEach(function (name) {
+                        try {
+                            CKEDITOR.instances[name].updateElement();
+                            var el = CKEDITOR.instances[name].element && CKEDITOR.instances[name].element.$;
+                            if (el) {
+                                el.dispatchEvent(new Event('input', { bubbles: true }));
+                            }
+                        } catch (e) {}
+                    });
+                }
+
+                function initLegacyCkEditors() {
+                    if (typeof CKEDITOR === 'undefined') {
+                        return;
+                    }
+                    document.querySelectorAll('textarea.sl-ckeditor').forEach(function (el) {
+                        if (! el.id) {
+                            el.id = 'sl_ck_' + Math.random().toString(36).slice(2, 10);
+                        }
+                        if (CKEDITOR.instances[el.id]) {
+                            return;
+                        }
+                        var toolbar = el.getAttribute('data-ck-toolbar') || 'MyToolbar';
+                        var editor = CKEDITOR.replace(el.id, {
+                            toolbar: toolbar,
+                            enterMode: CKEDITOR.ENTER_BR,
+                            height: 120,
+                            width: '100%'
+                        });
+                        editor.on('change', function () {
+                            editor.updateElement();
+                            el.dispatchEvent(new Event('input', { bubbles: true }));
+                        });
+                        editor.on('blur', function () {
+                            editor.updateElement();
+                            el.dispatchEvent(new Event('input', { bubbles: true }));
+                        });
+                    });
+                }
+
+                function boot() {
+                    initLegacyCkEditors();
+                    setTimeout(initLegacyCkEditors, 400);
+                    setTimeout(initLegacyCkEditors, 1200);
+                }
+
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', boot);
+                } else {
+                    boot();
+                }
+
+                document.addEventListener('livewire:navigated', boot);
+                document.addEventListener('livewire:init', function () {
+                    Livewire.hook('commit', function ({ succeed }) {
+                        syncEditorsToTextareas();
+                        succeed(function () {
+                            setTimeout(initLegacyCkEditors, 50);
+                        });
+                    });
+                });
+
+                document.addEventListener('click', function (e) {
+                    if (e.target.closest('button[type="submit"], .fi-btn[type="submit"], [wire\\:click="save"]')) {
+                        syncEditorsToTextareas();
+                    }
+                }, true);
+            })();
+        </script>
+    @endif
 
     {{-- Legacy help-icon video tutorial popup --}}
     <div

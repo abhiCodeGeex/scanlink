@@ -25,7 +25,7 @@ class LegacyProfileEditorLayoutTest extends TestCase
             'email' => 'legacy-layout@example.com',
             'password' => 'Portal@12345',
             'status' => true,
-            'is_password_change' => false,
+            'is_password_change' => true,
         ]);
         $member->refresh();
 
@@ -42,6 +42,7 @@ class LegacyProfileEditorLayoutTest extends TestCase
         // Force query string type=location via HTTP
         $response = $this->get('/portal/profiles/create?type=location');
         $response->assertOk();
+        $response->assertSee('Add a New', false);
         $response->assertSee('sl-profile-editor', false);
         $response->assertSee('add-form-left', false);
         $response->assertSee('add-form-right', false);
@@ -67,6 +68,9 @@ class LegacyProfileEditorLayoutTest extends TestCase
         $response->assertSee('Share', false);
         $response->assertSee('Password protect', false);
         $response->assertSee('Use an existing form', false);
+        $response->assertDontSee('sl-open-form-builder', false);
+        $response->assertDontSee('ORDER LABEL', false);
+        $response->assertDontSee('Download As', false);
         $response->assertSee('Enable Form Analytics', false);
         $response->assertSee('Email only', false);
     }
@@ -81,7 +85,7 @@ class LegacyProfileEditorLayoutTest extends TestCase
             'email' => 'legacy-create@example.com',
             'password' => 'Portal@12345',
             'status' => true,
-            'is_password_change' => false,
+            'is_password_change' => true,
         ]);
         $member->refresh();
 
@@ -95,8 +99,15 @@ class LegacyProfileEditorLayoutTest extends TestCase
 
         $this->actingAs($user);
 
+        $slot = app(\App\Services\ProfileDraftSlotService::class)
+            ->claimForCreate((int) $client->id, 'location', $member->id);
+
+        $this->assertNotNull($slot);
+
         Livewire::withQueryParams(['type' => 'location'])
-            ->test(\App\Filament\Portal\Resources\Profiles\Pages\CreateProfile::class)
+            ->test(\App\Filament\Portal\Resources\Profiles\Pages\CreateProfile::class, [
+                'record' => $slot->getKey(),
+            ])
             ->assertFormSet([
                 'type_id' => $typeId,
                 'client_id' => $client->id,
@@ -115,7 +126,7 @@ class LegacyProfileEditorLayoutTest extends TestCase
                 'show_header' => true,
                 'display_share_link' => true,
             ])
-            ->call('create')
+            ->call('save')
             ->assertHasNoFormErrors();
 
         $this->assertDatabaseHas('profiles', [

@@ -54,7 +54,7 @@ class PortalRegistrationTest extends TestCase
             'client_id' => $client->id,
             'email' => 'codes@example.com',
             'status' => true,
-            'is_password_change' => false,
+            'is_password_change' => true,
         ]);
         $member->refresh();
 

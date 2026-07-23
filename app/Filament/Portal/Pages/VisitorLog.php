@@ -3,12 +3,15 @@
 namespace App\Filament\Portal\Pages;
 
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
+use App\Filament\Portal\Resources\Profiles\ProfileResource;
+use App\Models\CollectedContact;
 use App\Models\Profile;
-use App\Models\VisitorContact;
+use App\Support\LegacyEquipmentTypeLabels;
 use BackedEnum;
-use Filament\Actions\Action;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -32,12 +35,36 @@ class VisitorLog extends Page
 
     public ?int $selectedProfileId = null;
 
-    /** @var Collection<int, VisitorContact> */
+    public ?string $profileName = null;
+
+    /** @var Collection<int, CollectedContact> */
     public Collection $visitors;
 
     public static function getNavigationGroup(): ?string
     {
         return 'Codes';
+    }
+
+    public function getTitle(): string|Htmlable
+    {
+        return 'Visitor Log';
+    }
+
+    public function getHeading(): string|Htmlable
+    {
+        return '';
+    }
+
+    public function getHeader(): ?View
+    {
+        return view('filament.portal.profiles.mastercode-toolbar', [
+            'types' => LegacyEquipmentTypeLabels::navTypes(),
+            'activeTab' => null,
+            'addCodeUrl' => ProfileResource::getUrl('index'),
+            'canAddCode' => false,
+            'hideActionBar' => true,
+            'hideLegend' => true,
+        ]);
     }
 
     public static function canAccess(): bool
@@ -50,34 +77,16 @@ class VisitorLog extends Page
         $this->visitors = collect();
 
         $requestedProfile = request()->integer('profile');
-        $firstProfileId = $requestedProfile ?: $this->clientProfileOptions()->keys()->first();
 
-        if ($firstProfileId) {
-            $this->loadVisitors((int) $firstProfileId);
+        if ($requestedProfile > 0) {
+            $this->loadVisitors($requestedProfile);
         }
     }
 
-    protected function getHeaderActions(): array
+    public function exportCsv(): StreamedResponse
     {
-        return [
-            Action::make('exportCsv')
-                ->label('Export CSV')
-                ->icon('heroicon-o-arrow-down-tray')
-                ->visible(fn (): bool => $this->visitors->isNotEmpty())
-                ->action(fn (): StreamedResponse => $this->exportVisitorsCsv()),
-        ];
-    }
-
-    public function updatedSelectedProfileId(?int $profileId): void
-    {
-        if ($profileId) {
-            $this->loadVisitors($profileId);
-        }
-    }
-
-    public function exportVisitorsCsv(): StreamedResponse
-    {
-        $filename = 'visitor-log-profile-'.($this->selectedProfileId ?? 'export').'.csv';
+        $profileId = $this->selectedProfileId ?? 0;
+        $filename = 'data_collection_excel-'.$profileId.'.csv';
 
         return response()->streamDownload(function (): void {
             $handle = fopen('php://output', 'w');
@@ -86,14 +95,16 @@ class VisitorLog extends Page
                 return;
             }
 
-            fputcsv($handle, ['Name', 'Email', 'Mobile', 'Date']);
+            fputcsv($handle, ['ID', 'Date', 'Name', 'Surname', 'Mobile', 'Email']);
 
-            foreach ($this->visitors as $visitor) {
+            foreach ($this->visitors as $contact) {
                 fputcsv($handle, [
-                    $visitor->user_name,
-                    $visitor->user_email,
-                    $visitor->user_mobile,
-                    $visitor->entry_date?->format('Y-m-d H:i:s'),
+                    $this->selectedProfileId,
+                    $contact->created_at?->format('d/m/Y H:i') ?? '',
+                    stripslashes((string) $contact->name),
+                    stripslashes((string) $contact->surname),
+                    stripslashes((string) $contact->mobile),
+                    stripslashes((string) $contact->email),
                 ]);
             }
 
@@ -101,21 +112,29 @@ class VisitorLog extends Page
         }, $filename, ['Content-Type' => 'text/csv']);
     }
 
+    public function returnToListUrl(): string
+    {
+        return ProfileResource::getUrl('index');
+    }
+
     protected function loadVisitors(int $profileId): void
     {
         $client = $this->requireClient();
 
-        Profile::query()
+        $profile = Profile::query()
             ->where('client_id', $client->id)
             ->active()
             ->findOrFail($profileId);
 
         $this->selectedProfileId = $profileId;
-        $this->visitors = VisitorContact::query()
-            ->where('profile_id', $profileId)
-            ->orderByDesc('entry_date')
-            ->limit(200)
+        $this->profileName = filled(trim((string) $profile->code_profile_name))
+            ? (string) $profile->code_profile_name
+            : (string) ($profile->name ?? '');
+
+        $this->visitors = CollectedContact::query()
+            ->where('id_profile', $profileId)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->get();
     }
-
 }

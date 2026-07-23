@@ -93,13 +93,14 @@
                     wire:key="type-tab-{{ $type->slag }}"
                 >
                     @if (! empty($editorMode))
+                        {{-- Legacy innermenu: from add/edit, type tabs always go to that type's list (dashboard/location etc.), never create/edit. --}}
                         <a
-                            href="{{ \App\Filament\Portal\Resources\Profiles\ProfileResource::getUrl('create').'?type='.urlencode($type->slag) }}"
+                            href="{{ \App\Filament\Portal\Resources\Profiles\ProfileResource::getUrl('index').'?tab='.urlencode($type->slag) }}"
                             class="{{ $activeTab === $type->slag ? 'active' : '' }}"
                         >{{ $labelFor($type) }}</a>
                     @else
                         <a
-                            href="{{ \App\Filament\Portal\Resources\Profiles\ProfileResource::getUrl('index') }}"
+                            href="{{ \App\Filament\Portal\Resources\Profiles\ProfileResource::getUrl('index').'?tab='.urlencode($type->slag) }}"
                             wire:click.prevent="$set('activeTab', @js($type->slag))"
                             class="{{ $activeTab === $type->slag ? 'active' : '' }}"
                         >{{ $labelFor($type) }}</a>
@@ -118,7 +119,10 @@
                 </li>
             @endforeach
         </ul>
+    </div>
 
+    @if (empty($hideActionBar) || empty($hideLegend))
+    <div class="sl-mastercode-controls">
         <div class="sl-colorcode-define" @if (! empty($hideLegend)) style="display:none" @endif>
             <div class="sl-mainbox">
                 <div class="sl-colorcodebox sl-red">&nbsp;</div>
@@ -133,16 +137,17 @@
                 <div class="sl-colorbox-text">Active</div>
             </div>
         </div>
-    </div>
 
-    @if (empty($hideActionBar))
-    <div class="sl-action-bar">
-        <a href="{{ \App\Filament\Portal\Pages\CumulativeAnalytics::getUrl() }}" class="sl-add-code-btn sl-analytics-btn">Multiple Code Analytics</a>
-        @if (\App\Filament\Portal\Concerns\InteractsWithClientMembership::portalMembership()?->isPrimary())
-            <a href="{{ \App\Filament\Portal\Pages\MultipleCodeRenewal::getUrl() }}" class="sl-add-code-btn">Renew Selected Codes</a>
-        @endif
-        @if ($canAddCode ?? false)
-            <a href="{{ $addCodeUrl }}" class="sl-add-code-btn">Add a New Code</a>
+        @if (empty($hideActionBar))
+        <div class="sl-action-bar">
+            <a href="{{ \App\Filament\Portal\Pages\CumulativeAnalytics::getUrl() }}" class="sl-add-code-btn sl-analytics-btn">Multiple Code Analytics</a>
+            @if ($canRenewCodes ?? \App\Filament\Portal\Concerns\InteractsWithClientMembership::portalMembership()?->isPrimary())
+                <a href="{{ \App\Filament\Portal\Pages\MultipleCodeRenewal::getUrl() }}" class="sl-add-code-btn">Renew Selected Codes</a>
+            @endif
+            @if ($canAddCode ?? false)
+                <a href="{{ $addCodeUrl }}" class="sl-add-code-btn">Add a New Code</a>
+            @endif
+        </div>
         @endif
     </div>
     @endif

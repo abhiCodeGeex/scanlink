@@ -13,7 +13,14 @@ class FormBuilderQuestion extends Model
 
     protected $primaryKey = 'question_id';
 
-    public $incrementing = false;
+    /**
+     * Live schema uses AUTO_INCREMENT on question_id. Keeping this false
+     * prevented Eloquent from reading lastInsertId, so create() left PK null
+     * and fresh() returned null (Form Builder SAVE failed).
+     */
+    public $incrementing = true;
+
+    protected $keyType = 'int';
 
     public $timestamps = false;
 

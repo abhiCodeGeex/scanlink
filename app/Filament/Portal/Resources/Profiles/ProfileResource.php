@@ -130,7 +130,11 @@ class ProfileResource extends Resource
     {
         $user = auth()->user();
 
-        if (! $user instanceof User || $user->user_type !== UserType::Portal) {
+        if (! $user instanceof User) {
+            return null;
+        }
+
+        if (! in_array($user->user_type, [UserType::Portal, UserType::Voc], true)) {
             return null;
         }
 

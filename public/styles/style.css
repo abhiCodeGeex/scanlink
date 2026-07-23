@@ -2722,13 +2722,15 @@ input[type="button"]{
 .form-builder-box
 {
   margin:0px;
-  padding:5px 10px 5px 0px; 
+  padding:12px 14px 14px;
   -moz-border-radius:6px;
   -webkit-border-radius:6px;
   border-radius:6px 6px 0 0;
   border:1px solid #cccccc;
   -webkit-box-shadow: inset 0px 0px 10px rgba(0, 0, 0, .1);
   box-shadow: inset 0px 0px 10px rgba(0, 0, 0, .1);
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .form-builder-title
@@ -2736,12 +2738,12 @@ input[type="button"]{
 	font-size:18px; 
 	color:#009401; 
 	line-height:34px;
-	padding-left: 10px;
+	padding: 0 0 8px;
 }
 
 .existing-item
 {
-	padding-left: 10px;
+	padding: 6px 0 8px;
 }
 .activate-for-profile
 {

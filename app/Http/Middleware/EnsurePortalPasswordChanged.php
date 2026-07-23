@@ -38,7 +38,9 @@ class EnsurePortalPasswordChanged
             ->orderByDesc('role')
             ->first();
 
-        if ($member?->is_password_change) {
+        // Legacy ScanLink: is_password_change = 0/empty → must change before continuing.
+        // After a successful change the flag is set to 1.
+        if ($member && ! $member->is_password_change) {
             return redirect()->to(ForcePasswordChange::getUrl());
         }
 

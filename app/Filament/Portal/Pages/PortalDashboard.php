@@ -3,7 +3,7 @@
 namespace App\Filament\Portal\Pages;
 
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
-use App\Models\Profile;
+use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 
@@ -26,36 +26,9 @@ class PortalDashboard extends Page
 
     protected string $view = 'filament.portal.pages.portal-dashboard';
 
-    public int $activeProfiles = 0;
-
-    public int $codeBalance = 0;
-
-    public int $expiringSoon = 0;
-
-    public string $clientName = '';
-
     public function mount(): void
     {
-        $client = $this->currentClient();
-
-        if (! $client) {
-            return;
-        }
-
-        $this->clientName = (string) $client->client_name;
-        $this->activeProfiles = Profile::query()
-            ->where('client_id', $client->id)
-            ->active()
-            ->count();
-
-        $purchased = (int) $client->codePurchases()->sum('no_of_codes');
-        $this->codeBalance = max(0, $purchased - $this->activeProfiles);
-
-        $this->expiringSoon = Profile::query()
-            ->where('client_id', $client->id)
-            ->active()
-            ->whereBetween('expired_at', [now(), now()->addDays(30)])
-            ->count();
+        $this->redirect(ProfileResource::getUrl('index', panel: 'portal'), navigate: false);
     }
 
     public static function getNavigationGroup(): ?string

@@ -5,15 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $profile->name }} — ScanLink</title>
     <style>
-        body { font-family: system-ui, sans-serif; margin: 0; background: #f5f5f5; color: #222; }
+        body { font-family: Arial, Helvetica, sans-serif; margin: 0; background: #f5f5f5; color: #222; font-size: 14px; line-height: 22px; }
         .wrap { max-width: 640px; margin: 0 auto; padding: 1.5rem; }
-        .card { background: #fff; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,.08); margin-bottom: 1rem; }
-        h1 { color: #008C00; margin-top: 0; }
+        .card { background: #fff; border-radius: 4px; padding: 1rem 1.1rem 1.25rem; box-shadow: 0 2px 8px rgba(0,0,0,.12); margin-bottom: .75rem; }
+        /* Legacy MobileBottomText: label then value — not a green form-name hero. */
+        .MobileBottomText h3 { margin: 0 0 7px 0; font-size: 1rem; font-weight: 700; color: #222; }
+        .MobileBottomText p { margin: 0 0 7px 0; color: #222; }
+        h1 { color: #222; margin: 0 0 .5rem; font-size: 1.25rem; }
         h2 { font-size: 1.1rem; margin-top: 1.5rem; }
         .btn { display: inline-block; background: #008C00; color: #fff; padding: .6rem 1rem; border-radius: 8px; text-decoration: none; border: 0; cursor: pointer; margin: .25rem .25rem .25rem 0; }
         .btn-outline { background: #fff; color: #008C00; border: 1px solid #008C00; }
+        /* Legacy mobile form Submit: native-looking button (white / black border). */
+        .frm_builder .submit-btn {
+            display: inline-block;
+            width: auto;
+            margin: .75rem 0 0;
+            padding: .2rem .55rem;
+            background: #fff;
+            color: #111;
+            border: 1px solid #767676;
+            border-radius: 2px;
+            font: inherit;
+            cursor: pointer;
+        }
         label { display: block; margin-top: .75rem; font-weight: 600; }
         input, textarea, select { width: 100%; padding: .5rem; margin-top: .25rem; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        .frm_builder input[type="checkbox"],
+        .frm_builder input[type="radio"] {
+            width: auto;
+            margin: 0 .35rem 0 0;
+            padding: 0;
+            border: 0;
+            border-radius: 0;
+            vertical-align: middle;
+        }
         .notice { background: #e8f5e9; color: #1b5e20; padding: .75rem; border-radius: 8px; margin-bottom: 1rem; }
         .visitor-form { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #eee; }
         .logo-row { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: 1rem; }
@@ -26,21 +51,51 @@
         .checklist { list-style: none; padding: 0; margin: .75rem 0 0; }
         .checklist li { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .5rem 0; border-bottom: 1px solid #eee; }
         .checklist .done { color: #2e7d32; text-decoration: line-through; }
-        .field-choice { margin-top: .35rem; }
-        .field-choice label { display: inline-flex; align-items: center; gap: .35rem; font-weight: 400; margin-top: .35rem; }
+        .field-choice { margin-top: .35rem; display: flex; flex-direction: column; gap: .35rem; }
+        .field-choice label {
+            display: flex !important;
+            align-items: flex-start;
+            gap: .35rem;
+            font-weight: 400 !important;
+            margin-top: 0 !important;
+            line-height: 1.35;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        .field-choice input[type="radio"],
+        .field-choice input[type="checkbox"] {
+            width: auto !important;
+            margin: .15rem 0 0 !important;
+            flex-shrink: 0;
+        }
+        .field-choice .choice-label {
+            flex: 1;
+            min-width: 0;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: normal;
+        }
+        .mandatory_field { color: #c00; font-size: .85rem; display: inline; }
         .field-grid { width: 100%; border-collapse: collapse; margin-top: .35rem; font-size: .875rem; }
         .field-grid th, .field-grid td { border: 1px solid #ddd; padding: .35rem .5rem; text-align: center; }
         .display-html { margin: .5rem 0; line-height: 1.5; }
         .form-link-btn { display: inline-block; padding: .55rem 1rem; border-radius: 8px; color: #fff; text-decoration: none; font-weight: 600; margin: .25rem 0; }
         .signature-wrap canvas { width: 100%; max-width: 320px; height: 120px; border: 1px dashed #ccc; border-radius: 6px; touch-action: none; }
+        .mobile-footer { display: flex; justify-content: flex-end; padding: .25rem .15rem 0; }
+        .mobile-footer img { max-height: 28px; width: auto; opacity: .85; }
         @if ($portalPreview ?? false)
         html, body { height: auto; min-height: 0; overflow-x: hidden; }
         body.portal-preview { background: #fff; margin: 0; width: 100%; }
         body.portal-preview .wrap { max-width: 100%; width: 100%; margin: 0; padding: 0.5rem 0.65rem 0.35rem; box-sizing: border-box; }
         body.portal-preview .card { border-radius: 0; box-shadow: none; padding: 0.5rem 0.35rem 0.25rem; margin: 0; width: 100%; box-sizing: border-box; }
-        body.portal-preview h1 { font-size: 1.35rem; line-height: 1.25; margin-bottom: 0.5rem; }
+        body.portal-preview h1 { font-size: 1.15rem; line-height: 1.25; margin-bottom: 0.35rem; color: #222; }
+        body.portal-preview .MobileBottomText h3 { font-size: 0.95rem; }
         body.portal-preview p { margin: 0.35rem 0; font-size: 0.92rem; line-height: 1.35; }
         body.portal-preview .btn { font-size: 0.85rem; padding: 0.45rem 0.75rem; }
+        body.portal-preview .frm_builder .submit-btn { font-size: 0.9rem; }
+        body.portal-preview .mobile-footer { padding: 0.15rem 0.35rem 0.1rem; }
+        body.portal-preview .mobile-footer img { max-height: 22px; }
         body.portal-preview h2:last-of-type,
         body.portal-preview .gallery { margin-bottom: 0; }
         body.portal-preview .card > :last-child { margin-bottom: 0 !important; }
@@ -69,49 +124,147 @@
             </div>
         @endif
 
-        @if ($profile->show_header || $profile->name_company)
+        @if ($profile->show_header)
+            <nav class="top-navigation" style="margin:0 0 .75rem;padding:.35rem 0;border-bottom:1px solid #eee;">
+                <h2 style="margin:0;font-size:.95rem;font-weight:700;color:#222;">Profile No: {{ $profile->id }}</h2>
+            </nav>
+        @elseif ($profile->name_company)
             <p class="text-sm" style="color:#555;margin:0 0 .5rem;">
-                {{ $profile->name_company ?: $profile->client?->client_name }}
+                {{ $profile->name_company }}
             </p>
         @endif
 
-        @php
-            $title = trim((string) ($profile->name ?: $profile->code_profile_name ?: $profile->form_title));
-        @endphp
-        @if ($title !== '')
-            @if (! empty($nameHeading))
-                <p style="font-size:.95rem;font-weight:700;color:#008C00;margin:0 0 .15rem;">{{ $nameHeading }}</p>
+        {{-- Legacy mobile/index.php: only show Make/Model / Location name when profile name is set.
+             Never fall back to form_title (that caused duplicate green+black titles). --}}
+        <div class="MobileBottomText">
+            @if (filled($profile->name))
+                @if (! empty($nameHeading))
+                    <h3>{{ $nameHeading }}</h3>
+                @endif
+                <p>{{ $profile->name }}</p>
             @endif
-            <h1>{{ $title }}</h1>
-        @endif
 
-        @if ($profile->identification)
-            <p><strong>{{ $profile->typeSlug() === 'plant' ? 'ID' : 'Identification' }}:</strong> {{ $profile->identification }}</p>
-        @endif
-
-        @if ($profile->serial_no)
-            <p><strong>Serial No.:</strong> {{ $profile->serial_no }}</p>
-        @endif
-
-        @if ($profile->description)
-            <p>{{ $profile->description }}</p>
-        @endif
-
-        @if ($profile->address)
-            <p><strong>Address:</strong> {{ $profile->address }}</p>
-            @if ($profile->typeSlug() === 'location')
-                {{-- Legacy: View Map is built from address only (no editable Map Link / GPS fields). --}}
-                <p><a class="btn btn-outline" href="https://maps.google.com?q={{ urlencode($profile->address) }}" target="_blank" rel="noopener">View Map</a></p>
+            @if ($profile->typeSlug() === 'exhibit' && filled($profile->name2))
+                <p>{{ $profile->name2 }}</p>
             @endif
-        @endif
 
-        @if ($profile->notes)
-            <p><strong>Notes:</strong> {{ $profile->notes }}</p>
-        @endif
+            @if ($profile->identification && ! in_array($profile->typeSlug(), ['asset', 'exhibit', 'voc'], true))
+                <h3>{{ $profile->typeSlug() === 'plant' ? 'ID' : 'Identification' }}</h3>
+                <p>{{ $profile->identification }}</p>
+            @endif
 
-        @if ($profile->telephone)
-            <p><strong>Telephone:</strong> <a href="tel:{{ $profile->telephone }}">{{ $profile->telephone }}</a></p>
-        @endif
+            @if ($profile->serial_no && ! in_array($profile->typeSlug(), ['asset', 'exhibit', 'voc', 'product'], true))
+                <h3>Serial No.</h3>
+                <p>{{ $profile->serial_no }}</p>
+            @endif
+
+            @if ($profile->description)
+                @php
+                    $descPlain = trim(str_replace('&nbsp;', '', strip_tags((string) $profile->description)));
+                    $slug = $profile->typeSlug();
+                    $showDescHeading = match ($slug) {
+                        'asset' => (bool) $profile->show_description,
+                        'misc', 'exhibit', 'voc', 'code' => false,
+                        default => true,
+                    };
+                @endphp
+                @if ($descPlain !== '')
+                    @if ($showDescHeading)
+                        <h3>Description</h3>
+                    @endif
+                    <p>{!! $profile->description !!}</p>
+                @endif
+            @endif
+
+            @if ($profile->typeSlug() === 'exhibit' && filled($profile->description2))
+                @php $desc2Plain = trim(str_replace('&nbsp;', '', strip_tags((string) $profile->description2))); @endphp
+                @if ($desc2Plain !== '')
+                    <p>{!! $profile->description2 !!}</p>
+                @endif
+            @endif
+
+            @if ($profile->typeSlug() === 'voc')
+                @foreach ([
+                    'voc_first_name' => 'First Name',
+                    'voc_last_name' => 'Last Name',
+                    'voc_address' => 'Address',
+                    'voc_town' => 'Town',
+                    'voc_state' => 'State/Territory',
+                    'voc_phone' => 'Telephone No.',
+                    'voc_dob' => 'Date of Birth',
+                    'voc_known_allergies' => 'Known Allergies/Medical Conditions',
+                    'voc_blood_type' => 'Blood Type',
+                    'voc_next_of_kin' => 'Next of Kin',
+                    'voc_contact_phone' => 'Contact Telephone No.',
+                    'voc_employer' => 'Employer',
+                    'voc_emp_address' => 'Address',
+                    'voc_emp_town' => 'Town',
+                    'voc_emp_state' => 'State/Territory',
+                    'voc_emp_phone' => 'Telephone No.',
+                ] as $vocField => $vocLabel)
+                    @php
+                        $vocValue = $profile->{$vocField};
+                        if ($vocField === 'voc_dob' && $vocValue) {
+                            $vocValue = $vocValue instanceof \Carbon\CarbonInterface
+                                ? $vocValue->format('d/m/Y')
+                                : $vocValue;
+                        }
+                    @endphp
+                    @if (filled($vocValue) && (string) $vocValue !== '1970-01-01')
+                        <h3>{{ $vocLabel }}</h3>
+                        <p>{{ $vocValue }}</p>
+                    @endif
+                @endforeach
+            @endif
+
+            @if ($profile->address && $profile->typeSlug() !== 'voc')
+                @php
+                    $showAddressHeading = $profile->typeSlug() === 'asset'
+                        ? (bool) $profile->show_address
+                        : true;
+                @endphp
+                @if ($showAddressHeading)
+                    <h3>Address</h3>
+                @endif
+                <p>{{ $profile->address }}</p>
+                @if (in_array($profile->typeSlug(), ['location', 'asset'], true))
+                    <p>&nbsp;<a class="btn btn-outline" href="https://maps.google.com?q={{ urlencode($profile->address) }}" target="_blank" rel="noopener">View Map</a></p>
+                @endif
+            @endif
+
+            @if ($profile->notes && ! in_array($profile->typeSlug(), ['asset', 'exhibit', 'voc', 'misc'], true))
+                <h3>{{ $profile->typeSlug() === 'plant' ? 'Note' : 'Notes' }}</h3>
+                <p>{{ $profile->notes }}</p>
+            @endif
+
+            @if ($profile->telephone && $profile->typeSlug() !== 'voc')
+                @if ($profile->typeSlug() !== 'asset' || $profile->show_telephone)
+                    <h3>Telephone</h3>
+                @endif
+                <p><a href="tel:{{ $profile->telephone }}">{{ $profile->telephone }}</a></p>
+            @endif
+
+            @if (filled($profile->mobile))
+                @if ($profile->typeSlug() !== 'asset' || $profile->show_mobile)
+                    <h3>Mobile</h3>
+                @endif
+                <p><a href="tel:{{ $profile->mobile }}">{{ $profile->mobile }}</a></p>
+            @endif
+
+            @if (filled($profile->email))
+                @if ($profile->typeSlug() !== 'asset' || $profile->show_email)
+                    <h3>Email</h3>
+                @endif
+                <p><a href="mailto:{{ $profile->email }}">{{ $profile->email }}</a></p>
+            @endif
+
+            @if (filled($profile->url) && $profile->typeSlug() !== 'code')
+                @if ($profile->typeSlug() !== 'asset' || $profile->show_url)
+                    <h3>Website</h3>
+                @endif
+                <p><a href="{{ $profile->url }}" target="_blank" rel="noopener">{{ $profile->url }}</a></p>
+            @endif
+        </div>
 
         @if ($profile->weblinks->isNotEmpty())
             <h2>Links</h2>
@@ -192,32 +345,10 @@
             </ul>
         @endif
 
-        @if ($needsVisitorInfo)
-            <div class="visitor-form">
-                <h2>Visitor information</h2>
-                <form method="post" action="{{ route('scan.visitor', [$clientUrl, $profile->id]) }}">
-                    @csrf
-                    @if ($profile->data_collection_name)
-                        <label>Name</label>
-                        <input type="text" name="user_name" required>
-                    @endif
-                    @if ($profile->data_collection_email)
-                        <label>Email</label>
-                        <input type="email" name="user_email" required>
-                    @endif
-                    @if ($profile->data_collection_mobile)
-                        <label>Mobile</label>
-                        <input type="text" name="user_mobile">
-                    @endif
-                    <p style="margin-top:1rem;"><button class="btn" type="submit">Continue</button></p>
-                </form>
-            </div>
-        @endif
-
-        @if (($profile->form_is_enable || $profile->form_active) && $questions->isNotEmpty() && ! $needsVisitorInfo)
-            <form method="post" action="{{ route('scan.form', [$clientUrl, $profile->id]) }}" enctype="multipart/form-data" style="margin-top:1.5rem;">
+        @if (($profile->form_is_enable || $profile->form_active) && $questions->isNotEmpty())
+            <form method="post" action="{{ route('scan.form', [$clientUrl, $profile->id]) }}" enctype="multipart/form-data" class="frm_builder" style="margin-top:.75rem;">
                 @csrf
-                <h2>{{ $profile->form_title ?: 'Form' }}</h2>
+                {{-- Legacy does not print form_title as a form section heading. --}}
                 @foreach ($questions as $question)
                     @php
                         $tid = (int) $question->question_type_id;
@@ -283,35 +414,59 @@
                                 @break
 
                             @case(3)
-                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                                @php
+                                    $choiceLabel = \App\Support\FormBuilderMedia::choiceLabel($question);
+                                    $choiceOptions = \App\Support\FormBuilderMedia::choiceOptions($question);
+                                @endphp
+                                @if ($choiceLabel !== '')
+                                    <label>{{ $choiceLabel }}@if($question->is_mandatory) *@endif</label>
+                                @elseif ($question->is_mandatory)
+                                    <span style="color:#c00;font-size:.85rem;">*</span>
+                                @endif
                                 <div class="field-choice">
-                                    @foreach ($options as $option)
+                                    @foreach ($choiceOptions as $optionName)
                                         <label>
-                                            <input type="radio" name="answers[{{ $qid }}]" value="{{ $option->option_name }}" {{ $required }}>
-                                            {{ $option->option_name }}
+                                            <input type="radio" name="answers[{{ $qid }}]" value="{{ $optionName }}" {{ $required }}>
+                                            <span class="choice-label">{{ $optionName }}</span>
                                         </label>
                                     @endforeach
                                 </div>
                                 @break
 
                             @case(4)
-                                <label>{{ $question->question_text }}</label>
+                                @php
+                                    $choiceLabel = \App\Support\FormBuilderMedia::choiceLabel($question);
+                                    $choiceOptions = \App\Support\FormBuilderMedia::choiceOptions($question);
+                                @endphp
+                                @if ($choiceLabel !== '')
+                                    <label>{{ $choiceLabel }}@if($question->is_mandatory) <span class="mandatory_field">*</span>@endif</label>
+                                @elseif ($question->is_mandatory)
+                                    <span class="mandatory_field">*</span><br>
+                                @endif
                                 <div class="field-choice">
-                                    @foreach ($options as $option)
+                                    @foreach ($choiceOptions as $optionName)
                                         <label>
-                                            <input type="checkbox" name="answers[{{ $qid }}][]" value="{{ $option->option_name }}">
-                                            {{ $option->option_name }}
+                                            <input type="checkbox" name="answers[{{ $qid }}][]" value="{{ $optionName }}">
+                                            <span class="choice-label">{{ $optionName }}</span>
                                         </label>
                                     @endforeach
                                 </div>
                                 @break
 
                             @case(5)
-                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                                @php
+                                    $choiceLabel = \App\Support\FormBuilderMedia::choiceLabel($question);
+                                    $choiceOptions = \App\Support\FormBuilderMedia::choiceOptions($question);
+                                @endphp
+                                @if ($choiceLabel !== '')
+                                    <label>{{ $choiceLabel }}@if($question->is_mandatory) *@endif</label>
+                                @elseif ($question->is_mandatory)
+                                    <span style="color:#c00;font-size:.85rem;">*</span>
+                                @endif
                                 <select name="answers[{{ $qid }}]" {{ $required }}>
                                     <option value="">Select…</option>
-                                    @foreach ($options as $option)
-                                        <option value="{{ $option->option_name }}">{{ $option->option_name }}</option>
+                                    @foreach ($choiceOptions as $optionName)
+                                        <option value="{{ $optionName }}">{{ $optionName }}</option>
                                     @endforeach
                                 </select>
                                 @break
@@ -533,7 +688,7 @@
                         @endswitch
                     </div>
                 @endforeach
-                <p style="margin-top:1rem;"><button class="btn" type="submit">Submit</button></p>
+                <p style="margin-top:.5rem;"><input class="submit-btn" type="submit" value="Submit"></p>
             </form>
             <script>
                 window.slCovidLocationChange = function (value, questionId, labelColor) {
@@ -595,7 +750,45 @@
                 })();
             </script>
         @endif
+
+        @if ($needsVisitorInfo)
+            <div class="visitor-form">
+                <h2>Visitor information</h2>
+                <form method="post" action="{{ route('scan.visitor', [$clientUrl, $profile->id]) }}">
+                    @csrf
+                    @if ($profile->data_collection_name)
+                        <label>Name</label>
+                        <input type="text" name="name" required>
+                    @endif
+                    @if ($profile->data_collection_surname)
+                        <label>Surname</label>
+                        <input type="text" name="surname" {{ $profile->set_up_compulsory ? 'required' : '' }}>
+                    @endif
+                    @if ($profile->data_collection_email)
+                        <label>Email</label>
+                        <input type="email" name="email" required>
+                    @endif
+                    @if ($profile->data_collection_mobile)
+                        <label>Mobile</label>
+                        <input type="text" name="mobile">
+                    @endif
+                    <p style="margin-top:1rem;"><button class="btn" type="submit">Continue</button></p>
+                </form>
+            </div>
+        @endif
     </div>
+
+    @php
+        $ownerFooter = trim((string) ($profile->owner?->footer_logo ?? ''));
+        $footerSrc = ($ownerFooter !== '' && file_exists(public_path('images/logo/'.$ownerFooter)))
+            ? asset('images/logo/'.$ownerFooter)
+            : asset('images/PoweredbyScanLink.png');
+    @endphp
+    <footer class="mobile-footer">
+        <figure style="margin:0;">
+            <img src="{{ $footerSrc }}" alt="Powered by SCANLINK">
+        </figure>
+    </footer>
 </div>
 </body>
 </html>

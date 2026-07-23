@@ -124,7 +124,12 @@ trait InteractsWithClientMembership
     {
         $user = auth()->user();
 
-        if (! $user instanceof User || $user->user_type !== UserType::Portal) {
+        if (! $user instanceof User) {
+            return null;
+        }
+
+        // Live client logins may be typed portal or voc while still having client_users rows.
+        if (! in_array($user->user_type, [UserType::Portal, UserType::Voc], true)) {
             return null;
         }
 

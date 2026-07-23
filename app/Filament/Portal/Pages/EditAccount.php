@@ -379,6 +379,7 @@ class EditAccount extends Page implements HasTable
         }
 
         $member->password = $data['txtnewpass'];
+        $member->is_password_change = true;
         $member->save();
 
         $this->getSchema('passwordForm')?->fill([

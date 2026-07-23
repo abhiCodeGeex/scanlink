@@ -74,7 +74,7 @@ class ClientUsersTable
             ...$data,
             'role' => ClientUserRole::SubUser,
             'is_sub_user' => true,
-            'is_password_change' => true,
+            'is_password_change' => false,
             'status' => true,
             'video_upload' => (bool) ($data['video_upload'] ?? true),
             'expire_at' => now()->addYear(),

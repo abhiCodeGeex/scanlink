@@ -17,10 +17,16 @@ class LegacySectionHelp
      */
     public const VIDEOS = [
         'Logo' => 'https://www.youtube.com/embed/hGrBYsys2Oo?rel=0',
+        'Logo #2' => 'https://www.youtube.com/embed/hGrBYsys2Oo?rel=0',
         'Videos' => 'https://www.youtube.com/embed/H33caspIlcc?rel=0',
+        'Videos #2' => 'https://www.youtube.com/embed/H33caspIlcc?rel=0',
         'Words' => 'https://www.youtube.com/embed/CZx8xplEfoU?rel=0',
+        'Words #2' => 'https://www.youtube.com/embed/CZx8xplEfoU?rel=0',
         'Pictures' => 'https://www.youtube.com/embed/GshHCp9F0wU?rel=0',
+        'Pictures #2' => 'https://www.youtube.com/embed/GshHCp9F0wU?rel=0',
+        'Profile Picture' => 'https://www.youtube.com/embed/GshHCp9F0wU?rel=0',
         'Documents' => 'https://www.youtube.com/embed/ujiEr65yg30?rel=0',
+        'Document Upload' => 'https://www.youtube.com/embed/ujiEr65yg30?rel=0',
         'Web Link' => 'https://www.youtube.com/embed/id0I8j8RTuY?rel=0',
         'Data Collection' => 'https://www.youtube.com/embed/C_vH14MFtXA?rel=0',
         'Set Code Type' => 'https://www.youtube.com/embed/jCeyQOfm7uc?rel=0',
@@ -28,6 +34,10 @@ class LegacySectionHelp
         'User Access Security' => 'https://www.youtube.com/embed/KcXJnxuMVyc?rel=0',
         'Share' => 'https://www.youtube.com/embed/qOi6tSBsII4?rel=0',
         'Form Builder' => 'https://www.youtube.com/embed/cYQnzxkp528?rel=0',
+        'Profile Information' => 'https://www.youtube.com/embed/CZx8xplEfoU?rel=0',
+        'Title Bar' => 'https://www.youtube.com/embed/CZx8xplEfoU?rel=0',
+        'Email Notification Settings' => 'https://www.youtube.com/embed/CZx8xplEfoU?rel=0',
+        'Additional User Access Login' => 'https://www.youtube.com/embed/KcXJnxuMVyc?rel=0',
     ];
 
     public static function heading(string $title, ?string $videoUrl = null): HtmlString|string

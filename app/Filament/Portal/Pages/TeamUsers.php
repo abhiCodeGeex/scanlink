@@ -151,7 +151,7 @@ class TeamUsers extends Page implements HasTable
         $data['role'] = ClientUserRole::SubUser;
         $data['is_sub_user'] = true;
         $data['status'] = true;
-        $data['is_password_change'] = true;
+        $data['is_password_change'] = false;
         $data['video_upload'] = true;
         $data['expire_at'] = now()->addYear();
 

@@ -39,7 +39,7 @@ $member->forceFill([
     'video_upload' => true,
     'checklist_option' => false,
     'customqr_option' => false,
-    'is_password_change' => false,
+    'is_password_change' => true,
     'is_sub_user' => false,
     'first_name' => 'Portal',
     'last_name' => 'Tester',

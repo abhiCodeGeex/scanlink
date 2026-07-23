@@ -32,6 +32,22 @@ class AppServiceProvider extends ServiceProvider
             \Filament\Auth\Http\Responses\Contracts\LogoutResponse::class,
             \App\Http\Responses\FilamentLogoutResponse::class,
         );
+
+        // Docker Desktop / shared volumes: Blade touch() on root-owned compiled
+        // views under storage/framework/views causes php-fpm 500s. Prefer a
+        // container-local path (also set via VIEW_COMPILED_PATH in compose).
+        $compiled = env('VIEW_COMPILED_PATH');
+        if (! filled($compiled) && is_file('/.dockerenv')) {
+            $compiled = '/tmp/laravel-views';
+        }
+        if (filled($compiled)) {
+            if (! is_dir($compiled)) {
+                @mkdir($compiled, 0777, true);
+            }
+            $this->callAfterResolving('config', function ($config) use ($compiled): void {
+                $config->set('view.compiled', $compiled);
+            });
+        }
     }
 
     /**
@@ -40,6 +56,26 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         FormPlaceholderDefaults::register();
+
+        // Docker/php-fpm: BladeCompiler touch() after compile fails with
+        // "Utime failed: Operation not permitted" when compiled views were
+        // created as root via `docker exec`. Suppress that warning only.
+        $previous = set_error_handler(static function (
+            int $severity,
+            string $message,
+            string $file = '',
+            int $line = 0,
+        ) use (&$previous): bool {
+            if ($severity === E_WARNING && str_contains($message, 'touch(): Utime failed')) {
+                return true;
+            }
+
+            if (is_callable($previous)) {
+                return (bool) $previous($severity, $message, $file, $line);
+            }
+
+            return false;
+        });
 
         Event::listen(CommandStarting::class, function (CommandStarting $event): void {
             $command = $event->command;

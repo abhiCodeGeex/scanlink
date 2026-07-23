@@ -101,7 +101,7 @@ class Register extends BaseRegister
                 'company_name' => $data['company_name'],
                 'phone' => $data['phone'] ?? null,
                 'client_reseller_code' => filled($resellerCode) ? $resellerCode : null,
-                'is_password_change' => false,
+                'is_password_change' => true,
                 'expire_at' => now()->addYear(),
             ]);
 

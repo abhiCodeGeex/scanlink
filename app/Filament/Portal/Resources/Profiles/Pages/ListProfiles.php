@@ -3,11 +3,9 @@
 namespace App\Filament\Portal\Resources\Profiles\Pages;
 
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
-use App\Filament\Portal\Pages\CumulativeAnalytics;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Models\EquipmentType;
 use App\Support\LegacyEquipmentTypeLabels;
-use Filament\Actions\Action;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
 use Illuminate\Contracts\Support\Htmlable;
@@ -24,13 +22,31 @@ class ListProfiles extends ListRecords
 
     protected static ?string $title = 'Master Code List';
 
+    public function mount(): void
+    {
+        parent::mount();
+
+        $tab = request()->query('tab');
+
+        if (! filled($tab)) {
+            return;
+        }
+
+        $tab = (string) $tab;
+
+        if (array_key_exists($tab, $this->getTabs())) {
+            $this->activeTab = $tab;
+        }
+    }
+
     public function getHeader(): ?View
     {
         return view('filament.portal.profiles.mastercode-toolbar', [
             'types' => $this->typeTabs(),
             'activeTab' => $this->activeTab,
             'addCodeUrl' => $this->addNewCodeUrl(),
-            'canAddCode' => $this->canAddCode(),
+            'canAddCode' => $this->canAddCode() && $this->hasSelectedTemplateTab(),
+            'canRenewCodes' => $this->isPrimaryUser(),
         ]);
     }
 
@@ -45,26 +61,8 @@ class ListProfiles extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [
-            Action::make('multipleCodeAnalytics')
-                ->label('Multiple Code Analytics')
-                ->color('success')
-                ->url(CumulativeAnalytics::getUrl())
-                ->openUrlInNewTab(false)
-                ->extraAttributes(['class' => 'sl-legacy-btn sl-legacy-btn-analytics']),
-            Action::make('renewSelectedCodes')
-                ->label('Renew Selected Codes')
-                ->color('success')
-                ->url(\App\Filament\Portal\Pages\MultipleCodeRenewal::getUrl())
-                ->visible(fn (): bool => $this->isPrimaryUser())
-                ->extraAttributes(['class' => 'sl-legacy-btn']),
-            Action::make('addNewCode')
-                ->label('Add a New Code')
-                ->color('success')
-                ->url(fn (): string => $this->addNewCodeUrl())
-                ->visible(fn (): bool => $this->canAddCode())
-                ->extraAttributes(['class' => 'sl-legacy-btn sl-legacy-btn-add']),
-        ];
+        // CTAs live in mastercode-toolbar next to the status legend.
+        return [];
     }
 
     public function getTabs(): array
@@ -86,12 +84,19 @@ class ListProfiles extends ListRecords
         return 'all';
     }
 
+    protected function hasSelectedTemplateTab(): bool
+    {
+        $tab = $this->activeTab;
+
+        return filled($tab) && $tab !== 'all';
+    }
+
     protected function addNewCodeUrl(): string
     {
         $url = ProfileResource::getUrl('create');
         $tab = $this->activeTab;
 
-        if (filled($tab) && $tab !== 'all') {
+        if ($this->hasSelectedTemplateTab()) {
             $url .= '?type='.urlencode((string) $tab);
         }
 

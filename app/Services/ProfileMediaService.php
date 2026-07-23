@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Document;
 use App\Models\Logo;
+use App\Models\LogoExtra;
 use App\Models\Picture;
 use App\Models\Profile;
 use App\Models\Video;
@@ -24,6 +25,12 @@ class ProfileMediaService
             }
         }
 
+        if (array_key_exists('logo_extra_upload', $uploads)) {
+            if (! empty($uploads['logo_extra_upload'])) {
+                $this->syncLogoExtra($profile, (string) $uploads['logo_extra_upload']);
+            }
+        }
+
         if (array_key_exists('picture_uploads', $uploads)) {
             $profile->pictures()->delete();
 
@@ -40,11 +47,15 @@ class ProfileMediaService
             }
         }
 
-        if (array_key_exists('video_titles', $uploads)) {
+        if (array_key_exists('video_titles', $uploads) || array_key_exists('video_extra_titles', $uploads)) {
             $profile->videos()->delete();
 
             if (! empty($uploads['video_titles'])) {
-                $this->syncVideos($profile, (array) $uploads['video_titles']);
+                $this->syncVideos($profile, (array) $uploads['video_titles'], false);
+            }
+
+            if (! empty($uploads['video_extra_titles'])) {
+                $this->syncVideos($profile, (array) $uploads['video_extra_titles'], true);
             }
         }
     }
@@ -99,10 +110,22 @@ class ProfileMediaService
         }
     }
 
+    protected function syncLogoExtra(Profile $profile, string $path): void
+    {
+        $profile->logosExtra()->delete();
+
+        $profile->logosExtra()->create([
+            'client_id' => $profile->client_id,
+            'user_id' => $profile->user_id,
+            'logo_name' => $this->relativeStoragePath($path),
+            'is_temp' => false,
+        ]);
+    }
+
     /**
      * @param  array<int, array{title?: string, video_name?: string}>  $videos
      */
-    protected function syncVideos(Profile $profile, array $videos): void
+    protected function syncVideos(Profile $profile, array $videos, bool $isExtra = false): void
     {
         $youtube = app(YouTubeService::class);
 
@@ -118,7 +141,7 @@ class ProfileMediaService
                 'user_id' => $profile->user_id,
                 'title' => filled($video['title'] ?? null) ? (string) $video['title'] : '',
                 'video_name' => $videoId,
-                'is_extra' => false,
+                'is_extra' => $isExtra,
             ]);
         }
     }

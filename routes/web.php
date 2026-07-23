@@ -78,6 +78,13 @@ Route::post('/{clientUrl}/{profileId}/checklist/{itemId}/uncheck', [MobileProfil
     ->name('scan.checklist.uncheck');
 
 Route::middleware(['web', 'auth'])->group(function (): void {
+    Route::get('/portal/graphengine/country', [\App\Http\Controllers\Portal\ScanalyticsGraphController::class, 'country'])
+        ->name('portal.graphengine.country');
+    Route::get('/portal/graphengine/device', [\App\Http\Controllers\Portal\ScanalyticsGraphController::class, 'device'])
+        ->name('portal.graphengine.device');
+    Route::get('/portal/graphengine/browser', [\App\Http\Controllers\Portal\ScanalyticsGraphController::class, 'browser'])
+        ->name('portal.graphengine.browser');
+
     Route::get('/portal/legacy-form-builder', [LegacyFormBuilderController::class, 'index'])
         ->name('portal.legacy-form-builder');
     Route::match(['get', 'post'], '/portal/legacy-form-builder/render-element', [LegacyFormBuilderController::class, 'renderElement'])

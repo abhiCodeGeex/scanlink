@@ -8,66 +8,136 @@
 {{-- Single root so Livewire wire:id wraps palette + drop zone (style alone as root broke DnD lookup) --}}
 <div class="fb-embed-wrap">
 <style>
-    .fb-root { --fb-green:#008C00; --fb-orange:#ff6600; --fb-blue:#0066ff; padding:8px 10px 16px; box-sizing:border-box; font-family:Arial,Helvetica,sans-serif; color:#333; }
-    .fb-field { margin:10px 0; }
+    .fb-embed-wrap {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+        box-sizing: border-box;
+    }
+    .fb-root {
+        --fb-green:#008C00; --fb-orange:#ff6600; --fb-blue:#0066ff;
+        padding: 8px 8px 14px;
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+        font-family: Arial, Helvetica, sans-serif;
+        color: #333;
+    }
+    .fb-root *, .fb-root *::before, .fb-root *::after { box-sizing: border-box; }
+    .fb-field { margin: 10px 0; }
     .fb-label { display:block; font-weight:700; color:#008901; margin-bottom:5px; font-size:13px; }
-    .fb-input, .fb-textarea { width:100%; box-sizing:border-box; border:1px solid #c8c8c8; border-radius:3px; padding:7px 9px; font-size:13px; background:#fff; }
+    .fb-input, .fb-textarea { width:100%; max-width:100%; box-sizing:border-box; border:1px solid #c8c8c8; border-radius:3px; padding:7px 9px; font-size:13px; background:#fff; }
     .fb-btn { display:inline-flex; align-items:center; justify-content:center; border:none; border-radius:3px; padding:7px 12px; font-size:12px; font-weight:700; cursor:pointer; }
     .fb-btn-primary { background:#008901; color:#fff; }
     .fb-btn-secondary { background:#e8e8e8; color:#333; }
     .fb-btn-danger { background:#c0392b; color:#fff; }
     .fb-btn-sm { padding:4px 8px; font-size:11px; }
-    .fb-recipient-row { display:flex; gap:6px; margin-bottom:6px; }
+    .fb-recipient-row { display:flex; gap:6px; margin-bottom:6px; min-width:0; }
+    .fb-recipient-row .fb-input { flex: 1; min-width: 0; }
     .fb-recipient-meta { display:flex; justify-content:space-between; align-items:center; margin-top:4px; }
     .fb-required { color:#c00; font-weight:700; }
     .fb-add-another { background:none; border:none; color:#008901; font-weight:700; cursor:pointer; padding:0; font-size:13px; }
     .fb-participant { display:inline-block; background:#008901; color:#fff !important; text-decoration:none; font-weight:700; padding:10px 14px; border-radius:4px; font-size:13px; margin-top:4px; }
-    .fb-heading { text-align:center; font-weight:700; color:#008901; margin:14px 0 10px; font-size:13px; }
-    .fb-palette { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; }
-    .fb-palette-col { border:2px solid; border-radius:4px; overflow:hidden; min-width:0; }
-    .fb-palette-col--question { border-color:#008000; }
-    .fb-palette-col--format { border-color:#ff6600; }
-    .fb-palette-col--answer { border-color:#0066ff; }
-    .fb-palette-head { color:#fff; font-weight:700; font-size:11px; text-align:center; padding:5px 4px; }
-    .fb-palette-col--question .fb-palette-head { background:#008000; }
-    .fb-palette-col--format .fb-palette-head { background:#ff6600; }
-    .fb-palette-col--answer .fb-palette-head { background:#0066ff; }
-    .fb-palette-body { padding:5px; display:flex; flex-direction:column; gap:4px; max-height:260px; overflow-y:auto; }
-    .fb-palette-col--question .fb-palette-body { background:#9bff9b; }
-    .fb-palette-col--format .fb-palette-body { background:#ffbf93; }
-    .fb-palette-col--answer .fb-palette-body { background:#b1d1ff; }
+    .fb-heading { text-align:center; font-weight:700; color:#008901; margin:12px 0 8px; font-size:13px; }
+
+    /* 3 equal columns that ALWAYS shrink inside the iframe — never clip Answer Tools */
+    .fb-palette {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: stretch !important;
+        gap: 4px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+    }
+    .fb-palette-col {
+        flex: 1 1 0 !important;
+        width: 0 !important; /* force equal flex share */
+        min-width: 0 !important;
+        max-width: 100% !important;
+        border: 1px solid !important;
+        border-radius: 4px !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+    }
+    .fb-palette-col--question { border-color:#008000 !important; }
+    .fb-palette-col--format { border-color:#ff6600 !important; }
+    .fb-palette-col--answer { border-color:#0066ff !important; }
+    .fb-palette-head {
+        color:#fff !important;
+        font-weight:700 !important;
+        font-size:10px !important;
+        text-align:center !important;
+        padding:5px 2px !important;
+        line-height: 1.2 !important;
+        word-break: break-word !important;
+    }
+    .fb-palette-col--question .fb-palette-head { background:#008000 !important; }
+    .fb-palette-col--format .fb-palette-head { background:#ff6600 !important; }
+    .fb-palette-col--answer .fb-palette-head { background:#0066ff !important; }
+    .fb-palette-body {
+        padding: 4px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 3px !important;
+        max-height: 260px !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        min-width: 0 !important;
+    }
+    .fb-palette-col--question .fb-palette-body { background:#9bff9b !important; }
+    .fb-palette-col--format .fb-palette-body { background:#ffbf93 !important; }
+    .fb-palette-col--answer .fb-palette-body { background:#b1d1ff !important; }
     .fb-palette-item {
-        text-align:left; border:1px solid rgba(0,0,0,.12); border-radius:3px; padding:5px 6px;
-        font-size:11px; font-weight:600; background:rgba(255,255,255,.85); cursor:grab; width:100%;
-        user-select:none;
+        display: block !important;
+        text-align: left !important;
+        border: 1px solid rgba(0,0,0,.12) !important;
+        border-radius: 3px !important;
+        padding: 4px 5px !important;
+        font-size: 10px !important;
+        font-weight: 600 !important;
+        line-height: 1.25 !important;
+        background: rgba(255,255,255,.85) !important;
+        cursor: grab !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        user-select: none !important;
+        white-space: normal !important;
+        overflow-wrap: anywhere !important;
+        word-break: break-word !important;
+        box-sizing: border-box !important;
     }
     .fb-palette-item:active { cursor:grabbing; }
     .fb-palette-item.is-dragging { opacity: .45; }
-    .fb-palette-item.is-covid { background:#e74c3c; color:#fff; border-color:#c0392b; }
+    .fb-palette-item.is-covid { background:#e74c3c !important; color:#fff !important; border-color:#c0392b !important; }
     .fb-canvas-title {
-        display:flex; align-items:center; justify-content:center; gap:10px;
+        display:flex; align-items:center; justify-content:center; gap:8px;
         margin:12px 0 8px;
         font-weight:800; letter-spacing:.04em; color:#008901; font-size:12px;
     }
     .fb-canvas {
         min-height:140px; background:#fff; border:2px dashed #c8c8c8; border-radius:4px; padding:8px;
-        transition:border-color .15s, background .15s;
+        transition:border-color .15s, background .15s; width:100%; max-width:100%; overflow-x:hidden;
+        box-sizing: border-box;
     }
     .fb-canvas.is-over { border-color:#008901; background:rgba(0,140,0,.08); }
     .fb-empty { min-height:120px; display:flex; align-items:center; justify-content:center; color:#999; font-size:12px; font-weight:600; }
     .fb-question-list { display:flex; flex-direction:column; gap:6px; min-height:40px; }
-    .fb-box { display:flex; align-items:flex-start; gap:8px; padding:8px; border-left:4px solid #008000; background:#f7f7f7; border-radius:4px; }
+    .fb-box { display:flex; align-items:flex-start; gap:8px; padding:8px; border-left:4px solid #008000; background:#f7f7f7; border-radius:4px; min-width:0; }
     .fb-box-format { border-left-color:#ff6600; }
     .fb-box-answer { border-left-color:#0066ff; }
     .fb-box-handle { cursor:grab; color:#999; user-select:none; padding-top:2px; }
     .fb-box-body { flex:1; min-width:0; }
     .fb-box-type { font-size:10px; text-transform:uppercase; opacity:.7; font-weight:700; }
     .fb-box-text { font-size:12px; font-weight:600; margin-top:2px; word-break:break-word; }
-    .fb-box-actions { display:flex; gap:4px; flex-shrink:0; }
-    .fb-composer { margin:14px 0 10px; padding:10px; border:2px solid #008901; border-radius:6px; background:#f4fff4; }
-    .fb-composer-head { display:flex; justify-content:space-between; margin-bottom:8px; }
+    .fb-box-actions { display:flex; gap:4px; flex-shrink:0; flex-wrap:wrap; }
+    .fb-composer { margin:14px 0 10px; padding:10px; border:2px solid #008901; border-radius:6px; background:#f4fff4; width:100%; overflow-x:hidden; box-sizing:border-box; }
+    .fb-composer-head { display:flex; justify-content:space-between; margin-bottom:8px; gap:8px; flex-wrap:wrap; }
     .fb-check { display:flex; align-items:center; gap:6px; font-size:12px; margin-top:8px; }
-    .fb-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
+    .fb-grid-2 { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; margin-top:8px; }
     .sortable-ghost { opacity:.4; }
     .fb-actions-bar { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
 </style>

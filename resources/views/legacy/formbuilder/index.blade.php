@@ -497,12 +497,17 @@
 		$('#iframe_current_height').val(window.parent.$('#iframe_frm_builder').height()); ///new hidden
 		$('#div_drop_area_current_height').val($('#div_drop_area').css('height')); //new hidden
 
-		window.parent.$('body').on('click', '.expand-reduce', function() {
-			if (window.parent != null) {
+		// Expand/Reduce is handled on the parent portal page (no jQuery there).
+		// Keep a jQuery fallback only when parent exposes $.
+		if (window.parent && window.parent.$ && window.parent.$ !== $) {
+			window.parent.$('body').off('click.slExpandReduce', '.expand-reduce').on('click.slExpandReduce', '.expand-reduce', function() {
+				var $label = window.parent.$('#sl-expand-reduce-label');
+				if (! $label.length) {
+					$label = window.parent.$(this).closest('.footer-rouded').find('span.expand-reduce').first();
+				}
 				iframe_height = window.parent.$('#iframe_frm_builder').height();
 
-				if ($(this).parent().children('span').text() == "Expand Window") {
-					//window.parent.$('#iframe_frm_builder').height($(".ui-widget-content ol").prop('scrollHeight')+iframe_height);
+				if ($label.text().trim() == "Expand Window") {
 					window.parent.$('#iframe_frm_builder').height($(".ui-widget-content ol").prop('scrollHeight') + $('.top-part').height());
 
 					div_drop_area_current_height = $('#div_drop_area_current_height').val().split('px');
@@ -510,17 +515,17 @@
 					if (div_drop_area_current_height[0] < $('.ui-droppable').prop('scrollHeight'))
 						$('#div_drop_area').css('height', ($('.ui-droppable').prop('scrollHeight')));
 
-					$(this).parent().children('span').text('Reduce Window');
+					$label.text('Reduce Window');
 					window.parent.$('#expand_reduce_img').attr('src', '{{ rtrim(url("/"), "/") }}/images/reduce_window.png');
 
 				} else {
 					window.parent.$('#iframe_frm_builder').height($('#iframe_current_height').val());
 					$('#div_drop_area').css('height', $('#div_drop_area_current_height').val());
-					$(this).parent().children('span').text('Expand Window');
+					$label.text('Expand Window');
 					window.parent.$('#expand_reduce_img').attr('src', '{{ rtrim(url("/"), "/") }}/images/expand_window.png');
 				}
-			}
-		});
+			});
+		}
 
 		window.parent.$('#enable_form').on('click', function() {
 			if ($(this).prop('checked') == true)
@@ -690,9 +695,9 @@
 				<div class="main-arrow">
 					<div class="main-arrow-title" id="drop-here-title">
 						<span>
-							<img src="{{ rtrim(url("/"), "/") }}/form-builder/images/arrow.jpg" alt="" class="after" />
+							<img src="{{ rtrim(url("/"), "/") }}/form-builder/images/arrow.jpg" alt="" class="after">
 							Create your form here
-							<img src="{{ rtrim(url("/"), "/") }}/form-builder/images/arrow.jpg" alt="" class=" before" />
+							<img src="{{ rtrim(url("/"), "/") }}/form-builder/images/arrow.jpg" alt="" class="before">
 						</span>
 					</div>
 				</div>

@@ -281,12 +281,21 @@ class FullAdminRegressionTest extends TestCase
 
         Livewire::test(GlobalSettings::class)
             ->assertSuccessful()
-            ->set('data.paypal_email', 'pay@example.com')
-            ->set('data.contact_email', 'contact@example.com')
-            ->set('data.youtube_client_id', 'client-id')
-            ->set('data.youtube_client_secret', 'GOCSPX-test')
+            ->set('values.paypal_email', '')
             ->call('save')
-            ->assertHasErrors();
+            ->assertSet('formMessageType', 'error');
+
+        Livewire::test(GlobalSettings::class)
+            ->assertSuccessful()
+            ->set('values.paypal_email', 'pay@example.com')
+            ->set('values.youtube_username', 'yt@example.com')
+            ->set('values.youtube_password', 'secret')
+            ->set('values.contact_email', 'contact@example.com')
+            ->set('values.youtube_developer_key', 'dev-key')
+            ->set('values.youtube_client_id', 'client-id.apps.googleusercontent.com')
+            ->set('values.youtube_application_id', 'app-id')
+            ->call('save')
+            ->assertSet('formMessageType', 'success');
 
         $support = $this->support();
         $this->actingAs($support);

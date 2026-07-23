@@ -3,14 +3,19 @@
 namespace App\Filament\Portal\Pages;
 
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
+use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Models\FormBuilderAnswer;
 use App\Models\FormBuilderQuestion;
 use App\Models\Profile;
+use App\Support\LegacyEquipmentTypeLabels;
 use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Contracts\View\View;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
@@ -24,7 +29,7 @@ class FormSubmissions extends Page
 
     protected static ?string $navigationLabel = 'Form Submissions';
 
-    protected static ?string $title = 'Form Submissions';
+    protected static ?string $title = 'Form Submission Log';
 
     protected static ?string $slug = 'form-submissions';
 
@@ -36,18 +41,44 @@ class FormSubmissions extends Page
 
     public ?int $selectedProfileId = null;
 
-    public ?string $viewSessionId = null;
+    public string $fromDate = '';
+
+    public string $toDate = '';
 
     public int $page = 1;
 
-    public int $perPage = 20;
+    public int $perPage = 50;
 
     /** @var Collection<int, FormBuilderQuestion> */
     public Collection $logQuestions;
 
+    public ?string $profileName = null;
+
     public static function getNavigationGroup(): ?string
     {
         return 'Forms';
+    }
+
+    public function getTitle(): string|Htmlable
+    {
+        return 'Form Submission Log';
+    }
+
+    public function getHeading(): string|Htmlable
+    {
+        return '';
+    }
+
+    public function getHeader(): ?View
+    {
+        return view('filament.portal.profiles.mastercode-toolbar', [
+            'types' => LegacyEquipmentTypeLabels::navTypes(),
+            'activeTab' => null,
+            'addCodeUrl' => ProfileResource::getUrl('index'),
+            'canAddCode' => false,
+            'hideActionBar' => true,
+            'hideLegend' => true,
+        ]);
     }
 
     public static function canAccess(): bool
@@ -59,49 +90,31 @@ class FormSubmissions extends Page
     {
         $this->logQuestions = collect();
 
-        $requestedProfile = request()->integer('profile');
-        $firstProfileId = $requestedProfile ?: $this->clientProfileOptions()->keys()->first();
+        $this->fromDate = (string) request()->query('from_date', '');
+        $this->toDate = (string) request()->query('to_date', '');
 
-        if ($firstProfileId) {
-            $this->loadProfile((int) $firstProfileId);
+        $requestedProfile = request()->integer('profile');
+
+        if ($requestedProfile > 0) {
+            $this->loadProfile($requestedProfile);
         }
     }
 
-    public function updatedSelectedProfileId(?int $profileId): void
+    public function search(): void
     {
         $this->page = 1;
-        $this->viewSessionId = null;
+    }
 
-        if ($profileId) {
-            $this->loadProfile($profileId);
-        }
+    public function clearDates(): void
+    {
+        $this->fromDate = '';
+        $this->toDate = '';
+        $this->page = 1;
     }
 
     public function goToPage(int $page): void
     {
         $this->page = max(1, $page);
-    }
-
-    public function viewSession(string $sessionId): void
-    {
-        $this->viewSessionId = $this->viewSessionId === $sessionId ? null : $sessionId;
-    }
-
-    /**
-     * @return Collection<int, FormBuilderAnswer>
-     */
-    public function sessionAnswers(string $sessionId): Collection
-    {
-        if (! $this->selectedProfileId) {
-            return collect();
-        }
-
-        return FormBuilderAnswer::query()
-            ->with('question')
-            ->where('profile_id', $this->selectedProfileId)
-            ->where('session_id', $sessionId)
-            ->orderBy('question_id')
-            ->get();
     }
 
     public function deleteSession(string $sessionId): void
@@ -110,14 +123,11 @@ class FormSubmissions extends Page
 
         FormBuilderAnswer::query()
             ->whereHas('profile', fn ($q) => $q->where('client_id', $client->id))
+            ->where('profile_id', $this->selectedProfileId)
             ->where('session_id', $sessionId)
             ->delete();
 
-        if ($this->viewSessionId === $sessionId) {
-            $this->viewSessionId = null;
-        }
-
-        Notification::make()->title('Submission deleted')->success()->send();
+        Notification::make()->title('Removed Successfully.')->success()->send();
     }
 
     public function exportCsv(): StreamedResponse
@@ -132,18 +142,20 @@ class FormSubmissions extends Page
 
             $headers = ['#', 'Date/Time', 'Session ID'];
             foreach ($logQuestions as $question) {
-                $headers[] = $question->log_columntitle ?: $question->question_text;
+                if ((int) $question->question_type_id === 25) {
+                    array_push($headers, 'Name', 'Phone', 'Venue Address', 'Location Description/Type', 'Vehicle Reg No');
+                } else {
+                    $headers[] = $question->log_columntitle ?: strip_tags((string) $question->question_text);
+                }
             }
-            $headers[] = 'All answers';
             fputcsv($out, $headers);
 
-            $sessions = $this->allSessionsQuery($profile->id)->get();
+            $sessions = $this->filteredSessionsQuery($profile->id)->get();
             $rowNum = 0;
 
             foreach ($sessions as $session) {
                 $rowNum++;
                 $answers = FormBuilderAnswer::query()
-                    ->with('question')
                     ->where('profile_id', $profile->id)
                     ->where('session_id', $session->session_id)
                     ->get()
@@ -156,11 +168,21 @@ class FormSubmissions extends Page
                 ];
 
                 foreach ($logQuestions as $question) {
-                    $row[] = $answers->get($question->question_id)?->question_answer ?? '';
+                    $raw = (string) ($answers->get($question->question_id)?->question_answer ?? '');
+                    if ((int) $question->question_type_id === 25) {
+                        $parts = explode(':::', $raw);
+                        array_push(
+                            $row,
+                            $parts[0] ?? '',
+                            $parts[1] ?? '',
+                            $parts[5] ?? '',
+                            $parts[6] ?? '',
+                            (($parts[6] ?? '') === 'Vehicle') ? ($parts[7] ?? '') : '',
+                        );
+                    } else {
+                        $row[] = $raw;
+                    }
                 }
-
-                $allAnswers = $answers->map(fn (FormBuilderAnswer $a): string => ($a->question?->question_text ?? 'Q'.$a->question_id).': '.$a->question_answer)->implode(' | ');
-                $row[] = $allAnswers;
 
                 fputcsv($out, $row);
             }
@@ -171,12 +193,29 @@ class FormSubmissions extends Page
         ]);
     }
 
+    public function downloadAll(): StreamedResponse
+    {
+        return $this->exportCsv();
+    }
+
+    public function viewUrl(string $sessionId): string
+    {
+        return FormSubmissionView::getUrl().'?profile='.$this->selectedProfileId.'&session_id='.urlencode($sessionId)
+            .'&from_date='.urlencode($this->fromDate)
+            .'&to_date='.urlencode($this->toDate);
+    }
+
     public function printSessionUrl(string $sessionId): string
     {
         return route('portal.form-submissions.print', [
             'sessionId' => $sessionId,
             'profile' => $this->selectedProfileId,
         ]);
+    }
+
+    public function returnToListUrl(): string
+    {
+        return ProfileResource::getUrl('index', panel: 'portal');
     }
 
     public static function downloadSessionHtml(int $profileId, string $sessionId): Response
@@ -226,32 +265,8 @@ class FormSubmissions extends Page
             return null;
         }
 
-        $query = $this->allSessionsQuery($this->selectedProfileId);
-
-        return $query->paginate($this->perPage, ['*'], 'page', $this->page);
-    }
-
-    /**
-     * Profiles that can receive / already have form submissions.
-     *
-     * @return Collection<int|string, string>
-     */
-    public function clientProfileOptions(): Collection
-    {
-        $client = $this->currentClient();
-
-        if (! $client) {
-            return collect();
-        }
-
-        return Profile::selectOptionsForClient((int) $client->id, function ($query): void {
-            $query->where(function ($q): void {
-                $q->where('form_active', true)
-                    ->orWhere('form_is_enable', true)
-                    ->orWhereHas('formQuestions')
-                    ->orWhereHas('formAnswers');
-            });
-        });
+        return $this->filteredSessionsQuery($this->selectedProfileId)
+            ->paginate($this->perPage, ['*'], 'page', $this->page);
     }
 
     public function answerForSession(object $session, int $questionId): string
@@ -274,22 +289,50 @@ class FormSubmissions extends Page
         return (string) ($cache[$key][$questionId] ?? '');
     }
 
+    /**
+     * @return list<string>
+     */
+    public function covidCells(string $raw): array
+    {
+        $parts = explode(':::', $raw);
+
+        return [
+            $parts[0] ?? '',
+            $parts[1] ?? '',
+            $parts[5] ?? '',
+            $parts[6] ?? '',
+            (($parts[6] ?? '') === 'Vehicle') ? ($parts[7] ?? '') : '-',
+        ];
+    }
+
     protected function loadProfile(int $profileId): void
     {
         $client = $this->requireClient();
 
-        Profile::query()
+        $profile = Profile::query()
             ->where('client_id', $client->id)
             ->active()
             ->findOrFail($profileId);
 
         $this->selectedProfileId = $profileId;
+        $this->profileName = filled(trim((string) $profile->code_profile_name))
+            ? (string) $profile->code_profile_name
+            : $profile->displayLabel();
 
-        $this->logQuestions = FormBuilderQuestion::query()
+        $q = FormBuilderQuestion::query()
             ->where('profile_id', $profileId)
             ->where('is_logchecked', true)
-            ->orderBy('question_order')
-            ->get();
+            ->orderBy('question_order');
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('form_builder_question', 'is_deleted')) {
+            $q->where(function ($query): void {
+                $query->where('is_deleted', false)
+                    ->orWhereNull('is_deleted')
+                    ->orWhere('is_deleted', 0);
+            });
+        }
+
+        $this->logQuestions = $q->get();
     }
 
     protected function resolveProfile(): Profile
@@ -302,12 +345,33 @@ class FormSubmissions extends Page
             ->findOrFail($this->selectedProfileId);
     }
 
-    protected function allSessionsQuery(int $profileId)
+    protected function filteredSessionsQuery(int $profileId)
     {
-        return FormBuilderAnswer::query()
+        $query = FormBuilderAnswer::query()
             ->where('profile_id', $profileId)
             ->whereNotNull('session_id')
-            ->selectRaw('session_id, MIN(date_time) as submitted_at, COUNT(*) as answer_count')
+            ->where('session_id', '!=', '');
+
+        if (filled($this->fromDate)) {
+            try {
+                $from = Carbon::createFromFormat('d/m/Y', trim($this->fromDate))->startOfDay();
+                $query->where('date_time', '>=', $from->toDateTimeString());
+            } catch (\Throwable) {
+                // ignore invalid date
+            }
+        }
+
+        if (filled($this->toDate)) {
+            try {
+                $to = Carbon::createFromFormat('d/m/Y', trim($this->toDate))->endOfDay();
+                $query->where('date_time', '<=', $to->toDateTimeString());
+            } catch (\Throwable) {
+                // ignore invalid date
+            }
+        }
+
+        return $query
+            ->selectRaw('session_id, MIN(date_time) as submitted_at, COUNT(*) as answer_count, MAX(app_user_firstname) as app_user_firstname, MAX(app_user_lastname) as app_user_lastname')
             ->groupBy('session_id')
             ->orderByDesc('submitted_at');
     }

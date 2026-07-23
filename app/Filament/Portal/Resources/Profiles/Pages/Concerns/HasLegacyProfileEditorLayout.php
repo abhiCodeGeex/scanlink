@@ -6,6 +6,7 @@ use App\Filament\Portal\Pages\FormBuilder;
 use App\Filament\Portal\Pages\FormLibrary;
 use App\Filament\Portal\Pages\ManageParticipants;
 use App\Filament\Portal\Pages\OrderLabel;
+use App\Filament\Portal\Resources\Profiles\Pages\CreateProfile;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Models\EquipmentType;
 use App\Models\Profile;
@@ -70,14 +71,44 @@ trait HasLegacyProfileEditorLayout
             $qrUrl = app(ProfileQrService::class)->profileUrl($record);
             $formBuilderUrl = FormBuilder::getUrl(panel: 'portal').'?profile='.$record->id;
             $analytics = (int) ($record->enable_form_analytics ? 1 : 0);
+            $embedNonce = property_exists($this, 'formBuilderEmbedNonce')
+                ? (int) $this->formBuilderEmbedNonce
+                : 0;
             $formBuilderEmbedUrl = url('/portal/legacy-form-builder')
                 .'?profile_id='.$record->id
-                .'&enable_form_analytics='.$analytics;
+                .'&enable_form_analytics='.$analytics
+                .'&_v=fluid-3'
+                .'&_r='.$embedNonce;
             $orderLabelUrl = OrderLabel::getUrl(panel: 'portal').'?profile='.$record->id;
             $participantsUrl = ManageParticipants::getUrl(panel: 'portal').'?profile='.$record->id;
             $formLibraryUrl = FormLibrary::getUrl(panel: 'portal');
+        }
 
-            if (! $record->qrImage && $record->exists) {
+        if ($record instanceof Profile) {
+            $record->loadMissing('equipmentType');
+        }
+
+        $typeSlag = $record?->equipmentType?->slag;
+        $isUrlLinkCode = $typeSlag === 'code';
+        $isSurvey = $typeSlag === 'survey';
+        $isExhibit = $typeSlag === 'exhibit';
+        $isVoc = $typeSlag === 'voc';
+        $isMisc = $typeSlag === 'misc';
+        $isCreateEditor = $this instanceof CreateProfile;
+        // Legacy code/survey/exhibit/voc create pages leave preview QR blank until edit.
+        $showPreviewQr = ! (($isUrlLinkCode || $isSurvey || $isExhibit || $isVoc) && $isCreateEditor);
+        $showCodePreviewImage = $showPreviewQr;
+
+        if (($isSurvey || $isExhibit || $isVoc) && $isCreateEditor) {
+            $previewUrl = null;
+        }
+
+        if (
+            $showPreviewQr
+            && $record instanceof Profile
+            && $record->exists
+        ) {
+            if (! $record->qrImage) {
                 try {
                     app(ProfileQrService::class)->generateFor($record);
                     $record->load('qrImage');
@@ -99,6 +130,13 @@ trait HasLegacyProfileEditorLayout
             'orderLabelUrl' => $orderLabelUrl,
             'participantsUrl' => $participantsUrl,
             'formLibraryUrl' => $formLibraryUrl,
+            'isUrlLinkCode' => $isUrlLinkCode,
+            'isSurvey' => $isSurvey,
+            'isExhibit' => $isExhibit,
+            'isVoc' => $isVoc,
+            'isMisc' => $isMisc,
+            'showCodePreviewImage' => $showCodePreviewImage,
+            'isCreateEditor' => $isCreateEditor,
             'canAccessFormBuilder' => method_exists($this, 'canAccessFormBuilder')
                 ? $this->canAccessFormBuilder()
                 : static::memberCanAccessFormBuilder(static::portalMembership()),

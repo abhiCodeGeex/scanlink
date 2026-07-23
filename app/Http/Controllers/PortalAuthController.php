@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Filament\Portal\Pages\PortalDashboard;
+use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Http\RedirectResponse;
@@ -43,6 +43,6 @@ class PortalAuthController extends Controller
 
         Filament::setCurrentPanel($panel);
 
-        return redirect()->intended(PortalDashboard::getUrl(panel: 'portal'));
+        return redirect()->intended(ProfileResource::getUrl('index', panel: 'portal'));
     }
 }

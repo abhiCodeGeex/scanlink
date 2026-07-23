@@ -9,7 +9,7 @@ use App\Models\FormBuilderQuestion;
 use App\Models\FormBuilderRecipient;
 use App\Models\Participant;
 use App\Models\Profile;
-use App\Models\VisitorContact;
+use App\Models\CollectedContact;
 use App\Services\AnalyticsApiService;
 use App\Services\FormBuilderService;
 use App\Services\MobileProfileViewResolver;
@@ -42,8 +42,13 @@ class MobileProfileController extends Controller
             }
         }
 
-        if ($profile->protect && ! $portalPreview && ! $this->isUnlocked($profile)) {
-            return view('scan.password', compact('profile', 'clientUrl'));
+        // Password gate applies to live scans and portal preview (legacy mobile behaviour).
+        if ($profile->protect && ! $this->isUnlocked($profile)) {
+            return view('scan.password', [
+                'profile' => $profile,
+                'clientUrl' => $clientUrl,
+                'portalPreview' => $portalPreview || PortalProfilePreview::isPreviewRequest(),
+            ]);
         }
 
         if (! $portalPreview) {
@@ -76,14 +81,19 @@ class MobileProfileController extends Controller
 
         $password = (string) $request->input('password', '');
 
-        if ($profile->password && Hash::check($password, $profile->password)) {
+        if ($this->profilePasswordMatches($profile, $password)) {
             session()->put($this->unlockSessionKey($profile), true);
 
-            return redirect()->route('scan.show', [$clientUrl, $profileId]);
-        }
-
-        if ($profile->password === $password) {
-            session()->put($this->unlockSessionKey($profile), true);
+            // Keep portal iframe preview query so unlock returns to the phone preview.
+            if (
+                $request->boolean('portal_preview')
+                || $request->input('ask_for_location') === 'no'
+            ) {
+                return redirect()->to(
+                    route('scan.show', [$clientUrl, $profileId])
+                    .'?ask_for_location=no&portal_preview=1&_='.time()
+                );
+            }
 
             return redirect()->route('scan.show', [$clientUrl, $profileId]);
         }
@@ -91,23 +101,56 @@ class MobileProfileController extends Controller
         return back()->withErrors(['password' => 'Incorrect password.']);
     }
 
+    /**
+     * Live Kohana stores profile unlock passwords as plain text.
+     * Newer saves may hash them — accept both.
+     */
+    protected function profilePasswordMatches(Profile $profile, string $password): bool
+    {
+        $stored = (string) ($profile->password ?? '');
+
+        if ($stored === '' || $password === '') {
+            return false;
+        }
+
+        if (Hash::isHashed($stored)) {
+            return Hash::check($password, $stored);
+        }
+
+        return hash_equals($stored, $password);
+    }
+
     public function storeVisitor(Request $request, string $clientUrl, int $profileId): RedirectResponse
     {
         $profile = $this->resolveProfile($clientUrl, $profileId);
 
         $validated = $request->validate([
+            'name' => ['nullable', 'string', 'max:255'],
+            'surname' => ['nullable', 'string', 'max:255'],
+            'mobile' => ['nullable', 'string', 'max:50'],
+            'email' => ['nullable', 'email', 'max:255'],
+            // Legacy field aliases still accepted from older scan markup.
             'user_name' => ['nullable', 'string', 'max:255'],
             'user_email' => ['nullable', 'email', 'max:255'],
             'user_mobile' => ['nullable', 'string', 'max:50'],
         ]);
 
-        VisitorContact::query()->create([
-            'profile_id' => $profile->id,
-            'user_name' => $validated['user_name'] ?? null,
-            'user_email' => $validated['user_email'] ?? null,
-            'user_mobile' => $validated['user_mobile'] ?? null,
-            'entry_date' => now(),
-        ]);
+        $name = trim((string) ($validated['name'] ?? $validated['user_name'] ?? ''));
+        $surname = trim((string) ($validated['surname'] ?? ''));
+        $mobile = trim((string) ($validated['mobile'] ?? $validated['user_mobile'] ?? ''));
+        $email = trim((string) ($validated['email'] ?? $validated['user_email'] ?? ''));
+
+        // Legacy dashboard/visitorlog reads from `contacts` (name/surname/mobile/email).
+        if ($name !== '' || $surname !== '' || $mobile !== '' || $email !== '') {
+            CollectedContact::query()->create([
+                'id_profile' => $profile->id,
+                'name' => $name,
+                'surname' => $surname,
+                'mobile' => $mobile,
+                'email' => $email,
+                'created_at' => now(),
+            ]);
+        }
 
         session()->put('user_info', (string) $profile->id);
 
@@ -348,6 +391,7 @@ class MobileProfileController extends Controller
                 'checklistItems',
                 'equipmentType',
                 'client',
+                'owner',
             ]);
         }
 

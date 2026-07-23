@@ -874,3 +874,166 @@ body {
 	border: solid 1px #dddddd;
 }*/
 /* css for survey form end */
+
+/* ---------------------------------------------------------------------------
+ * Fluid layout for portal profile sidebar iframe (≤450px).
+ * Legacy fixed 440px / 131–143px columns clipped Answer Tools on the right.
+ * ------------------------------------------------------------------------- */
+html, body {
+	width: 100% !important;
+	max-width: 100% !important;
+	overflow-x: hidden !important;
+	box-sizing: border-box !important;
+}
+
+.from-box,
+.checked,
+.main-arrow,
+.main-arrow-title,
+.ui-widget-content,
+#frm_survey .from-box {
+	width: 100% !important;
+	max-width: 100% !important;
+	float: none !important;
+	box-sizing: border-box !important;
+}
+
+.rounded input,
+#frm_survey .rounded input,
+.from-box .rounded input {
+	width: 100% !important;
+	max-width: 100% !important;
+	box-sizing: border-box !important;
+}
+
+.menu-form {
+	width: 100% !important;
+	max-width: 100% !important;
+	padding: 0 !important;
+	margin: 0 !important;
+	box-sizing: border-box !important;
+	display: block !important;
+}
+
+.menu-form > ul {
+	display: flex !important;
+	flex-direction: row !important;
+	align-items: flex-start !important;
+	gap: 4px !important;
+	width: 100% !important;
+	max-width: 100% !important;
+	list-style: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	box-sizing: border-box !important;
+}
+
+.menu-form > ul > li {
+	float: none !important;
+	display: block !important;
+	flex: 1 1 0 !important;
+	width: 0 !important;
+	min-width: 0 !important;
+	max-width: 100% !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	box-sizing: border-box !important;
+}
+
+.menu-form > ul > li > a.green,
+.menu-form > ul > li > a.orange,
+.menu-form > ul > li > a.blue {
+	display: block !important;
+	width: 100% !important;
+	max-width: 100% !important;
+	box-sizing: border-box !important;
+	padding: 8px 4px !important;
+	margin: 0 !important;
+	font-size: 11px !important;
+	line-height: 1.25 !important;
+	text-align: center !important;
+	white-space: normal !important;
+	word-break: break-word !important;
+}
+
+.menu-form ul li ul.green,
+.menu-form ul li ul.orange,
+.menu-form ul li ul.blue,
+.menu-form ul li .green,
+.menu-form ul li .orange,
+.menu-form ul li .blue {
+	width: 100% !important;
+	max-width: 100% !important;
+	position: relative !important;
+	top: 0 !important;
+	left: 0 !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	box-sizing: border-box !important;
+	display: block !important;
+}
+
+.menu-form ul li ul.green li,
+.menu-form ul li ul.orange li,
+.menu-form ul li ul.blue li,
+.menu-form ul li .green li,
+.menu-form ul li .orange li,
+.menu-form ul li .blue li {
+	width: 100% !important;
+	max-width: 100% !important;
+	float: none !important;
+	display: block !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	box-sizing: border-box !important;
+}
+
+.menu-form ul li ul.green li a,
+.menu-form ul li ul.orange li a,
+.menu-form ul li ul.blue li a,
+.menu-form ul li .green li a,
+.menu-form ul li .orange li a,
+.menu-form ul li .blue li a {
+	display: block !important;
+	width: 100% !important;
+	max-width: 100% !important;
+	box-sizing: border-box !important;
+	float: none !important;
+	padding: 8px 6px !important;
+	margin: 0 !important;
+	text-align: left !important;
+	white-space: normal !important;
+	overflow-wrap: anywhere !important;
+	word-break: break-word !important;
+	font-size: 11px !important;
+	line-height: 1.25 !important;
+}
+
+.main-arrow-title {
+	padding-left: 0 !important;
+	padding-right: 0 !important;
+	display: flex !important;
+	justify-content: center !important;
+	align-items: center !important;
+	float: none !important;
+	box-sizing: border-box !important;
+}
+
+.main-arrow-title span {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	gap: 12px !important;
+	width: 100% !important;
+	max-width: 100% !important;
+	margin: 0 !important;
+	box-sizing: border-box !important;
+}
+
+.main-arrow-title img.after,
+.main-arrow-title img.before {
+	float: none !important;
+	margin: 0 !important;
+	flex-shrink: 0 !important;
+	display: block !important;
+}

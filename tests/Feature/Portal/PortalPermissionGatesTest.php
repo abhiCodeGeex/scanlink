@@ -69,7 +69,7 @@ class PortalPermissionGatesTest extends TestCase
             'client_id' => $client->id,
             'email' => fake()->unique()->safeEmail(),
             'status' => true,
-            'is_password_change' => false,
+            'is_password_change' => true,
             'access_addcode' => false,
             'access_edit' => false,
             'access_delete' => false,

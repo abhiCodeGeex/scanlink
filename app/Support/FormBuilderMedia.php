@@ -132,6 +132,67 @@ class FormBuilderMedia
         return $choices;
     }
 
+    /**
+     * Choice tools (Multiple Choices / Check Box / Drop Down) store options in
+     * question_text as "a:::b:::c" and also as option rows. Never show the raw
+     * ::: string as the question label on the scan page.
+     *
+     * @return list<string>
+     */
+    public static function choiceOptions(FormBuilderQuestion $q): array
+    {
+        $fromRows = $q->relationLoaded('options')
+            ? $q->options
+            : $q->options()->get();
+
+        $names = $fromRows
+            ->where('question_option_type_id', 0)
+            ->pluck('option_name')
+            ->map(static fn ($n): string => trim((string) $n))
+            ->filter()
+            ->values()
+            ->all();
+
+        if ($names !== []) {
+            return $names;
+        }
+
+        // Fallback: all option rows (some imports omit question_option_type_id).
+        $names = $fromRows
+            ->pluck('option_name')
+            ->map(static fn ($n): string => trim((string) $n))
+            ->filter()
+            ->values()
+            ->all();
+
+        if ($names !== []) {
+            return $names;
+        }
+
+        return self::splitCsv((string) ($q->question_text ?? ''));
+    }
+
+    public static function choiceLabel(FormBuilderQuestion $q): string
+    {
+        $text = trim(strip_tags((string) ($q->question_text ?? '')));
+
+        if ($text === '' || str_contains($text, ':::')) {
+            return '';
+        }
+
+        // If the stored text is only a comma-joined copy of the options, hide it.
+        $options = self::choiceOptions($q);
+        if ($options !== []) {
+            $joinedComma = implode(',', $options);
+            $joinedSlash = implode(' / ', $options);
+            if ($text === $joinedComma || $text === $joinedSlash) {
+                return '';
+            }
+        }
+
+        return $text;
+    }
+
     private static function storageExists(string $path): bool
     {
         try {

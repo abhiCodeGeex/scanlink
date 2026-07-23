@@ -155,7 +155,7 @@ class PortalProfilesTable
                     ->iconButton()
                     ->tooltip('Scanalytics')
                     ->icon('heroicon-o-chart-bar')
-                    ->url(fn (Profile $record): string => ScanAnalytics::getUrl(['profile' => $record->id]))
+                    ->url(fn (Profile $record): string => ScanAnalytics::getUrl().'?profile='.$record->id)
                     ->visible(fn (): bool => InteractsWithClientMembership::memberCanAccessAnalytics(
                         InteractsWithClientMembership::portalMembership(),
                     )),

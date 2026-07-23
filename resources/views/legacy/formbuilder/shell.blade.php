@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Form Builder</title>
-    <link rel="stylesheet" href="{{ asset('form-builder/css/style.css') }}" media="screen">
+    <link rel="stylesheet" href="{{ asset('form-builder/css/style.css') }}?v=fluid-3" media="screen">
     <link rel="stylesheet" href="{{ asset('form-builder/css/uniform.default.css') }}" media="screen">
     <script src="{{ asset('ckeditor/ckeditor.js') }}"></script>
     <script src="{{ asset('form-builder/js/jquery-1.9.1.js') }}"></script>
@@ -18,7 +18,7 @@
         });
     </script>
     <style>
-        html, body { margin: 0; padding: 0; background: #fff; }
+        html, body { margin: 0; padding: 0; background: #fff; width: 100%; max-width: 100%; overflow-x: hidden; box-sizing: border-box; }
         .progressbar { display: none; }
     </style>
 </head>

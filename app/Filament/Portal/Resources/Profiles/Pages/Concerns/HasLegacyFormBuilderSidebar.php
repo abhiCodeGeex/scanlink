@@ -2,11 +2,15 @@
 
 namespace App\Filament\Portal\Resources\Profiles\Pages\Concerns;
 
+use App\Models\ClientUser;
+use App\Models\FormBuilderLibrary;
 use App\Models\FormBuilderQuestion;
 use App\Models\Profile;
 use App\Services\FormBuilderService;
+use App\Services\FormLibraryService;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Hash;
 
 trait HasLegacyFormBuilderSidebar
 {
@@ -33,6 +37,335 @@ trait HasLegacyFormBuilderSidebar
 
     /** @var array<int, array{option_name: string}> */
     public array $fbComposerOptions = [['option_name' => '']];
+
+    public bool $showExistingFormModal = false;
+
+    /** existing|library|account */
+    public string $existingFormTab = 'existing';
+
+    /** @var list<array{id: int, form_title: string}> */
+    public array $existingFormProfiles = [];
+
+    /** @var list<array{form_id: int, form_title: string}> */
+    public array $existingLibraryForms = [];
+
+    public string $otherAccountEmail = '';
+
+    public string $otherAccountPassword = '';
+
+    public ?string $existingFormStatus = null;
+
+    public bool $existingFormApplying = false;
+
+    /** @var list<array{form_id: int, form_title: string}> */
+    public array $otherAccountLibraryForms = [];
+
+    public bool $showOtherAccountLibrary = false;
+
+    public bool $showLibraryFormPreview = false;
+
+    public string $libraryPreviewTitle = '';
+
+    /** @var list<array{text: string, type: string}> */
+    public array $libraryPreviewQuestions = [];
+
+    /** Bumps the Form Builder iframe URL so it reloads after applying a form. */
+    public int $formBuilderEmbedNonce = 0;
+
+    public function openExistingFormModal(): void
+    {
+        $profile = $this->sidebarProfile();
+
+        if (! $profile?->exists) {
+            Notification::make()
+                ->title('Save the profile first to use an existing form')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        if (method_exists($this, 'canAccessFormBuilder') && ! $this->canAccessFormBuilder()) {
+            Notification::make()
+                ->title('You do not have access to Form Builder')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        $this->existingFormTab = 'existing';
+        $this->existingFormStatus = null;
+        $this->existingFormApplying = false;
+        $this->showLibraryFormPreview = false;
+        $this->showOtherAccountLibrary = false;
+        $this->otherAccountLibraryForms = [];
+        $this->otherAccountEmail = '';
+        $this->otherAccountPassword = '';
+        $this->loadExistingFormModalLists($profile);
+        $this->showExistingFormModal = true;
+    }
+
+    public function closeExistingFormModal(): void
+    {
+        $this->showExistingFormModal = false;
+        $this->existingFormApplying = false;
+        $this->showLibraryFormPreview = false;
+        $this->existingFormStatus = null;
+    }
+
+    public function setExistingFormTab(string $tab): void
+    {
+        if (! in_array($tab, ['existing', 'library', 'account'], true)) {
+            return;
+        }
+
+        $this->existingFormTab = $tab;
+        $this->showLibraryFormPreview = false;
+        $this->existingFormStatus = null;
+    }
+
+    public function selectExistingFormFromProfile(int $sourceProfileId): void
+    {
+        $profile = $this->sidebarProfile();
+
+        if (! $profile?->exists) {
+            return;
+        }
+
+        $client = method_exists($this, 'currentClient') ? $this->currentClient() : null;
+
+        if (! $client) {
+            Notification::make()->title('No client context')->danger()->send();
+
+            return;
+        }
+
+        if ($sourceProfileId === (int) $profile->id) {
+            Notification::make()->title('Choose a different profile')->warning()->send();
+
+            return;
+        }
+
+        Profile::query()
+            ->where('client_id', $client->id)
+            ->whereKey($sourceProfileId)
+            ->firstOrFail();
+
+        $this->existingFormApplying = true;
+        $this->existingFormStatus = 'Please Wait. Applying Form to Profile...';
+
+        $cloned = app(FormLibraryService::class)->copyFromProfile($sourceProfileId, $profile);
+
+        if ($cloned === 0) {
+            $this->existingFormApplying = false;
+            $this->existingFormStatus = null;
+            Notification::make()->title('Source profile has no questions')->warning()->send();
+
+            return;
+        }
+
+        $this->finishExistingFormApply($profile, $cloned);
+    }
+
+    public function selectExistingFormFromLibrary(int $formId): void
+    {
+        $profile = $this->sidebarProfile();
+
+        if (! $profile?->exists) {
+            return;
+        }
+
+        $this->existingFormApplying = true;
+        $this->existingFormStatus = 'Please Wait. Applying Form to Profile...';
+
+        $cloned = app(FormLibraryService::class)->applyLibraryFormToProfile($formId, $profile);
+
+        if ($cloned === 0) {
+            $this->existingFormApplying = false;
+            $this->existingFormStatus = null;
+            Notification::make()->title('Library form has no questions')->warning()->send();
+
+            return;
+        }
+
+        $this->finishExistingFormApply($profile, $cloned);
+    }
+
+    public function deleteExistingLibraryForm(int $formId): void
+    {
+        $entry = FormBuilderLibrary::query()
+            ->where('form_id', $formId)
+            ->where('is_deleted_from_library', false)
+            ->first();
+
+        if (! $entry) {
+            return;
+        }
+
+        $client = method_exists($this, 'currentClient') ? $this->currentClient() : null;
+
+        if ($client) {
+            $allowedUserIds = \Illuminate\Support\Facades\DB::table('client_users')
+                ->where('client_id', $client->id)
+                ->pluck('id');
+
+            if (! $allowedUserIds->contains($entry->user_id)) {
+                Notification::make()->title('Unable to remove this form')->danger()->send();
+
+                return;
+            }
+        }
+
+        app(FormLibraryService::class)->deleteFromLibrary($entry);
+
+        $this->existingLibraryForms = array_values(array_filter(
+            $this->existingLibraryForms,
+            fn (array $row): bool => (int) $row['form_id'] !== $formId
+        ));
+
+        Notification::make()->title('Form removed from library')->success()->send();
+    }
+
+    public function previewExistingLibraryForm(int $formId): void
+    {
+        $entry = FormBuilderLibrary::query()
+            ->where('form_id', $formId)
+            ->where('is_deleted_from_library', false)
+            ->first();
+
+        if (! $entry) {
+            return;
+        }
+
+        $this->libraryPreviewTitle = (string) ($entry->form_title ?: 'Form '.$formId);
+        $this->libraryPreviewQuestions = FormBuilderQuestion::query()
+            ->where('form_id', $formId)
+            ->orderBy('question_order')
+            ->get()
+            ->map(fn (FormBuilderQuestion $q): array => [
+                'text' => (string) ($q->question_text ?? ''),
+                'type' => $q->typeName(),
+            ])
+            ->values()
+            ->all();
+
+        $this->showLibraryFormPreview = true;
+    }
+
+    public function backFromLibraryFormPreview(): void
+    {
+        $this->showLibraryFormPreview = false;
+        $this->libraryPreviewTitle = '';
+        $this->libraryPreviewQuestions = [];
+    }
+
+    public function loginOtherAccountForForms(): void
+    {
+        $email = strtolower(trim($this->otherAccountEmail));
+        $password = $this->otherAccountPassword;
+
+        if ($email === '') {
+            $this->existingFormStatus = 'Enter email address.';
+
+            return;
+        }
+
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $this->existingFormStatus = 'Enter a valid email.';
+
+            return;
+        }
+
+        if ($password === '') {
+            $this->existingFormStatus = 'Enter password.';
+
+            return;
+        }
+
+        $member = ClientUser::query()->whereRaw('LOWER(email) = ?', [$email])->first();
+        $auth = $member?->authUser;
+
+        if (! $member || ! $auth || ! Hash::check($password, $auth->password)) {
+            $this->existingFormStatus = 'Invalid email or password.';
+            $this->showOtherAccountLibrary = false;
+            $this->otherAccountLibraryForms = [];
+
+            return;
+        }
+
+        $this->existingFormStatus = null;
+        $this->otherAccountPassword = '';
+        $this->showOtherAccountLibrary = true;
+        $this->otherAccountLibraryForms = FormBuilderLibrary::query()
+            ->where('user_id', $member->id)
+            ->where('is_deleted_from_library', false)
+            ->orderBy('form_title')
+            ->get()
+            ->map(fn (FormBuilderLibrary $row): array => [
+                'form_id' => (int) $row->form_id,
+                'form_title' => (string) ($row->form_title ?: 'Form '.$row->form_id),
+            ])
+            ->values()
+            ->all();
+    }
+
+    protected function finishExistingFormApply(Profile $profile, int $cloned): void
+    {
+        $this->reloadFormBuilderQuestions($profile->refresh());
+        $this->formBuilderEmbedNonce++;
+        $this->existingFormApplying = false;
+        $this->existingFormStatus = null;
+        $this->showExistingFormModal = false;
+
+        if (property_exists($this, 'data') && is_array($this->data)) {
+            $this->data['form_is_enable'] = true;
+            $this->data['form_active'] = true;
+        }
+
+        Notification::make()
+            ->title('Form applied')
+            ->body("{$cloned} question(s) copied onto this profile.")
+            ->success()
+            ->send();
+    }
+
+    protected function loadExistingFormModalLists(Profile $profile): void
+    {
+        $client = method_exists($this, 'currentClient') ? $this->currentClient() : null;
+
+        if (! $client) {
+            $this->existingFormProfiles = [];
+            $this->existingLibraryForms = [];
+
+            return;
+        }
+
+        $this->existingFormProfiles = Profile::query()
+            ->where('client_id', $client->id)
+            ->where('id', '!=', $profile->id)
+            ->where('form_id', '>', 0)
+            ->orderByDesc('id')
+            ->get(['id', 'form_title', 'name'])
+            ->map(fn (Profile $row): array => [
+                'id' => (int) $row->id,
+                'form_title' => (string) ($row->form_title ?: $row->name ?: 'Profile #'.$row->id),
+            ])
+            ->values()
+            ->all();
+
+        $currentFormId = (int) ($profile->form_id ?: 0);
+
+        $this->existingLibraryForms = app(FormLibraryService::class)
+            ->libraryFormsForClient((int) $client->id)
+            ->filter(fn (FormBuilderLibrary $row): bool => $currentFormId === 0 || (int) $row->form_id !== $currentFormId)
+            ->map(fn (FormBuilderLibrary $row): array => [
+                'form_id' => (int) $row->form_id,
+                'form_title' => (string) ($row->form_title ?: 'Form '.$row->form_id),
+            ])
+            ->values()
+            ->all();
+    }
 
     public function addFormRecipient(): void
     {

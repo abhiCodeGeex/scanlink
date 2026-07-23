@@ -143,12 +143,21 @@ class FormBuilderService
                 }
 
                 $question = FormBuilderQuestion::query()->create($payload);
+
+                // Safety net if PK still missing (mixed schema / model config).
+                if (! $question->getKey()) {
+                    $question->setAttribute(
+                        $question->getKeyName(),
+                        (int) DB::getPdo()->lastInsertId()
+                    );
+                    $question->exists = true;
+                }
             }
 
             $this->syncOptions($question, $options);
             $this->ensureLibraryEntry($profile, $formId);
 
-            return $question->fresh(['questionType', 'options']);
+            return $question->fresh(['questionType', 'options']) ?? $question->load(['questionType', 'options']);
         });
     }
 
@@ -218,7 +227,9 @@ class FormBuilderService
 
         FormBuilderRecipient::query()->where('form_id', $formId)->delete();
 
-        $nextId = (int) FormBuilderRecipient::query()->max('recipient_id');
+        $key = (new FormBuilderRecipient)->getKeyName();
+        $auto = (new FormBuilderRecipient)->getIncrementing();
+        $nextId = $auto ? 0 : (int) FormBuilderRecipient::query()->max($key);
 
         foreach ($emails as $email) {
             $email = trim(strtolower($email));
@@ -227,13 +238,17 @@ class FormBuilderService
                 continue;
             }
 
-            $nextId++;
-
-            FormBuilderRecipient::query()->create([
-                'recipient_id' => max(1, $nextId),
+            $payload = [
                 'form_id' => $formId,
                 'recipient_email' => $email,
-            ]);
+            ];
+
+            if (! $auto) {
+                $nextId++;
+                $payload[$key] = max(1, $nextId);
+            }
+
+            FormBuilderRecipient::query()->create($payload);
         }
     }
 
@@ -248,9 +263,11 @@ class FormBuilderService
             return collect();
         }
 
+        $key = (new FormBuilderRecipient)->getKeyName();
+
         return FormBuilderRecipient::query()
             ->where('form_id', $formId)
-            ->orderBy('recipient_id')
+            ->orderBy($key)
             ->get();
     }
 

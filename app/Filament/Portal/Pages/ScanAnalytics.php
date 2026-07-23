@@ -3,17 +3,19 @@
 namespace App\Filament\Portal\Pages;
 
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
+use App\Filament\Portal\Resources\Profiles\ProfileResource;
+use App\Models\AnaItemAnalytics;
+use App\Models\FormBuilderAnswer;
 use App\Models\Profile;
-use App\Services\AnalyticsApiService;
+use App\Support\LegacyEquipmentTypeLabels;
 use BackedEnum;
-use Filament\Actions\Action;
-use Filament\Forms\Components\Select;
 use Filament\Pages\Page;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Schema as DbSchema;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ScanAnalytics extends Page
@@ -22,9 +24,9 @@ class ScanAnalytics extends Page
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBar;
 
-    protected static ?string $navigationLabel = 'Scan Analytics';
+    protected static ?string $navigationLabel = 'Scanalytics';
 
-    protected static ?string $title = 'Scan Analytics';
+    protected static ?string $title = 'Scanalytics';
 
     protected static ?string $slug = 'scan-analytics';
 
@@ -36,18 +38,53 @@ class ScanAnalytics extends Page
 
     public ?int $selectedProfileId = null;
 
-    /** @var array<string, mixed>|null */
-    public ?array $chartData = null;
+    public ?string $profileName = null;
 
-    /** @var array<string, mixed>|null */
-    public ?array $mapData = null;
+    public ?string $typeName = null;
 
-    /** @var array<int, mixed>|null */
-    public ?array $scanList = null;
+    /** charts|map|locations */
+    public string $viewMode = 'charts';
+
+    public int $analyticsCount = 0;
+
+    public int $formSubmissionCount = 0;
+
+    /** city_name|created_at */
+    public string $locationSort = 'created_at';
+
+    public ?int $focusRowId = null;
+
+    /** @var Collection<int, object> */
+    public Collection $locationRows;
+
+    /** @var list<array{id: int, lat: float, lng: float, scan_type: string, label: string}> */
+    public array $mapPoints = [];
 
     public static function getNavigationGroup(): ?string
     {
         return 'Codes';
+    }
+
+    public function getTitle(): string|Htmlable
+    {
+        return 'Scanalytics';
+    }
+
+    public function getHeading(): string|Htmlable
+    {
+        return '';
+    }
+
+    public function getHeader(): ?View
+    {
+        return view('filament.portal.profiles.mastercode-toolbar', [
+            'types' => LegacyEquipmentTypeLabels::navTypes(),
+            'activeTab' => null,
+            'addCodeUrl' => ProfileResource::getUrl('index'),
+            'canAddCode' => false,
+            'hideActionBar' => true,
+            'hideLegend' => true,
+        ]);
     }
 
     public static function canAccess(): bool
@@ -55,69 +92,133 @@ class ScanAnalytics extends Page
         return static::memberCanAccessAnalytics(static::portalMembership());
     }
 
-    public function mount(AnalyticsApiService $analytics): void
+    public function mount(): void
     {
-        $requestedProfile = request()->integer('profile');
-        $firstProfileId = $requestedProfile ?: $this->clientProfileOptions()->keys()->first();
+        $this->locationRows = collect();
+        $this->viewMode = match ((string) request()->query('view', 'charts')) {
+            'map', 'locations' => (string) request()->query('view'),
+            default => 'charts',
+        };
 
-        if ($firstProfileId) {
-            $this->loadAnalytics((int) $firstProfileId, $analytics);
-            $this->form->fill(['selectedProfileId' => $firstProfileId]);
+        $sort = (string) request()->query('sort', 'created_at');
+        $this->locationSort = in_array($sort, ['city_name', 'created_at'], true) ? $sort : 'created_at';
+        $this->focusRowId = request()->integer('row') ?: null;
+
+        $requestedProfile = request()->integer('profile');
+
+        if ($requestedProfile > 0) {
+            $this->loadProfileAnalytics($requestedProfile);
         }
     }
 
-    protected function getHeaderActions(): array
+    public function showCharts(): void
     {
-        return [
-            Action::make('exportCsv')
-                ->label('Export CSV')
-                ->icon('heroicon-o-arrow-down-tray')
-                ->visible(fn (): bool => filled($this->scanList))
-                ->action(fn (): StreamedResponse => $this->exportScanListCsv()),
-        ];
+        $this->viewMode = 'charts';
+        $this->focusRowId = null;
     }
 
-    public function form(Schema $schema): Schema
+    public function showMap(?int $rowId = null): void
     {
-        return $schema
-            ->components([
-                Section::make('Profile')
-                    ->schema([
-                        Select::make('selectedProfileId')
-                            ->label('Profile')
-                            ->options(fn (): array => $this->clientProfileOptions()->all())
-                            ->searchable()
-                            ->live()
-                            ->afterStateUpdated(function (?string $state): void {
-                                if ($state) {
-                                    $this->loadAnalytics((int) $state, app(AnalyticsApiService::class));
-                                }
-                            }),
-                    ]),
-            ]);
+        $this->viewMode = 'map';
+        $this->focusRowId = $rowId;
+        $this->rebuildMapPoints();
     }
 
-    public function exportScanListCsv(): StreamedResponse
+    public function showLocations(): void
     {
-        $rows = $this->normalizedScanRows();
-        $filename = 'scan-analytics-profile-'.($this->selectedProfileId ?? 'export').'.csv';
+        $this->viewMode = 'locations';
+        $this->focusRowId = null;
+        $this->reloadLocationRows();
+    }
 
-        return response()->streamDownload(function () use ($rows): void {
+    public function setLocationSort(string $sort): void
+    {
+        $this->locationSort = in_array($sort, ['city_name', 'created_at'], true) ? $sort : 'created_at';
+        $this->reloadLocationRows();
+    }
+
+    public function returnToListUrl(): string
+    {
+        return ProfileResource::getUrl('index');
+    }
+
+    public function countryChartUrl(): string
+    {
+        return route('portal.graphengine.country', ['pid' => $this->selectedProfileId]);
+    }
+
+    public function deviceChartUrl(): string
+    {
+        return route('portal.graphengine.device', ['pid' => $this->selectedProfileId]);
+    }
+
+    public function browserChartUrl(): string
+    {
+        return route('portal.graphengine.browser', ['pid' => $this->selectedProfileId]);
+    }
+
+    /**
+     * @return array{COLUMNS: list<string>, DATA: list<mixed>}
+     */
+    public function countryChartData(): array
+    {
+        return app(\App\Services\ScanalyticsGraphEngine::class)->country((int) $this->selectedProfileId);
+    }
+
+    /**
+     * @return array{COLUMNS: list<string>, DATA: list<mixed>}
+     */
+    public function deviceChartData(): array
+    {
+        return app(\App\Services\ScanalyticsGraphEngine::class)->device((int) $this->selectedProfileId);
+    }
+
+    /**
+     * @return array{COLUMNS: list<string>, DATA: list<mixed>}
+     */
+    public function browserChartData(): array
+    {
+        return app(\App\Services\ScanalyticsGraphEngine::class)->browser((int) $this->selectedProfileId);
+    }
+
+    public function exportAnalytics(): StreamedResponse
+    {
+        $profileId = (int) $this->selectedProfileId;
+        $filename = 'excelreport-'.$profileId.'.csv';
+        $rows = $this->analyticsQuery($profileId)->orderByDesc('id')->get();
+        $platforms = $this->platformNames();
+        $devices = $this->deviceNames();
+
+        return response()->streamDownload(function () use ($rows, $platforms, $devices): void {
             $handle = fopen('php://output', 'w');
 
             if ($handle === false) {
                 return;
             }
 
-            fputcsv($handle, ['#', 'Date', 'Location', 'Device', 'Details']);
+            fputcsv($handle, [
+                '#', 'Date Time', 'IP', 'Location', 'Latitude', 'Longitude',
+                'Device', 'Platform', 'Screen Size', 'Browser', 'Browser Version', 'Scan Type',
+            ]);
 
             foreach ($rows as $index => $row) {
                 fputcsv($handle, [
                     $index + 1,
-                    $row['date'] ?? '',
-                    $row['location'] ?? '',
-                    $row['device'] ?? '',
-                    $row['details'] ?? '',
+                    $row->created_at?->format('Y-m-d H:i:s') ?? '',
+                    (string) $row->ip_add,
+                    trim(implode(', ', array_filter([
+                        (string) $row->city_name,
+                        (string) $row->region_name,
+                        (string) $row->country_name,
+                    ]))),
+                    (string) $row->latitude,
+                    (string) $row->longitude,
+                    $this->resolvePlatformLabel($row->id_platform, $platforms),
+                    $this->resolveDeviceLabel($row->id_device, $devices),
+                    (string) ($row->screen_size ?? ''),
+                    $this->browserLabel((string) $row->id_browser),
+                    (string) ($row->browser_version ?? ''),
+                    strtolower((string) ($row->scan_type ?? '')) === 'gps' ? 'GPS' : 'IP',
                 ]);
             }
 
@@ -125,78 +226,199 @@ class ScanAnalytics extends Page
         }, $filename, ['Content-Type' => 'text/csv']);
     }
 
-    /**
-     * @return list<array{date?: string, location?: string, device?: string, details?: string}>
-     */
-    public function normalizedScanRows(): array
-    {
-        if (! is_array($this->scanList)) {
-            return [];
-        }
-
-        $rows = [];
-
-        foreach ($this->scanList as $key => $item) {
-            if (is_array($item)) {
-                $rows[] = [
-                    'date' => (string) ($item['date'] ?? $item['datetime'] ?? $item['scanned_at'] ?? $key),
-                    'location' => (string) ($item['location'] ?? $item['city'] ?? $item['country'] ?? ''),
-                    'device' => (string) ($item['device'] ?? $item['platform'] ?? $item['browser'] ?? ''),
-                    'details' => json_encode($item),
-                ];
-
-                continue;
-            }
-
-            $rows[] = [
-                'date' => is_string($key) ? $key : '',
-                'location' => '',
-                'device' => '',
-                'details' => is_scalar($item) ? (string) $item : json_encode($item),
-            ];
-        }
-
-        return $rows;
-    }
-
-    public function summaryCounts(): array
-    {
-        $chart = is_array($this->chartData) ? $this->chartData : [];
-        $map = is_array($this->mapData) ? $this->mapData : [];
-        $scans = $this->normalizedScanRows();
-
-        return [
-            'total_scans' => count($scans) ?: (int) ($chart['total'] ?? $chart['count'] ?? 0),
-            'chart_keys' => count($chart),
-            'map_points' => is_array($map['points'] ?? null) ? count($map['points']) : count($map),
-        ];
-    }
-
-    protected function loadAnalytics(int $profileId, AnalyticsApiService $analytics): void
+    protected function loadProfileAnalytics(int $profileId): void
     {
         $client = $this->requireClient();
 
         $profile = Profile::query()
+            ->with('equipmentType')
             ->where('client_id', $client->id)
             ->active()
             ->findOrFail($profileId);
 
         $this->selectedProfileId = $profileId;
-        $this->chartData = null;
-        $this->mapData = null;
-        $this->scanList = null;
+        $this->profileName = filled(trim((string) $profile->code_profile_name))
+            ? (string) $profile->code_profile_name
+            : (string) ($profile->name ?? '');
+        $this->typeName = (string) ($profile->equipmentType?->name ?: 'Scanalytics');
 
-        $key = DbSchema::hasColumn('profiles', 'analytic_key')
-            ? ($profile->getAttribute('analytic_key') ?: null)
-            : null;
+        if (! Schema::hasTable('ana_item_analytics')) {
+            $this->analyticsCount = 0;
+            $this->locationRows = collect();
+            $this->mapPoints = [];
+        } else {
+            $this->analyticsCount = $this->analyticsQuery($profileId)->count();
+            $this->reloadLocationRows();
+            $this->rebuildMapPoints();
+        }
 
-        if (! filled($key)) {
+        $this->formSubmissionCount = $this->countFormSubmissions($profileId);
+    }
+
+    protected function analyticsQuery(int $profileId)
+    {
+        return AnaItemAnalytics::query()->where('id_item', (string) $profileId);
+    }
+
+    protected function reloadLocationRows(): void
+    {
+        $profileId = (int) $this->selectedProfileId;
+
+        if ($profileId <= 0 || ! Schema::hasTable('ana_item_analytics')) {
+            $this->locationRows = collect();
+
             return;
         }
 
-        $this->chartData = $analytics->getChartData((string) $key);
-        $this->mapData = $analytics->getMapData((string) $key);
-        $this->scanList = $analytics->getScanList((string) $key);
+        $query = $this->analyticsQuery($profileId);
+
+        if ($this->locationSort === 'city_name') {
+            $query->orderBy('city_name')->orderByDesc('id');
+        } else {
+            $query->orderByDesc('created_at')->orderByDesc('id');
+        }
+
+        $platforms = $this->platformNames();
+        $devices = $this->deviceNames();
+
+        $this->locationRows = $query->limit(500)->get()->map(function (AnaItemAnalytics $row) use ($platforms, $devices) {
+            return (object) [
+                'id' => $row->id,
+                'created_at' => $row->created_at,
+                'ip_add' => (string) $row->ip_add,
+                'location_label' => trim(implode(', ', array_filter([
+                    (string) $row->city_name,
+                    (string) $row->region_name,
+                    (string) $row->country_name,
+                ]))),
+                'latitude' => (string) $row->latitude,
+                'longitude' => (string) $row->longitude,
+                'device_name' => $this->resolvePlatformLabel($row->id_platform, $platforms),
+                'platform_name' => $this->resolveDeviceLabel($row->id_device, $devices),
+                'screen_size' => (string) ($row->screen_size ?? ''),
+                'browser_name' => $this->browserLabel((string) $row->id_browser),
+                'browser_version' => (string) ($row->browser_version ?? ''),
+                'scan_type' => strtolower((string) ($row->scan_type ?? '')) === 'gps' ? 'GPS' : 'IP',
+            ];
+        });
     }
 
+    protected function rebuildMapPoints(): void
+    {
+        $profileId = (int) $this->selectedProfileId;
+        $this->mapPoints = [];
+
+        if ($profileId <= 0 || ! Schema::hasTable('ana_item_analytics')) {
+            return;
+        }
+
+        $rows = $this->analyticsQuery($profileId)
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->where('latitude', '!=', '')
+            ->where('longitude', '!=', '')
+            ->orderByDesc('id')
+            ->limit(500)
+            ->get();
+
+        foreach ($rows as $row) {
+            $lat = (float) $row->latitude;
+            $lng = (float) $row->longitude;
+
+            if ($lat == 0.0 && $lng == 0.0) {
+                continue;
+            }
+
+            $this->mapPoints[] = [
+                'id' => (int) $row->id,
+                'lat' => $lat,
+                'lng' => $lng,
+                'scan_type' => strtolower((string) ($row->scan_type ?? 'ip')),
+                'label' => trim(implode(', ', array_filter([
+                    (string) $row->city_name,
+                    (string) $row->region_name,
+                    (string) $row->country_name,
+                ]))) ?: ('Scan #'.$row->id),
+            ];
+        }
+    }
+
+    /**
+     * @return Collection<int|string, string>
+     */
+    protected function platformNames(): Collection
+    {
+        return Schema::hasTable('ana_platforms')
+            ? DB::table('ana_platforms')->pluck('platform_name', 'id')
+            : collect();
+    }
+
+    /**
+     * @return Collection<int|string, string>
+     */
+    protected function deviceNames(): Collection
+    {
+        return Schema::hasTable('ana_devices')
+            ? DB::table('ana_devices')->pluck('device_name', 'id')
+            : collect();
+    }
+
+    protected function resolvePlatformLabel(mixed $id, Collection $platforms): string
+    {
+        if ($id === null || $id === '') {
+            return 'Unknown';
+        }
+
+        if (is_numeric($id)) {
+            return (string) ($platforms[(int) $id] ?? ('Platform '.$id));
+        }
+
+        return (string) $id;
+    }
+
+    protected function resolveDeviceLabel(mixed $id, Collection $devices): string
+    {
+        if ($id === null || $id === '') {
+            return 'Unknown';
+        }
+
+        if (is_numeric($id)) {
+            return (string) ($devices[(int) $id] ?? ('Device '.$id));
+        }
+
+        return (string) $id;
+    }
+
+    protected function browserLabel(string $raw): string
+    {
+        if ($raw === '') {
+            return 'Unknown';
+        }
+
+        if (! is_numeric($raw)) {
+            return $raw;
+        }
+
+        if (! Schema::hasTable('ana_browsers')) {
+            return 'Browser '.$raw;
+        }
+
+        $name = DB::table('ana_browsers')->where('id', (int) $raw)->value('browser_name');
+
+        return filled($name) ? (string) $name : 'Browser '.$raw;
+    }
+
+    protected function countFormSubmissions(int $profileId): int
+    {
+        if (! Schema::hasTable('form_builder_answers')) {
+            return 0;
+        }
+
+        return (int) FormBuilderAnswer::query()
+            ->where('profile_id', $profileId)
+            ->whereNotNull('session_id')
+            ->where('session_id', '!=', '')
+            ->selectRaw('COUNT(DISTINCT session_id) as aggregate')
+            ->value('aggregate');
+    }
 }

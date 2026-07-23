@@ -10,39 +10,34 @@ use Illuminate\Validation\ValidationException;
 
 class LabelOrderService
 {
-    /**
-     * @param  'small'|'large'  $size
-     */
-    public function createLabelOrder(Profile $profile, string $size, int $qty, ?ClientUser $orderedBy = null): Order
-    {
-        $size = strtolower($size);
+    public function createLabelOrder(
+        Profile $profile,
+        int $qtySmall,
+        int $qtyLarge,
+        ?ClientUser $orderedBy = null,
+    ): Order {
+        $qtySmall = max(0, $qtySmall);
+        $qtyLarge = max(0, $qtyLarge);
 
-        if (! in_array($size, ['small', 'large'], true)) {
+        if ($qtySmall < 1 && $qtyLarge < 1) {
             throw ValidationException::withMessages([
-                'size' => 'Label size must be small or large.',
-            ]);
-        }
-
-        if ($qty < 1) {
-            throw ValidationException::withMessages([
-                'quantity' => 'Quantity must be at least 1.',
+                'quantity' => 'Select quantity.',
             ]);
         }
 
         $profile->loadMissing('client');
         $member = $orderedBy ?? $profile->client?->primaryUser;
-        $unitPrice = $size === 'small'
-            ? (float) config('scanlink.label_price_small')
-            : (float) config('scanlink.label_price_large');
+        $priceSmall = (float) config('scanlink.label_price_small');
+        $priceLarge = (float) config('scanlink.label_price_large');
 
         $attributes = [
             'client_id' => $profile->client_id,
             'user_id' => $member?->id,
             'profile_id' => $profile->id,
-            'qty_small' => $size === 'small' ? $qty : 0,
-            'qty_large' => $size === 'large' ? $qty : 0,
-            'price_small' => $size === 'small' ? $unitPrice : 0,
-            'price_large' => $size === 'large' ? $unitPrice : 0,
+            'qty_small' => $qtySmall,
+            'qty_large' => $qtyLarge,
+            'price_small' => $qtySmall > 0 ? $priceSmall : 0,
+            'price_large' => $qtyLarge > 0 ? $priceLarge : 0,
             'status' => PhysicalOrderStatus::New,
             'first_name' => $member?->first_name,
             'last_name' => $member?->last_name,

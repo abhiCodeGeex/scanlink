@@ -31,15 +31,19 @@ class MobileProfileViewResolver
             return null;
         }
 
+        // Legacy asset: heading "Name" only when show_name is ticked.
+        if ($profile->typeSlug() === 'asset') {
+            return $profile->show_name ? 'Name' : null;
+        }
+
         return match ($profile->typeSlug()) {
             'plant' => 'Make / Model',
             'location' => 'Location name',
-            'asset' => 'Name',
             'product' => 'Product name',
             'procedure' => 'Title',
             'misc', 'people' => 'Name',
-            'exhibit' => 'Exhibit name',
-            'voc' => 'Name',
+            'exhibit' => null, // legacy exhibit Words tiles are unlabeled
+            'voc' => null,
             'survey' => 'Form',
             default => 'Name',
         };

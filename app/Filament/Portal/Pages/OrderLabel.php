@@ -3,22 +3,18 @@
 namespace App\Filament\Portal\Pages;
 
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
+use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Models\Profile;
 use App\Services\LabelOrderService;
+use App\Services\ProfileQrService;
+use App\Support\LegacyEquipmentTypeLabels;
 use BackedEnum;
-use Filament\Actions\Action;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Filament\Schemas\Components\Actions;
-use Filament\Schemas\Components\Component;
-use Filament\Schemas\Components\EmbeddedSchema;
-use Filament\Schemas\Components\Form;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Contracts\View\View;
+use Illuminate\Validation\ValidationException;
 
 class OrderLabel extends Page
 {
@@ -28,7 +24,7 @@ class OrderLabel extends Page
 
     protected static ?string $navigationLabel = 'Order Labels';
 
-    protected static ?string $title = 'Order Physical Labels';
+    protected static ?string $title = 'Order Label';
 
     protected static ?string $slug = 'order-labels';
 
@@ -38,14 +34,47 @@ class OrderLabel extends Page
 
     protected string $view = 'filament.portal.pages.order-label';
 
-    /**
-     * @var array<string, mixed>|null
-     */
-    public ?array $data = [];
+    public ?int $selectedProfileId = null;
+
+    public ?string $profileName = null;
+
+    public ?string $typeName = null;
+
+    public ?string $qrUrl = null;
+
+    public int|string $qtySmall = '';
+
+    public int|string $qtyLarge = '';
+
+    public float $priceSmall = 3.0;
+
+    public float $priceLarge = 5.0;
 
     public static function getNavigationGroup(): ?string
     {
         return 'Orders';
+    }
+
+    public function getTitle(): string|Htmlable
+    {
+        return 'Order Label';
+    }
+
+    public function getHeading(): string|Htmlable
+    {
+        return '';
+    }
+
+    public function getHeader(): ?View
+    {
+        return view('filament.portal.profiles.mastercode-toolbar', [
+            'types' => LegacyEquipmentTypeLabels::navTypes(),
+            'activeTab' => null,
+            'addCodeUrl' => ProfileResource::getUrl('index'),
+            'canAddCode' => false,
+            'hideActionBar' => true,
+            'hideLegend' => true,
+        ]);
     }
 
     public static function canAccess(): bool
@@ -53,70 +82,59 @@ class OrderLabel extends Page
         return static::memberCanOrderLabel(static::portalMembership());
     }
 
-    public function mount(): void
+    public function mount(ProfileQrService $qr): void
     {
+        $this->priceSmall = (float) config('scanlink.label_price_small', 3);
+        $this->priceLarge = (float) config('scanlink.label_price_large', 5);
+
         $requestedProfile = request()->integer('profile');
 
-        $this->form->fill([
-            'profile_id' => $requestedProfile ?: $this->clientProfileOptions()->keys()->first(),
-            'size' => 'small',
-            'quantity' => 1,
-        ]);
+        if ($requestedProfile > 0) {
+            $this->loadProfile($requestedProfile, $qr);
+        }
     }
 
-    public function defaultForm(Schema $schema): Schema
+    public function updatedQtySmall(mixed $value): void
     {
-        return $schema->statePath('data');
+        $this->qtySmall = $this->normalizeQty($value);
     }
 
-    public function form(Schema $schema): Schema
+    public function updatedQtyLarge(mixed $value): void
     {
-        return $schema
-            ->components([
-                Section::make('Label order')
-                    ->columns(2)
-                    ->schema([
-                        Select::make('profile_id')
-                            ->label('Profile')
-                            ->options(fn (): array => $this->clientProfileOptions()->all())
-                            ->required(),
-                        Select::make('size')
-                            ->label('Label size')
-                            ->options([
-                                'small' => 'Small ($'.number_format((float) config('scanlink.label_price_small'), 2).')',
-                                'large' => 'Large ($'.number_format((float) config('scanlink.label_price_large'), 2).')',
-                            ])
-                            ->required()
-                            ->live(),
-                        TextInput::make('quantity')
-                            ->label('Quantity')
-                            ->numeric()
-                            ->integer()
-                            ->required()
-                            ->minValue(1)
-                            ->maxValue(500)
-                            ->live(),
-                    ]),
-            ]);
+        $this->qtyLarge = $this->normalizeQty($value);
     }
 
     public function submitOrder(LabelOrderService $labelOrders): void
     {
-        $data = $this->form->getState();
+        if (! $this->selectedProfileId) {
+            Notification::make()->title('Please select a profile.')->danger()->send();
+
+            return;
+        }
+
         $client = $this->requireClient();
         $member = $this->currentClientUser();
 
         $profile = Profile::query()
             ->where('client_id', $client->id)
             ->active()
-            ->findOrFail($data['profile_id']);
+            ->findOrFail($this->selectedProfileId);
 
-        $order = $labelOrders->createLabelOrder(
-            $profile,
-            (string) $data['size'],
-            (int) $data['quantity'],
-            $member,
-        );
+        try {
+            $order = $labelOrders->createLabelOrder(
+                $profile,
+                (int) ($this->qtySmall ?: 0),
+                (int) ($this->qtyLarge ?: 0),
+                $member,
+            );
+        } catch (ValidationException $e) {
+            Notification::make()
+                ->title($e->validator->errors()->first() ?: 'Select quantity.')
+                ->danger()
+                ->send();
+
+            return;
+        }
 
         Notification::make()
             ->title('Label order created')
@@ -124,71 +142,100 @@ class OrderLabel extends Page
             ->success()
             ->send();
 
-        $this->form->fill([
-            'profile_id' => $profile->id,
-            'size' => $data['size'],
-            'quantity' => 1,
-        ]);
+        $this->qtySmall = '';
+        $this->qtyLarge = '';
+    }
+
+    public function returnToListUrl(): string
+    {
+        return ProfileResource::getUrl('index');
+    }
+
+    public function contactUrl(): string
+    {
+        return ContactUs::getUrl();
     }
 
     /**
-     * @return array<Action>
+     * @return array{
+     *   qty_small: int,
+     *   qty_large: int,
+     *   tot_small: float,
+     *   tot_large: float,
+     *   total: float,
+     *   postage: float,
+     *   grand_total: float
+     * }
      */
-    protected function getFormActions(): array
-    {
-        return [
-            Action::make('submitOrder')
-                ->label('Create order')
-                ->submit('submitOrder'),
-        ];
-    }
-
-    public function getTitle(): string|Htmlable
-    {
-        return static::$title ?? 'Order Physical Labels';
-    }
-
     public function orderSummary(): array
     {
-        $data = $this->data ?? [];
-        $size = (string) ($data['size'] ?? 'small');
-        $quantity = max(1, (int) ($data['quantity'] ?? 1));
-        $unitPrice = $size === 'large'
-            ? (float) config('scanlink.label_price_large')
-            : (float) config('scanlink.label_price_small');
+        $qtySmall = max(0, (int) ($this->qtySmall ?: 0));
+        $qtyLarge = max(0, (int) ($this->qtyLarge ?: 0));
+        $totSmall = $qtySmall * $this->priceSmall;
+        $totLarge = $qtyLarge * $this->priceLarge;
+        $total = $totSmall + $totLarge;
+        // Legacy on-screen postage cell stays 0; postage applied later in checkout.
+        $postage = 0.0;
 
         return [
-            'size' => $size,
-            'quantity' => $quantity,
-            'unit_price' => $unitPrice,
-            'subtotal' => $unitPrice * $quantity,
-            'postage_note' => 'Postage and handling may apply. Payment is required before labels are dispatched.',
+            'qty_small' => $qtySmall,
+            'qty_large' => $qtyLarge,
+            'tot_small' => $totSmall,
+            'tot_large' => $totLarge,
+            'total' => $total,
+            'postage' => $postage,
+            'grand_total' => $total + $postage,
         ];
     }
 
-    public function content(Schema $schema): Schema
+    protected function loadProfile(int $profileId, ProfileQrService $qr): void
     {
-        return $schema
-            ->components([
-                $this->getFormContentComponent(),
-            ]);
+        $client = $this->requireClient();
+
+        $profile = Profile::query()
+            ->with(['equipmentType', 'qrImage'])
+            ->where('client_id', $client->id)
+            ->active()
+            ->findOrFail($profileId);
+
+        $this->selectedProfileId = $profileId;
+        $this->profileName = filled(trim((string) $profile->code_profile_name))
+            ? (string) $profile->code_profile_name
+            : (string) ($profile->name ?? '');
+
+        $slug = $profile->typeSlug();
+        $this->typeName = $slug
+            ? LegacyEquipmentTypeLabels::label($slug, (string) ($profile->equipmentType?->name ?? 'Code'))
+            : (string) ($profile->equipmentType?->name ?? 'Code');
+
+        if (! $profile->qrImage) {
+            $qr->generateFor($profile);
+            $profile->load('qrImage');
+        } else {
+            $relative = $profile->qrImage->diskPath();
+            $fullPath = storage_path('app/public/'.$relative);
+
+            if (! is_file($fullPath)) {
+                $qr->generateFor($profile);
+                $profile->load('qrImage');
+            }
+        }
+
+        $this->qrUrl = $profile->qrImage?->publicUrl();
     }
 
-    public function getFormContentComponent(): Component
+    protected function normalizeQty(mixed $value): int|string
     {
-        return Form::make([EmbeddedSchema::make('form')])
-            ->id('form')
-            ->livewireSubmitHandler('submitOrder')
-            ->footer([
-                Actions::make($this->getFormActions())
-                    ->alignment($this->getFormActionsAlignment())
-                    ->fullWidth($this->hasFullWidthFormActions())
-                    ->key('form-actions'),
-            ]);
-    }
+        if ($value === null || $value === '') {
+            return '';
+        }
 
-    protected function hasFullWidthFormActions(): bool
-    {
-        return false;
+        if (! is_numeric($value)) {
+            return '';
+        }
+
+        $qty = (int) $value;
+
+        return $qty > 0 ? $qty : '';
     }
 }
