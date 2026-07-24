@@ -14,15 +14,16 @@ class CodeBalance extends Page
     use InteractsWithClientMembership;
     use RestrictsToPrimaryClientUser;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCalculator;
-
-    protected static ?string $navigationLabel = 'Code Balance';
+    // Demo: hide Code Balance under My Account (uncomment + remove shouldRegisterNavigation to restore).
+    // protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCalculator;
+    // protected static ?string $navigationLabel = 'Code Balance';
+    protected static bool $shouldRegisterNavigation = false;
 
     protected static ?string $title = 'Code Balance';
 
     protected static ?string $slug = 'code-balance';
 
-    protected static ?int $navigationSort = 3;
+    // protected static ?int $navigationSort = 3;
 
     protected string $view = 'filament.portal.pages.code-balance';
 
@@ -34,7 +35,8 @@ class CodeBalance extends Page
 
     public static function getNavigationGroup(): ?string
     {
-        return 'My Account';
+        // return 'My Account';
+        return null;
     }
 
     public function mount(): void

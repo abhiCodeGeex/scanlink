@@ -66,7 +66,37 @@ class PortalAuthTest extends TestCase
         $this->post('/portal-login', [
             'email' => 'portal-user@example.com',
             'password' => 'Portal@12345',
-        ])->assertRedirect('/portal/profiles');
+        ])->assertRedirect('/portal/account');
+
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_portal_login_ignores_stale_admin_intended_url(): void
+    {
+        $client = Client::factory()->create();
+        $member = ClientUser::factory()->primary()->create([
+            'client_id' => $client->id,
+            'email' => 'portal-intended@example.com',
+            'password' => 'Portal@12345',
+            'status' => true,
+            'is_password_change' => true,
+        ]);
+        $member->refresh();
+
+        $user = User::query()->findOrFail($member->auth_user_id);
+        $user->update([
+            'email' => 'portal-intended@example.com',
+            'password' => 'Portal@12345',
+            'user_type' => UserType::Portal,
+            'admin_role' => null,
+        ]);
+
+        $this->withSession(['url.intended' => 'http://localhost/admin/subdivide-client'])
+            ->post('/portal-login', [
+                'email' => 'portal-intended@example.com',
+                'password' => 'Portal@12345',
+            ])
+            ->assertRedirect('/portal/account');
 
         $this->assertAuthenticatedAs($user);
     }
@@ -90,7 +120,7 @@ class PortalAuthTest extends TestCase
             ->assertOk();
     }
 
-    public function test_portal_dashboard_redirects_to_master_code_list(): void
+    public function test_portal_dashboard_redirects_to_edit_user_profile(): void
     {
         $client = Client::factory()->create();
         $member = ClientUser::factory()->primary()->create([
@@ -106,7 +136,7 @@ class PortalAuthTest extends TestCase
 
         $this->actingAs($user)
             ->get('/portal/dashboard')
-            ->assertRedirect('/portal/profiles');
+            ->assertRedirect('/portal/account');
     }
 
     public function test_admin_user_cannot_access_portal_without_membership(): void
@@ -191,12 +221,12 @@ class PortalAuthTest extends TestCase
             ])
             ->call('updatePassword')
             ->assertHasNoFormErrors()
-            ->assertRedirect('/portal/profiles');
+            ->assertRedirect('/portal/account');
 
         $this->assertTrue((bool) $member->fresh()->is_password_change);
 
         $this->actingAs($user->fresh())
-            ->get('/portal/profiles')
+            ->get('/portal/account')
             ->assertOk();
     }
 }

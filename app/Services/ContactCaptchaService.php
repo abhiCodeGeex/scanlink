@@ -72,15 +72,37 @@ class ContactCaptchaService
         return $image;
     }
 
+    /**
+     * Validate and consume captcha (one-shot — for contact forms).
+     */
     public function valid(?string $answer): bool
     {
-        $hash = Session::pull(self::SESSION_KEY);
+        if (! $this->matches($answer)) {
+            return false;
+        }
+
+        $this->consume();
+
+        return true;
+    }
+
+    /**
+     * Check captcha without consuming it (safe for multi-field validation).
+     */
+    public function matches(?string $answer): bool
+    {
+        $hash = Session::get(self::SESSION_KEY);
 
         if (! is_string($hash) || $hash === '' || ! filled($answer)) {
             return false;
         }
 
         return hash_equals($hash, sha1(Str::upper(trim($answer))));
+    }
+
+    public function consume(): void
+    {
+        Session::forget(self::SESSION_KEY);
     }
 
     protected function generateCode(int $length): string

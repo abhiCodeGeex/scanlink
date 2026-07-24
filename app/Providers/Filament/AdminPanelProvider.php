@@ -2,13 +2,15 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Auth\ScanLinkAppAuthentication;
 use App\Filament\Pages\AdminHome;
-use Filament\Auth\MultiFactor\App\AppAuthentication;
+use Filament\Auth\Pages\EditProfile;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\NavigationGroup;
+use Filament\Navigation\NavigationItem;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -37,7 +39,7 @@ class AdminPanelProvider extends PanelProvider
             ->passwordReset()
             ->profile(isSimple: false)
             ->multiFactorAuthentication([
-                AppAuthentication::make()
+                ScanLinkAppAuthentication::make()
                     ->recoverable()
                     ->brandName('ScanLink'),
             ])
@@ -67,6 +69,15 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make('Order')->icon(Heroicon::OutlinedShoppingCart)->collapsible(),
                 NavigationGroup::make('Settings')->icon(Heroicon::OutlinedCog6Tooth)->collapsible(),
                 NavigationGroup::make('Reports')->icon(Heroicon::OutlinedEnvelopeOpen)->collapsible(),
+            ])
+            ->navigationItems([
+                // Replaces Settings → Change Password with Profile (same page as user menu).
+                NavigationItem::make('Profile')
+                    ->url(fn (): string => EditProfile::getUrl(panel: 'admin'))
+                    ->icon(Heroicon::OutlinedUserCircle)
+                    ->group('Settings')
+                    ->sort(4)
+                    ->isActiveWhen(fn (): bool => request()->routeIs('filament.admin.auth.profile')),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
@@ -109,7 +120,7 @@ class AdminPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=46">',
+                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=47">',
             )
             ->widgets([
                 Widgets\AccountWidget::class,

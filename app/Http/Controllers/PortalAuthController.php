@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Filament\Portal\Resources\Profiles\ProfileResource;
+use App\Filament\Portal\Pages\EditAccount;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Http\RedirectResponse;
@@ -43,6 +43,19 @@ class PortalAuthController extends Controller
 
         Filament::setCurrentPanel($panel);
 
-        return redirect()->intended(ProfileResource::getUrl('index', panel: 'portal'));
+        // Always land in the portal. Ignore stale "intended" URLs from admin
+        // (or other panels) — those cause 403 for portal-only users.
+        $fallback = EditAccount::getUrl(panel: 'portal');
+        $intended = $request->session()->pull('url.intended');
+
+        if (is_string($intended) && $intended !== '') {
+            $path = parse_url($intended, PHP_URL_PATH) ?: $intended;
+
+            if (str_starts_with($path, '/portal')) {
+                return redirect()->to($intended);
+            }
+        }
+
+        return redirect()->to($fallback);
     }
 }

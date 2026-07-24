@@ -25,21 +25,23 @@ class MultipleCodeRenewal extends Page implements HasTable
     use InteractsWithTable;
     use RestrictsToPrimaryClientUser;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowPath;
-
-    protected static ?string $navigationLabel = 'Multiple Code Renewal';
+    // Demo: hide Multiple Code Renewal under My Account (uncomment + remove shouldRegisterNavigation to restore).
+    // protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowPath;
+    // protected static ?string $navigationLabel = 'Multiple Code Renewal';
+    protected static bool $shouldRegisterNavigation = false;
 
     protected static ?string $title = 'Multiple Code Renewal';
 
     protected static ?string $slug = 'renew-codes';
 
-    protected static ?int $navigationSort = 5;
+    // protected static ?int $navigationSort = 5;
 
     protected string $view = 'filament.portal.pages.multiple-code-renewal';
 
     public static function getNavigationGroup(): ?string
     {
-        return 'My Account';
+        // return 'My Account';
+        return null;
     }
 
     public function table(Table $table): Table

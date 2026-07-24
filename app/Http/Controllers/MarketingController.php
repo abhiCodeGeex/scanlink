@@ -78,24 +78,61 @@ class MarketingController extends Controller
 
     public function pricing(): View
     {
-        return view('marketing.pricing', [
-            'tiers' => CodePrising::query()->orderBy('code_min_qty')->get(),
+        return view('marketing.pricing', $this->marketingLayoutData());
+    }
+
+    public function calculatePricing(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $raw = trim((string) $request->input('no_codes', ''));
+        $errors = [];
+
+        if ($raw === '') {
+            $errors['no_codes'] = 'Enter a number of code required.';
+        } elseif (! ctype_digit($raw)) {
+            $errors['no_codes'] = 'Enter a number of code required.';
+        } elseif ((int) $raw > 1000) {
+            $errors['no_codes'] = 'Enter a number of code less than 1000.';
+        }
+
+        $perMonth = '0.00';
+        $annual = '0.00';
+
+        if ($errors === []) {
+            $qty = (int) $raw;
+            $tier = CodePrising::query()
+                ->where('code_min_qty', '<=', $qty)
+                ->where('code_max_qty', '>=', $qty)
+                ->orderBy('code_min_qty')
+                ->first();
+
+            if ($tier) {
+                $amount = (float) $tier->amount;
+                $perMonth = number_format($amount, 2, '.', '');
+                $annual = number_format($amount * $qty * 12, 2, '.', '');
+            }
+        }
+
+        // Legacy register/getData response shape (totalsubscrption spelling preserved).
+        return response()->json([
+            'errors' => $errors,
+            'amount' => $perMonth,
+            'totalsubscrption' => $annual,
         ]);
     }
 
     public function faq(): View
     {
-        return view('marketing.faq');
+        return view('marketing.faq', $this->marketingLayoutData());
     }
 
     public function privacy(): View
     {
-        return view('marketing.privacy');
+        return view('marketing.privacy', $this->marketingLayoutData());
     }
 
     public function terms(): View
     {
-        return view('marketing.terms');
+        return view('marketing.terms', $this->marketingLayoutData());
     }
 
     public function submitContact(Request $request, ContactCaptchaService $captcha): RedirectResponse

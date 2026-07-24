@@ -3,7 +3,6 @@
 namespace App\Filament\Portal\Pages;
 
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
-use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 
@@ -28,7 +27,9 @@ class PortalDashboard extends Page
 
     public function mount(): void
     {
-        $this->redirect(ProfileResource::getUrl('index', panel: 'portal'), navigate: false);
+        // Demo: land on Edit user profile (was Master Code List).
+        $this->redirect(EditAccount::getUrl(panel: 'portal'), navigate: false);
+        // $this->redirect(ProfileResource::getUrl('index', panel: 'portal'), navigate: false);
     }
 
     public static function getNavigationGroup(): ?string

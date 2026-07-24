@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use App\Filament\Portal\Auth\Login;
 use App\Filament\Portal\Auth\Register;
+use App\Filament\Portal\Pages\EditAccount;
 use App\Filament\Portal\Pages\PortalDashboard;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Http\Middleware\EnsurePortalPasswordChanged;
@@ -77,8 +78,9 @@ class ClientPortalPanelProvider extends PanelProvider
             ->registration(Register::class)
             ->passwordReset()
             ->profile(isSimple: false)
-            // Live "Dashboard" opens master code list (menu.php).
-            ->homeUrl(fn (): string => ProfileResource::getUrl('index'))
+            // Demo: land on Edit user profile (was Master Code List).
+            ->homeUrl(fn (): string => EditAccount::getUrl())
+            // ->homeUrl(fn (): string => ProfileResource::getUrl('index'))
             ->colors([
                 'primary' => Color::hex('#008C00'),
             ])
@@ -107,12 +109,12 @@ class ClientPortalPanelProvider extends PanelProvider
                     ->collapsible(),
             ])
             ->navigationItems([
-                // Dashboard → Master Code List (legacy menu.php). Contact us is a discovered page.
-                NavigationItem::make('Dashboard')
-                    ->url(fn (): string => ProfileResource::getUrl('index'))
-                    ->icon(Heroicon::OutlinedHome)
-                    ->isActiveWhen(fn (): bool => request()->is('portal/profiles*'))
-                    ->sort(-30),
+                // Demo: hide Dashboard menu (uncomment to restore).
+                // NavigationItem::make('Dashboard')
+                //     ->url(fn (): string => ProfileResource::getUrl('index'))
+                //     ->icon(Heroicon::OutlinedHome)
+                //     ->isActiveWhen(fn (): bool => request()->is('portal/profiles*'))
+                //     ->sort(-30),
                 ...$howToItems,
             ])
             ->discoverResources(in: app_path('Filament/Portal/Resources'), for: 'App\\Filament\\Portal\\Resources')
@@ -145,7 +147,7 @@ class ClientPortalPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=45">',
+                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=47">',
             )
             ->widgets([])
             ->middleware([

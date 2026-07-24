@@ -29,15 +29,16 @@ class PurchaseCodes extends Page
     use InteractsWithClientMembership;
     use RestrictsToPrimaryClientUser;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShoppingCart;
-
-    protected static ?string $navigationLabel = 'Purchase codes';
+    // Demo: hide Purchase codes under My Account (uncomment + remove shouldRegisterNavigation to restore).
+    // protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShoppingCart;
+    // protected static ?string $navigationLabel = 'Purchase codes';
+    protected static bool $shouldRegisterNavigation = false;
 
     protected static ?string $title = 'Purchase codes';
 
     protected static ?string $slug = 'purchase-codes';
 
-    protected static ?int $navigationSort = 4;
+    // protected static ?int $navigationSort = 4;
 
     /**
      * @var array<string, mixed>|null
@@ -46,7 +47,8 @@ class PurchaseCodes extends Page
 
     public static function getNavigationGroup(): ?string
     {
-        return 'My Account';
+        // return 'My Account';
+        return null;
     }
 
     public function mount(): void

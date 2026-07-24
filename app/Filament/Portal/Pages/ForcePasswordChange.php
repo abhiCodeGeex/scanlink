@@ -112,7 +112,9 @@ class ForcePasswordChange extends Page
             ->success()
             ->send();
 
-        $this->redirect(\App\Filament\Portal\Resources\Profiles\ProfileResource::getUrl('index', panel: 'portal'));
+        // Demo: land on Edit user profile (was Master Code List).
+        $this->redirect(\App\Filament\Portal\Pages\EditAccount::getUrl(panel: 'portal'));
+        // $this->redirect(\App\Filament\Portal\Resources\Profiles\ProfileResource::getUrl('index', panel: 'portal'));
     }
 
     /**

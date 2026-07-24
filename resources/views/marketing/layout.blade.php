@@ -108,7 +108,7 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('marketing.pricing') }}" class="pricing">
+                        <a href="{{ route('marketing.pricing') }}" class="pricing @yield('nav_pricing_active')">
                             <span class="text"><span>Pricing</span></span>
                         </a>
                     </li>

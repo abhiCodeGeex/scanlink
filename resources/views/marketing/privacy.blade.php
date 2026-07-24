@@ -1,18 +1,28 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Privacy — ScanLink</title>
-    <style>
-        body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; }
-        h1 { color: #008C00; }
-    </style>
-</head>
-<body>
-    <h1>Privacy policy</h1>
-    <p>ScanLink collects account and usage data necessary to operate QR profiles, analytics, and form submissions. Visitor contact details submitted via data collection are stored per profile and visible to the profile owner.</p>
-    <p>Contact <a href="{{ route('marketing.contact') }}">support</a> for data access or deletion requests.</p>
-    <p><a href="{{ route('marketing.home') }}">Back</a></p>
-</body>
-</html>
+@extends('marketing.layout')
+
+@section('title', 'Privacy Policy')
+
+@section('content')
+<div class="scanlink-container">
+    <h2 class="page-title">Privacy Policy</h2>
+    <section class="faq-block clearfix">
+        <div class="faq-raw">
+            <p>
+                Your privacy is very important to us. Accordingly, we have developed this Policy in order for you to understand how we collect, use, communicate and disclose and make use of personal information. The following outlines our privacy policy.
+            </p>
+            <ul class="bulletstyle">
+                <li>Before or at the time of collecting personal information, we will identify the purposes for which information is being collected.</li>
+                <li>We will collect and use of personal information solely with the objective of fulfilling those purposes specified by us and for other compatible purposes, unless we obtain the consent of the individual concerned or as required by law.</li>
+                <li>We will only retain personal information as long as necessary for the fulfillment of those purposes.</li>
+                <li>We will collect personal information by lawful and fair means and, where appropriate, with the knowledge or consent of the individual concerned.</li>
+                <li>Personal data should be relevant to the purposes for which it is to be used, and, to the extent necessary for those purposes, should be accurate, complete, and up-to-date.</li>
+                <li>We will protect personal information by reasonable security safeguards against loss or theft, as well as unauthorized access, disclosure, copying, use or modification.</li>
+                <li>We will make readily available to customers information about our policies and practices relating to the management of personal information.</li>
+            </ul>
+            <p>
+                We are committed to conducting our business in accordance with these principles in order to ensure that the confidentiality of personal information is protected and maintained.
+            </p>
+        </div>
+    </section>
+</div>
+@endsection

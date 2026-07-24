@@ -2768,4 +2768,10 @@ tr.sl-row-active {
     cursor: pointer;
 }
 
+/* Hide Filament "system" theme option (monitor icon) — light/dark only. */
+.fi-theme-switcher .fi-theme-switcher-btn[aria-label="System"],
+.fi-theme-switcher .fi-theme-switcher-btn:nth-child(3) {
+    display: none !important;
+}
+
 
