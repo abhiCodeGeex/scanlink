@@ -1,11 +1,19 @@
-# ScanLink Admin (Client module only)
+# ScanLink Admin
 
-Trimmed Laravel + Filament admin app containing only:
+Laravel + Filament **admin-only** application.
 
-- **Admin Home**
-- **Client** module: Add Client, Manage Client, Sub Divide Client
+There is **no client portal**, marketing site, or public scan UI in this repo.
 
-No client portal, orders, products, settings pages, gallery, testimonials, or public scan routes.
+## Included (admin)
+
+- Admin Home
+- Clients (add / manage / subdivide) and client users
+- Products / code profiles
+- Orders: physical labels, code purchases, form-builder orders
+- Settings: global, code pricing, reseller pricing
+- Gallery & testimonials (CMS)
+- Reports (e.g. email submission log)
+- Change password
 
 ## Setup
 
@@ -18,4 +26,6 @@ php artisan migrate
 php artisan serve
 ```
 
-Open `/admin` (or `/` which redirects there).
+Open `/admin` (or `/`, which redirects there).
+
+`SCANLINK_PORTAL_URL` in `.env` is only used when generating QR destination URLs pointing at an external portal host — this app does not serve the portal.

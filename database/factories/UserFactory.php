@@ -35,14 +35,6 @@ class UserFactory extends Factory
         ];
     }
 
-    public function portal(): static
-    {
-        return $this->state(fn (): array => [
-            'admin_role' => null,
-            'user_type' => \App\Enums\UserType::Portal,
-        ]);
-    }
-
     /**
      * Indicate that the model's email address should be unverified.
      */

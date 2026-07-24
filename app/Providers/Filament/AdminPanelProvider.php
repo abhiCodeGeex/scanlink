@@ -42,7 +42,7 @@ class AdminPanelProvider extends PanelProvider
                     ->brandName('ScanLink'),
             ])
             ->colors([
-                // Legacy ScanLink portal green (nav bar from brand screenshot).
+                // Legacy ScanLink brand green (nav bar from brand screenshot).
                 'primary' => Color::hex('#008C00'),
             ])
             ->brandName('ScanLink Admin')

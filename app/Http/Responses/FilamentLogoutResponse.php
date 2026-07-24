@@ -11,10 +11,6 @@ class FilamentLogoutResponse implements Responsable
 {
     public function toResponse($request): RedirectResponse|Redirector
     {
-        if (Filament::getCurrentPanel()?->getId() === 'portal') {
-            return redirect()->route('marketing.home');
-        }
-
         return redirect()->to(
             Filament::hasLogin() ? Filament::getLoginUrl() : Filament::getUrl(),
         );
