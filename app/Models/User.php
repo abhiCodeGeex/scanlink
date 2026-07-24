@@ -69,6 +69,20 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
 
     public function canAccessPanel(Panel $panel): bool
     {
+        if ($panel->getId() === 'portal') {
+            if ($this->user_type === UserType::Voc) {
+                return true;
+            }
+
+            if ($this->user_type !== UserType::Portal) {
+                return false;
+            }
+
+            return $this->clientMemberships()
+                ->active()
+                ->exists();
+        }
+
         if ($panel->getId() !== 'admin') {
             return false;
         }
