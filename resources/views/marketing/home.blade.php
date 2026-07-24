@@ -133,6 +133,15 @@
             font-size: 0.85rem;
         }
         .admin-link:hover { color: var(--sl-green); }
+        .register-link {
+            display: inline-block;
+            margin-top: 0.9rem;
+            color: var(--sl-green);
+            font-size: 0.95rem;
+            text-decoration: none;
+            font-weight: 700;
+        }
+        .register-link:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -185,6 +194,8 @@
 
                     <button type="submit">Login</button>
                 </form>
+
+                <a class="register-link" href="{{ url('/portal/register') }}">Register a new account</a>
             </div>
         </section>
 

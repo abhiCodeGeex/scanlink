@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Portal\Auth\Login;
+use App\Filament\Portal\Auth\Register;
 use App\Filament\Portal\Pages\EditAccount;
 use App\Filament\Portal\Pages\PortalHome;
 use Filament\Http\Middleware\Authenticate;
@@ -32,6 +33,7 @@ class ClientPortalPanelProvider extends PanelProvider
             ->path('portal')
             ->spa()
             ->login(Login::class)
+            ->registration(Register::class)
             ->homeUrl(fn (): string => PortalHome::getUrl())
             ->colors([
                 'primary' => Color::hex('#008C00'),
