@@ -83,13 +83,23 @@ class CodePurchase extends Model
     }
 
     /**
-     * Live column is ENUM('0','1','2'). Bare integers are MySQL enum indexes, not values.
+     * Live column is ENUM('0','1','2'). Bare booleans cast to '' and truncate.
      */
     protected function isResellerPricingCode(): Attribute
     {
         return Attribute::make(
             get: fn (mixed $value): string => (string) ($value ?? '0'),
-            set: fn (mixed $value): string => (string) ($value ?? '0'),
+            set: function (mixed $value): string {
+                if ($value === true || $value === 1 || $value === '1') {
+                    return '1';
+                }
+
+                if ($value === 2 || $value === '2') {
+                    return '2';
+                }
+
+                return '0';
+            },
         );
     }
 

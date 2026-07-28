@@ -35,9 +35,7 @@ class CodePurchaseService
         $resellerCode = trim((string) $resellerCode);
 
         if ($resellerCode !== '') {
-            $resellerClientId = Client::query()
-                ->where('reseller_code', $resellerCode)
-                ->value('id');
+            $resellerClientId = Client::findByResellerCode($resellerCode)?->id;
 
             if ($resellerClientId) {
                 $isResellerPricing = true;

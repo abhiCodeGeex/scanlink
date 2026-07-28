@@ -32,7 +32,7 @@
                         src="{{ $previewUrl }}"
                         title="Mobile preview"
                         style="display:block;width:320px;height:882px;border:0;"
-                        wire:key="preview-{{ $record?->updated_at?->timestamp ?? 'new' }}"
+                        wire:key="preview-{{ $record?->updated_at?->timestamp ?? 'new' }}-{{ $previewRefreshKey ?? 0 }}"
                     ></iframe>
                 @elseif (! $blankCreatePhone)
                     <div class="sl-iphone-placeholder">Save the profile to preview the mobile page here.</div>
@@ -122,6 +122,12 @@
                 ? 'https://www.youtube.com/embed/CfLEhcgvgrA?rel=0'
                 : 'https://www.youtube.com/embed/cYQnzxkp528?rel=0',
         ])
+        {{-- Legacy Colorbox trigger target for Add/Edit Participant List --}}
+        <div
+            id="sl-participant-list-host"
+            data-participants-url="{{ $participantsUrl }}"
+            hidden
+        ></div>
     @endif
 </div>
 

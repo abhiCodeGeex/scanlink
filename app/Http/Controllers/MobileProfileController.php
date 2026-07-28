@@ -32,6 +32,10 @@ class MobileProfileController extends Controller
         $profile = $this->resolveProfile($clientUrl, $profileId, eager: true);
         $portalPreview = PortalProfilePreview::canBypassScanRestrictions($profile);
 
+        if ($portalPreview) {
+            PortalProfilePreview::applyDraft($profile);
+        }
+
         if ($profile->isExpired() && ! $portalPreview) {
             return view('scan.expired', compact('profile'));
         }

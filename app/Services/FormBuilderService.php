@@ -219,6 +219,76 @@ class FormBuilderService
     }
 
     /**
+     * Wipe Form Builder canvas for an "Add a New Code" draft slot.
+     * Questions are keyed by profile_id; leftover rows from a reused paid slot
+     * otherwise reappear in the legacy iframe on /create.
+     */
+    public function clearFormForCreate(Profile $profile, ?int $previousFormId = null): void
+    {
+        $profileId = (int) $profile->id;
+        $formId = $previousFormId ?? (int) ($profile->form_id ?: 0);
+
+        DB::transaction(function () use ($profile, $profileId, $formId): void {
+            $questionIds = FormBuilderQuestion::query()
+                ->withoutGlobalScopes()
+                ->where('profile_id', $profileId)
+                ->pluck('question_id');
+
+            if ($questionIds->isNotEmpty() && Schema::hasTable('form_builder_question_options')) {
+                FormBuilderQuestionOption::query()
+                    ->whereIn('question_id', $questionIds)
+                    ->delete();
+            }
+
+            FormBuilderQuestion::query()
+                ->withoutGlobalScopes()
+                ->where('profile_id', $profileId)
+                ->delete();
+
+            // Recipients are per form_id — only remove when no other profile still uses it.
+            if ($formId > 0 && Schema::hasTable('form_builder_recipient')) {
+                $stillUsed = Profile::query()
+                    ->where('form_id', $formId)
+                    ->where('id', '!=', $profileId)
+                    ->exists()
+                    || FormBuilderQuestion::query()
+                        ->withoutGlobalScopes()
+                        ->where('form_id', $formId)
+                        ->where('profile_id', '!=', $profileId)
+                        ->exists();
+
+                if (! $stillUsed) {
+                    FormBuilderRecipient::query()->where('form_id', $formId)->delete();
+                }
+            }
+
+            $profile->forceFill([
+                'form_id' => 0,
+                'form_title' => '',
+                'form_email_tag' => '',
+                'form_active' => false,
+                'form_is_enable' => false,
+                'enable_form_analytics' => false,
+            ])->save();
+        });
+    }
+
+    public function profileHasFormQuestions(Profile $profile): bool
+    {
+        return FormBuilderQuestion::query()
+            ->withoutGlobalScopes()
+            ->where('profile_id', $profile->id)
+            ->where(function ($query): void {
+                if (Schema::hasColumn('form_builder_question', 'is_deleted')) {
+                    $query->where(function ($inner): void {
+                        $inner->where('is_deleted', 0)->orWhereNull('is_deleted');
+                    });
+                }
+            })
+            ->exists();
+    }
+
+    /**
      * @param  array<int, string>  $emails
      */
     public function syncRecipients(Profile $profile, array $emails): void

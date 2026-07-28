@@ -79,7 +79,7 @@
                 </a>
             </h1>
         </section>
-    </header>
+</header>
 
     <nav class="top-navigation">
         <section class="nav-in">

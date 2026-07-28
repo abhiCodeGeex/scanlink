@@ -12,7 +12,7 @@ use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Filament\Support\SearchTableFilter;
 use App\Filament\Support\TableFilterDefaults;
 use App\Models\Profile;
-use App\Services\CodeProfileRenewalService;
+use App\Filament\Portal\Pages\RenewCodeSummary;
 use App\Services\ProfileQrService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -21,7 +21,6 @@ use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\HtmlString;
 
 class PortalProfilesTable
 {
@@ -114,11 +113,9 @@ class PortalProfilesTable
                     ->label('Renew Selected Codes')
                     ->icon('heroicon-o-arrow-path')
                     ->color('success')
-                    ->requiresConfirmation()
-                    ->modalHeading('Renew selected codes')
                     ->deselectRecordsAfterCompletion()
                     ->visible(fn (): bool => InteractsWithClientMembership::portalMembership()?->isPrimary() ?? false)
-                    ->action(function (Collection $records): void {
+                    ->action(function (Collection $records) {
                         $renewable = $records->filter(fn (Profile $profile): bool => ! (bool) $profile->free_code);
 
                         if ($renewable->isEmpty()) {
@@ -127,17 +124,15 @@ class PortalProfilesTable
                                 ->danger()
                                 ->send();
 
-                            return;
+                            return null;
                         }
 
-                        $clientId = (int) $renewable->first()->client_id;
-                        $order = app(CodeProfileRenewalService::class)->renew($renewable, $clientId);
-
-                        Notification::make()
-                            ->title('Codes renewed')
-                            ->body(new HtmlString($renewable->count().' code(s) renewed — order #'.$order->id))
-                            ->success()
-                            ->send();
+                        return redirect()->to(
+                            RenewCodeSummary::stageRenew(
+                                $renewable,
+                                ProfileResource::getUrl('index', panel: 'portal'),
+                            )
+                        );
                     }),
             ])
             ->recordActions([

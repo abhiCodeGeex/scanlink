@@ -20,6 +20,9 @@ trait HasLegacyProfileEditorLayout
 {
     public string $qrDownloadFormat = '';
 
+    /** Bumps phone-preview iframe cache key after save / live weblink sync. */
+    public int $previewRefreshKey = 0;
+
     public function getView(): string
     {
         return 'filament.portal.profiles.legacy-profile-page';
@@ -67,7 +70,7 @@ trait HasLegacyProfileEditorLayout
 
         if ($record instanceof Profile && $record->exists) {
             $record->loadMissing(['client', 'qrImage', 'equipmentType']);
-            $previewUrl = \App\Support\PortalProfilePreview::previewUrl($record);
+            $previewUrl = \App\Support\PortalProfilePreview::previewUrl($record, $this->previewRefreshKey);
             $qrUrl = app(ProfileQrService::class)->profileUrl($record);
             $formBuilderUrl = FormBuilder::getUrl(panel: 'portal').'?profile='.$record->id;
             $analytics = (int) ($record->enable_form_analytics ? 1 : 0);
@@ -80,7 +83,7 @@ trait HasLegacyProfileEditorLayout
                 .'&_v=fluid-3'
                 .'&_r='.$embedNonce;
             $orderLabelUrl = OrderLabel::getUrl(panel: 'portal').'?profile='.$record->id;
-            $participantsUrl = ManageParticipants::getUrl(panel: 'portal').'?profile='.$record->id;
+            $participantsUrl = ManageParticipants::getUrl(panel: 'portal').'?profile='.$record->id.'&embed=1';
             $formLibraryUrl = FormLibrary::getUrl(panel: 'portal');
         }
 
@@ -143,7 +146,67 @@ trait HasLegacyProfileEditorLayout
             'canDownloadQr' => method_exists($this, 'canDownloadQr')
                 ? $this->canDownloadQr()
                 : true,
+            'previewRefreshKey' => $this->previewRefreshKey,
         ];
+    }
+
+    /**
+     * Force the iPhone iframe to reload (after Save or live draft push).
+     */
+    public function refreshPhonePreview(): void
+    {
+        $this->previewRefreshKey++;
+
+        $record = $this->legacyEditorRecord();
+
+        if ($record instanceof Profile && $record->exists) {
+            $record->refresh();
+        }
+
+        $this->dispatch('refresh-phone-preview');
+    }
+
+    /**
+     * Push current Filament form state into a session draft and reload the phone preview.
+     * Does not persist to the database — Save still owns writes.
+     * Calling this as a Livewire action also commits deferred wire:model values.
+     */
+    public function pushPhonePreviewDraft(): void
+    {
+        $record = $this->legacyEditorRecord();
+
+        if (! $record instanceof Profile || ! $record->exists) {
+            return;
+        }
+
+        $formData = property_exists($this, 'data') && is_array($this->data)
+            ? $this->data
+            : [];
+
+        \App\Support\PortalProfilePreview::storeDraft((int) $record->id, $formData);
+        $this->refreshPhonePreview();
+    }
+
+    /**
+     * Any Livewire update under form $data (including nested weblinks) refreshes the phone preview.
+     */
+    public function updated(string $name, mixed $value = null): void
+    {
+        if (! str_starts_with($name, 'data.')) {
+            return;
+        }
+
+        if (preg_match('/(?:logo|picture|document|video|upload|file|qr)/i', $name) === 1) {
+            return;
+        }
+
+        // Nested Livewire "updated*" hooks already ran; debounce the iframe reload.
+        $this->js(<<<'JS'
+            clearTimeout(window.__slPhonePreviewTimer);
+            window.__slPhonePreviewTimer = setTimeout(() => {
+                $wire.pushPhonePreviewDraft();
+            }, 350);
+        JS);
     }
 
     public function downloadQrCode(): mixed

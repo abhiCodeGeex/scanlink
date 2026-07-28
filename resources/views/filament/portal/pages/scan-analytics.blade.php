@@ -1,5 +1,5 @@
 <x-filament-panels::page>
-    @if ($selectedProfileId && $viewMode === 'charts')
+    @if ($selectedProfileId && $viewMode === 'charts' && $analyticsCount > 0)
         <link rel="stylesheet" href="{{ asset('styles/chart/style/ddchart.css') }}">
         {{-- Live scanalytics loads jQuery UI "start" theme (green/blue) via themeswitcher --}}
         <link id="sl-sa-ui-theme" rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.10/themes/start/jquery-ui.css">
@@ -345,11 +345,51 @@
             border: 3px solid #A2A2A2;
             background: #fff;
         }
+        .sl-sa__empty-charts {
+            text-align: center;
+            padding: 48px 20px 36px;
+            color: #555;
+            border: 1px dashed #c5c5c5;
+            border-radius: 4px;
+            background: #fafafa;
+            margin: 12px 0 8px;
+        }
+        .sl-sa__empty-charts strong {
+            display: block;
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .sl-sa__empty-charts p {
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.45;
+            color: #666;
+        }
+        .sl-sa__error {
+            text-align: center;
+            padding: 36px 20px;
+            color: #8a1f1f;
+            font-weight: bold;
+        }
+        /* Theme switcher in Filament layout is legacy chrome — keep compact */
+        .sl-sa #switcher {
+            min-height: 28px;
+        }
+        .sl-sa #switcher .jquery-ui-switcher-link,
+        .sl-sa #switcher a {
+            font-size: 12px !important;
+        }
     </style>
 
     <div class="sl-sa">
         <div class="sl-sa__panel" id="divToPrint">
-            @if (! $selectedProfileId)
+            @if ($loadError)
+                <div class="sl-sa__error">{{ $loadError }}</div>
+                <div style="text-align:center;margin-top:16px;">
+                    <a class="sl-sa__btn" href="{{ $this->returnToListUrl() }}">Return to list</a>
+                </div>
+            @elseif (! $selectedProfileId)
                 <div class="sl-sa__empty">Select a profile from Master Code List to view Scanalytics.</div>
             @else
                 <div class="sl-sa__head">
@@ -371,8 +411,10 @@
                 @if ($viewMode === 'charts')
                     <div class="sl-sa__toolbar">
                         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                            <div id="switcher" style="position:relative;height:auto;float:left;"></div>
-                            <button type="button" class="sl-sa__print-btn" onclick="window.print()">Download PDF</button>
+                            @if ($analyticsCount > 0)
+                                <div id="switcher" style="position:relative;height:auto;float:left;"></div>
+                                <button type="button" class="sl-sa__print-btn" onclick="window.print()">Download PDF</button>
+                            @endif
                         </div>
                         <div class="sl-sa__totals">
                             <div class="sl-sa__box">
@@ -386,82 +428,92 @@
                         </div>
                     </div>
 
-                    <div class="sl-sa__hint gray-text"><strong>Click on the bar graph for more detailed analytics</strong></div>
+                    @if ($analyticsCount === 0)
+                        <div class="sl-sa__empty-charts">
+                            <strong>No scan activity recorded yet</strong>
+                            <p>
+                                Country, device and browser charts appear here after this code is scanned.
+                                Use Location Map / Location List once scan data is available.
+                            </p>
+                        </div>
+                    @else
+                        <div class="sl-sa__hint gray-text"><strong>Click on the bar graph for more detailed analytics</strong></div>
 
-                    <div class="sl-sa__charts c-form" id="divToPrint2" wire:ignore>
-                        <div id="loading-Notification_static" class="sl-sa__loading">Loading analytics…</div>
+                        <div class="sl-sa__charts c-form" id="divToPrint2" wire:ignore>
+                            <div id="loading-Notification_static" class="sl-sa__loading">Loading analytics…</div>
 
-                        <div class="ui-widget sl-sa__chart-wrap">
-                            <div class="sl-sa__chart-inner">
-                                <div id="chart_div_country"></div>
+                            <div class="ui-widget sl-sa__chart-wrap">
+                                <div class="sl-sa__chart-inner">
+                                    <div id="chart_div_country"></div>
+                                </div>
+                            </div>
+                            <div class="ui-widget sl-sa__chart-wrap">
+                                <div class="sl-sa__chart-inner">
+                                    <div id="chart_div_device"></div>
+                                </div>
+                            </div>
+                            <div class="ui-widget sl-sa__chart-wrap">
+                                <div class="sl-sa__chart-inner">
+                                    <div id="chart_div_browser"></div>
+                                </div>
                             </div>
                         </div>
-                        <div class="ui-widget sl-sa__chart-wrap">
-                            <div class="sl-sa__chart-inner">
-                                <div id="chart_div_device"></div>
-                            </div>
-                        </div>
-                        <div class="ui-widget sl-sa__chart-wrap">
-                            <div class="sl-sa__chart-inner">
-                                <div id="chart_div_browser"></div>
-                            </div>
-                        </div>
-                    </div>
 
-                    <script>
-                        (function ($) {
-                            function bootDdCharts() {
-                                if (typeof $.fn.ddBarChart !== 'function') {
-                                    return;
-                                }
+                        <script>
+                            (function ($) {
+                                function bootDdCharts() {
+                                    if (typeof $.fn.ddBarChart !== 'function') {
+                                        return;
+                                    }
 
-                                if (typeof $.fn.themeswitcher === 'function' && ! $('#switcher').data('sl-switched')) {
-                                    $('#switcher').themeswitcher({
-                                        imgpath: @json(asset('styles/chart/images/')),
-                                        loadTheme: 'start',
-                                        initialtext: 'Switch Theme',
-                                        buttonpretext: 'Theme:',
-                                        width: 175,
-                                        height: 200
+                                    if (typeof $.fn.themeswitcher === 'function' && ! $('#switcher').data('sl-switched')) {
+                                        $('#switcher').themeswitcher({
+                                            imgpath: @json(asset('styles/chart/images/')),
+                                            loadTheme: 'start',
+                                            initialtext: 'Switch Theme',
+                                            buttonpretext: 'Theme:',
+                                            width: 175,
+                                            height: 200
+                                        });
+                                        $('#switcher').data('sl-switched', true);
+                                    }
+
+                                    ['#chart_div_country', '#chart_div_device', '#chart_div_browser'].forEach(function (sel) {
+                                        $(sel).empty().removeData('ddSettings');
                                     });
-                                    $('#switcher').data('sl-switched', true);
+
+                                    var common = {
+                                        action: 'init',
+                                        chartDataLink: '',
+                                        xOddClass: 'ui-state-active',
+                                        xEvenClass: 'ui-state-default',
+                                        yOddClass: 'ui-state-active',
+                                        yEvenClass: 'ui-state-default',
+                                        xWrapperClass: 'ui-widget-content',
+                                        chartWrapperClass: 'ui-widget-content',
+                                        chartBarClass: 'ui-state-focus ui-corner-top',
+                                        chartBarHoverClass: 'ui-state-highlight',
+                                        callBeforeLoad: function () { $('#loading-Notification_static').fadeIn(200); },
+                                        callAfterLoad: function () { $('#loading-Notification_static').stop().fadeOut(0); },
+                                        tooltipSettings: { extraClass: 'ui-widget ui-widget-content ui-corner-all' }
+                                    };
+
+                                    // Inline data (same JSON as live graphengine) — avoids AJAX theme/auth races.
+                                    $('#chart_div_country').ddBarChart($.extend({}, common, {
+                                        chartData: @json($this->countryChartData())
+                                    }));
+                                    $('#chart_div_device').ddBarChart($.extend({}, common, {
+                                        chartData: @json($this->deviceChartData())
+                                    }));
+                                    $('#chart_div_browser').ddBarChart($.extend({}, common, {
+                                        chartData: @json($this->browserChartData())
+                                    }));
                                 }
 
-                                ['#chart_div_country', '#chart_div_device', '#chart_div_browser'].forEach(function (sel) {
-                                    $(sel).empty().removeData('ddSettings');
-                                });
-
-                                var common = {
-                                    action: 'init',
-                                    chartDataLink: '',
-                                    xOddClass: 'ui-state-active',
-                                    xEvenClass: 'ui-state-default',
-                                    yOddClass: 'ui-state-active',
-                                    yEvenClass: 'ui-state-default',
-                                    xWrapperClass: 'ui-widget-content',
-                                    chartWrapperClass: 'ui-widget-content',
-                                    chartBarClass: 'ui-state-focus ui-corner-top',
-                                    chartBarHoverClass: 'ui-state-highlight',
-                                    callBeforeLoad: function () { $('#loading-Notification_static').fadeIn(200); },
-                                    callAfterLoad: function () { $('#loading-Notification_static').stop().fadeOut(0); },
-                                    tooltipSettings: { extraClass: 'ui-widget ui-widget-content ui-corner-all' }
-                                };
-
-                                // Inline data (same JSON as live graphengine) — avoids AJAX theme/auth races.
-                                $('#chart_div_country').ddBarChart($.extend({}, common, {
-                                    chartData: @json($this->countryChartData())
-                                }));
-                                $('#chart_div_device').ddBarChart($.extend({}, common, {
-                                    chartData: @json($this->deviceChartData())
-                                }));
-                                $('#chart_div_browser').ddBarChart($.extend({}, common, {
-                                    chartData: @json($this->browserChartData())
-                                }));
-                            }
-
-                            $(bootDdCharts);
-                        })(jQuery);
-                    </script>
+                                $(bootDdCharts);
+                            })(jQuery);
+                        </script>
+                    @endif
 
                 @elseif ($viewMode === 'map')
                     <div class="sl-sa__toolbar">

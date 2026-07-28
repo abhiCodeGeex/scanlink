@@ -3,17 +3,17 @@
 namespace App\Filament\Portal\Pages;
 
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
+use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Models\Profile;
-use App\Services\AnalyticsApiService;
+use App\Services\CumulativeAnalyticsBuilder;
 use BackedEnum;
-use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Schema as DbSchema;
+use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Contracts\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CumulativeAnalytics extends Page
@@ -37,8 +37,34 @@ class CumulativeAnalytics extends Page
     /** @var array<int, int> */
     public array $selectedProfileIds = [];
 
-    /** @var list<array{profile_id: int, profile_name: string, date?: string, location?: string, device?: string, details?: string}> */
-    public array $combinedScanRows = [];
+    /** charts|locations */
+    public string $viewMode = 'charts';
+
+    /** @var list<array{id: int, name: string}> */
+    public array $selectedProfiles = [];
+
+    public int $formSubmissionCount = 0;
+
+    public int $scanTotal = 0;
+
+    /** @var list<array{title: string, slices: list<array{label: string, value: int, color: string}>}> */
+    public array $formCharts = [];
+
+    /** @var list<array{label: string, value: int}> */
+    public array $countryBars = [];
+
+    /** @var list<array{label: string, value: int}> */
+    public array $deviceBars = [];
+
+    /** @var list<array{profile_id: int, profile_name: string, date: string, location: string, device: string, scan_type: string}> */
+    public array $locationRows = [];
+
+    public int $locationPage = 1;
+
+    public int $locationPerPage = 25;
+
+    /** @var list<string> */
+    public array $analyticsStatusNotes = [];
 
     public static function getNavigationGroup(): ?string
     {
@@ -48,6 +74,29 @@ class CumulativeAnalytics extends Page
     public static function canAccess(): bool
     {
         return static::memberCanAccessAnalytics(static::portalMembership());
+    }
+
+    public function getTitle(): string|Htmlable
+    {
+        return 'Cumulative Analytics';
+    }
+
+    public function getHeading(): string|Htmlable
+    {
+        return '';
+    }
+
+    public function getHeader(): ?View
+    {
+        return view('filament.portal.profiles.mastercode-toolbar', [
+            'types' => \App\Support\LegacyEquipmentTypeLabels::navTypes(),
+            'activeTab' => null,
+            'addCodeUrl' => ProfileResource::getUrl('index', panel: 'portal'),
+            'canAddCode' => false,
+            'hideActionBar' => true,
+            'hideLegend' => true,
+            'readonlyNav' => true,
+        ]);
     }
 
     public function mount(): void
@@ -67,19 +116,8 @@ class CumulativeAnalytics extends Page
         ]);
 
         if ($ids !== []) {
-            $this->loadCombinedAnalytics(app(AnalyticsApiService::class));
+            $this->reloadAnalytics();
         }
-    }
-
-    protected function getHeaderActions(): array
-    {
-        return [
-            Action::make('exportCsv')
-                ->label('Export CSV')
-                ->icon('heroicon-o-arrow-down-tray')
-                ->visible(fn (): bool => $this->combinedScanRows !== [])
-                ->action(fn (): StreamedResponse => $this->exportCombinedCsv()),
-        ];
     }
 
     public function form(Schema $schema): Schema
@@ -89,19 +127,86 @@ class CumulativeAnalytics extends Page
                 Section::make('Profiles')
                     ->schema([
                         Select::make('selectedProfileIds')
-                            ->label('Profiles')
+                            ->label('Select profiles')
                             ->options(fn (): array => $this->clientProfileOptions()->all())
                             ->multiple()
+                            ->searchable()
                             ->live()
                             ->afterStateUpdated(function (?array $state): void {
                                 $this->selectedProfileIds = array_map('intval', $state ?? []);
-                                $this->loadCombinedAnalytics(app(AnalyticsApiService::class));
+                                $this->reloadAnalytics();
                             }),
                     ]),
             ]);
     }
 
-    public function exportCombinedCsv(): StreamedResponse
+    public function showCharts(): void
+    {
+        $this->viewMode = 'charts';
+    }
+
+    public function showLocations(): void
+    {
+        $this->viewMode = 'locations';
+        $this->locationPage = 1;
+    }
+
+    public function goToLocationPage(int $page): void
+    {
+        $this->locationPage = max(1, min($page, $this->locationTotalPages()));
+    }
+
+    public function previousLocationPage(): void
+    {
+        $this->goToLocationPage($this->locationPage - 1);
+    }
+
+    public function nextLocationPage(): void
+    {
+        $this->goToLocationPage($this->locationPage + 1);
+    }
+
+    public function locationTotalPages(): int
+    {
+        $total = count($this->locationRows);
+
+        if ($total === 0) {
+            return 1;
+        }
+
+        return (int) max(1, (int) ceil($total / $this->locationPerPage));
+    }
+
+    /**
+     * @return list<array{profile_id: int, profile_name: string, date: string, location: string, device: string, scan_type: string}>
+     */
+    public function paginatedLocationRows(): array
+    {
+        $offset = ($this->locationPage - 1) * $this->locationPerPage;
+
+        return array_values(array_slice($this->locationRows, $offset, $this->locationPerPage));
+    }
+
+    public function locationShowingFrom(): int
+    {
+        if ($this->locationRows === []) {
+            return 0;
+        }
+
+        return (($this->locationPage - 1) * $this->locationPerPage) + 1;
+    }
+
+    public function locationShowingTo(): int
+    {
+        return min(count($this->locationRows), $this->locationPage * $this->locationPerPage);
+    }
+
+    public function returnToListUrl(): string
+    {
+        return ProfileResource::getUrl('index', panel: 'portal');
+    }
+
+    public function exportAnalytics(): StreamedResponse
     {
         $filename = 'cumulative-analytics-'.now()->format('Y-m-d').'.csv';
 
@@ -112,16 +217,35 @@ class CumulativeAnalytics extends Page
                 return;
             }
 
-            fputcsv($handle, ['Profile', 'Profile ID', 'Date', 'Location', 'Device', 'Details']);
+            fputcsv($handle, ['Section', 'Profile', 'Date', 'Location', 'Device', 'Scan Type', 'Question', 'Option', 'Count']);
 
-            foreach ($this->combinedScanRows as $row) {
+            foreach ($this->formCharts as $chart) {
+                foreach ($chart['slices'] as $slice) {
+                    fputcsv($handle, [
+                        'Form Analytics',
+                        '',
+                        '',
+                        '',
+                        '',
+                        '',
+                        $chart['title'],
+                        $slice['label'],
+                        $slice['value'],
+                    ]);
+                }
+            }
+
+            foreach ($this->locationRows as $row) {
                 fputcsv($handle, [
+                    'Scan Locations',
                     $row['profile_name'] ?? '',
-                    $row['profile_id'] ?? '',
                     $row['date'] ?? '',
                     $row['location'] ?? '',
                     $row['device'] ?? '',
-                    $row['details'] ?? '',
+                    $row['scan_type'] ?? '',
+                    '',
+                    '',
+                    '',
                 ]);
             }
 
@@ -129,9 +253,17 @@ class CumulativeAnalytics extends Page
         }, $filename, ['Content-Type' => 'text/csv']);
     }
 
-    protected function loadCombinedAnalytics(AnalyticsApiService $analytics): void
+    protected function reloadAnalytics(): void
     {
-        $this->combinedScanRows = [];
+        $this->selectedProfiles = [];
+        $this->formSubmissionCount = 0;
+        $this->scanTotal = 0;
+        $this->formCharts = [];
+        $this->countryBars = [];
+        $this->deviceBars = [];
+        $this->locationRows = [];
+        $this->locationPage = 1;
+        $this->analyticsStatusNotes = [];
 
         if ($this->selectedProfileIds === []) {
             return;
@@ -146,64 +278,38 @@ class CumulativeAnalytics extends Page
             ->orderBy('name')
             ->get();
 
-        $hasAnalyticKey = DbSchema::hasColumn('profiles', 'analytic_key');
+        if ($profiles->isEmpty()) {
+            $this->analyticsStatusNotes[] = 'No matching profiles found for this account.';
 
-        foreach ($profiles as $profile) {
-            if (! $hasAnalyticKey) {
-                continue;
-            }
+            return;
+        }
 
-            $key = $profile->getAttribute('analytic_key');
+        $built = app(CumulativeAnalyticsBuilder::class)->build($profiles);
 
-            if (! filled($key)) {
-                continue;
-            }
+        $this->selectedProfiles = $built['profiles'];
+        $this->formSubmissionCount = $built['form_submission_count'];
+        $this->scanTotal = $built['scan_total'];
+        $this->formCharts = $built['form_charts'];
+        $this->countryBars = $built['country_bars'];
+        $this->deviceBars = $built['device_bars'];
+        $this->locationRows = $built['location_rows'];
 
-            $scanList = $analytics->getScanList((string) $key);
-
-            if (! is_array($scanList)) {
-                continue;
-            }
-
-            foreach ($this->normalizeScanRows($scanList) as $row) {
-                $this->combinedScanRows[] = [
-                    'profile_id' => $profile->id,
-                    'profile_name' => $profile->name,
-                    ...$row,
-                ];
-            }
+        if ($this->scanTotal === 0 && $this->formSubmissionCount === 0 && $this->formCharts === []) {
+            $this->analyticsStatusNotes[] = 'No scan or form analytics data found for the selected profiles.';
         }
     }
 
     /**
-     * @param  array<int, mixed>  $scanList
-     * @return list<array{date?: string, location?: string, device?: string, details?: string}>
+     * @param  list<array{label: string, value: int}>  $bars
      */
-    protected function normalizeScanRows(array $scanList): array
+    public function maxBarValue(array $bars): int
     {
-        $rows = [];
+        $max = 0;
 
-        foreach ($scanList as $key => $item) {
-            if (is_array($item)) {
-                $rows[] = [
-                    'date' => (string) ($item['date'] ?? $item['datetime'] ?? $item['scanned_at'] ?? $key),
-                    'location' => (string) ($item['location'] ?? $item['city'] ?? $item['country'] ?? ''),
-                    'device' => (string) ($item['device'] ?? $item['platform'] ?? $item['browser'] ?? ''),
-                    'details' => json_encode($item),
-                ];
-
-                continue;
-            }
-
-            $rows[] = [
-                'date' => is_string($key) ? $key : '',
-                'location' => '',
-                'device' => '',
-                'details' => is_scalar($item) ? (string) $item : json_encode($item),
-            ];
+        foreach ($bars as $bar) {
+            $max = max($max, (int) ($bar['value'] ?? 0));
         }
 
-        return $rows;
+        return max($max, 1);
     }
-
 }

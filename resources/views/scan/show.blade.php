@@ -15,6 +15,39 @@
         h2 { font-size: 1.1rem; margin-top: 1.5rem; }
         .btn { display: inline-block; background: #008C00; color: #fff; padding: .6rem 1rem; border-radius: 8px; text-decoration: none; border: 0; cursor: pointer; margin: .25rem .25rem .25rem 0; }
         .btn-outline { background: #fff; color: #008C00; border: 1px solid #008C00; }
+        /* Legacy WeblinkList / document tiles: full-width colored bars with text alignment. */
+        .btn-weblink,
+        .btn-document {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            border-radius: 8px;
+            margin: .25rem 0;
+            color: #fff !important;
+        }
+        .btn-weblink a,
+        .btn-document a { color: inherit; text-decoration: none; }
+        /* Legacy shareNav-mob icons */
+        .shareNav-mob {
+            width: 100%;
+            display: block;
+            text-align: center;
+            clear: both;
+            margin: 1rem 0 0.5rem;
+        }
+        .shareNav-mob a {
+            width: 48px;
+            height: 48px;
+            text-indent: -99999px;
+            margin: 0 10px;
+            display: inline-block;
+            background-position: top left;
+            background-repeat: no-repeat;
+            background-size: 48px 48px;
+        }
+        .shareNav-mob a.shareFB { background-image: url('{{ asset('images/facebook-icon.jpg') }}'); }
+        .shareNav-mob a.shareTWT { background-image: url('{{ asset('images/twitter-icon.jpg') }}'); }
+        .shareNav-mob a.shareEML { background-image: url('{{ asset('images/email-grn-icon.jpg') }}'); }
         /* Legacy mobile form Submit: native-looking button (white / black border). */
         .frm_builder .submit-btn {
             display: inline-block;
@@ -266,25 +299,90 @@
             @endif
         </div>
 
-        @if ($profile->weblinks->isNotEmpty())
+        @php
+            $visibleWeblinks = $profile->weblinks->filter(function ($weblink): bool {
+                $enabled = $weblink->link_button === true
+                    || $weblink->link_button === 1
+                    || $weblink->link_button === '1';
+
+                return $enabled && filled($weblink->link_button_url);
+            });
+        @endphp
+        @if ($visibleWeblinks->isNotEmpty())
             <h2>Links</h2>
-            <div class="tile-grid">
-                @foreach ($profile->weblinks as $weblink)
-                    @if (filled($weblink->link_button_url))
-                        <a class="btn" href="{{ $weblink->link_button_url }}" target="_blank" rel="noopener">
-                            {{ $weblink->link_button_text ?: ($weblink->link_button ?: 'Open link') }}
-                        </a>
-                    @endif
+            <div class="tile-grid" style="display:block;">
+                @foreach ($visibleWeblinks as $weblink)
+                    @php
+                        $color = trim((string) ($weblink->link_button_color ?: '007A01'));
+                        $color = str_starts_with($color, '#') ? $color : '#'.$color;
+                        $align = in_array($weblink->link_button_align, ['left', 'center', 'right'], true)
+                            ? $weblink->link_button_align
+                            : 'left';
+                    @endphp
+                    <a
+                        class="btn btn-weblink"
+                        href="{{ $weblink->link_button_url }}"
+                        target="_blank"
+                        rel="noopener"
+                        style="background:{{ $color }};text-align:{{ $align }};"
+                    >
+                        {{ $weblink->link_button_text ?: 'Open link' }}
+                    </a>
                 @endforeach
+            </div>
+        @endif
+
+        @if ($profile->display_share_link)
+            @php
+                $shareUrl = filled($profile->shorturl)
+                    ? (string) $profile->shorturl
+                    : url('/'.$clientUrl.'/'.$profile->id);
+                $shareText = trim((string) ($profile->name ?: $profile->code_profile_name ?: 'ScanLink'));
+            @endphp
+            <div class="shareNav-mob">
+                <a
+                    class="shareFB"
+                    href="https://www.facebook.com/share.php?u={{ urlencode($shareUrl) }}"
+                    target="_blank"
+                    rel="noopener"
+                    title="Facebook"
+                >Facebook</a>
+                <a
+                    class="shareTWT"
+                    href="https://twitter.com/share?text={{ urlencode($shareText.'  '.$shareUrl) }}"
+                    target="_blank"
+                    rel="noopener"
+                    title="Twitter"
+                >Twitter</a>
+                <a
+                    class="shareEML"
+                    href="mailto:?subject={{ rawurlencode('Visit this link') }}&body={{ rawurlencode('Hi, I found this information for you! Have a nice day :) : '.$shareUrl) }}"
+                    target="_blank"
+                    rel="noopener"
+                    title="Email"
+                >Email</a>
             </div>
         @endif
 
         @if ($profile->documents->isNotEmpty())
             <h2>Documents</h2>
-            <div class="tile-grid">
+            <div class="tile-grid" style="display:block;">
                 @foreach ($profile->documents as $document)
                     @if ($docUrl = $publicMediaUrl($document->doc_name))
-                        <a class="btn btn-outline" href="{{ $docUrl }}" target="_blank" rel="noopener">
+                        @php
+                            $docColor = trim((string) ($document->btn_color ?: '007A01'));
+                            $docColor = str_starts_with($docColor, '#') ? $docColor : '#'.$docColor;
+                            $docAlign = in_array($document->txt_align, ['left', 'center', 'right'], true)
+                                ? $document->txt_align
+                                : 'left';
+                        @endphp
+                        <a
+                            class="btn btn-document"
+                            href="{{ $docUrl }}"
+                            target="_blank"
+                            rel="noopener"
+                            style="background:{{ $docColor }};text-align:{{ $docAlign }};"
+                        >
                             {{ $document->name ?: 'Download document' }}
                         </a>
                     @endif

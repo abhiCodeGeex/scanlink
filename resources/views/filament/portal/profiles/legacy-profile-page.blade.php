@@ -225,4 +225,81 @@
             });
         })();
     </script>
+
+    {{-- Live phone preview: commit deferred form fields + reload iframe from session draft --}}
+    <script>
+        (function () {
+            var timer = null;
+
+            function previewIframe() {
+                return document.querySelector('.iphone-preview-container iframe');
+            }
+
+            function reloadPreviewIframe() {
+                var iframe = previewIframe();
+                if (! iframe || ! iframe.src) {
+                    return;
+                }
+                try {
+                    var url = new URL(iframe.src, window.location.origin);
+                    url.searchParams.set('_r', String(Date.now()));
+                    iframe.src = url.toString();
+                } catch (err) {
+                    iframe.src = iframe.src;
+                }
+            }
+
+            document.addEventListener('livewire:init', function () {
+                Livewire.on('refresh-phone-preview', function () {
+                    // wire:key remount usually handles this; force reload as backup.
+                    setTimeout(reloadPreviewIframe, 30);
+                });
+            });
+
+                function scheduleDraftPush() {
+                    clearTimeout(timer);
+                    timer = setTimeout(function () {
+                        try {
+                            (Livewire.all() || []).forEach(function (component) {
+                                try {
+                                    component.call('pushPhonePreviewDraft');
+                                } catch (e) {}
+                            });
+                        } catch (e) {}
+                    }, 450);
+                }
+
+                function bindLivePreview() {
+                    var root = document.querySelector('.sl-add-form-left');
+                    if (! root || root.dataset.slPreviewBound === '1') {
+                        return;
+                    }
+                    root.dataset.slPreviewBound = '1';
+
+                    var handler = function (event) {
+                        var target = event.target;
+                        if (! target || ! root.contains(target)) {
+                            return;
+                        }
+                        if (target.type === 'file') {
+                            return;
+                        }
+                        if (typeof Livewire === 'undefined') {
+                            return;
+                        }
+                        scheduleDraftPush();
+                    };
+
+                    root.addEventListener('input', handler, true);
+                    root.addEventListener('change', handler, true);
+                }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', bindLivePreview);
+            } else {
+                bindLivePreview();
+            }
+            document.addEventListener('livewire:navigated', bindLivePreview);
+        })();
+    </script>
 </x-filament-panels::page>

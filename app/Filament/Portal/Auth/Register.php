@@ -306,9 +306,7 @@ class Register extends BaseRegister
 
         $resellerCode = $data['client_reseller_code'];
         if ($resellerCode !== '') {
-            $resellerExists = Client::query()
-                ->where('reseller_code', $resellerCode)
-                ->exists();
+            $resellerExists = Client::findByResellerCode($resellerCode) !== null;
 
             if (! $resellerExists) {
                 $errors['data.client_reseller_code'] = 'Enter a valid Reseller Code.';

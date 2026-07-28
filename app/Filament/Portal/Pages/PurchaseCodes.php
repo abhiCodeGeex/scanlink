@@ -2,233 +2,262 @@
 
 namespace App\Filament\Portal\Pages;
 
-use App\Enums\CodeOrderStatus;
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
 use App\Filament\Portal\Concerns\RestrictsToPrimaryClientUser;
 use App\Models\Client;
 use App\Models\CodePrising;
+use App\Models\Profile;
 use BackedEnum;
-use Filament\Actions\Action;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Filament\Schemas\Components\Actions;
-use Filament\Schemas\Components\Component;
-use Filament\Schemas\Components\EmbeddedSchema;
-use Filament\Schemas\Components\Form;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Utilities\Get;
-use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
-use Illuminate\Validation\ValidationException;
 
 class PurchaseCodes extends Page
 {
     use InteractsWithClientMembership;
     use RestrictsToPrimaryClientUser;
 
-    // Demo: hide Purchase codes under My Account (uncomment + remove shouldRegisterNavigation to restore).
-    // protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShoppingCart;
-    // protected static ?string $navigationLabel = 'Purchase codes';
-    protected static bool $shouldRegisterNavigation = false;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShoppingCart;
+
+    protected static ?string $navigationLabel = 'Purchase codes';
 
     protected static ?string $title = 'Purchase codes';
 
     protected static ?string $slug = 'purchase-codes';
 
-    // protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 4;
 
-    /**
-     * @var array<string, mixed>|null
-     */
-    public ?array $data = [];
+    protected string $view = 'filament.portal.pages.purchase-codes';
+
+    public string $activeTab = 'purchase';
+
+    public string $purchaseQuantity = '';
+
+    public string $resellerCode = '';
+
+    public string $resellerQuantity = '';
+
+    public string $purchaseAmount = '0.00';
+
+    public string $purchaseTotalAnnual = '0.00';
+
+    public string $resellerAmount = '0.00';
+
+    public string $resellerTotalAnnual = '0.00';
+
+    public string $resellerMargin = '0.00';
+
+    public bool $purchaseCalculated = false;
+
+    public bool $resellerCalculated = false;
+
+    public const SESSION_CHECKOUT = 'portal.purchase.checkout';
+
+    public const SESSION_BILLING = 'portal.purchase.billing';
 
     public static function getNavigationGroup(): ?string
     {
-        // return 'My Account';
-        return null;
+        return 'My Account';
     }
 
     public function mount(): void
     {
         $member = $this->currentClientUser();
-
-        $this->form->fill([
-            'pricing_tier_id' => CodePrising::query()->orderBy('code_min_qty')->value('id'),
-            'quantity' => null,
-            'reseller_code' => $member?->client_reseller_code,
-        ]);
+        $this->resellerCode = (string) ($member?->client_reseller_code ?? '');
     }
 
-    public function defaultForm(Schema $schema): Schema
+    public function getHeading(): string|Htmlable
     {
-        return $schema->statePath('data');
+        return '';
     }
 
-    public function form(Schema $schema): Schema
+    public function switchTab(string $tab): void
     {
-        return $schema
-            ->components([
-                Section::make('Order details')
-                    ->columns(2)
-                    ->schema([
-                        Select::make('pricing_tier_id')
-                            ->label('Pricing tier')
-                            ->options(fn (): array => CodePrising::query()
-                                ->orderBy('code_min_qty')
-                                ->get()
-                                ->mapWithKeys(fn (CodePrising $tier): array => [
-                                    $tier->id => sprintf(
-                                        '%s — $%s / code',
-                                        $tier->tierLabel(),
-                                        number_format((float) $tier->amount, 2),
-                                    ),
-                                ])
-                                ->all())
-                            ->required()
-                            ->live(),
-                        TextInput::make('quantity')
-                            ->label('Number of codes')
-                            ->numeric()
-                            ->integer()
-                            ->required()
-                            ->minValue(fn (Get $get): int => $this->tierFor($get('pricing_tier_id'))?->code_min_qty ?? 1)
-                            ->maxValue(fn (Get $get): int => $this->tierFor($get('pricing_tier_id'))?->code_max_qty ?? 9999)
-                            ->helperText(fn (Get $get): ?string => ($tier = $this->tierFor($get('pricing_tier_id')))
-                                ? "Enter a quantity between {$tier->code_min_qty} and {$tier->code_max_qty}."
-                                : null),
-                        TextInput::make('reseller_code')
-                            ->label('Reseller code')
-                            ->placeholder('Optional')
-                            ->columnSpanFull(),
-                    ]),
-            ]);
+        if (in_array($tab, ['purchase', 'reseller'], true)) {
+            $this->activeTab = $tab;
+        }
     }
 
-    public function submitOrder(): void
+    public function calculatePurchase(): void
     {
-        $data = $this->form->getState();
-        $member = $this->requireClientUser();
-        $client = $this->requireClient();
-        $tier = $this->tierFor($data['pricing_tier_id']);
-
+        [$qty, $tier] = $this->resolveQuantityAndTier($this->purchaseQuantity, false, false);
         if (! $tier) {
-            throw ValidationException::withMessages([
-                'data.pricing_tier_id' => 'Please select a valid pricing tier.',
-            ]);
+            return;
         }
 
-        $quantity = (int) $data['quantity'];
-
-        if ($quantity < $tier->code_min_qty || $quantity > $tier->code_max_qty) {
-            throw ValidationException::withMessages([
-                'data.quantity' => "Quantity must be between {$tier->code_min_qty} and {$tier->code_max_qty}.",
-            ]);
-        }
-
-        $resellerClientId = null;
-        $isResellerPricing = false;
-        $perCodeAmount = (float) $tier->amount;
-
-        $resellerCode = trim((string) ($data['reseller_code'] ?? ''));
-
-        if ($resellerCode !== '') {
-            $resellerClientId = Client::query()
-                ->where('reseller_code', $resellerCode)
-                ->value('id');
-
-            if ($resellerClientId) {
-                $isResellerPricing = true;
-                $perCodeAmount = (float) $tier->reseller_amount;
-            }
-        }
-
-        $totalAmount = round($quantity * $perCodeAmount, 2);
-
-        $order = $client->codePurchases()->create([
-            'email' => $member->email ?: $client->email,
-            'first_name' => $member->first_name,
-            'last_name' => $member->last_name,
-            'company_name' => $member->company_name ?: $client->client_name,
-            'billing_address' => $member->billing_address ?: $client->address,
-            'town' => $member->town,
-            'phone' => $member->phone ?: $client->telephone,
-            'postal_code' => $member->postal_code,
-            'no_of_codes' => $quantity,
-            'per_code_amount' => $perCodeAmount,
-            'total_amount' => $totalAmount,
-            'status' => CodeOrderStatus::New,
-            'enable' => false,
-            'is_reseller_pricing_code' => $isResellerPricing,
-            'reseller_client_id' => $resellerClientId,
-            'free_code' => false,
-            'ordered_on' => now(),
-        ]);
-
-        Notification::make()
-            ->title('Code purchase submitted')
-            ->body("Order #{$order->id} is pending payment.")
-            ->success()
-            ->send();
-
-        $this->form->fill([
-            'pricing_tier_id' => $tier->id,
-            'quantity' => null,
-            'reseller_code' => $member->client_reseller_code,
-        ]);
+        $perCode = (float) $tier->amount;
+        $this->purchaseAmount = number_format($perCode, 2, '.', '');
+        $this->purchaseTotalAnnual = number_format($perCode * $qty * 12, 2, '.', '');
+        $this->purchaseCalculated = true;
     }
 
-    /**
-     * @return array<Action>
-     */
-    protected function getFormActions(): array
+    public function calculateReseller(): void
     {
-        return [
-            Action::make('submitOrder')
-                ->label('Submit order')
-                ->submit('submitOrder'),
-        ];
+        [$qty, $tier, $resellerClientId] = $this->resolveResellerInputs();
+        if (! $tier || $resellerClientId <= 0) {
+            return;
+        }
+        unset($resellerClientId);
+
+        $amount = (float) $tier->amount;
+        $resellerAmount = (float) $tier->reseller_amount;
+
+        $this->resellerAmount = number_format($resellerAmount, 2, '.', '');
+        $this->resellerTotalAnnual = number_format($resellerAmount * $qty * 12, 2, '.', '');
+        $this->resellerMargin = number_format(($amount - $resellerAmount) * $qty * 12, 2, '.', '');
+        $this->resellerCalculated = true;
+    }
+
+    public function submitPurchase(): void
+    {
+        [$qty, $tier] = $this->resolveQuantityAndTier($this->purchaseQuantity, true, false);
+        if (! $tier) {
+            return;
+        }
+
+        session([
+            self::SESSION_CHECKOUT => [
+                'quantity' => $qty,
+                'per_code_amount' => (float) $tier->amount,
+                'is_reseller_pricing_code' => '0',
+                'reseller_client_id' => 0,
+            ],
+        ]);
+
+        $this->redirect(PurchaseBilling::getUrl(panel: 'portal'), navigate: false);
+    }
+
+    public function submitReseller(): void
+    {
+        [$qty, $tier, $resellerClientId] = $this->resolveResellerInputs();
+        if (! $tier || $resellerClientId <= 0) {
+            return;
+        }
+
+        session([
+            self::SESSION_CHECKOUT => [
+                'quantity' => $qty,
+                'per_code_amount' => (float) $tier->reseller_amount,
+                'is_reseller_pricing_code' => '1',
+                'reseller_client_id' => $resellerClientId,
+            ],
+        ]);
+
+        $this->redirect(PurchaseBilling::getUrl(panel: 'portal'), navigate: false);
     }
 
     public function getTitle(): string|Htmlable
     {
-        return static::$title ?? 'Purchase Codes';
+        return '';
     }
 
-    public function content(Schema $schema): Schema
+    public function availabilityBalance(): int
     {
-        return $schema
-            ->components([
-                $this->getFormContentComponent(),
-            ]);
-    }
-
-    public function getFormContentComponent(): Component
-    {
-        return Form::make([EmbeddedSchema::make('form')])
-            ->id('form')
-            ->livewireSubmitHandler('submitOrder')
-            ->footer([
-                Actions::make($this->getFormActions())
-                    ->alignment($this->getFormActionsAlignment())
-                    ->fullWidth($this->hasFullWidthFormActions())
-                    ->key('form-actions'),
-            ]);
-    }
-
-    protected function hasFullWidthFormActions(): bool
-    {
-        return false;
-    }
-
-    protected function tierFor(mixed $tierId): ?CodePrising
-    {
-        if (! filled($tierId)) {
-            return null;
+        $client = $this->currentClient();
+        if (! $client) {
+            return 0;
         }
 
-        return CodePrising::query()->find($tierId);
+        return Profile::query()
+            ->where('client_id', $client->id)
+            ->active()
+            ->openSlot()
+            ->where(function ($query): void {
+                $query->whereNull('expired_at')
+                    ->orWhere('expired_at', '>', now());
+            })
+            ->count();
+    }
+
+    public function exitPage(): void
+    {
+        $this->redirect(CodeBalance::getUrl(panel: 'portal'), navigate: false);
+    }
+
+    /**
+     * @return array{0:int, 1:CodePrising|null}
+     */
+    protected function resolveQuantityAndTier(string $quantityRaw, bool $forSubmit, bool $reseller): array
+    {
+        $quantityRaw = trim($quantityRaw);
+        if ($quantityRaw === '') {
+            Notification::make()->title('Enter a number of code required.')->danger()->send();
+
+            return [0, null];
+        }
+
+        $qty = (int) $quantityRaw;
+        if ($qty <= 0 || $qty > 1000) {
+            Notification::make()->title('Enter a number of code less than 1000.')->danger()->send();
+
+            return [0, null];
+        }
+
+        $tier = CodePrising::query()
+            ->where('code_min_qty', '<=', $qty)
+            ->where('code_max_qty', '>=', $qty)
+            ->orderBy('id')
+            ->first();
+
+        if (! $tier) {
+            Notification::make()->title('No pricing rule matched this code quantity.')->danger()->send();
+
+            return [0, null];
+        }
+
+        if ($forSubmit) {
+            // Match legacy flow where calculate is effectively re-run on submit.
+            if ($reseller) {
+                $this->resellerAmount = number_format((float) $tier->reseller_amount, 2, '.', '');
+                $this->resellerTotalAnnual = number_format((float) $tier->reseller_amount * $qty * 12, 2, '.', '');
+                $this->resellerMargin = number_format(((float) $tier->amount - (float) $tier->reseller_amount) * $qty * 12, 2, '.', '');
+            } else {
+                $this->purchaseAmount = number_format((float) $tier->amount, 2, '.', '');
+                $this->purchaseTotalAnnual = number_format((float) $tier->amount * $qty * 12, 2, '.', '');
+            }
+        }
+
+        return [$qty, $tier];
+    }
+
+    /**
+     * @return array{0:int, 1:CodePrising|null, 2:int}
+     */
+    protected function resolveResellerInputs(): array
+    {
+        $code = trim($this->resellerCode);
+        if ($code === '') {
+            Notification::make()->title('Enter a reseller code.')->danger()->send();
+
+            return [0, null, 0];
+        }
+
+        $resellerClientId = (int) (Client::findByResellerCode($code)?->id ?? 0);
+
+        if ($resellerClientId <= 0) {
+            Notification::make()->title('Enter a valid active reseller code.')->danger()->send();
+
+            return [0, null, 0];
+        }
+
+        [$qty, $tier] = $this->resolveQuantityAndTier($this->resellerQuantity, false, true);
+
+        return [$qty, $tier, $resellerClientId];
+    }
+
+    public function updatedPurchaseQuantity(): void
+    {
+        $this->purchaseCalculated = false;
+    }
+
+    public function updatedResellerQuantity(): void
+    {
+        $this->resellerCalculated = false;
+    }
+
+    public function updatedResellerCode(): void
+    {
+        $this->resellerCalculated = false;
     }
 }

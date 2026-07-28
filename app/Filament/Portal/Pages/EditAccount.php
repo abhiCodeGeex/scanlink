@@ -650,7 +650,7 @@ class EditAccount extends Page implements HasTable
 
         return Profile::query()
             ->where('client_id', $clientId)
-            ->where('update_or_not', true)
+            ->claimedSlot()
             ->where('type_id', '>', 0)
             ->orderByRaw("COALESCE(NULLIF(code_profile_name, ''), name)")
             ->get([

@@ -110,6 +110,10 @@ try {
             $profile->save();
         }
 
+        // Live enum column — force claimed so these are never re-used as open create slots.
+        DB::table('profiles')->where('id', $profile->id)->update(['update_or_not' => '1']);
+        $profile->refresh();
+
         attachRelations($profile, $slug);
 
         try {

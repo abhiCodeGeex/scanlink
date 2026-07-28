@@ -39,6 +39,17 @@ class LegacyProfileEditorLayoutTest extends TestCase
 
         $this->actingAs($user);
 
+        // Create needs an unused paid slot (balance) — do not invent free profiles.
+        \App\Models\Profile::factory()->create([
+            'client_id' => $client->id,
+            'user_id' => $member->id,
+            'type_id' => $this->seedLocationType(),
+            'update_or_not' => false,
+            'deleted' => false,
+            'free_code' => false,
+            'expired_at' => now()->addYear(),
+        ]);
+
         // Force query string type=location via HTTP
         $response = $this->get('/portal/profiles/create?type=location');
         $response->assertOk();
@@ -99,10 +110,21 @@ class LegacyProfileEditorLayoutTest extends TestCase
 
         $this->actingAs($user);
 
+        \App\Models\Profile::factory()->create([
+            'client_id' => $client->id,
+            'user_id' => $member->id,
+            'type_id' => $typeId,
+            'update_or_not' => false,
+            'deleted' => false,
+            'free_code' => false,
+            'expired_at' => now()->addYear(),
+        ]);
+
         $slot = app(\App\Services\ProfileDraftSlotService::class)
             ->claimForCreate((int) $client->id, 'location', $member->id);
 
         $this->assertNotNull($slot);
+        $this->assertFalse((bool) $slot->update_or_not);
 
         Livewire::withQueryParams(['type' => 'location'])
             ->test(\App\Filament\Portal\Resources\Profiles\Pages\CreateProfile::class, [
@@ -135,6 +157,7 @@ class LegacyProfileEditorLayoutTest extends TestCase
             'code_profile_name' => 'Hotel Lobby QR',
             'name' => 'Main Lobby',
             'address' => '1 Test Street',
+            'update_or_not' => '1',
         ]);
     }
 

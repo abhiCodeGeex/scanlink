@@ -72,8 +72,27 @@
         },
         closePreview() {
             this.previewOpen = false;
+        },
+        alertOpen: false,
+        alertMessage: '',
+        showAlert(msg) {
+            this.alertMessage = msg || '';
+            this.alertOpen = true;
+        },
+        closeAlert() {
+            this.alertOpen = false;
+        },
+        selectedCount() {
+            // Prefer Filament row checkboxes; fall back to any table checkbox that is checked.
+            const filament = document.querySelectorAll('.fi-ta-record-checkbox:checked').length;
+            if (filament > 0) {
+                return filament;
+            }
+
+            return document.querySelectorAll('.fi-ta-table tbody input[type=checkbox]:checked, table tbody input[type=checkbox]:checked').length;
         }
     }"
+    @sl-toolbar-alert.window="showAlert($event.detail.message || $event.detail[0] || '')"
 >
     <div class="sl-user-guide">
         Download the ScanLink User Guide&nbsp;
@@ -92,8 +111,8 @@
                     class="{{ $index === 0 ? 'first' : '' }} {{ $activeTab === $type->slag ? 'is-active' : '' }}"
                     wire:key="type-tab-{{ $type->slag }}"
                 >
-                    @if (! empty($editorMode))
-                        {{-- Legacy innermenu: from add/edit, type tabs always go to that type's list (dashboard/location etc.), never create/edit. --}}
+                    @if (! empty($editorMode) || ! empty($readonlyNav))
+                        {{-- Legacy innermenu / analytics pages: tab clicks are plain navigations, no Livewire $set --}}
                         <a
                             href="{{ \App\Filament\Portal\Resources\Profiles\ProfileResource::getUrl('index').'?tab='.urlencode($type->slag) }}"
                             class="{{ $activeTab === $type->slag ? 'active' : '' }}"
@@ -140,9 +159,36 @@
 
         @if (empty($hideActionBar))
         <div class="sl-action-bar">
-            <a href="{{ \App\Filament\Portal\Pages\CumulativeAnalytics::getUrl() }}" class="sl-add-code-btn sl-analytics-btn">Multiple Code Analytics</a>
-            @if ($canRenewCodes ?? \App\Filament\Portal\Concerns\InteractsWithClientMembership::portalMembership()?->isPrimary())
-                <a href="{{ \App\Filament\Portal\Pages\MultipleCodeRenewal::getUrl() }}" class="sl-add-code-btn">Renew Selected Codes</a>
+            @if (! empty($bindToolbarActions))
+                <button
+                    type="button"
+                    class="sl-add-code-btn sl-analytics-btn"
+                    x-on:click="
+                        if (selectedCount() < 1) {
+                            showAlert('No code profiles have been selected');
+                            return;
+                        }
+                        $wire.toolbarMultipleCodeAnalytics();
+                    "
+                >Multiple Code Analytics</button>
+                @if ($canRenewCodes ?? \App\Filament\Portal\Concerns\InteractsWithClientMembership::portalMembership()?->isPrimary())
+                    <button
+                        type="button"
+                        class="sl-add-code-btn {{ empty($hasProfiles) ? 'is-disabled' : '' }}"
+                        x-on:click="
+                            if (selectedCount() < 1) {
+                                showAlert('Please select the code to be renew.');
+                                return;
+                            }
+                            $wire.toolbarRenewSelectedCodes();
+                        "
+                    >Renew Selected Codes</button>
+                @endif
+            @else
+                <a href="{{ \App\Filament\Portal\Pages\CumulativeAnalytics::getUrl() }}" class="sl-add-code-btn sl-analytics-btn">Multiple Code Analytics</a>
+                @if ($canRenewCodes ?? \App\Filament\Portal\Concerns\InteractsWithClientMembership::portalMembership()?->isPrimary())
+                    <a href="{{ \App\Filament\Portal\Pages\MultipleCodeRenewal::getUrl() }}" class="sl-add-code-btn">Renew Selected Codes</a>
+                @endif
             @endif
             @if ($canAddCode ?? false)
                 <a href="{{ $addCodeUrl }}" class="sl-add-code-btn">Add a New Code</a>
@@ -151,6 +197,28 @@
         @endif
     </div>
     @endif
+
+    {{-- ScanLink-themed alert (matches dark subnav + green CTAs) --}}
+    <div
+        class="sl-alert-overlay"
+        x-show="alertOpen"
+        x-cloak
+        x-transition.opacity.duration.150ms
+        @keydown.escape.window="if (alertOpen) closeAlert()"
+        x-on:click.self="closeAlert()"
+        style="display: none;"
+    >
+        <div class="sl-alert-dialog" role="alertdialog" aria-modal="true" x-on:click.stop>
+            <div class="sl-alert-dialog__head">
+                <span class="sl-alert-dialog__brand">ScanLink</span>
+                <button type="button" class="sl-alert-dialog__close" x-on:click="closeAlert()" aria-label="Close">&times;</button>
+            </div>
+            <div class="sl-alert-dialog__body" x-text="alertMessage"></div>
+            <div class="sl-alert-dialog__foot">
+                <button type="button" class="sl-alert-dialog__ok" x-on:click="closeAlert()">OK</button>
+            </div>
+        </div>
+    </div>
 
     {{-- Type template preview modal (legacy Colorbox equivalent) --}}
     <div

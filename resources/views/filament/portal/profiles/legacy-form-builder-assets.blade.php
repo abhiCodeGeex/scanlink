@@ -168,8 +168,86 @@
             }
         });
 
+        function closeParticipantModal() {
+            var overlay = document.getElementById('sl-participant-modal');
+            if (overlay) {
+                overlay.remove();
+            }
+        }
+
+        function openParticipantList() {
+            var host = document.getElementById('sl-participant-list-host');
+            var url = host && host.getAttribute('data-participants-url');
+            if (! url) {
+                alert('Participant list is not available for this code yet. Save the profile first.');
+                return;
+            }
+
+            closeParticipantModal();
+
+            var overlay = document.createElement('div');
+            overlay.id = 'sl-participant-modal';
+            overlay.setAttribute('role', 'dialog');
+            overlay.setAttribute('aria-modal', 'true');
+            overlay.setAttribute('aria-label', 'Add/Edit Participant List');
+            overlay.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px 16px;';
+
+            var dialog = document.createElement('div');
+            dialog.className = 'sl-participant-dialog';
+            dialog.style.cssText = 'position:relative;width:min(920px,96vw);height:min(82vh,640px);background:#fff;border-radius:6px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.35);display:flex;flex-direction:column;';
+
+            var closeBtn = document.createElement('button');
+            closeBtn.type = 'button';
+            closeBtn.textContent = '×';
+            closeBtn.setAttribute('aria-label', 'Close');
+            closeBtn.style.cssText = 'position:absolute;top:12px;right:14px;z-index:3;border:0;background:#222;color:#fff;width:28px;height:28px;border-radius:14px;font-size:18px;line-height:26px;cursor:pointer;padding:0;';
+            closeBtn.addEventListener('click', closeParticipantModal);
+
+            var frame = document.createElement('iframe');
+            frame.src = url;
+            frame.title = 'Add/Edit Participant List';
+            frame.style.cssText = 'display:block;width:100%;height:100%;border:0;background:#fff;flex:1 1 auto;min-height:0;';
+
+            function fitParticipantDialog(contentHeight) {
+                var maxH = Math.min(window.innerHeight * 0.82, 720);
+                var next = Math.max(420, Math.min(maxH, (contentHeight || 0) + 2));
+                dialog.style.height = next + 'px';
+            }
+
+            dialog.appendChild(closeBtn);
+            dialog.appendChild(frame);
+            overlay.appendChild(dialog);
+            overlay.addEventListener('click', function (ev) {
+                if (ev.target === overlay) {
+                    closeParticipantModal();
+                }
+            });
+            overlay._fitParticipantDialog = fitParticipantDialog;
+            document.body.appendChild(overlay);
+        }
+
+        window.scanlinkOpenParticipantList = openParticipantList;
+
         window.addEventListener('message', function (event) {
-            if (! event.data || event.data.type !== 'scanlink-form-builder-saved') {
+            if (! event.data) {
+                return;
+            }
+            if (event.data.type === 'scanlink-open-participants') {
+                openParticipantList();
+                return;
+            }
+            if (event.data.type === 'scanlink-close-participants') {
+                closeParticipantModal();
+                return;
+            }
+            if (event.data.type === 'scanlink-participants-height') {
+                var modal = document.getElementById('sl-participant-modal');
+                if (modal && typeof modal._fitParticipantDialog === 'function') {
+                    modal._fitParticipantDialog(Number(event.data.height) || 0);
+                }
+                return;
+            }
+            if (event.data.type !== 'scanlink-form-builder-saved') {
                 return;
             }
             var preview = document.querySelector('.iphone-preview-container iframe');
@@ -184,5 +262,141 @@
                 preview.src = preview.src;
             }
         });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                closeParticipantModal();
+            }
+        });
+
+        /**
+         * Legacy plant/edit.php Save: copy Form Name / Email Tag / recipients out of the iframe
+         * before the parent save runs.
+         */
+        function collectFormBuilderIframeMeta() {
+            var iframe = document.getElementById('iframe_frm_builder');
+            if (! iframe || ! iframe.contentDocument) {
+                return { formName: '', emailTag: '', recipients: [], error: null, present: false };
+            }
+
+            var doc = iframe.contentDocument;
+            var formNameEl = doc.getElementById('form_name') || doc.querySelector('input[name="form_name"]');
+            var tagEls = doc.getElementsByName('email_tag');
+            var tagEl = null;
+            for (var t = 0; t < tagEls.length; t++) {
+                if (tagEls[t].tagName === 'INPUT' || tagEls[t].tagName === 'TEXTAREA') {
+                    tagEl = tagEls[t];
+                    break;
+                }
+            }
+
+            var recipients = [];
+            var emailInputs = doc.getElementsByName('email_recipient[]');
+            var emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+            for (var i = 0; i < emailInputs.length; i++) {
+                var val = (emailInputs[i].value || '').replace(/\s+/g, '');
+                if (val === '') {
+                    continue;
+                }
+                if (! emailRegex.test(emailInputs[i].value.trim())) {
+                    return { formName: '', emailTag: '', recipients: [], error: 'Enter a valid email.', present: true };
+                }
+                recipients.push(emailInputs[i].value.trim());
+            }
+
+            var formName = formNameEl ? (formNameEl.value || '').trim() : '';
+            var emailTag = tagEl ? (tagEl.value || '').trim() : '';
+            var enable = document.getElementById('enable_form');
+            var enabled = enable ? !!enable.checked : false;
+
+            if (enabled) {
+                if (formName === '') {
+                    return { formName: '', emailTag: '', recipients: [], error: 'Please enter form name', present: true };
+                }
+                if (recipients.length === 0) {
+                    return { formName: '', emailTag: '', recipients: [], error: 'Please enter at least one recipient email', present: true };
+                }
+            }
+
+            return {
+                formName: formName,
+                emailTag: emailTag,
+                recipients: recipients,
+                error: null,
+                present: true,
+            };
+        }
+
+        function findLivewireComponent(el) {
+            if (typeof Livewire === 'undefined') {
+                return null;
+            }
+            var root = el.closest('[wire\\:id]');
+            if (! root) {
+                root = document.querySelector('.sl-profile-editor')?.closest('[wire\\:id]')
+                    || document.querySelector('[wire\\:id]');
+            }
+            if (! root) {
+                return null;
+            }
+            return Livewire.find(root.getAttribute('wire:id'));
+        }
+
+        function isProfileSaveButton(btn) {
+            if (! btn || btn.tagName !== 'BUTTON') {
+                return false;
+            }
+            if (btn.classList.contains('sl-qr-download-btn') || btn.classList.contains('download_code_as')) {
+                return false;
+            }
+            var text = (btn.textContent || '').replace(/\s+/g, ' ').trim();
+            return /^(Save changes|SAVE|Save)$/i.test(text);
+        }
+
+        var formBuilderSaveInFlight = false;
+
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('button');
+            if (! isProfileSaveButton(btn)) {
+                return;
+            }
+            if (! document.getElementById('iframe_frm_builder')) {
+                return;
+            }
+            if (formBuilderSaveInFlight) {
+                return;
+            }
+
+            var meta = collectFormBuilderIframeMeta();
+            if (! meta.present) {
+                return;
+            }
+            if (meta.error) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                alert(meta.error);
+                return;
+            }
+
+            var component = findLivewireComponent(btn);
+            if (! component || typeof component.call !== 'function') {
+                return;
+            }
+
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            formBuilderSaveInFlight = true;
+
+            component.call('syncFormBuilderIframeMeta', meta.formName, meta.emailTag, meta.recipients)
+                .then(function () {
+                    return component.call('save');
+                })
+                .catch(function () {
+                    // Validation halt / network — leave user on page
+                })
+                .finally(function () {
+                    formBuilderSaveInFlight = false;
+                });
+        }, true);
     })();
 </script>

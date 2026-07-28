@@ -11,7 +11,7 @@ class ParticipantRecipient extends Model
 
     protected $primaryKey = 'participant_recipient_id';
 
-    public $incrementing = false;
+    public $incrementing = true;
 
     public $timestamps = false;
 

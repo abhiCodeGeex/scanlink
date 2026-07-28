@@ -41,6 +41,17 @@ class Weblink extends Model
                 $link->created_at = now();
             }
         });
+
+        $touchProfile = function (self $link): void {
+            if ($link->profile_id) {
+                Profile::query()->whereKey($link->profile_id)->update([
+                    'updated_at' => now(),
+                ]);
+            }
+        };
+
+        static::saved($touchProfile);
+        static::deleted($touchProfile);
     }
 
     public function profile(): BelongsTo

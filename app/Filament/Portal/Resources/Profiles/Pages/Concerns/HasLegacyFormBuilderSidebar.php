@@ -11,6 +11,7 @@ use App\Services\FormLibraryService;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 trait HasLegacyFormBuilderSidebar
 {
@@ -607,25 +608,7 @@ trait HasLegacyFormBuilderSidebar
 
     protected function syncFormBuilderSidebarSettings(): void
     {
-        $profile = $this->sidebarProfile();
-
-        if (! $profile) {
-            return;
-        }
-
-        // Parent owns Enable / Analytics / submission format only.
-        // Form Name, recipients, and questions are owned by the Form Builder iframe (live behaviour).
-        $state = $this->form->getState();
-
-        $enabled = (bool) ($state['form_is_enable'] ?? $profile->form_is_enable);
-
-        $profile->forceFill([
-            'form_is_enable' => $enabled,
-            // Live scan page checks form_active; keep it in sync with the Enable checkbox.
-            'form_active' => $enabled,
-            'enable_form_analytics' => (bool) ($state['enable_form_analytics'] ?? $profile->enable_form_analytics),
-            'form_submission_format' => (int) ($state['form_submission_format'] ?? $profile->form_submission_format ?? 0),
-        ])->save();
+        $this->persistFormBuilderSidebarFlags(notifyEnable: false);
     }
 
     /**
@@ -633,10 +616,43 @@ trait HasLegacyFormBuilderSidebar
      */
     public function updatedDataFormIsEnable(mixed $value): void
     {
-        $this->persistFormBuilderEnableFlags();
+        $this->persistFormBuilderSidebarFlags(notifyEnable: true);
     }
 
-    public function persistFormBuilderEnableFlags(): void
+    /**
+     * Persist submission format immediately (legacy posts it with the parent form).
+     */
+    public function updatedDataFormSubmissionFormat(mixed $value): void
+    {
+        $this->persistFormBuilderSidebarFlags(notifyEnable: false);
+    }
+
+    /**
+     * Persist analytics immediately; once on, iframe reloads in locked mode (legacy behaviour).
+     */
+    public function updatedDataEnableFormAnalytics(mixed $value): void
+    {
+        $wasLocked = (bool) ($this->sidebarProfile()?->enable_form_analytics);
+        $this->persistFormBuilderSidebarFlags(notifyEnable: false);
+
+        $enabled = filter_var(data_get($this->data, 'enable_form_analytics'), FILTER_VALIDATE_BOOLEAN);
+
+        if ($enabled && ! $wasLocked) {
+            $this->formBuilderEmbedNonce++;
+
+            Notification::make()
+                ->title('Form Analytics enabled — form editing is now locked')
+                ->warning()
+                ->send();
+        }
+    }
+
+    /**
+     * Sync Form Name / Email Tag / recipients from the Form Builder iframe (legacy Save behaviour).
+     *
+     * @param  list<string>  $recipients
+     */
+    public function syncFormBuilderIframeMeta(string $formName = '', string $emailTag = '', array $recipients = []): void
     {
         $profile = $this->sidebarProfile();
 
@@ -645,10 +661,118 @@ trait HasLegacyFormBuilderSidebar
         }
 
         $enabled = filter_var(data_get($this->data, 'form_is_enable'), FILTER_VALIDATE_BOOLEAN);
+        $formName = trim($formName);
+        $emailTag = trim($emailTag);
+        $emails = [];
+
+        foreach ($recipients as $recipient) {
+            $email = trim((string) $recipient);
+            if ($email === '') {
+                continue;
+            }
+            if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                Notification::make()
+                    ->title('Enter a valid email.')
+                    ->danger()
+                    ->send();
+
+                throw ValidationException::withMessages([
+                    'data.form_is_enable' => 'Enter a valid email.',
+                ]);
+            }
+            $emails[] = $email;
+        }
+
+        if ($enabled) {
+            if ($formName === '') {
+                Notification::make()
+                    ->title('Please enter form name')
+                    ->danger()
+                    ->send();
+
+                throw ValidationException::withMessages([
+                    'data.form_is_enable' => 'Please enter form name',
+                ]);
+            }
+
+            if ($emails === []) {
+                Notification::make()
+                    ->title('Please enter at least one recipient email')
+                    ->danger()
+                    ->send();
+
+                throw ValidationException::withMessages([
+                    'data.form_is_enable' => 'Please enter at least one recipient email',
+                ]);
+            }
+        }
+
+        $format = (int) data_get($this->data, 'form_submission_format', $profile->form_submission_format ?? 0);
+        $analytics = filter_var(
+            data_get($this->data, 'enable_form_analytics', $profile->enable_form_analytics),
+            FILTER_VALIDATE_BOOLEAN
+        );
+
+        app(FormBuilderService::class)->updateFormSettings($profile, [
+            'form_title' => $formName !== '' ? $formName : ($profile->form_title ?: ''),
+            'form_email_tag' => $emailTag,
+            'form_is_enable' => $enabled,
+            'form_active' => $enabled,
+            'form_submission_format' => $format,
+            'recipients' => $emails,
+        ]);
+
+        $profile->forceFill([
+            'enable_form_analytics' => $analytics,
+            'form_submission_format' => $format,
+        ])->save();
+
+        data_set($this->data, 'form_email_tag', $emailTag);
+
+        if (property_exists($this, 'record') && $this->record instanceof Profile) {
+            $this->record = $profile->fresh([
+                'client',
+                'equipmentType',
+                'qrImage',
+            ]) ?? $profile;
+        }
+    }
+
+    public function persistFormBuilderEnableFlags(): void
+    {
+        $this->persistFormBuilderSidebarFlags(notifyEnable: true);
+    }
+
+    /**
+     * Parent owns Enable / Analytics / submission format (read from Livewire $data, not Filament getState).
+     */
+    protected function persistFormBuilderSidebarFlags(bool $notifyEnable = false): void
+    {
+        $profile = $this->sidebarProfile();
+
+        if (! $profile?->exists) {
+            return;
+        }
+
+        $enabled = filter_var(data_get($this->data, 'form_is_enable'), FILTER_VALIDATE_BOOLEAN);
+        // Legacy: once analytics is on, it stays on (checkbox disabled in UI).
+        $analytics = $profile->enable_form_analytics
+            || filter_var(data_get($this->data, 'enable_form_analytics'), FILTER_VALIDATE_BOOLEAN);
+        $format = (int) data_get($this->data, 'form_submission_format', $profile->form_submission_format ?? 0);
+
+        if (! in_array($format, [0, 1], true)) {
+            $format = 0;
+        }
+
+        data_set($this->data, 'form_is_enable', $enabled);
+        data_set($this->data, 'enable_form_analytics', $analytics);
+        data_set($this->data, 'form_submission_format', $format);
 
         $profile->forceFill([
             'form_is_enable' => $enabled,
             'form_active' => $enabled,
+            'enable_form_analytics' => $analytics,
+            'form_submission_format' => $format,
         ])->save();
 
         if (property_exists($this, 'record') && $this->record instanceof Profile) {
@@ -659,10 +783,16 @@ trait HasLegacyFormBuilderSidebar
             ]) ?? $profile;
         }
 
-        Notification::make()
-            ->title($enabled ? 'Form enabled on profile' : 'Form disabled on profile')
-            ->success()
-            ->send();
+        if (method_exists($this, 'refreshPhonePreview')) {
+            $this->refreshPhonePreview();
+        }
+
+        if ($notifyEnable) {
+            Notification::make()
+                ->title($enabled ? 'Form enabled on profile' : 'Form disabled on profile')
+                ->success()
+                ->send();
+        }
     }
 
     protected function sidebarProfile(): ?Profile

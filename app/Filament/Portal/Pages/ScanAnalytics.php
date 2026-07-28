@@ -60,6 +60,8 @@ class ScanAnalytics extends Page
     /** @var list<array{id: int, lat: float, lng: float, scan_type: string, label: string}> */
     public array $mapPoints = [];
 
+    public ?string $loadError = null;
+
     public static function getNavigationGroup(): ?string
     {
         return 'Codes';
@@ -84,6 +86,7 @@ class ScanAnalytics extends Page
             'canAddCode' => false,
             'hideActionBar' => true,
             'hideLegend' => true,
+            'readonlyNav' => true,
         ]);
     }
 
@@ -234,8 +237,22 @@ class ScanAnalytics extends Page
             ->with('equipmentType')
             ->where('client_id', $client->id)
             ->active()
-            ->findOrFail($profileId);
+            ->find($profileId);
 
+        if (! $profile) {
+            $this->selectedProfileId = null;
+            $this->profileName = null;
+            $this->typeName = null;
+            $this->analyticsCount = 0;
+            $this->formSubmissionCount = 0;
+            $this->locationRows = collect();
+            $this->mapPoints = [];
+            $this->loadError = 'This profile was not found for your account, or you do not have access to its Scanalytics.';
+
+            return;
+        }
+
+        $this->loadError = null;
         $this->selectedProfileId = $profileId;
         $this->profileName = filled(trim((string) $profile->code_profile_name))
             ? (string) $profile->code_profile_name

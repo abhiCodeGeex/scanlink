@@ -17,8 +17,8 @@ use Filament\Resources\Pages\EditRecord;
 
 /**
  * "Add a New Code" uses /portal/profiles/create?type=…
- * Implemented as EditRecord on a claimed draft so Form Builder has profile_id
- * without bouncing the browser to /profiles/{id}/edit.
+ * Implemented as EditRecord on an unused paid slot (still open until Save) so Form
+ * Builder has profile_id without bouncing the browser to /profiles/{id}/edit.
  */
 class CreateProfile extends EditRecord
 {
@@ -93,37 +93,71 @@ class CreateProfile extends EditRecord
 
         $sessionKey = 'portal_create_draft_'.$client->id.'_'.$typeSlag;
         $existingId = (int) session($sessionKey, 0);
+        $requestedSlotId = (int) (request()->query('slot') ?? request()->input('slot') ?? 0);
         $slot = null;
 
-        if ($existingId > 0) {
+        $drafts = app(ProfileDraftSlotService::class);
+
+        if ($requestedSlotId > 0) {
+            $slot = $drafts->claimSpecific((int) $client->id, $requestedSlotId, (string) $typeSlag, $member?->id);
+        }
+
+        if (! $slot && $existingId > 0) {
             $slot = \App\Models\Profile::query()
                 ->whereKey($existingId)
                 ->where('client_id', $client->id)
                 ->where('deleted', false)
-                ->where('update_or_not', false)
                 ->first();
+
+            // Reuse session draft only while it is still an unsaved open slot for this type.
+            if ($slot && ! $slot->update_or_not) {
+                $typeId = (int) EquipmentType::query()->where('slag', $typeSlag)->value('id');
+                if ((int) $slot->type_id === $typeId) {
+                    $slot = $drafts->scrubIfPollutedCreateDraft($slot);
+                } else {
+                    $slot = $drafts->claimSpecific((int) $client->id, (int) $slot->id, (string) $typeSlag, $member?->id);
+                }
+            } elseif ($slot && $slot->update_or_not) {
+                // Already saved / activated — do not reuse for create.
+                $slot = null;
+            }
         }
 
         if (! $slot) {
-            $slot = app(ProfileDraftSlotService::class)
-                ->claimForCreate((int) $client->id, (string) $typeSlag, $member?->id);
+            $slot = $drafts->claimForCreate((int) $client->id, (string) $typeSlag, $member?->id);
         }
 
         if (! $slot) {
             Notification::make()
-                ->title('Could not create profile draft')
+                ->title($requestedSlotId > 0
+                    ? 'That code slot is not available'
+                    : 'No unused codes available')
+                ->body($requestedSlotId > 0
+                    ? null
+                    : 'Purchase codes or activate a code from Code Balance first.')
                 ->danger()
                 ->send();
 
-            $this->redirect(ProfileResource::getUrl('index', panel: 'portal'), navigate: false);
+            $this->redirect(
+                $requestedSlotId > 0
+                    ? \App\Filament\Portal\Pages\CodeBalance::getUrl(panel: 'portal')
+                    : ProfileResource::getUrl('index', panel: 'portal'),
+                navigate: false,
+            );
 
             return;
         }
 
         session([$sessionKey => (int) $slot->getKey()]);
 
+        // Create must open with an empty Form Builder canvas. Reused paid slots often
+        // still have form_builder_question rows from a prior profile on the same id.
+        app(\App\Services\FormBuilderService::class)->clearFormForCreate($slot);
+        $slot = $slot->fresh(['equipmentType', 'client']) ?? $slot;
+
         parent::mount($slot->getKey());
         $this->bootLegacyCreateEditor();
+        $this->formBuilderEmbedNonce++;
     }
 
     protected function bootLegacyCreateEditor(): void
@@ -180,6 +214,14 @@ class CreateProfile extends EditRecord
             $data['url'] = 'http://';
         }
 
+        // Create form always starts with Form Builder disabled / empty meta.
+        $data['form_id'] = 0;
+        $data['form_title'] = '';
+        $data['form_email_tag'] = '';
+        $data['form_is_enable'] = false;
+        $data['form_active'] = false;
+        $data['enable_form_analytics'] = false;
+
         return $data;
     }
 
@@ -228,6 +270,11 @@ class CreateProfile extends EditRecord
 
         if ($clientId > 0 && filled($typeSlag)) {
             session()->forget('portal_create_draft_'.$clientId.'_'.$typeSlag);
+        }
+
+        if ($this->record?->exists) {
+            \App\Support\PortalProfilePreview::clearDraft((int) $this->record->id);
+            $this->refreshPhonePreview();
         }
     }
 

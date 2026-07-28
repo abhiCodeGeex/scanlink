@@ -1,8 +1,9 @@
 {{-- Shared Form Builder chrome (location right column / survey left column). --}}
 @php
     $formBuilderHelpVideo = $formBuilderHelpVideo
-        ?? 'https://www.youtube.com/embed/cYQnzxkp528?rel=0';
+        ?? 'https://www.youtube.com/embed/CfLEhcgvgrA?rel=0';
     $formBuilderPanelClass = $formBuilderPanelClass ?? '';
+    $analyticsLocked = (bool) ($record?->enable_form_analytics ?? false);
 @endphp
 
 <div class="form-builder-box sl-form-builder-panel {{ $formBuilderPanelClass }}">
@@ -44,7 +45,22 @@
 
     <div class="existing-item">
         <span>
-            <input type="checkbox" id="enable_form_analytics" wire:model.live="data.enable_form_analytics" value="1">
+            @if ($analyticsLocked)
+                <input
+                    type="checkbox"
+                    id="enable_form_analytics"
+                    value="1"
+                    checked
+                    disabled
+                >
+            @else
+                <input
+                    type="checkbox"
+                    id="enable_form_analytics"
+                    wire:model.live="data.enable_form_analytics"
+                    value="1"
+                >
+            @endif
         </span>
         <span>
             <label for="enable_form_analytics">

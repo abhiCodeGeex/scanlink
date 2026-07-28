@@ -28,18 +28,18 @@ class ProfileResource extends Resource
 {
     protected static ?string $model = Profile::class;
 
-    // Demo: hide Master Code List under My Account (uncomment + remove shouldRegisterNavigation to restore).
-    // protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedQrCode;
-    // protected static ?string $navigationLabel = 'Master Code List';
-    protected static bool $shouldRegisterNavigation = false;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedQrCode;
+
+    protected static ?string $navigationLabel = 'Master Code List';
 
     protected static ?string $modelLabel = 'Profile';
 
     protected static ?string $slug = 'profiles';
 
     /** Live My Account submenu item. */
-    // protected static string|\UnitEnum|null $navigationGroup = 'My Account';
-    // protected static ?int $navigationSort = 2;
+    protected static string|\UnitEnum|null $navigationGroup = 'My Account';
+
+    protected static ?int $navigationSort = 2;
 
     protected static ?string $recordTitleAttribute = 'name';
 
@@ -65,7 +65,9 @@ class ProfileResource extends Resource
         return parent::getEloquentQuery()
             ->with(['contacts', 'equipmentType'])
             ->when($clientId, fn (Builder $query): Builder => $query->where('client_id', $clientId))
-            ->active();
+            ->active()
+            // Unsaved create drafts stay open (update_or_not=0) and belong on Code Balance only.
+            ->claimedSlot();
     }
 
     public static function canViewAny(): bool

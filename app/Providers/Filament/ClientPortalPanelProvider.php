@@ -109,12 +109,11 @@ class ClientPortalPanelProvider extends PanelProvider
                     ->collapsible(),
             ])
             ->navigationItems([
-                // Demo: hide Dashboard menu (uncomment to restore).
-                // NavigationItem::make('Dashboard')
-                //     ->url(fn (): string => ProfileResource::getUrl('index'))
-                //     ->icon(Heroicon::OutlinedHome)
-                //     ->isActiveWhen(fn (): bool => request()->is('portal/profiles*'))
-                //     ->sort(-30),
+                NavigationItem::make('Dashboard')
+                    ->url(fn (): string => ProfileResource::getUrl('index'))
+                    ->icon(Heroicon::OutlinedHome)
+                    ->isActiveWhen(fn (): bool => request()->is('portal/profiles*'))
+                    ->sort(-30),
                 ...$howToItems,
             ])
             ->discoverResources(in: app_path('Filament/Portal/Resources'), for: 'App\\Filament\\Portal\\Resources')
@@ -147,7 +146,7 @@ class ClientPortalPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=47">',
+                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=52">',
             )
             ->widgets([])
             ->middleware([

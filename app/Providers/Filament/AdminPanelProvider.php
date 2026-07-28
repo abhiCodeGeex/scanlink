@@ -66,6 +66,7 @@ class AdminPanelProvider extends PanelProvider
             ->collapsibleNavigationGroups()
             ->navigationGroups([
                 NavigationGroup::make('Client')->icon(Heroicon::OutlinedBuildingOffice2)->collapsible(),
+                NavigationGroup::make('Reseller')->icon(Heroicon::OutlinedTicket)->collapsible(),
                 NavigationGroup::make('Order')->icon(Heroicon::OutlinedShoppingCart)->collapsible(),
                 NavigationGroup::make('Settings')->icon(Heroicon::OutlinedCog6Tooth)->collapsible(),
                 NavigationGroup::make('Reports')->icon(Heroicon::OutlinedEnvelopeOpen)->collapsible(),

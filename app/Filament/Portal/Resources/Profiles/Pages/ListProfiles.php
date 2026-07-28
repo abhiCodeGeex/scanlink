@@ -3,8 +3,10 @@
 namespace App\Filament\Portal\Resources\Profiles\Pages;
 
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
+use App\Filament\Portal\Pages\CumulativeAnalytics;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Models\EquipmentType;
+use App\Models\Profile;
 use App\Support\LegacyEquipmentTypeLabels;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -47,7 +49,68 @@ class ListProfiles extends ListRecords
             'addCodeUrl' => $this->addNewCodeUrl(),
             'canAddCode' => $this->canAddCode() && $this->hasSelectedTemplateTab(),
             'canRenewCodes' => $this->isPrimaryUser(),
+            'hasProfiles' => $this->getAllTableRecordsCount() > 0,
+            'bindToolbarActions' => true,
         ]);
+    }
+
+    /**
+     * Legacy parity: Renew Selected Codes → order summary (invoice), then confirm.
+     */
+    public function toolbarRenewSelectedCodes(): void
+    {
+        $records = $this->getSelectedTableRecords(shouldFetchSelectedRecords: true);
+
+        if ($records->isEmpty()) {
+            $this->dispatch('sl-toolbar-alert', message: 'Please select the code to be renew.');
+
+            return;
+        }
+
+        $renewable = $records->filter(fn (Profile $profile): bool => ! (bool) $profile->free_code);
+
+        if ($renewable->isEmpty()) {
+            $this->dispatch('sl-toolbar-alert', message: 'Please select the code to be renew.');
+
+            return;
+        }
+
+        $this->redirect(
+            \App\Filament\Portal\Pages\RenewCodeSummary::stageRenew(
+                $renewable,
+                ProfileResource::getUrl('index', panel: 'portal'),
+            ),
+            navigate: false,
+        );
+    }
+
+    /**
+     * Legacy parity: Multiple Code Analytics requires a non-empty, non-expired selection.
+     */
+    public function toolbarMultipleCodeAnalytics(): void
+    {
+        $records = $this->getSelectedTableRecords(shouldFetchSelectedRecords: true);
+
+        if ($records->isEmpty()) {
+            $this->dispatch('sl-toolbar-alert', message: 'No code profiles have been selected');
+
+            return;
+        }
+
+        $hasExpired = $records->contains(
+            fn (Profile $profile): bool => $profile->expiryStatusClass() === 'sl-row-expired'
+        );
+
+        if ($hasExpired) {
+            $this->dispatch('sl-toolbar-alert', message: "Please don't select expired profile");
+
+            return;
+        }
+
+        $this->redirect(
+            CumulativeAnalytics::getUrl(['profiles' => $records->pluck('id')->implode(',')]),
+            navigate: false,
+        );
     }
 
     public function getHeading(): string|Htmlable

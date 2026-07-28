@@ -120,6 +120,14 @@ class EditProfile extends EditRecord
     {
         $this->syncProfileAssets();
         $this->syncFormBuilderSidebarSettings();
+
+        if ($this->record?->exists) {
+            \App\Support\PortalProfilePreview::clearDraft((int) $this->record->id);
+            // Ensure weblink-only saves still remount the iframe.
+            $this->record->touch();
+            $this->record->refresh();
+            $this->refreshPhonePreview();
+        }
     }
 
     /**

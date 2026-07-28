@@ -334,6 +334,23 @@ class Profile extends Model
         return $query->where('deleted', false);
     }
 
+    /**
+     * Unused paid code slots (Code Balance / draft claim).
+     * Live column is enum('0','1') — boolean false does not match.
+     */
+    public function scopeOpenSlot(Builder $query): Builder
+    {
+        return $query->where('update_or_not', '0');
+    }
+
+    /**
+     * Activated / claimed profiles.
+     */
+    public function scopeClaimedSlot(Builder $query): Builder
+    {
+        return $query->where('update_or_not', '1');
+    }
+
     public function scopeLegacyVisible(Builder $query): Builder
     {
         return $query->where('deleted', false)
@@ -341,7 +358,7 @@ class Profile extends Model
                 $q->whereBetween('type_id', [1, 8])
                     ->orWhere(function (Builder $inner): void {
                         $inner->whereHas('equipmentType', fn (Builder $t) => $t->where('slag', 'code'))
-                            ->where('update_or_not', true);
+                            ->where('update_or_not', '1');
                     });
             });
     }

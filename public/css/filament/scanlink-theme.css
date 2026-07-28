@@ -1,10 +1,10 @@
-/*
+﻿/*
  * ScanLink admin theme
  *
  * Light theme: green header (topbar) only. Sidebar uses default Filament colours.
- * Dark theme: topbar/sidebar banners untouched — primary accent + logo only.
+ * Dark theme: topbar/sidebar banners untouched â€” primary accent + logo only.
  *
- * IMPORTANT: Never force white text/icons onto dropdown panels — that makes the
+ * IMPORTANT: Never force white text/icons onto dropdown panels â€” that makes the
  * user-menu theme switcher (and any other panel actions) invisible.
  */
 
@@ -49,7 +49,7 @@
 }
 
 /* ---------------------------------------------------------------------------
- * LIGHT THEME ONLY — green header / topbar chrome
+ * LIGHT THEME ONLY â€” green header / topbar chrome
  * ------------------------------------------------------------------------- */
 html:not(.dark) .fi-topbar {
     background-color: var(--scanlink-green) !important;
@@ -62,7 +62,7 @@ html:not(.dark) .fi-topbar > div {
 }
 
 /*
- * White contrast ONLY on the green bar itself — not menus/panels.
+ * White contrast ONLY on the green bar itself â€” not menus/panels.
  * Do NOT target .fi-theme-switcher-btn here (it lives in the user dropdown).
  */
 html:not(.dark) .fi-topbar .fi-topbar-item-label,
@@ -86,7 +86,7 @@ html:not(.dark) .fi-topbar .fi-icon-btn.fi-topbar-database-notifications-btn:hov
 }
 
 /* ---------------------------------------------------------------------------
- * Dropdown panels — always keep labels/icons visible (never inherit topbar white)
+ * Dropdown panels â€” always keep labels/icons visible (never inherit topbar white)
  * Covers user menu, theme switcher, and any future topbar dropdowns.
  * ------------------------------------------------------------------------- */
 html:not(.dark) .fi-dropdown-panel .fi-dropdown-list-item,
@@ -102,7 +102,7 @@ html:not(.dark) .fi-dropdown-panel svg {
     color: rgb(107 114 128) !important; /* gray-500 */
 }
 
-/* Theme switcher (Light / Dark / System) — readable on white panel */
+/* Theme switcher (Light / Dark / System) â€” readable on white panel */
 html:not(.dark) .fi-theme-switcher .fi-theme-switcher-btn,
 html:not(.dark) .fi-theme-switcher .fi-theme-switcher-btn svg {
     color: rgb(156 163 175) !important; /* gray-400 */
@@ -123,7 +123,7 @@ html:not(.dark) .fi-theme-switcher .fi-theme-switcher-btn:hover svg {
 }
 
 /* ---------------------------------------------------------------------------
- * User menu dropdown — brand green accent; readable in light + dark
+ * User menu dropdown â€” brand green accent; readable in light + dark
  * ------------------------------------------------------------------------- */
 .fi-user-menu .fi-dropdown-panel {
     overflow: hidden;
@@ -160,7 +160,7 @@ html:not(.dark) .fi-theme-switcher .fi-theme-switcher-btn:hover svg {
     );
 }
 
-/* Profile — primary action */
+/* Profile â€” primary action */
 .fi-user-menu .fi-dropdown-list:not(:has(.fi-theme-switcher)):first-child .fi-dropdown-list-item {
     margin: 0.25rem 0.375rem 0;
     border-radius: 0.5rem;
@@ -222,7 +222,7 @@ html:not(.dark) .fi-theme-switcher .fi-theme-switcher-btn:hover svg {
     box-shadow: inset 0 0 0 1px var(--scanlink-green-ring);
 }
 
-/* Sign out — neutral in both themes */
+/* Sign out â€” neutral in both themes */
 .fi-user-menu .fi-dropdown-list:not(:has(.fi-theme-switcher)):last-child .fi-dropdown-list-item {
     margin: 0 0.375rem 0.25rem;
     border-radius: 0.5rem;
@@ -249,7 +249,7 @@ html:not(.dark) .fi-theme-switcher .fi-theme-switcher-btn:hover svg {
     color: var(--scanlink-menu-text) !important;
 }
 
-/* Avatar trigger — light topbar ring */
+/* Avatar trigger â€” light topbar ring */
 html:not(.dark) .fi-topbar .fi-user-menu-trigger {
     border-radius: 9999px;
     box-shadow: 0 0 0 2px rgb(255 255 255 / 0.92);
@@ -268,7 +268,7 @@ html:not(.dark) .fi-topbar .fi-user-menu-trigger[aria-expanded='true'] {
         0 0 0 4px rgb(255 255 255 / 0.5);
 }
 
-/* Avatar trigger — dark topbar ring */
+/* Avatar trigger â€” dark topbar ring */
 .dark .fi-topbar .fi-user-menu-trigger {
     border-radius: 9999px;
     box-shadow: 0 0 0 2px rgb(74 222 128 / 0.45);
@@ -283,7 +283,7 @@ html:not(.dark) .fi-topbar .fi-user-menu-trigger[aria-expanded='true'] {
 }
 
 /* ---------------------------------------------------------------------------
- * BOTH THEMES — ScanLink logo
+ * BOTH THEMES â€” ScanLink logo
  * White pill keeps the full-colour logo readable on green (light) and dark banners.
  * ------------------------------------------------------------------------- */
 .fi-logo {
@@ -309,7 +309,7 @@ html:not(.dark) .fi-simple-layout .fi-btn-color-primary {
 }
 
 /* ---------------------------------------------------------------------------
- * Buttons — Filament v5 uses .fi-color-* + CSS vars (--bg / --text).
+ * Buttons â€” Filament v5 uses .fi-color-* + CSS vars (--bg / --text).
  * Shade auto-pick can make primary a light green with dark text; force brand.
  * ------------------------------------------------------------------------- */
 .fi-btn.fi-color-primary:not(.fi-outlined),
@@ -374,7 +374,7 @@ button.fi-btn[type="submit"]:not(.fi-outlined):not(.fi-color-gray):hover {
 }
 
 /* ---------------------------------------------------------------------------
- * BOTH THEMES — Dashboard tile grid
+ * BOTH THEMES â€” Dashboard tile grid
  * ------------------------------------------------------------------------- */
 .scanlink-dashboard-grid,
 .scanlink-home-grid {
@@ -490,7 +490,7 @@ button.fi-btn[type="submit"]:not(.fi-outlined):not(.fi-color-gray):hover {
     min-width: 14rem;
 }
 
-/* Sidebar sign out — pinned to bottom, native nav item look */
+/* Sidebar sign out â€” pinned to bottom, native nav item look */
 .scanlink-sidebar-sign-out {
     flex-shrink: 0;
     margin-top: auto;
@@ -529,7 +529,7 @@ button.fi-btn[type="submit"]:not(.fi-outlined):not(.fi-color-gray):hover {
     padding: 0.75rem 0.375rem 0.875rem;
 }
 
-/* Collapse / expand control — hamburger in topbar (AdminLTE-style), not sidebar header */
+/* Collapse / expand control â€” hamburger in topbar (AdminLTE-style), not sidebar header */
 .fi-sidebar-header .fi-sidebar-collapse-btn,
 .fi-sidebar-header .fi-icon-btn.fi-sidebar-open-collapse-sidebar-btn,
 .fi-sidebar-header .fi-icon-btn.fi-sidebar-close-collapse-sidebar-btn {
@@ -550,7 +550,7 @@ button.fi-btn[type="submit"]:not(.fi-outlined):not(.fi-color-gray):hover {
     box-sizing: border-box;
 }
 
-/* Do NOT force width:100% on topbar children — that stacks logo / search / avatar. */
+/* Do NOT force width:100% on topbar children â€” that stacks logo / search / avatar. */
 .fi-topbar > .fi-topbar-start,
 .fi-topbar > .fi-topbar-end {
     display: flex !important;
@@ -611,7 +611,7 @@ button.fi-btn[type="submit"]:not(.fi-outlined):not(.fi-color-gray):hover {
     flex: 0 0 auto;
 }
 
-/* Collapse / expand control — clear icon on green topbar */
+/* Collapse / expand control â€” clear icon on green topbar */
 html:not(.dark) .fi-topbar-collapse-sidebar-btn-ctn .fi-icon-btn,
 html:not(.dark) .fi-topbar-collapse-sidebar-btn-ctn .fi-icon-btn svg {
     color: #ffffff !important;
@@ -621,7 +621,7 @@ html:not(.dark) .fi-topbar-collapse-sidebar-btn-ctn .fi-icon-btn:hover {
     background-color: rgb(255 255 255 / 0.15) !important;
 }
 
-/* Collapsed sidebar — compact icon rail (less padding) */
+/* Collapsed sidebar â€” compact icon rail (less padding) */
 .fi-body.fi-body-has-sidebar-collapsible-on-desktop .fi-sidebar:not(.fi-sidebar-open),
 .fi-body.fi-body-has-sidebar-fully-collapsible-on-desktop .fi-sidebar:not(.fi-sidebar-open) {
     width: var(--collapsed-sidebar-width) !important;
@@ -671,7 +671,7 @@ html:not(.dark) .fi-topbar-collapse-sidebar-btn-ctn .fi-icon-btn:hover {
 }
 
 /* ---------------------------------------------------------------------------
- * Modals — closed shells must never steal the first click (SPA / Alpine race)
+ * Modals â€” closed shells must never steal the first click (SPA / Alpine race)
  * ------------------------------------------------------------------------- */
 .fi-modal:not(.fi-modal-open) {
     pointer-events: none !important;
@@ -686,7 +686,7 @@ html:not(.dark) .fi-topbar-collapse-sidebar-btn-ctn .fi-icon-btn:hover {
 }
 
 /* ---------------------------------------------------------------------------
- * Portal Master Code List — legacy black type tabs + expiry legend
+ * Portal Master Code List â€” legacy black type tabs + expiry legend
  * ------------------------------------------------------------------------- */
 /* Hide Filament's default tab strip when legacy toolbar is present */
 .fi-main:has(.sl-mastercode-toolbar) .fi-tabs,
@@ -877,7 +877,7 @@ tr.sl-row-active {
 }
 
 /* ---------------------------------------------------------------------------
- * Portal profile create/edit — legacy two-column template editor
+ * Portal profile create/edit â€” legacy two-column template editor
  * ------------------------------------------------------------------------- */
 .fi-page:has(.sl-profile-editor) {
     --sl-editor-max: 1160px;
@@ -1254,7 +1254,7 @@ tr.sl-row-active {
     overflow-x: hidden !important;
 }
 
-/* Filament sections → legacy SectionTitleBox look */
+/* Filament sections â†’ legacy SectionTitleBox look */
 .fi-page:has(.sl-profile-editor) .fi-section,
 .fi-page:has(.sl-profile-editor) .fi-sc-section {
     margin: 0 0 10px !important;
@@ -1344,7 +1344,7 @@ tr.sl-row-active {
     overflow: visible !important;
 }
 
-/* Share icons — legacy glossy sprites */
+/* Share icons â€” legacy glossy sprites */
 .fi-page:has(.sl-profile-editor) .sl-add-form-left .shareNav {
     width: 100%;
     display: block;
@@ -1382,7 +1382,7 @@ tr.sl-row-active {
 }
 
 /* ---------------------------------------------------------------------------
- * Left form column — pin-perfect legacy .form-view / .text-fi (NOT form builder,
+ * Left form column â€” pin-perfect legacy .form-view / .text-fi (NOT form builder,
  * NOT select/dropboxes)
  * ------------------------------------------------------------------------- */
 .fi-page:has(.sl-profile-editor) .sl-add-form-left {
@@ -1416,7 +1416,7 @@ tr.sl-row-active {
     font-family: Arial, Helvetica, sans-serif !important;
 }
 
-/* Strip Filament input wrapper chrome — apply legacy inset field look */
+/* Strip Filament input wrapper chrome â€” apply legacy inset field look */
 .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-input-wrp:not(:has(select)):not(:has(.fi-select-input)) {
     background: #fff !important;
     border: 1px solid #e5e5e5 !important;
@@ -1659,7 +1659,7 @@ tr.sl-row-active {
     }
 }
 
-/* Hidden until opened — never block sidebar/table clicks while closed */
+/* Hidden until opened â€” never block sidebar/table clicks while closed */
 .sl-preview-overlay {
     position: fixed;
     inset: 0;
@@ -1720,6 +1720,84 @@ tr.sl-row-active {
     margin: 0 auto;
 }
 
+/* â”€â”€ ScanLink themed alert dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.sl-alert-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+.sl-alert-dialog {
+    width: 100%;
+    max-width: 420px;
+    background: #fff;
+    border: 1px solid #2a2a2a;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+}
+.sl-alert-dialog__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #333;
+    color: #fff;
+    padding: 10px 14px;
+    border-bottom: 3px solid #008901;
+}
+.sl-alert-dialog__brand {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.sl-alert-dialog__close {
+    border: 0;
+    background: transparent;
+    color: #ccc;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 2px;
+}
+.sl-alert-dialog__close:hover {
+    color: #fff;
+}
+.sl-alert-dialog__body {
+    padding: 28px 24px 18px;
+    font-size: 15px;
+    line-height: 1.5;
+    color: #333;
+    text-align: center;
+    font-weight: 500;
+}
+.sl-alert-dialog__foot {
+    display: flex;
+    justify-content: center;
+    padding: 0 24px 22px;
+}
+.sl-alert-dialog__ok {
+    display: inline-block;
+    min-width: 110px;
+    background: linear-gradient(to bottom, #008901 0%, #007a01 100%);
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    border: 1px solid #006201;
+    border-radius: 6px;
+    padding: 10px 28px;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+.sl-alert-dialog__ok:hover {
+    background: linear-gradient(to bottom, #00a001 0%, #008901 100%);
+}
+
 @media (max-width: 1100px) {
     .sl-mastercode-controls {
         flex-direction: column;
@@ -1758,7 +1836,7 @@ tr.sl-row-active {
     margin-left: auto;
 }
 
-/* Admin Global Settings — legacy single-table form */
+/* Admin Global Settings â€” legacy single-table form */
 .fi-page:has(.sl-gs) .fi-header-heading:empty {
     display: none !important;
 }
@@ -1860,7 +1938,7 @@ tr.sl-row-active {
     color: #fff !important;
 }
 
-/* Header action buttons — match legacy green CTAs */
+/* Header action buttons â€” match legacy green CTAs */
 .fi-resource-profiles .fi-header-actions .fi-btn,
 .fi-page:has(.sl-mastercode-toolbar) .fi-header-actions .fi-ac-btn-action {
     background: linear-gradient(to bottom, #008901 0%, #007a01 100%) !important;
@@ -1872,7 +1950,7 @@ tr.sl-row-active {
     font-size: 13px !important;
 }
 
-/* Master Code List row tools — compact, vertically centered */
+/* Master Code List row tools â€” compact, vertically centered */
 .fi-page:has(.sl-mastercode-toolbar) .fi-ta-actions,
 .fi-resource-profiles .fi-ta-actions {
     display: inline-flex !important;
@@ -1965,7 +2043,7 @@ tr.sl-row-active {
     box-sizing: border-box !important;
 }
 
-/* Kill Filament's top-level 2-col section masonry — stack SectionTitleBox cards */
+/* Kill Filament's top-level 2-col section masonry â€” stack SectionTitleBox cards */
 .sl-add-form-left > form > .fi-sc.fi-grid,
 .sl-add-form-left > .fi-sc.fi-grid,
 .sl-add-form-left .fi-sc:not(.fi-section-content):not(.fi-sc-section) > .fi-sc.fi-grid,
@@ -2029,7 +2107,7 @@ tr.sl-row-active {
     font-family: Arial, Helvetica, sans-serif !important;
 }
 
-/* Inputs — superseded by .sl-add-form-left legacy .text-fi block above.
+/* Inputs â€” superseded by .sl-add-form-left legacy .text-fi block above.
  * Keep a light fallback for any field outside left column (rare). */
 .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-input:not(select):not(.fi-select-input),
 .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-textarea {
@@ -2128,7 +2206,7 @@ tr.sl-row-active {
     padding: 0 0.15rem;
 }
 
-/* Filament puts the ring on .fi-input-wrp — do NOT also border the inner input
+/* Filament puts the ring on .fi-input-wrp â€” do NOT also border the inner input
    (that creates the broken-corner / double-border look). */
 .sl-edit-account .fi-input-wrp {
     background-color: #ffffff !important;
@@ -2163,7 +2241,7 @@ tr.sl-row-active {
     outline: none !important;
 }
 
-/* Manage User — tighter header, no empty toolbar gap */
+/* Manage User â€” tighter header, no empty toolbar gap */
 .sl-edit-account__users .fi-ta-header {
     gap: 0.5rem !important;
     padding-bottom: 0.5rem !important;
@@ -2205,13 +2283,13 @@ tr.sl-row-active {
     }
 }
 
-/* Manage User — legacy edit.png tool icon */
+/* Manage User â€” legacy edit.png tool icon */
 .sl-manage-user-edit-icon {
     display: inline-block;
     vertical-align: middle;
 }
 
-/* Edit User modal — match legacy colorbox layout */
+/* Edit User modal â€” match legacy colorbox layout */
 .sl-edit-user-modal .fi-modal-header-heading {
     font-size: 0.95rem !important;
     font-weight: 700 !important;
@@ -2371,7 +2449,7 @@ tr.sl-row-active {
     padding: 1rem !important;
 }
 
-/* Portal Contact us — page content only (do not reshape .fi-main / SPA chrome) */
+/* Portal Contact us â€” page content only (do not reshape .fi-main / SPA chrome) */
 .fi-page:has(.sl-portal-contact) > .fi-header,
 .fi-page:has(.sl-portal-contact) .fi-header:not(:has(.fi-btn)) {
     display: none !important;
@@ -2624,7 +2702,7 @@ tr.sl-row-active {
     }
 }
 
-/* ===== URL Link (code) editor — match legacy code/index.php ===== */
+/* ===== URL Link (code) editor â€” match legacy code/index.php ===== */
 .sl-profile-editor--code .sl-add-form-left .sl-code-url-form .fi-section-header,
 .sl-profile-editor--code .sl-add-form-left .sl-code-url-form .fi-sc-section-header {
     display: none !important;
@@ -2715,7 +2793,7 @@ tr.sl-row-active {
     max-width: 220px !important;
 }
 
-/* ===== Survey editor — match legacy survey/index.php ===== */
+/* ===== Survey editor â€” match legacy survey/index.php ===== */
 .sl-profile-editor--survey {
     grid-template-columns: 460px 450px !important;
 }
@@ -2768,10 +2846,79 @@ tr.sl-row-active {
     cursor: pointer;
 }
 
-/* Hide Filament "system" theme option (monitor icon) — light/dark only. */
+/* Hide Filament "system" theme option (monitor icon) â€” light/dark only. */
 .fi-theme-switcher .fi-theme-switcher-btn[aria-label="System"],
 .fi-theme-switcher .fi-theme-switcher-btn:nth-child(3) {
     display: none !important;
 }
 
+/* ── Code Balance (legacy /profile/codeBalance listing-table) ───── */
+.fi-page:has(.sl-cb) .fi-page-main,
+.fi-page:has(.sl-cb) .fi-main,
+.fi-page:has(.sl-cb) .fi-page-content { max-width: none !important; }
+.sl-cb { font-family: Arial, Helvetica, sans-serif; color: #222; width: 100%; }
+.sl-cb__header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 14px; }
+.sl-cb__title { margin: 0 0 10px; font-size: 28px; font-weight: 700; color: #111; line-height: 1.2; }
+.sl-cb__balance { color: #008601; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sl-cb__balance-num { display: inline-block; border: 1px solid #bbb; min-width: 36px; padding: 2px 10px; text-align: center; font-size: 18px; font-weight: 700; color: #111; background: #fff; line-height: 1.4; }
+.sl-cb__header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.sl-cb__legend { display: flex; flex-wrap: wrap; gap: 14px; justify-content: flex-end; }
+.sl-cb__legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #333; }
+.sl-cb__swatch { display: inline-block; width: 18px; height: 14px; border: 1px solid #999; }
+.sl-cb__swatch--expired { background: #F5BFB8; }
+.sl-cb__swatch--expiring { background: #FBC085; }
+.sl-cb__swatch--active { background: #c9ffc9; }
+.sl-cb__actions { display: flex; gap: 10px; }
+.sl-cb__btn { display: inline-block; background: linear-gradient(to bottom, #008901 0%, #007a01 100%); color: #fff !important; font-weight: 700; font-size: 13px; text-transform: uppercase; text-decoration: none !important; border: 1px solid #006201; border-radius: 3px; padding: 9px 18px; line-height: 1.2; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,.15); }
+.sl-cb__btn:hover { background: linear-gradient(to bottom, #00a001 0%, #008901 100%); }
+.sl-cb__btn--search { padding: 6px 16px; font-size: 12px; height: 32px; }
+.sl-cb__search { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 8px 0 14px; font-size: 14px; }
+.sl-cb__search input { border: 1px solid #aaa; border-radius: 2px; padding: 5px 8px; min-width: 140px; height: 30px; font-size: 14px; background: #fff; }
+.sl-cb__link-clear { background: none; border: 0; color: #0000ff; text-decoration: underline; cursor: pointer; font-size: 13px; padding: 0; }
+.sl-cb__table-wrap { overflow-x: auto; width: 100%; background: #fff; }
+.sl-cb table.listing-table.sl-cb__table { width: 100%; border-collapse: collapse; border-left: 1px solid #e5ebe5; border-top: 1px solid #e5ebe5; font-size: 13px; background: #fff; }
+.sl-cb table.listing-table.sl-cb__table th,
+.sl-cb table.listing-table.sl-cb__table td { border-right: 1px solid #e5ebe5; border-bottom: 1px solid #e5ebe5; padding: 10px 5px; vertical-align: middle; }
+.sl-cb table.listing-table.sl-cb__table th { background: linear-gradient(to bottom, #ffffff 0%, #f4f4f4 100%); font-size: 13px; font-weight: 700; color: #222; padding: 12px 5px; text-align: center; }
+.sl-cb table.listing-table.sl-cb__table th.sl-cb__col-create { text-align: left; padding-left: 10px; }
+.sl-cb__col-code { width: 80px; text-align: center !important; white-space: nowrap; }
+.sl-cb__col-expiry { width: 130px; text-align: center !important; white-space: nowrap; }
+.sl-cb__col-renew { width: 110px; text-align: center !important; white-space: nowrap; }
+.sl-cb__col-create { min-width: 420px; }
+.sl-cb__check input[type='checkbox'] { width: 15px; height: 15px; cursor: pointer; margin: 0 auto; display: inline-block; }
+.sl-cb table.listing-table tr.sl-row-expired > td { background-color: #F5BFB8 !important; }
+.sl-cb table.listing-table tr.sl-row-expiring > td { background-color: #FBC085 !important; }
+.sl-cb table.listing-table tr.sl-row-active > td { background-color: #c9ffc9 !important; }
+.sl-cb__templates {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 22px;
+    width: 100%;
+    row-gap: 10px;
+}
+.sl-cb__templates a {
+    display: inline-block;
+    color: #008601 !important;
+    font-weight: 700;
+    font-size: 13px;
+    line-height: 1.4;
+    text-decoration: none !important;
+    white-space: nowrap;
+    position: relative;
+    z-index: 1;
+    padding: 0 2px;
+}
+.sl-cb__templates a:hover { text-decoration: underline !important; }
+.sl-cb__empty { text-align: center !important; padding: 24px 12px !important; color: #666; background: #fff !important; }
+.sl-cb__pager { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 14px; font-size: 13px; }
+.sl-cb__pager select { border: 1px solid #aaa; padding: 2px 6px; min-width: 48px; background: #fff; }
+.sl-cb__pager-arrow { border: 0; background: transparent; padding: 0 4px; cursor: pointer; font-size: 14px; color: #333; }
+.sl-cb__pager-arrow:disabled { opacity: 0.35; cursor: default; }
+.sl-cb__footnote { margin-top: 18px; font-size: 13px; color: #333; line-height: 1.45; }
+.sl-cb__footnote a { color: #008601; font-weight: 700; margin-left: 6px; }
+@media (max-width: 900px) {
+  .sl-cb__header-right { align-items: flex-start; width: 100%; }
+  .sl-cb__legend, .sl-cb__actions { justify-content: flex-start; }
+}
 

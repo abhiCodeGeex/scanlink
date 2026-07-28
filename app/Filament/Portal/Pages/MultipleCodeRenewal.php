@@ -5,7 +5,6 @@ namespace App\Filament\Portal\Pages;
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
 use App\Filament\Portal\Concerns\RestrictsToPrimaryClientUser;
 use App\Models\Profile;
-use App\Services\CodeProfileRenewalService;
 use BackedEnum;
 use Filament\Actions\BulkAction;
 use Filament\Notifications\Notification;
@@ -17,7 +16,6 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\HtmlString;
 
 class MultipleCodeRenewal extends Page implements HasTable
 {
@@ -25,23 +23,21 @@ class MultipleCodeRenewal extends Page implements HasTable
     use InteractsWithTable;
     use RestrictsToPrimaryClientUser;
 
-    // Demo: hide Multiple Code Renewal under My Account (uncomment + remove shouldRegisterNavigation to restore).
-    // protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowPath;
-    // protected static ?string $navigationLabel = 'Multiple Code Renewal';
-    protected static bool $shouldRegisterNavigation = false;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowPath;
+
+    protected static ?string $navigationLabel = 'Multiple Code Renewal';
 
     protected static ?string $title = 'Multiple Code Renewal';
 
     protected static ?string $slug = 'renew-codes';
 
-    // protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 5;
 
     protected string $view = 'filament.portal.pages.multiple-code-renewal';
 
     public static function getNavigationGroup(): ?string
     {
-        // return 'My Account';
-        return null;
+        return 'My Account';
     }
 
     public function table(Table $table): Table
@@ -70,30 +66,23 @@ class MultipleCodeRenewal extends Page implements HasTable
                     ->label('Renew selected codes')
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
-                    ->requiresConfirmation()
                     ->deselectRecordsAfterCompletion()
-                    ->action(function (Collection $records): void {
+                    ->action(function (Collection $records) {
                         if ($records->isEmpty()) {
                             Notification::make()
                                 ->title('Please select code to be renew.')
                                 ->danger()
                                 ->send();
 
-                            return;
+                            return null;
                         }
 
-                        $order = app(CodeProfileRenewalService::class)->renew(
-                            $records,
-                            $this->requireClient()->id,
+                        return redirect()->to(
+                            RenewCodeSummary::stageRenew(
+                                $records,
+                                MultipleCodeRenewal::getUrl(panel: 'portal'),
+                            )
                         );
-
-                        Notification::make()
-                            ->title('Codes renewed')
-                            ->body(new HtmlString(
-                                $records->count().' code(s) renewed — order #'.$order->id
-                            ))
-                            ->success()
-                            ->send();
                     }),
             ]);
     }

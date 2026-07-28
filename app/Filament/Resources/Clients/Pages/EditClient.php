@@ -37,7 +37,10 @@ class EditClient extends EditRecord
                     $code = trim((string) ($data['reseller_code'] ?? ''));
 
                     if (blank($code)) {
-                        $this->record->update(['reseller_code' => '']);
+                        $this->record->update([
+                            'reseller_code' => '',
+                            'reseller_code_active' => false,
+                        ]);
 
                         Notification::make()
                             ->title('Reseller code cleared.')
@@ -63,7 +66,10 @@ class EditClient extends EditRecord
                         ]);
                     }
 
-                    $this->record->update(['reseller_code' => $code]);
+                    $this->record->update([
+                        'reseller_code' => $code,
+                        'reseller_code_active' => true,
+                    ]);
 
                     Notification::make()
                         ->title('Reseller code saved.')

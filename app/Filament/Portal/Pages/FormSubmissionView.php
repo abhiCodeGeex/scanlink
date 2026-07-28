@@ -68,6 +68,7 @@ class FormSubmissionView extends Page
             'canAddCode' => false,
             'hideActionBar' => true,
             'hideLegend' => true,
+            'readonlyNav' => true,
         ]);
     }
 

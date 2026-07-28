@@ -27,26 +27,41 @@ class LabelOrderService
 
         $profile->loadMissing('client');
         $member = $orderedBy ?? $profile->client?->primaryUser;
+
+        if (! $member?->id) {
+            throw ValidationException::withMessages([
+                'quantity' => 'Unable to place order — no account member is linked to this client.',
+            ]);
+        }
+
         $priceSmall = (float) config('scanlink.label_price_small');
         $priceLarge = (float) config('scanlink.label_price_large');
 
+        $address = trim((string) ($member->billing_address ?: $profile->client?->address ?: ''));
+        $town = trim((string) ($member->town ?: ''));
+
+        // Live `orders` table: many columns are NOT NULL with no defaults (incl. transaction_id).
+        // Legacy placeTempOrder + setTransactionId uses placeholder "After new order set".
         $attributes = [
             'client_id' => $profile->client_id,
-            'user_id' => $member?->id,
+            'user_id' => (int) $member->id,
             'profile_id' => $profile->id,
             'qty_small' => $qtySmall,
             'qty_large' => $qtyLarge,
             'price_small' => $qtySmall > 0 ? $priceSmall : 0,
             'price_large' => $qtyLarge > 0 ? $priceLarge : 0,
             'status' => PhysicalOrderStatus::New,
-            'first_name' => $member?->first_name,
-            'last_name' => $member?->last_name,
-            'address1' => $member?->billing_address ?: $profile->client?->address,
-            'city' => $member?->town,
-            'zip' => $member?->postal_code,
+            'transaction_id' => 'After new order set',
+            'first_name' => (string) ($member->first_name ?: ''),
+            'last_name' => (string) ($member->last_name ?: ''),
+            'address1' => $address,
+            'address2' => $address,
+            'city' => $town,
+            'state' => $town,
+            'zip' => (string) ($member->postal_code ?: ''),
             'country' => 'Australia',
-            'email' => $member?->email ?: $profile->client?->email,
-            'contact' => $member?->phone ?: $profile->client?->telephone,
+            'email' => (string) ($member->email ?: $profile->client?->email ?: ''),
+            'contact' => (string) ($member->phone ?: $profile->client?->telephone ?: ''),
             'ordered_on' => now(),
         ];
 

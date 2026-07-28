@@ -56,6 +56,7 @@ class CreateClient extends CreateRecord
         // Live schema: NOT NULL columns with no DB defaults.
         $data['reseller_email'] = filled($data['reseller_email'] ?? null) ? $data['reseller_email'] : '';
         $data['reseller_code'] = filled($data['reseller_code'] ?? null) ? $data['reseller_code'] : '';
+        $data['reseller_code_active'] = filled($data['reseller_code']);
         $data['shortcut_title'] = $data['shortcut_title'] ?? '';
         $data['shortcut_image1'] = $data['shortcut_image1'] ?? '';
         $data['shortcut_image2'] = $data['shortcut_image2'] ?? '';

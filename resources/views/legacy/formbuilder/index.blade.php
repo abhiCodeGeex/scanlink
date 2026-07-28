@@ -545,15 +545,14 @@
 		});
 
 		$('#add_edit_participant_list').on('click', function() {
-			parent.$(".participant_list").colorbox({
-				inline: true,
-				width: "55%",
-				height: "95%",
-				escKey: false,
-				overlayClose: false,
-				onClosed: function() {},
-			});
-			parent.$("#participant_list_tag").click();
+			// Legacy: opens parent Colorbox (#participant_list_tag). Portal: ask parent to open Participants.
+			if (window.parent && window.parent !== window && typeof window.parent.scanlinkOpenParticipantList === 'function') {
+				window.parent.scanlinkOpenParticipantList();
+				return;
+			}
+			try {
+				window.parent.postMessage({ type: 'scanlink-open-participants' }, window.location.origin);
+			} catch (e) {}
 		});
 
 		//hide help tooltip when mouseleave
@@ -641,7 +640,7 @@
 
 				<div class="add-another"><a href="javascript:;" onclick="add_another_recipient('<?php echo count($recipient_email_arr); ?>')" id="add_another">Add Another</a></div>
 
-				<h2 id="email_tag">Email Tag (optional) </h2>
+				<h2 id="email_tag_heading">Email Tag (optional) </h2>
 				<div class="rounded">
 					<input id="email_tag" name="email_tag" type="text" value="<?php echo !empty($email_subject) ? $email_subject : '' ?>">
 				</div>

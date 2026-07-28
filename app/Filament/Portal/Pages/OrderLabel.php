@@ -74,6 +74,7 @@ class OrderLabel extends Page
             'canAddCode' => false,
             'hideActionBar' => true,
             'hideLegend' => true,
+            'readonlyNav' => true,
         ]);
     }
 
@@ -118,7 +119,16 @@ class OrderLabel extends Page
         $profile = Profile::query()
             ->where('client_id', $client->id)
             ->active()
-            ->findOrFail($this->selectedProfileId);
+            ->find($this->selectedProfileId);
+
+        if (! $profile) {
+            Notification::make()
+                ->title('Profile not found for your account')
+                ->danger()
+                ->send();
+
+            return;
+        }
 
         try {
             $order = $labelOrders->createLabelOrder(
@@ -134,11 +144,21 @@ class OrderLabel extends Page
                 ->send();
 
             return;
+        } catch (\Throwable $e) {
+            report($e);
+
+            Notification::make()
+                ->title('Could not create label order')
+                ->body(config('app.debug') ? $e->getMessage() : 'Please try again or contact support.')
+                ->danger()
+                ->send();
+
+            return;
         }
 
         Notification::make()
             ->title('Label order created')
-            ->body("Order #{$order->id} is pending payment. Postage and handling may apply.")
+            ->body("Order #{$order->id} has been placed. Postage and handling may apply.")
             ->success()
             ->send();
 
@@ -196,7 +216,16 @@ class OrderLabel extends Page
             ->with(['equipmentType', 'qrImage'])
             ->where('client_id', $client->id)
             ->active()
-            ->findOrFail($profileId);
+            ->find($profileId);
+
+        if (! $profile) {
+            Notification::make()
+                ->title('Profile not found for your account')
+                ->danger()
+                ->send();
+
+            return;
+        }
 
         $this->selectedProfileId = $profileId;
         $this->profileName = filled(trim((string) $profile->code_profile_name))
@@ -208,20 +237,25 @@ class OrderLabel extends Page
             ? LegacyEquipmentTypeLabels::label($slug, (string) ($profile->equipmentType?->name ?? 'Code'))
             : (string) ($profile->equipmentType?->name ?? 'Code');
 
-        if (! $profile->qrImage) {
-            $qr->generateFor($profile);
-            $profile->load('qrImage');
-        } else {
-            $relative = $profile->qrImage->diskPath();
-            $fullPath = storage_path('app/public/'.$relative);
-
-            if (! is_file($fullPath)) {
+        try {
+            if (! $profile->qrImage) {
                 $qr->generateFor($profile);
                 $profile->load('qrImage');
-            }
-        }
+            } else {
+                $relative = $profile->qrImage->diskPath();
+                $fullPath = storage_path('app/public/'.$relative);
 
-        $this->qrUrl = $profile->qrImage?->publicUrl();
+                if (! is_file($fullPath)) {
+                    $qr->generateFor($profile);
+                    $profile->load('qrImage');
+                }
+            }
+
+            $this->qrUrl = $profile->qrImage?->publicUrl();
+        } catch (\Throwable $e) {
+            report($e);
+            $this->qrUrl = null;
+        }
     }
 
     protected function normalizeQty(mixed $value): int|string

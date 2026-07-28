@@ -388,11 +388,32 @@ class PortalProfileForm
                         Repeater::make('weblinks')
                             ->relationship()
                             ->schema([
-                                Checkbox::make('link_button')->label('Add Button')->default(false),
-                                TextInput::make('link_button_text')->label('Button Text:'),
+                                Checkbox::make('link_button')
+                                    ->label('Add Button')
+                                    ->default(false)
+                                    ->live(debounce: 400)
+                                    ->afterStateUpdated(function ($state, $livewire): void {
+                                        if (method_exists($livewire, 'pushPhonePreviewDraft')) {
+                                            $livewire->pushPhonePreviewDraft();
+                                        }
+                                    }),
+                                TextInput::make('link_button_text')
+                                    ->label('Button Text:')
+                                    ->live(debounce: 400)
+                                    ->afterStateUpdated(function ($state, $livewire): void {
+                                        if (method_exists($livewire, 'pushPhonePreviewDraft')) {
+                                            $livewire->pushPhonePreviewDraft();
+                                        }
+                                    }),
                                 TextInput::make('link_button_url')
                                     ->label('Button Link URL: (Start with http://)')
-                                    ->url(),
+                                    ->url()
+                                    ->live(debounce: 400)
+                                    ->afterStateUpdated(function ($state, $livewire): void {
+                                        if (method_exists($livewire, 'pushPhonePreviewDraft')) {
+                                            $livewire->pushPhonePreviewDraft();
+                                        }
+                                    }),
                                 Radio::make('link_button_align')
                                     ->label('Button Text Alignment:')
                                     ->options([
@@ -402,10 +423,22 @@ class PortalProfileForm
                                     ])
                                     ->default('left')
                                     ->inline()
+                                    ->live()
+                                    ->afterStateUpdated(function ($state, $livewire): void {
+                                        if (method_exists($livewire, 'pushPhonePreviewDraft')) {
+                                            $livewire->pushPhonePreviewDraft();
+                                        }
+                                    })
                                     ->columnSpanFull(),
                                 ColorPicker::make('link_button_color')
                                     ->label('Button color:')
                                     ->default('#007A01')
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function ($state, $livewire): void {
+                                        if (method_exists($livewire, 'pushPhonePreviewDraft')) {
+                                            $livewire->pushPhonePreviewDraft();
+                                        }
+                                    })
                                     ->formatStateUsing(function ($state): string {
                                         $value = trim((string) ($state ?: '007A01'));
 
