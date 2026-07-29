@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AnaItemAnalytics;
+use App\Models\Profile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -69,6 +70,66 @@ class AnalyticsApiService
         $data = $this->get('item/clearItem', ['key' => $key]);
 
         return $data !== null;
+    }
+
+    /**
+     * Legacy parity: legacy location/plant/etc. controllers register the profile URL
+     * with Galatech `item/addurl` on CREATE and store the returned `item_key` in
+     * profiles.analytic_key (the scan-analytics key). The new app previously never
+     * persisted it. This registers + stores the key when missing (idempotent), so it
+     * fires effectively on first save and backfills any profile still missing a key.
+     *
+     * Never throws: a remote/DB failure must not break profile save or a live scan.
+     *
+     * @return string|null the analytic key (existing or newly stored), or null on failure
+     */
+    public function ensureAnalyticKey(Profile $profile, string $url): ?string
+    {
+        if (filled($profile->analytic_key)) {
+            return (string) $profile->analytic_key;
+        }
+
+        if (blank($url)) {
+            return null;
+        }
+
+        $response = $this->registerUrl($url);
+
+        // Legacy item/addurl returns { response: bool, item_key: string }.
+        $key = null;
+
+        if (is_object($response)) {
+            $ok = ! property_exists($response, 'response') || (bool) ($response->response ?? false);
+
+            if ($ok) {
+                $key = $response->item_key ?? $response->itemKey ?? $response->key ?? null;
+            }
+        }
+
+        if (blank($key)) {
+            return null;
+        }
+
+        try {
+            // Targeted update: touch ONLY analytic_key. A full model save() here would
+            // re-persist this legacy model's date-sentinel columns (the retrieved hook
+            // nulls them in memory), and saveQuietly() would skip the saving-event
+            // sentinel and violate NOT NULL. The query-builder update sidesteps both and
+            // fires no model events (nothing else depends on an analytic_key change).
+            Profile::whereKey($profile->getKey())->update(['analytic_key' => (string) $key]);
+
+            $profile->setAttribute('analytic_key', (string) $key);
+            $profile->syncOriginalAttribute('analytic_key');
+        } catch (\Throwable $exception) {
+            Log::warning('Failed to persist analytic_key', [
+                'profile_id' => $profile->getKey(),
+                'message' => $exception->getMessage(),
+            ]);
+
+            return null;
+        }
+
+        return (string) $key;
     }
 
     public function getChartData(string $key): ?array

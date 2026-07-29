@@ -4,6 +4,7 @@ namespace App\Filament\Resources\ResellerCodes;
 
 use App\Filament\Concerns\AuthorizesAdminRole;
 use App\Filament\Resources\ResellerCodes\Pages\ListResellerCodes;
+use App\Filament\Resources\ResellerCodes\Pages\ResellerCodeHistory;
 use App\Filament\Resources\ResellerCodes\Tables\ResellerCodesTable;
 use App\Models\Client;
 use BackedEnum;
@@ -87,6 +88,7 @@ class ResellerCodeResource extends Resource
     {
         return [
             'index' => ListResellerCodes::route('/'),
+            'history' => ResellerCodeHistory::route('/{record}/history'),
         ];
     }
 }

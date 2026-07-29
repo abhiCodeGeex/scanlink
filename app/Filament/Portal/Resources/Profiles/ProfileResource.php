@@ -60,14 +60,32 @@ class ProfileResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
+        // Master Code List shows only activated profiles. Unsaved create drafts
+        // stay open (update_or_not=0) and belong on Code Balance only.
+        return static::baseClientQuery()->claimedSlot();
+    }
+
+    /**
+     * Record-route binding must resolve BOTH activated profiles (view/edit) and
+     * still-open create drafts. "Add a New Code" (CreateProfile) binds an open
+     * slot (update_or_not=0) before Save; applying claimedSlot() here — as the
+     * default getEloquentQuery() now does — would make /profiles/create 404.
+     * Client scoping is preserved so a portal user cannot bind another client's
+     * record.
+     */
+    public static function getRecordRouteBindingEloquentQuery(): Builder
+    {
+        return static::baseClientQuery();
+    }
+
+    protected static function baseClientQuery(): Builder
+    {
         $clientId = static::currentClientId();
 
         return parent::getEloquentQuery()
             ->with(['contacts', 'equipmentType'])
             ->when($clientId, fn (Builder $query): Builder => $query->where('client_id', $clientId))
-            ->active()
-            // Unsaved create drafts stay open (update_or_not=0) and belong on Code Balance only.
-            ->claimedSlot();
+            ->active();
     }
 
     public static function canViewAny(): bool

@@ -56,7 +56,9 @@ class MobileProfileController extends Controller
         }
 
         if (! $portalPreview) {
-            $analytics->registerUrl($qrService->profileUrl($profile));
+            // Legacy registers the URL on create; backfill analytic_key here for any
+            // profile that still lacks one (idempotent once stored).
+            $analytics->ensureAnalyticKey($profile, $qrService->profileUrl($profile));
         }
 
         $questions = FormBuilderQuestion::query()

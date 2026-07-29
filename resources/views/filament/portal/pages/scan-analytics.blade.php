@@ -1,13 +1,6 @@
 <x-filament-panels::page>
-    @if ($selectedProfileId && $viewMode === 'charts' && $analyticsCount > 0)
-        <link rel="stylesheet" href="{{ asset('styles/chart/style/ddchart.css') }}">
-        {{-- Live scanalytics loads jQuery UI "start" theme (green/blue) via themeswitcher --}}
-        <link id="sl-sa-ui-theme" rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.10/themes/start/jquery-ui.css">
-        <script src="{{ asset('js/jquery.min.js') }}"></script>
-        <script src="{{ asset('js/chart/js/jquery-ui.js') }}"></script>
-        <script src="{{ asset('js/chart/js/jquery.themeswitcher.js') }}"></script>
-        <script src="{{ asset('js/chart/js/jquery.tooltip.js') }}"></script>
-        <script src="{{ asset('js/chart/js/jquery.ddchart.js') }}"></script>
+    @if ($selectedProfileId && $viewMode === 'charts' && $formAnalyticsEnabled)
+        <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     @endif
     @if ($viewMode === 'map')
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
@@ -57,24 +50,43 @@
             align-items: center;
             gap: 8px;
         }
+        /* Force green pill buttons even on <button> (Filament/Tailwind resets button bg). */
         .sl-sa__btn,
         .sl-sa .scananalytic-buttons input,
-        .sl-sa .scananalytic-buttons a.link-button {
-            display: inline-block;
-            background: #008901;
+        .sl-sa .scananalytic-buttons .link-button,
+        .sl-sa .scananalytic-buttons a.link-button,
+        .sl-sa .scananalytic-buttons button.link-button {
+            display: inline-block !important;
+            background: #008901 !important;
             color: #fff !important;
             font-weight: bold;
             font-size: 12px;
             text-transform: uppercase;
             text-decoration: none !important;
-            border: 1px solid #006201;
-            border-radius: 5px;
-            padding: 8px 12px;
+            border: 1px solid #006201 !important;
+            border-radius: 5px !important;
+            padding: 8px 12px !important;
             cursor: pointer;
             line-height: 1.2;
         }
+        /* Buttons sit in a horizontal row (not stacked). */
+        .sl-sa .scananalytic-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 0;
+            padding: 0;
+            justify-content: flex-end;
+        }
+        .sl-sa .scananalytic-buttons li {
+            list-style: none;
+            float: none;
+            margin: 0;
+            padding: 0;
+        }
         .sl-sa__btn:hover,
-        .sl-sa .scananalytic-buttons input:hover { background: #00a001; }
+        .sl-sa .scananalytic-buttons .link-button:hover,
+        .sl-sa .scananalytic-buttons input:hover { background: #00a001 !important; }
         .sl-sa__btn.is-active { background: #006201; }
         .sl-sa__toolbar {
             display: flex;
@@ -107,6 +119,9 @@
             margin-bottom: 6px;
             color: #444;
         }
+        /* Legacy scanalytics-box (label above the bordered count) — not in style.css */
+        .sl-sa .scanalytics-box { text-align: center; }
+        .sl-sa .scanalytics-box b { display: block; font-size: 13px; color: #444; margin-bottom: 6px; }
         .sl-sa__box-count {
             border: 3px solid #A2A2A2;
             padding: 8px 12px;
@@ -392,42 +407,23 @@
             @elseif (! $selectedProfileId)
                 <div class="sl-sa__empty">Select a profile from Master Code List to view Scanalytics.</div>
             @else
-                <div class="sl-sa__head">
-                    <div>
-                        <h2 class="sl-sa__title">{{ $typeName ?: 'Scanalytics' }}</h2>
-                        <div class="sl-sa__profile" id="divToPrintTitle">
-                            Profile {{ $selectedProfileId }}.
-                            @if (filled($profileName)) {{ ucwords($profileName) }} @endif
-                        </div>
+                {{-- Parent header (Profile + buttons) is shown for map/locations + charts-no-data.
+                     Charts-with-data uses the iframe's own legacy header/buttons. --}}
+                @if (! ($viewMode === 'charts' && $analyticsCount > 0))
+                    <div style="float:left;" id="divToPrint">
+                        <h3 style="margin:0px;">Profile {{ $selectedProfileId }}.@if (filled($profileName)) {{ ucwords($profileName) }}@endif</h3>
                     </div>
-                    <div class="sl-sa__actions scananalytic-buttons">
-                        <button type="button" class="sl-sa__btn {{ $viewMode === 'map' ? 'is-active' : '' }}" wire:click="showMap">Location Map</button>
-                        <button type="button" class="sl-sa__btn {{ $viewMode === 'locations' ? 'is-active' : '' }}" wire:click="showLocations">Location List</button>
-                        <button type="button" class="sl-sa__btn" wire:click="exportAnalytics">Export Analytics</button>
-                        <a class="sl-sa__btn" href="{{ $this->returnToListUrl() }}">Return to list</a>
+                    <div class="btn-inline" style="float:right;">
+                        <ul class="scananalytic-buttons">
+                            <li><button type="button" class="link-button" wire:click="showMap">Location Map</button></li>
+                            <li><button type="button" class="link-button" wire:click="showLocations">Location List</button></li>
+                            <li><a class="link-button" href="{{ $this->returnToListUrl() }}">Return to list</a></li>
+                        </ul>
                     </div>
-                </div>
+                    <div class="clear" style="clear:both;"></div>
+                @endif
 
                 @if ($viewMode === 'charts')
-                    <div class="sl-sa__toolbar">
-                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                            @if ($analyticsCount > 0)
-                                <div id="switcher" style="position:relative;height:auto;float:left;"></div>
-                                <button type="button" class="sl-sa__print-btn" onclick="window.print()">Download PDF</button>
-                            @endif
-                        </div>
-                        <div class="sl-sa__totals">
-                            <div class="sl-sa__box">
-                                <b>Total Form Submission</b>
-                                <div class="sl-sa__box-count">{{ $formSubmissionCount }}</div>
-                            </div>
-                            <div class="sl-sa__box">
-                                <b>Analytics Count</b>
-                                <div class="sl-sa__box-count">{{ $analyticsCount }}</div>
-                            </div>
-                        </div>
-                    </div>
-
                     @if ($analyticsCount === 0)
                         <div class="sl-sa__empty-charts">
                             <strong>No scan activity recorded yet</strong>
@@ -437,82 +433,102 @@
                             </p>
                         </div>
                     @else
-                        <div class="sl-sa__hint gray-text"><strong>Click on the bar graph for more detailed analytics</strong></div>
-
-                        <div class="sl-sa__charts c-form" id="divToPrint2" wire:ignore>
-                            <div id="loading-Notification_static" class="sl-sa__loading">Loading analytics…</div>
-
-                            <div class="ui-widget sl-sa__chart-wrap">
-                                <div class="sl-sa__chart-inner">
-                                    <div id="chart_div_country"></div>
-                                </div>
-                            </div>
-                            <div class="ui-widget sl-sa__chart-wrap">
-                                <div class="sl-sa__chart-inner">
-                                    <div id="chart_div_device"></div>
-                                </div>
-                            </div>
-                            <div class="ui-widget sl-sa__chart-wrap">
-                                <div class="sl-sa__chart-inner">
-                                    <div id="chart_div_browser"></div>
-                                </div>
-                            </div>
-                        </div>
-
+                        {{-- Full legacy scanalytics (heading + green buttons + theme switcher + stats
+                             + hover/drill charts) in an isolated iframe — pixel-accurate, untouched
+                             by Filament's Tailwind reset or Livewire/Alpine. --}}
+                        <iframe
+                            id="sl-sa-charts-frame"
+                            src="{{ route('portal.graphengine.charts', ['pid' => $selectedProfileId]) }}"
+                            style="width:100%;height:1720px;border:0;overflow:hidden;display:block;"
+                            scrolling="no"
+                            title="Scanalytics"
+                        ></iframe>
                         <script>
-                            (function ($) {
-                                function bootDdCharts() {
-                                    if (typeof $.fn.ddBarChart !== 'function') {
-                                        return;
+                            (function () {
+                                window.addEventListener('message', function (e) {
+                                    if (e && e.data && e.data.slChartsHeight) {
+                                        var f = document.getElementById('sl-sa-charts-frame');
+                                        if (f) { f.style.height = (parseInt(e.data.slChartsHeight, 10) + 24) + 'px'; }
                                     }
-
-                                    if (typeof $.fn.themeswitcher === 'function' && ! $('#switcher').data('sl-switched')) {
-                                        $('#switcher').themeswitcher({
-                                            imgpath: @json(asset('styles/chart/images/')),
-                                            loadTheme: 'start',
-                                            initialtext: 'Switch Theme',
-                                            buttonpretext: 'Theme:',
-                                            width: 175,
-                                            height: 200
-                                        });
-                                        $('#switcher').data('sl-switched', true);
-                                    }
-
-                                    ['#chart_div_country', '#chart_div_device', '#chart_div_browser'].forEach(function (sel) {
-                                        $(sel).empty().removeData('ddSettings');
-                                    });
-
-                                    var common = {
-                                        action: 'init',
-                                        chartDataLink: '',
-                                        xOddClass: 'ui-state-active',
-                                        xEvenClass: 'ui-state-default',
-                                        yOddClass: 'ui-state-active',
-                                        yEvenClass: 'ui-state-default',
-                                        xWrapperClass: 'ui-widget-content',
-                                        chartWrapperClass: 'ui-widget-content',
-                                        chartBarClass: 'ui-state-focus ui-corner-top',
-                                        chartBarHoverClass: 'ui-state-highlight',
-                                        callBeforeLoad: function () { $('#loading-Notification_static').fadeIn(200); },
-                                        callAfterLoad: function () { $('#loading-Notification_static').stop().fadeOut(0); },
-                                        tooltipSettings: { extraClass: 'ui-widget ui-widget-content ui-corner-all' }
-                                    };
-
-                                    // Inline data (same JSON as live graphengine) — avoids AJAX theme/auth races.
-                                    $('#chart_div_country').ddBarChart($.extend({}, common, {
-                                        chartData: @json($this->countryChartData())
-                                    }));
-                                    $('#chart_div_device').ddBarChart($.extend({}, common, {
-                                        chartData: @json($this->deviceChartData())
-                                    }));
-                                    $('#chart_div_browser').ddBarChart($.extend({}, common, {
-                                        chartData: @json($this->browserChartData())
-                                    }));
-                                }
-
-                                $(bootDdCharts);
-                            })(jQuery);
+                                });
+                            })();
                         </script>
+                    @endif
+
+                    {{-- Legacy Form Analytics pie section (enable_form_analytics=1 && form_id!=0) --}}
+                    @if ($formAnalyticsEnabled && count($formCharts) > 0)
+                        @php($scanPct = $analyticsCount == 0 ? ($formSubmissionCount == 0 ? '0%' : '100%') : number_format((($formSubmissionCount * 100) / $analyticsCount), 2).'%')
+                        <div>
+                            <h2 style="padding-left:50px;font-size:35px;">
+                                <img align="top" src="https://scanlink.com.au/images/pie_icon.png" width="50" onerror="this.style.display='none'" />&nbsp;&nbsp;Form Analytics
+                            </h2>
+                            <button type="button" wire:click="exportAnalytics" style="border:0;background:none;padding:0;cursor:pointer;">
+                                <div class="export-analytics-btn">EXPORT ANALYTICS</div>
+                            </button>
+
+                            <table style="padding-left:50px;" width="100%" cellspacing="0" cellpadding="0" border="0">
+                                <tr>
+                                    <td width="52%">
+                                        <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                                            <tr>
+                                                <td class="scanalytics_count" width="3%" align="right">{{ $analyticsCount }}</td>
+                                                <td width="1%">&nbsp;</td>
+                                                <td class="scanalytics_text" align="left"> Scans</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="scanalytics_count" width="3%" align="right">{{ $formSubmissionCount }}</td>
+                                                <td width="1%">&nbsp;</td>
+                                                <td class="scanalytics_text" align="left"> Form Submissions</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                    <td width="48%" valign="middle" class="scanalytics_percent">{{ $scanPct }}</td>
+                                </tr>
+                            </table>
+                            <div style="height:50px;">&nbsp;</div>
+
+                            @foreach ($formCharts as $j => $chart)
+                                @php($total = array_sum(array_column($chart['slices'], 'value')))
+                                <div class="analytics-question-text">{{ $chart['title'] }}
+                                    <br>
+                                    @foreach ($chart['slices'] as $slice)
+                                        <div><span style="font-weight:bold;color:{{ $slice['color'] }}">{{ $slice['value'] }}</span><span class="legend-text">&nbsp;&nbsp;&nbsp;{{ $slice['label'] }}</span></div>
+                                    @endforeach
+                                </div>
+                                <div id="piechart_3d{{ $j }}" style="width:220px;height:200px;float:left;" wire:ignore></div>
+                                <div class="clear" style="clear:both;">&nbsp;</div>
+                                <div class="clear" style="clear:both;">&nbsp;</div>
+                                <div class="clear" style="clear:both;">&nbsp;</div>
+                            @endforeach
+
+                            <script type="text/javascript">
+                                (function () {
+                                    var charts = @json($formCharts);
+                                    function drawFormPies() {
+                                        if (typeof google === 'undefined' || ! google.visualization) { return; }
+                                        charts.forEach(function (chart, j) {
+                                            var rows = [['Task', chart.title]];
+                                            var colors = [];
+                                            chart.slices.forEach(function (s) { rows.push([String(s.label), s.value]); colors.push(s.color); });
+                                            var data = google.visualization.arrayToDataTable(rows);
+                                            var options = {
+                                                title: chart.title, is3D: true, legend: 'none',
+                                                chartArea: { width: '200', height: '200' },
+                                                width: 220, height: 200, sliceVisibilityThreshold: 0, colors: colors
+                                            };
+                                            var el = document.getElementById('piechart_3d' + j);
+                                            if (el) { new google.visualization.PieChart(el).draw(data, options); }
+                                        });
+                                    }
+                                    if (typeof google !== 'undefined' && google.load) {
+                                        google.load('visualization', '1', { packages: ['corechart'], callback: drawFormPies });
+                                    } else if (typeof google !== 'undefined' && google.charts) {
+                                        google.charts.load('current', { packages: ['corechart'] });
+                                        google.charts.setOnLoadCallback(drawFormPies);
+                                    }
+                                })();
+                            </script>
+                        </div>
                     @endif
 
                 @elseif ($viewMode === 'map')

@@ -97,6 +97,7 @@ trait HasLegacyProfileEditorLayout
         $isExhibit = $typeSlag === 'exhibit';
         $isVoc = $typeSlag === 'voc';
         $isMisc = $typeSlag === 'misc';
+        $isAsset = $typeSlag === 'asset';
         $isCreateEditor = $this instanceof CreateProfile;
         // Legacy code/survey/exhibit/voc create pages leave preview QR blank until edit.
         $showPreviewQr = ! (($isUrlLinkCode || $isSurvey || $isExhibit || $isVoc) && $isCreateEditor);
@@ -138,6 +139,7 @@ trait HasLegacyProfileEditorLayout
             'isExhibit' => $isExhibit,
             'isVoc' => $isVoc,
             'isMisc' => $isMisc,
+            'isAsset' => $isAsset,
             'showCodePreviewImage' => $showCodePreviewImage,
             'isCreateEditor' => $isCreateEditor,
             'canAccessFormBuilder' => method_exists($this, 'canAccessFormBuilder')

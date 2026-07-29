@@ -148,6 +148,18 @@ class CreateProfile extends EditRecord
             return;
         }
 
+        // Legacy parity: cannot activate/create on an expired code slot.
+        if ($slot->isExpired()) {
+            Notification::make()
+                ->title('You can not perform this action on expired profile.')
+                ->danger()
+                ->send();
+
+            $this->redirect(ProfileResource::getUrl('index', panel: 'portal'), navigate: false);
+
+            return;
+        }
+
         session([$sessionKey => (int) $slot->getKey()]);
 
         // Create must open with an empty Form Builder canvas. Reused paid slots often

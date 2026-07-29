@@ -4,6 +4,7 @@ namespace App\Filament\Portal\Pages;
 
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
+use App\Mail\ScanlinkMail;
 use App\Models\Profile;
 use App\Services\LabelOrderService;
 use App\Services\ProfileQrService;
@@ -14,6 +15,7 @@ use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class OrderLabel extends Page
@@ -156,6 +158,8 @@ class OrderLabel extends Page
             return;
         }
 
+        $this->dispatchOrderLabelEmails($profile, $member);
+
         Notification::make()
             ->title('Label order created')
             ->body("Order #{$order->id} has been placed. Postage and handling may apply.")
@@ -164,6 +168,48 @@ class OrderLabel extends Page
 
         $this->qtySmall = '';
         $this->qtyLarge = '';
+    }
+
+    /**
+     * Legacy orderlabel_mail_client + orderlabel_mail_admin.
+     */
+    protected function dispatchOrderLabelEmails(Profile $profile, mixed $member): void
+    {
+        $client = $this->requireClient();
+        $priceSmall = (float) config('scanlink.label_price_small', 3);
+        $priceLarge = (float) config('scanlink.label_price_large', 5);
+        $qtySmall = (int) ($this->qtySmall ?: 0);
+        $qtyLarge = (int) ($this->qtyLarge ?: 0);
+
+        $data = [
+            'profileId' => (int) $profile->id,
+            'email' => strtolower(trim((string) ($member?->email ?: $client->email))),
+            'firstName' => (string) ($member?->first_name ?? ''),
+            'lastName' => (string) ($member?->last_name ?? ''),
+            'qtySmall' => $qtySmall,
+            'qtyLarge' => $qtyLarge,
+            'amountSmall' => number_format($priceSmall * $qtySmall, 2),
+            'amountLarge' => number_format($priceLarge * $qtyLarge, 2),
+            'total' => number_format(($priceSmall * $qtySmall) + ($priceLarge * $qtyLarge), 2),
+        ];
+
+        $this->trySendMail($data['email'], new ScanlinkMail('ScanLink order confirmation', 'emails.order-label-client', $data));
+        $this->trySendMail((string) config('scanlink.admin_email'), new ScanlinkMail('Scanlink Order Label', 'emails.order-label-admin', $data));
+    }
+
+    protected function trySendMail(string $email, ScanlinkMail $mail): void
+    {
+        $email = strtolower(trim($email));
+
+        if ($email === '' || ! str_contains($email, '@')) {
+            return;
+        }
+
+        try {
+            Mail::to($email)->send($mail);
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     public function returnToListUrl(): string

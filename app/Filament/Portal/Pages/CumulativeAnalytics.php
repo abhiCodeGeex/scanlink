@@ -66,6 +66,11 @@ class CumulativeAnalytics extends Page
     /** @var list<string> */
     public array $analyticsStatusNotes = [];
 
+    /** Legacy "EXPORT ANALYTICS" modal fields (Name + Description). */
+    public string $exportName = '';
+
+    public string $exportDescription = '';
+
     public static function getNavigationGroup(): ?string
     {
         return 'Codes';
@@ -253,6 +258,81 @@ class CumulativeAnalytics extends Page
         }, $filename, ['Content-Type' => 'text/csv']);
     }
 
+    /**
+     * Legacy "EXPORT ANALYTICS": a named spreadsheet (Name + Description header, profile
+     * list, then per-question option counts & percentages). Produced as an Excel-openable
+     * HTML-table .xls (no spreadsheet dependency), matching legacy's .xls output.
+     */
+    public function exportSpreadsheet(): StreamedResponse
+    {
+        $name = trim($this->exportName) !== '' ? trim($this->exportName) : 'Cumulative Analytics';
+        $description = trim($this->exportDescription);
+        $profiles = $this->selectedProfiles;
+        $charts = $this->formCharts;
+
+        return response()->streamDownload(function () use ($name, $description, $profiles, $charts): void {
+            $out = '<html><head><meta charset="UTF-8"></head><body><table border="1" cellspacing="0" cellpadding="4">';
+            $out .= '<tr><td colspan="3" style="font-weight:bold;font-size:14px;">'.e($name).'</td></tr>';
+
+            if ($description !== '') {
+                $out .= '<tr><td colspan="3">'.e($description).'</td></tr>';
+            }
+
+            $out .= '<tr><td colspan="3">&nbsp;</td></tr>';
+
+            foreach ($profiles as $profile) {
+                $out .= '<tr><td colspan="3" style="font-weight:bold;">Profile '.(int) $profile['id'].'. '.e(ucwords((string) $profile['name'])).'</td></tr>';
+            }
+
+            $out .= '<tr><td colspan="3">&nbsp;</td></tr>';
+
+            foreach ($charts as $chart) {
+                $total = array_sum(array_column($chart['slices'], 'value'));
+                $out .= '<tr><td colspan="3" style="font-weight:bold;">'.e((string) $chart['title']).'</td></tr>';
+                $out .= '<tr><td style="font-weight:bold;">Option</td><td style="font-weight:bold;">Count</td><td style="font-weight:bold;">Percentage</td></tr>';
+
+                foreach ($chart['slices'] as $slice) {
+                    $value = (int) $slice['value'];
+                    $pct = $total > 0 ? round($value * 100 / $total, 1).'%' : '0%';
+                    $out .= '<tr><td>'.e((string) $slice['label']).'</td><td>'.$value.'</td><td>'.$pct.'</td></tr>';
+                }
+
+                $out .= '<tr><td colspan="3">&nbsp;</td></tr>';
+            }
+
+            $out .= '</table></body></html>';
+            echo $out;
+        }, 'cumulative_code_profile_analytics.xls', ['Content-Type' => 'application/vnd.ms-excel']);
+    }
+
+    /**
+     * Legacy "Download PDF": a printable cumulative report. Charts are rendered as
+     * option/count/percentage tables (legacy used server-side pie images; the data is
+     * identical). Uses TCPDF (already a dependency).
+     */
+    public function downloadPdf(): StreamedResponse
+    {
+        $html = view('filament.portal.pages.cumulative-analytics-pdf', [
+            'profiles' => $this->selectedProfiles,
+            'charts' => $this->formCharts,
+            'formSubmissionCount' => $this->formSubmissionCount,
+            'scanTotal' => $this->scanTotal,
+            'date' => now()->format('d/m/Y H:i:s'),
+        ])->render();
+
+        return response()->streamDownload(function () use ($html): void {
+            $pdf = new \TCPDF('P', 'mm', 'A4', true, 'UTF-8');
+            $pdf->SetCreator('ScanLink');
+            $pdf->SetTitle('Cumulative Analytics');
+            $pdf->setPrintHeader(false);
+            $pdf->setPrintFooter(false);
+            $pdf->SetMargins(12, 12, 12);
+            $pdf->AddPage();
+            $pdf->writeHTML($html, true, false, true, false, '');
+            echo $pdf->Output('cumulative-analytics.pdf', 'S');
+        }, 'cumulative-analytics.pdf', ['Content-Type' => 'application/pdf']);
+    }
+
     protected function reloadAnalytics(): void
     {
         $this->selectedProfiles = [];
@@ -269,6 +349,13 @@ class CumulativeAnalytics extends Page
             return;
         }
 
+        // Legacy getCumulativeProfile requires more than one profile.
+        if (count($this->selectedProfileIds) < 2) {
+            $this->analyticsStatusNotes[] = 'Please select more than one profile.';
+
+            return;
+        }
+
         $client = $this->requireClient();
 
         $profiles = Profile::query()
@@ -280,6 +367,22 @@ class CumulativeAnalytics extends Page
 
         if ($profiles->isEmpty()) {
             $this->analyticsStatusNotes[] = 'No matching profiles found for this account.';
+
+            return;
+        }
+
+        // Legacy: expired profiles cannot be used for cumulative analytics.
+        if ($profiles->contains(fn (Profile $p): bool => $p->isExpired())) {
+            $this->analyticsStatusNotes[] = "Please don't select expired profile.";
+
+            return;
+        }
+
+        // Legacy: all selected profiles must share an identical form structure.
+        $compatibility = app(CumulativeAnalyticsBuilder::class)->validateCompatibility($profiles);
+
+        if (! $compatibility['ok']) {
+            $this->analyticsStatusNotes[] = (string) $compatibility['message'];
 
             return;
         }

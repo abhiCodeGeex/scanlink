@@ -154,7 +154,8 @@ class ProfileFormSchema
 
         return match ($slug) {
             'location' => [
-                TextInput::make('name')->label('Location name:')->required(),
+                // Legacy: Location name (txtname) is NOT required — only code_profile_name is.
+                TextInput::make('name')->label('Location name:'),
                 TextInput::make('address')
                     ->label('Address:')
                     ->columnSpanFull()
@@ -176,7 +177,8 @@ class ProfileFormSchema
             ],
             'plant' => [
                 // Legacy plant/edit.php Words labels (colons + Identification, not create's "ID:").
-                TextInput::make('name')->label('Make / Model:')->required(),
+                // Legacy: only code_profile_name is required — Make/Model is not.
+                TextInput::make('name')->label('Make / Model:'),
                 TextInput::make('identification')->label('Identification:'),
                 TextInput::make('serial_no')->label('Serial No.:'),
                 Textarea::make('description')->label('Description:')->columnSpanFull(),
@@ -193,7 +195,15 @@ class ProfileFormSchema
                 Checkbox::make('show_name')->label('Name:')->inline()->default(false),
                 TextInput::make('name')->hiddenLabel()->maxLength(255),
                 Checkbox::make('show_description')->label('Description:')->inline()->default(false),
-                Textarea::make('description')->hiddenLabel()->rows(4)->columnSpanFull(),
+                // Legacy asset/edit.php Description is CKEditor rich-text (class="input ckeditor").
+                Textarea::make('description')
+                    ->hiddenLabel()
+                    ->rows(4)
+                    ->extraInputAttributes([
+                        'class' => 'sl-ckeditor',
+                        'data-ck-toolbar' => 'MyToolbar',
+                    ])
+                    ->columnSpanFull(),
                 Checkbox::make('show_address')->label('Address:')->inline()->default(false),
                 TextInput::make('address')
                     ->hiddenLabel()
@@ -221,18 +231,21 @@ class ProfileFormSchema
             ],
             'product' => [
                 // Legacy product/edit.php — no Identification/Serial in Words.
-                TextInput::make('name')->label('Product name:')->required(),
+                // Legacy: only code_profile_name is required — Product name is not.
+                TextInput::make('name')->label('Product name:'),
                 Textarea::make('description')->label('Description:')->columnSpanFull(),
                 Textarea::make('notes')->label('Notes:')->columnSpanFull(),
             ],
             'procedure' => [
-                TextInput::make('name')->label('Title:')->required(),
+                // Legacy: only code_profile_name is required — Title is not.
+                TextInput::make('name')->label('Title:'),
                 Textarea::make('description')->label('Description:')->columnSpanFull(),
                 Textarea::make('notes')->label('Notes:')->columnSpanFull(),
             ],
             'misc' => [
                 // Legacy misc/index.php Words: Name + unlabeled description (CKEditor MyToolbar).
-                TextInput::make('name')->label('Name:')->required(),
+                // Legacy: only code_profile_name is required — Name is not.
+                TextInput::make('name')->label('Name:'),
                 Textarea::make('description')
                     ->hiddenLabel()
                     ->rows(4)
@@ -244,7 +257,8 @@ class ProfileFormSchema
             ],
             'exhibit' => [
                 // Legacy exhibit Words tile — unlabeled name + description (CKEditor on live).
-                TextInput::make('name')->hiddenLabel()->required(),
+                // Legacy: only code_profile_name is required — name is not.
+                TextInput::make('name')->hiddenLabel(),
                 Textarea::make('description')
                     ->hiddenLabel()
                     ->rows(4)
@@ -274,7 +288,8 @@ class ProfileFormSchema
                 TextInput::make('voc_emp_phone')->label('Telephone No.')->maxLength(30),
             ],
             'people' => [
-                TextInput::make('identification')->label('Position')->required(),
+                // Legacy people/index.php requires only txtname (Name); Position is not required.
+                TextInput::make('identification')->label('Position'),
                 TextInput::make('name')->label('Name')->required(),
                 Textarea::make('description')->label('Description')->columnSpanFull(),
                 Textarea::make('notes')->label('Notes')->columnSpanFull(),

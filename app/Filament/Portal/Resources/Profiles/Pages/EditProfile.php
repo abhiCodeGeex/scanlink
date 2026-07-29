@@ -23,8 +23,15 @@ class EditProfile extends EditRecord
 
     protected static string $resource = ProfileResource::class;
 
+    /** Legacy edit.php shows a message-only page (no form) for expired codes. */
+    public bool $profileIsExpired = false;
+
     public function getView(): string
     {
+        if ($this->profileIsExpired) {
+            return 'filament.portal.profiles.expired-profile';
+        }
+
         return 'filament.portal.profiles.legacy-profile-page';
     }
 
@@ -48,6 +55,13 @@ class EditProfile extends EditRecord
             'documents',
             'videos',
         ]);
+
+        // Legacy parity: expired codes are not editable (message-only page).
+        $this->profileIsExpired = $this->record->isExpired();
+
+        if ($this->profileIsExpired) {
+            return;
+        }
 
         $this->loadFormBuilderSidebarState($this->record);
     }
@@ -106,6 +120,10 @@ class EditProfile extends EditRecord
 
     protected function getHeaderActions(): array
     {
+        if ($this->profileIsExpired) {
+            return [];
+        }
+
         return [
             ...$this->profileQrHeaderActions(),
             DeleteAction::make()
@@ -135,6 +153,10 @@ class EditProfile extends EditRecord
      */
     protected function getFormActions(): array
     {
+        if ($this->profileIsExpired) {
+            return [];
+        }
+
         $slag = $this->record?->equipmentType?->slag;
 
         // Survey Save is rendered under Form Builder in legacy-profile-page.

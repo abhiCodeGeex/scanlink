@@ -43,11 +43,14 @@ class MultipleCodeRenewal extends Page implements HasTable
     public function table(Table $table): Table
     {
         return $table
+            // Legacy: codes expired or expiring within 30 days, excluding free codes
+            // that are not flagged for renewal.
             ->query(fn (): Builder => Profile::query()
                 ->where('client_id', $this->requireClient()->id)
                 ->active()
+                ->expiryManaged()
                 ->whereNotNull('expired_at')
-                ->where('expired_at', '<=', now()->addDays(60))
+                ->where('expired_at', '<=', now()->addDays(30))
                 ->with('equipmentType'))
             ->columns([
                 TextColumn::make('id')
@@ -59,7 +62,13 @@ class MultipleCodeRenewal extends Page implements HasTable
                 TextColumn::make('expired_at')
                     ->label('Expires')
                     ->dateTime('d/m/Y')
-                    ->color(fn (Profile $record): string => $record->isExpired() ? 'danger' : 'warning'),
+                    ->badge()
+                    // Legacy 3-tier: red = expired, gray = within 3 days, orange = within 30 days.
+                    ->color(fn (Profile $record): string => match (true) {
+                        $record->isExpired() => 'danger',
+                        $record->expired_at?->lte(now()->addDays(3)) => 'gray',
+                        default => 'warning',
+                    }),
             ])
             ->bulkActions([
                 BulkAction::make('renewSelected')

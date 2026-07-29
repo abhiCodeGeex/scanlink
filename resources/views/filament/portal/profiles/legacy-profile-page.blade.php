@@ -10,13 +10,15 @@
         $isVoc = ! empty($previewData['isVoc']);
         $isExhibit = ! empty($previewData['isExhibit']);
         $isMisc = ! empty($previewData['isMisc']);
-        $usesCkEditor = $isVoc || $isExhibit || $isMisc;
+        $isAsset = ! empty($previewData['isAsset']);
+        $usesCkEditor = $isVoc || $isExhibit || $isMisc || $isAsset;
         $editorClass = trim(
             ($isUrlLinkCode ? 'sl-profile-editor--code' : '')
             .' '.($isSurvey ? 'sl-profile-editor--survey' : '')
             .' '.($isVoc ? 'sl-profile-editor--voc' : '')
             .' '.($isExhibit ? 'sl-profile-editor--exhibit' : '')
             .' '.($isMisc ? 'sl-profile-editor--misc' : '')
+            .' '.($isAsset ? 'sl-profile-editor--asset' : '')
         );
     @endphp
     <div class="scanlink-container sl-profile-editor clearfix {{ $editorClass }}">
@@ -53,19 +55,22 @@
         <style>
             .sl-profile-editor--voc .cke,
             .sl-profile-editor--exhibit .cke,
-            .sl-profile-editor--misc .cke {
+            .sl-profile-editor--misc .cke,
+            .sl-profile-editor--asset .cke {
                 max-width: 456px !important;
                 margin: 4px 0 10px !important;
             }
             .sl-profile-editor--voc .cke_chrome,
             .sl-profile-editor--exhibit .cke_chrome,
-            .sl-profile-editor--misc .cke_chrome {
+            .sl-profile-editor--misc .cke_chrome,
+            .sl-profile-editor--asset .cke_chrome {
                 border: 1px solid #ccc !important;
                 visibility: visible !important;
             }
             .sl-profile-editor--voc textarea.sl-ckeditor,
             .sl-profile-editor--exhibit textarea.sl-ckeditor,
-            .sl-profile-editor--misc textarea.sl-ckeditor {
+            .sl-profile-editor--misc textarea.sl-ckeditor,
+            .sl-profile-editor--asset textarea.sl-ckeditor {
                 min-height: 80px !important;
                 max-width: 456px !important;
             }

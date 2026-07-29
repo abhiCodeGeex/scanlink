@@ -93,6 +93,11 @@ Route::middleware(['web', 'auth'])->group(function (): void {
         ->name('portal.graphengine.device');
     Route::get('/portal/graphengine/browser', [\App\Http\Controllers\Portal\ScanalyticsGraphController::class, 'browser'])
         ->name('portal.graphengine.browser');
+    // Isolated standalone charts page (legacy jQuery ddchart + jQuery-UI theme) embedded via iframe.
+    Route::get('/portal/scanalytics-charts', [\App\Http\Controllers\Portal\ScanalyticsGraphController::class, 'charts'])
+        ->name('portal.graphengine.charts');
+    Route::get('/portal/scanalytics-export', [\App\Http\Controllers\Portal\ScanalyticsGraphController::class, 'export'])
+        ->name('portal.graphengine.export');
 
     Route::get('/portal/legacy-form-builder', [LegacyFormBuilderController::class, 'index'])
         ->name('portal.legacy-form-builder');

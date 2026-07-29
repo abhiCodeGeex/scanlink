@@ -59,6 +59,96 @@ class CumulativeAnalyticsBuilder
     }
 
     /**
+     * Legacy getCumulativeProfile: cumulative analytics can only be generated for
+     * profiles that share an identical form structure. Returns which selected profiles
+     * are incompatible with the first (reference) profile.
+     *
+     * @param  Collection<int, Profile>  $profiles
+     * @return array{ok: bool, message: ?string, incompatible: list<int>}
+     */
+    public function validateCompatibility(Collection $profiles): array
+    {
+        $profiles = $profiles->values();
+
+        if ($profiles->count() < 2) {
+            return ['ok' => false, 'message' => 'Please select more than one profile.', 'incompatible' => []];
+        }
+
+        if (! Schema::hasTable('form_builder_question')) {
+            return ['ok' => true, 'message' => null, 'incompatible' => []];
+        }
+
+        $reference = $this->formSignature($profiles->first());
+        $incompatible = [];
+
+        foreach ($profiles->slice(1) as $profile) {
+            if ($this->formSignature($profile) !== $reference) {
+                $incompatible[] = (int) $profile->id;
+            }
+        }
+
+        if ($incompatible !== []) {
+            $ids = implode(',', $incompatible);
+
+            return [
+                'ok' => false,
+                'message' => "Cumulative analytics cannot be calculated because code profile No. '{$ids}' not compatible with the selected code profile group. Cumulative reports can only be generated for code profiles with identical forms.",
+                'incompatible' => $incompatible,
+            ];
+        }
+
+        return ['ok' => true, 'message' => null, 'incompatible' => []];
+    }
+
+    /**
+     * Structural fingerprint of a profile's form: the set of type-2 label texts and the
+     * multiset of analytics questions (type + sorted options). Identical forms → identical
+     * signatures regardless of ordering/whitespace/case.
+     *
+     * @return array{text: list<string>, analytics: list<string>}
+     */
+    protected function formSignature(Profile $profile): array
+    {
+        $query = FormBuilderQuestion::query()->where('profile_id', $profile->id);
+
+        if (Schema::hasColumn('form_builder_question', 'is_deleted')) {
+            $query->where('is_deleted', 0);
+        }
+
+        $questions = $query->orderBy('question_order')->get();
+
+        $text = $questions
+            ->where('question_type_id', 2)
+            ->map(fn (FormBuilderQuestion $q): string => $this->normalizeSignatureValue(strip_tags((string) $q->question_text)))
+            ->filter(fn (string $v): bool => $v !== '')
+            ->sort()
+            ->values()
+            ->all();
+
+        $analytics = $questions
+            ->whereIn('question_type_id', [3, 5, 6])
+            ->map(function (FormBuilderQuestion $q): string {
+                $opts = array_map(
+                    fn ($o): string => $this->normalizeSignatureValue((string) $o),
+                    $this->questionOptions($q),
+                );
+                sort($opts);
+
+                return (int) $q->question_type_id.'|'.implode('::', $opts);
+            })
+            ->sort()
+            ->values()
+            ->all();
+
+        return ['text' => $text, 'analytics' => $analytics];
+    }
+
+    protected function normalizeSignatureValue(string $value): string
+    {
+        return mb_strtolower(trim((string) preg_replace('/\s+/', ' ', $value)));
+    }
+
+    /**
      * @param  list<int>  $profileIds
      */
     protected function formSubmissionCount(array $profileIds): int

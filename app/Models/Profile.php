@@ -104,6 +104,31 @@ class Profile extends Model
                 }
             }
         });
+
+        // Legacy parity: archiving a profile (deleted -> true) clears its Galatech
+        // analytics item (legacy delete calls item/clearItem?key=analytic_key). Fire
+        // only on the false->true transition; never on restore/other updates. A remote
+        // failure must not break the archive action.
+        static::updated(function (Profile $profile): void {
+            if (! $profile->wasChanged('deleted') || ! $profile->deleted) {
+                return;
+            }
+
+            $key = (string) $profile->analytic_key;
+
+            if ($key === '') {
+                return;
+            }
+
+            try {
+                app(\App\Services\AnalyticsApiService::class)->clearItem($key);
+            } catch (\Throwable $exception) {
+                \Illuminate\Support\Facades\Log::warning('Failed to clear analytics on archive', [
+                    'profile_id' => $profile->getKey(),
+                    'message' => $exception->getMessage(),
+                ]);
+            }
+        });
     }
 
     /**
@@ -351,6 +376,21 @@ class Profile extends Model
         return $query->where('update_or_not', '1');
     }
 
+    /**
+     * Codes that participate in expiry / renewal handling.
+     *
+     * Legacy (paging.php / profileexpiry.php): free codes are ignored for expiry &
+     * renewal reminders UNLESS they have been flagged renewal_required. Equivalent to
+     * (free_code = 0 OR (free_code = 1 AND renewal_required = 1)).
+     */
+    public function scopeExpiryManaged(Builder $query): Builder
+    {
+        return $query->where(function (Builder $inner): void {
+            $inner->where('free_code', 0)
+                ->orWhere('renewal_required', 1);
+        });
+    }
+
     public function scopeLegacyVisible(Builder $query): Builder
     {
         return $query->where('deleted', false)
@@ -432,7 +472,13 @@ class Profile extends Model
      */
     public function expiryStatusClass(): string
     {
-        if ((bool) $this->free_code || $this->expired_at === null) {
+        if ($this->expired_at === null) {
+            return 'sl-row-active';
+        }
+
+        // Legacy: a free code only counts as active/ignored while it is NOT flagged
+        // for renewal. A free code with renewal_required is coloured like any other.
+        if ((bool) $this->free_code && ! (bool) ($this->getAttribute('renewal_required') ?? false)) {
             return 'sl-row-active';
         }
 

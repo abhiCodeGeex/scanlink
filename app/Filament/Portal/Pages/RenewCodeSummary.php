@@ -5,6 +5,9 @@ namespace App\Filament\Portal\Pages;
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
 use App\Filament\Portal\Concerns\RestrictsToPrimaryClientUser;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
+use App\Mail\ScanlinkMail;
+use App\Models\Client;
+use App\Models\ClientUser;
 use App\Models\Profile;
 use App\Services\CodeProfileRenewalService;
 use BackedEnum;
@@ -12,6 +15,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Mail;
 
 /**
@@ -189,12 +193,7 @@ class RenewCodeSummary extends Page
             return;
         }
 
-        $this->sendInvoiceEmail(
-            (string) ($member->email ?: $client->email),
-            $order->id,
-            (int) $order->no_of_codes,
-            (float) $order->total_amount,
-        );
+        $this->dispatchRenewalEmails($order, $ordered, $member, $client);
 
         $returnUrl = is_string($renew['return_url'] ?? null) && filled($renew['return_url'])
             ? $renew['return_url']
@@ -210,30 +209,128 @@ class RenewCodeSummary extends Page
         $this->redirect($returnUrl, navigate: false);
     }
 
-    protected function sendInvoiceEmail(string $email, int $orderId, int $qty, float $total): void
+    /**
+     * Legacy code.php::renewableCode email dispatch:
+     *  - own (non-reseller) codes → client "order confirmation" + admin "Renew Code"
+     *  - each reseller group → reseller-client "order confirmation" + admin "Renew Code"
+     *
+     * @param  Collection<int, Profile>  $ordered
+     */
+    protected function dispatchRenewalEmails(mixed $order, Collection $ordered, ClientUser $member, Client $client): void
+    {
+        $adminEmail = (string) config('scanlink.admin_email');
+        // Legacy renewCode contact line: admin@scanlink.net.au / 1300 566 696.
+        $supportEmail = 'admin@scanlink.net.au';
+        $supportPhone = '1300 566 696';
+        $total = number_format((float) $order->total_amount, 2);
+        $amountPerCode = implode('<br>', $this->amountLines());
+        $memberEmail = strtolower(trim((string) ($member->email ?: $client->email)));
+
+        $ownCount = $ordered->reject(fn (Profile $p): bool => $this->profileIsReseller($p))->count();
+
+        /** @var Collection<int, Collection<int, Profile>> $resellerGroups */
+        $resellerGroups = $ordered
+            ->filter(fn (Profile $p): bool => $this->profileIsReseller($p))
+            ->groupBy(fn (Profile $p): int => (int) $p->reseller_client_id);
+
+        // Own (non-reseller) codes.
+        if ($ownCount > 0) {
+            $this->trySend($memberEmail, new ScanlinkMail('ScanLink order confirmation', 'emails.order-confirmation', [
+                'firstName' => (string) ($member->first_name ?? ''),
+                'lastName' => (string) ($member->last_name ?? ''),
+                'noOfCodes' => $ownCount,
+                'total' => $total,
+                'isReseller' => false,
+                'userEmail' => $memberEmail,
+                'supportEmail' => $supportEmail,
+                'supportPhone' => $supportPhone,
+            ]));
+
+            $this->trySend($adminEmail, new ScanlinkMail('Scanlink Renew Code', 'emails.admin-code', [
+                'title' => 'Scanlink Renew Code',
+                'verb' => 'renewed',
+                'email' => $memberEmail,
+                'firstName' => (string) ($member->first_name ?? ''),
+                'lastName' => (string) ($member->last_name ?? ''),
+                'noOfCodes' => $ownCount,
+                'amountPerCode' => $amountPerCode,
+                'total' => $total,
+                'resellerName' => (string) ($client->resellerName() ?? ''),
+            ]));
+        }
+
+        // Reseller groups.
+        foreach ($resellerGroups as $resellerId => $group) {
+            $reseller = Client::query()->find($resellerId);
+
+            if (! $reseller) {
+                continue;
+            }
+
+            $resellerEmail = strtolower(trim((string) $reseller->reseller_email));
+            $resellerName = (string) $reseller->client_name;
+            [$rFirst, $rLast] = $this->splitName($resellerName);
+            $count = $group->count();
+
+            $this->trySend($resellerEmail, new ScanlinkMail('ScanLink order confirmation', 'emails.order-confirmation', [
+                'firstName' => $resellerName !== '' ? $resellerName : $resellerEmail,
+                'lastName' => '',
+                'noOfCodes' => $count,
+                'total' => $total,
+                'isReseller' => true,
+                'userEmail' => $memberEmail,
+                'supportEmail' => $supportEmail,
+                'supportPhone' => $supportPhone,
+            ]));
+
+            $this->trySend($adminEmail, new ScanlinkMail('Scanlink Renew Code', 'emails.admin-code', [
+                'title' => 'Scanlink Renew Code',
+                'verb' => 'renewed',
+                'email' => $resellerEmail,
+                'firstName' => $rFirst,
+                'lastName' => $rLast,
+                'noOfCodes' => $count,
+                'amountPerCode' => $amountPerCode,
+                'total' => $total,
+                'resellerName' => '',
+            ]));
+        }
+    }
+
+    protected function profileIsReseller(Profile $profile): bool
+    {
+        return (bool) $profile->is_reseller_code && (int) $profile->reseller_client_id > 0;
+    }
+
+    /**
+     * @return array{0: string, 1: string}
+     */
+    protected function splitName(string $name): array
+    {
+        $name = trim($name);
+
+        if ($name === '') {
+            return ['', ''];
+        }
+
+        $parts = explode(' ', $name, 2);
+
+        return [$parts[0], $parts[1] ?? ''];
+    }
+
+    protected function trySend(string $email, ScanlinkMail $mail): void
     {
         $email = strtolower(trim($email));
+
         if ($email === '' || ! str_contains($email, '@')) {
             return;
         }
 
-        $totalFmt = number_format($total, 2);
-        $lines = implode("\n", $this->amountLines());
-
         try {
-            Mail::raw(
-                "Your ScanLink renewal invoice request has been received.\n\n"
-                ."Order #{$orderId}\n"
-                ."Codes: {$qty}\n"
-                .($lines !== '' ? "{$lines}\n" : '')
-                ."Annual total (incl GST): \${$totalFmt}\n\n"
-                ."Terms are 14 days.",
-                fn ($message) => $message
-                    ->to($email)
-                    ->subject("ScanLink Renewal Invoice Order #{$orderId}")
-            );
-        } catch (\Throwable) {
-            // Keep renew flow successful even if outbound mail is unavailable locally.
+            Mail::to($email)->send($mail);
+        } catch (\Throwable $e) {
+            // Never fail the renewal because outbound mail is unavailable.
+            report($e);
         }
     }
 

@@ -4,7 +4,7 @@ namespace App\Filament\Portal\Auth;
 
 use App\Enums\ClientUserRole;
 use App\Enums\UserType;
-use App\Mail\RegistrationWelcomeMail;
+use App\Mail\ScanlinkMail;
 use App\Models\Client;
 use App\Models\ClientUser;
 use App\Models\CodePrising;
@@ -207,11 +207,27 @@ class Register extends BaseRegister
             return $this->handleRegistration($data);
         });
 
-        Mail::to($data['email'])->send(new RegistrationWelcomeMail(
-            $data['first_name'],
-            $data['last_name'],
-            url('/portal/login'),
-        ));
+        // Legacy registration_mail_client (welcome) + registration_mail_admin (notice).
+        $resellerName = ($data['client_reseller_code'] ?? '') !== ''
+            ? (string) (Client::findByResellerCode($data['client_reseller_code'])?->client_name ?? '')
+            : '';
+
+        try {
+            Mail::to($data['email'])->send(new ScanlinkMail('Welcome to ScanLink', 'emails.registration-client', [
+                'firstName' => $data['first_name'],
+                'lastName' => $data['last_name'],
+            ]));
+
+            Mail::to((string) config('scanlink.admin_email'))->send(new ScanlinkMail('Scanlink New User Register', 'emails.registration-admin', [
+                'email' => $data['email'],
+                'firstName' => $data['first_name'],
+                'lastName' => $data['last_name'],
+                'resellerName' => $resellerName,
+            ]));
+        } catch (\Throwable $e) {
+            // Never fail account creation because outbound mail is unavailable.
+            report($e);
+        }
 
         event(new Registered($user));
 

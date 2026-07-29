@@ -49,6 +49,11 @@ class ScanAnalytics extends Page
 
     public int $formSubmissionCount = 0;
 
+    public bool $formAnalyticsEnabled = false;
+
+    /** @var list<array{title: string, slices: list<array{label: string, value: int, color: string}>}> */
+    public array $formCharts = [];
+
     /** city_name|created_at */
     public string $locationSort = 'created_at';
 
@@ -270,6 +275,12 @@ class ScanAnalytics extends Page
         }
 
         $this->formSubmissionCount = $this->countFormSubmissions($profileId);
+
+        // Legacy: Form Analytics pies show when enable_form_analytics=1 && form_id!=0.
+        $this->formAnalyticsEnabled = (bool) $profile->enable_form_analytics && (int) ($profile->form_id ?? 0) !== 0;
+        $this->formCharts = $this->formAnalyticsEnabled
+            ? app(\App\Services\CumulativeAnalyticsBuilder::class)->build(collect([$profile]))['form_charts']
+            : [];
     }
 
     protected function analyticsQuery(int $profileId)

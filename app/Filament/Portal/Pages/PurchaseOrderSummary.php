@@ -5,6 +5,8 @@ namespace App\Filament\Portal\Pages;
 use App\Enums\CodeOrderStatus;
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
 use App\Filament\Portal\Concerns\RestrictsToPrimaryClientUser;
+use App\Mail\ScanlinkMail;
+use App\Models\Client;
 use App\Models\CodePurchaseDetail;
 use App\Models\EquipmentType;
 use App\Models\Profile;
@@ -155,7 +157,7 @@ class PurchaseOrderSummary extends Page
             return;
         }
 
-        $this->sendInvoiceEmail((string) ($billing['email'] ?? ''), $order->id, $qty, $perCode);
+        $this->dispatchPurchaseEmails($order, $billing, $checkout, $qty, $perCode);
 
         session()->forget(PurchaseCodes::SESSION_CHECKOUT);
         session()->forget(PurchaseCodes::SESSION_BILLING);
@@ -169,30 +171,113 @@ class PurchaseOrderSummary extends Page
         $this->redirect(PurchaseCodes::getUrl(panel: 'portal'), navigate: false);
     }
 
-    protected function sendInvoiceEmail(string $email, int $orderId, int $qty, float $perCode): void
+    /**
+     * Legacy purchaseCode_mail_client / purchaseCode_mail_admin (+ reseller variants).
+     *
+     * @param  array<string, mixed>  $billing
+     * @param  array<string, mixed>  $checkout
+     */
+    protected function dispatchPurchaseEmails(mixed $order, array $billing, array $checkout, int $qty, float $perCode): void
+    {
+        $adminEmail = (string) config('scanlink.admin_email');
+        $total = number_format($qty * $perCode * 12, 2);
+        $perCodeFmt = '$'.number_format($perCode, 2).' AUD';
+        $buyerEmail = strtolower(trim((string) ($billing['email'] ?? '')));
+        $firstName = (string) ($billing['first_name'] ?? '');
+        $lastName = (string) ($billing['last_name'] ?? '');
+
+        // Legacy purchaseCode contact line: support@scanlink.net.au / 0417557640.
+        $supportEmail = 'support@scanlink.net.au';
+        $supportPhone = '0417557640';
+
+        $isReseller = (string) ($checkout['is_reseller_pricing_code'] ?? '0') === '1';
+        $resellerId = (int) ($checkout['reseller_client_id'] ?? 0);
+        $reseller = ($isReseller && $resellerId > 0) ? Client::query()->find($resellerId) : null;
+
+        // Buyer confirmation.
+        $this->trySendMail($buyerEmail, new ScanlinkMail('ScanLink order confirmation', 'emails.order-confirmation', [
+            'firstName' => $firstName,
+            'lastName' => $lastName,
+            'noOfCodes' => $qty,
+            'total' => $total,
+            'isReseller' => false,
+            'userEmail' => $buyerEmail,
+            'supportEmail' => $supportEmail,
+            'supportPhone' => $supportPhone,
+        ]));
+
+        // Admin notification.
+        $this->trySendMail($adminEmail, new ScanlinkMail('Scanlink Purchase Code', 'emails.admin-code', [
+            'title' => 'Scanlink Purchase Code',
+            'verb' => 'purchased',
+            'email' => $buyerEmail,
+            'firstName' => $firstName,
+            'lastName' => $lastName,
+            'noOfCodes' => $qty,
+            'amountPerCode' => $perCodeFmt,
+            'total' => $total,
+            'resellerName' => (string) ($reseller?->client_name ?? ''),
+        ]));
+
+        // When a reseller code was used, notify the reseller + admin.
+        if ($reseller) {
+            $resellerEmail = strtolower(trim((string) $reseller->reseller_email));
+            [$rFirst, $rLast] = $this->splitName((string) $reseller->client_name);
+
+            $this->trySendMail($resellerEmail, new ScanlinkMail('ScanLink order confirmation', 'emails.order-confirmation', [
+                'firstName' => (string) $reseller->client_name,
+                'lastName' => '',
+                'noOfCodes' => $qty,
+                'total' => $total,
+                'isReseller' => true,
+                'userEmail' => $buyerEmail,
+                'supportEmail' => $supportEmail,
+                'supportPhone' => $supportPhone,
+            ]));
+
+            $this->trySendMail($adminEmail, new ScanlinkMail('Scanlink Purchase Code', 'emails.admin-code', [
+                'title' => 'Scanlink Purchase Code',
+                'verb' => 'purchased',
+                'email' => $resellerEmail,
+                'firstName' => $rFirst,
+                'lastName' => $rLast,
+                'noOfCodes' => $qty,
+                'amountPerCode' => $perCodeFmt,
+                'total' => $total,
+                'resellerName' => '',
+            ]));
+        }
+    }
+
+    /**
+     * @return array{0: string, 1: string}
+     */
+    protected function splitName(string $name): array
+    {
+        $name = trim($name);
+
+        if ($name === '') {
+            return ['', ''];
+        }
+
+        $parts = explode(' ', $name, 2);
+
+        return [$parts[0], $parts[1] ?? ''];
+    }
+
+    protected function trySendMail(string $email, ScanlinkMail $mail): void
     {
         $email = strtolower(trim($email));
+
         if ($email === '' || ! str_contains($email, '@')) {
             return;
         }
 
-        $total = number_format($qty * $perCode * 12, 2);
-        $perCodeFmt = number_format($perCode, 2);
-
         try {
-            Mail::raw(
-                "Your ScanLink invoice request has been received.\n\n"
-                ."Order #{$orderId}\n"
-                ."Codes: {$qty}\n"
-                ."Per code / month: \${$perCodeFmt}\n"
-                ."Annual total (incl GST): \${$total}\n\n"
-                ."Terms are 14 days.",
-                fn ($message) => $message
-                    ->to($email)
-                    ->subject("ScanLink Invoice Order #{$orderId}")
-            );
-        } catch (\Throwable) {
-            // Keep purchase flow successful even if outbound mail is unavailable locally.
+            Mail::to($email)->send($mail);
+        } catch (\Throwable $e) {
+            // Keep purchase flow successful even if outbound mail is unavailable.
+            report($e);
         }
     }
 

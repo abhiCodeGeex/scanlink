@@ -141,7 +141,11 @@ class PortalProfilesTable
                     ->iconButton()
                     ->tooltip('Edit')
                     ->icon('heroicon-o-pencil-square')
-                    ->url(fn (Profile $record): string => ProfileResource::getUrl('edit', ['record' => $record]))
+                    // Legacy expried.php: Edit is blocked on expired codes (message-only).
+                    ->url(fn (Profile $record): ?string => $record->isExpired()
+                        ? null
+                        : ProfileResource::getUrl('edit', ['record' => $record]))
+                    ->action(fn (Profile $record) => self::blockIfExpired($record))
                     ->visible(fn (): bool => InteractsWithClientMembership::memberCanEditCode(
                         InteractsWithClientMembership::portalMembership(),
                     )),
@@ -150,7 +154,11 @@ class PortalProfilesTable
                     ->iconButton()
                     ->tooltip('Scanalytics')
                     ->icon('heroicon-o-chart-bar')
-                    ->url(fn (Profile $record): string => ScanAnalytics::getUrl().'?profile='.$record->id)
+                    // Legacy: Scanalytics is blocked on expired codes.
+                    ->url(fn (Profile $record): ?string => $record->isExpired()
+                        ? null
+                        : ScanAnalytics::getUrl().'?profile='.$record->id)
+                    ->action(fn (Profile $record) => self::blockIfExpired($record))
                     ->visible(fn (): bool => InteractsWithClientMembership::memberCanAccessAnalytics(
                         InteractsWithClientMembership::portalMembership(),
                     )),
@@ -168,7 +176,14 @@ class PortalProfilesTable
                     ->iconButton()
                     ->tooltip('Download QR/DM Code')
                     ->icon('heroicon-o-arrow-down-tray')
-                    ->action(fn (Profile $record): mixed => app(ProfileQrService::class)->downloadQrImage($record))
+                    // Legacy: Download is blocked on expired codes.
+                    ->action(function (Profile $record): mixed {
+                        if (self::blockIfExpired($record)) {
+                            return null;
+                        }
+
+                        return app(ProfileQrService::class)->downloadQrImage($record);
+                    })
                     ->visible(fn (): bool => InteractsWithClientMembership::memberCanDownload(
                         InteractsWithClientMembership::portalMembership(),
                     )),
@@ -177,7 +192,11 @@ class PortalProfilesTable
                     ->iconButton()
                     ->tooltip('Order Labels')
                     ->icon('heroicon-o-tag')
-                    ->url(fn (Profile $record): string => OrderLabel::getUrl(['profile' => $record->id]))
+                    // Legacy: Order Labels is blocked on expired codes.
+                    ->url(fn (Profile $record): ?string => $record->isExpired()
+                        ? null
+                        : OrderLabel::getUrl(['profile' => $record->id]))
+                    ->action(fn (Profile $record) => self::blockIfExpired($record))
                     ->visible(fn (): bool => InteractsWithClientMembership::memberCanOrderLabel(
                         InteractsWithClientMembership::portalMembership(),
                     )),
@@ -197,12 +216,37 @@ class PortalProfilesTable
                     ->icon('heroicon-o-trash')
                     ->requiresConfirmation()
                     ->modalHeading('Are you sure you want to delete this code?')
-                    ->action(fn (Profile $record) => $record->update(['deleted' => true]))
+                    // Legacy: Delete is blocked on expired codes.
+                    ->action(function (Profile $record): void {
+                        if (self::blockIfExpired($record)) {
+                            return;
+                        }
+
+                        $record->update(['deleted' => true]);
+                    })
                     ->visible(fn (): bool => InteractsWithClientMembership::memberCanDeleteCode(
                         InteractsWithClientMembership::portalMembership(),
                     )),
             ])
             ->emptyStateHeading('No Profile Found..!')
             ->emptyStateDescription('Use “Add a New Code” to create a code profile.'));
+    }
+
+    /**
+     * Legacy expried.php guard: expired codes cannot be edited, viewed in scanalytics,
+     * downloaded, ordered as labels, or deleted. Returns true (and notifies) when blocked.
+     */
+    private static function blockIfExpired(Profile $record): bool
+    {
+        if (! $record->isExpired()) {
+            return false;
+        }
+
+        Notification::make()
+            ->title('You can not perform this action on an expired code profile.')
+            ->danger()
+            ->send();
+
+        return true;
     }
 }

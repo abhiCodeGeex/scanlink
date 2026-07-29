@@ -159,35 +159,40 @@
 
         @if (empty($hideActionBar))
         <div class="sl-action-bar">
-            @if (! empty($bindToolbarActions))
-                <button
-                    type="button"
-                    class="sl-add-code-btn sl-analytics-btn"
-                    x-on:click="
-                        if (selectedCount() < 1) {
-                            showAlert('No code profiles have been selected');
-                            return;
-                        }
-                        $wire.toolbarMultipleCodeAnalytics();
-                    "
-                >Multiple Code Analytics</button>
-                @if ($canRenewCodes ?? \App\Filament\Portal\Concerns\InteractsWithClientMembership::portalMembership()?->isPrimary())
+            {{-- On the Master Code List these two duplicate the working Filament table bulk
+                 actions (Multiple Code Analytics / Renew Selected Codes), so they are hidden
+                 there via hideBulkActions to avoid a non-working duplicate set. --}}
+            @if (empty($hideBulkActions))
+                @if (! empty($bindToolbarActions))
                     <button
                         type="button"
-                        class="sl-add-code-btn {{ empty($hasProfiles) ? 'is-disabled' : '' }}"
+                        class="sl-add-code-btn sl-analytics-btn"
                         x-on:click="
                             if (selectedCount() < 1) {
-                                showAlert('Please select the code to be renew.');
+                                showAlert('No code profiles have been selected');
                                 return;
                             }
-                            $wire.toolbarRenewSelectedCodes();
+                            $wire.toolbarMultipleCodeAnalytics();
                         "
-                    >Renew Selected Codes</button>
-                @endif
-            @else
-                <a href="{{ \App\Filament\Portal\Pages\CumulativeAnalytics::getUrl() }}" class="sl-add-code-btn sl-analytics-btn">Multiple Code Analytics</a>
-                @if ($canRenewCodes ?? \App\Filament\Portal\Concerns\InteractsWithClientMembership::portalMembership()?->isPrimary())
-                    <a href="{{ \App\Filament\Portal\Pages\MultipleCodeRenewal::getUrl() }}" class="sl-add-code-btn">Renew Selected Codes</a>
+                    >Multiple Code Analytics</button>
+                    @if ($canRenewCodes ?? \App\Filament\Portal\Concerns\InteractsWithClientMembership::portalMembership()?->isPrimary())
+                        <button
+                            type="button"
+                            class="sl-add-code-btn {{ empty($hasProfiles) ? 'is-disabled' : '' }}"
+                            x-on:click="
+                                if (selectedCount() < 1) {
+                                    showAlert('Please select the code to be renew.');
+                                    return;
+                                }
+                                $wire.toolbarRenewSelectedCodes();
+                            "
+                        >Renew Selected Codes</button>
+                    @endif
+                @else
+                    <a href="{{ \App\Filament\Portal\Pages\CumulativeAnalytics::getUrl() }}" class="sl-add-code-btn sl-analytics-btn">Multiple Code Analytics</a>
+                    @if ($canRenewCodes ?? \App\Filament\Portal\Concerns\InteractsWithClientMembership::portalMembership()?->isPrimary())
+                        <a href="{{ \App\Filament\Portal\Pages\MultipleCodeRenewal::getUrl() }}" class="sl-add-code-btn">Renew Selected Codes</a>
+                    @endif
                 @endif
             @endif
             @if ($canAddCode ?? false)

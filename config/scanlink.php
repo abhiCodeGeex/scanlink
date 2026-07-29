@@ -33,6 +33,15 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Notification addresses / support details (legacy hardcoded values)
+    |--------------------------------------------------------------------------
+    */
+    'admin_email' => env('SCANLINK_ADMIN_EMAIL', 'admin@scanlink.net.au'),
+    'support_email' => env('SCANLINK_SUPPORT_EMAIL', 'support@scanlink.com.au'),
+    'support_phone' => env('SCANLINK_SUPPORT_PHONE', '1300 566 696'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Physical QR label prices (AUD) — legacy dashboard constants
     |--------------------------------------------------------------------------
     */

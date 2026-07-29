@@ -292,11 +292,40 @@
                             @endforeach
                         </div>
                     </div>
-                    <div class="sl-ca__actions">
+                    <style>
+                        @media print {
+                            .fi-sidebar, .fi-topbar, .fi-topbar-ctn, .fi-sidebar-header,
+                            .sl-ca__actions, .sl-ca__modal-overlay, .sl-ca__notes { display: none !important; }
+                            .fi-main-ctn, .fi-main { margin: 0 !important; padding: 0 !important; }
+                        }
+                        [x-cloak] { display: none !important; }
+                    </style>
+                    <div class="sl-ca__actions" x-data="{ exportOpen: false }">
                         <button type="button" class="sl-ca__btn {{ $viewMode === 'charts' ? 'is-active' : '' }}" wire:click="showCharts">Overview</button>
                         <button type="button" class="sl-ca__btn {{ $viewMode === 'locations' ? 'is-active' : '' }}" wire:click="showLocations">Location List</button>
-                        <button type="button" class="sl-ca__btn" wire:click="exportAnalytics">Export Analytics</button>
+                        <button type="button" class="sl-ca__btn" @click="exportOpen = true">Export Analytics</button>
+                        <button type="button" class="sl-ca__btn" wire:click="downloadPdf">Download PDF</button>
+                        <button type="button" class="sl-ca__btn" onclick="window.print()">Print</button>
                         <a class="sl-ca__btn" href="{{ $this->returnToListUrl() }}">Return to list</a>
+
+                        {{-- Legacy EXPORT ANALYTICS modal: Name + Description --}}
+                        <div x-show="exportOpen" x-cloak class="sl-ca__modal-overlay" @click.self="exportOpen = false"
+                             style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:60;">
+                            <div class="sl-ca__modal"
+                                 style="background:#fff;color:#1f2937;border-radius:10px;padding:20px;width:min(420px,92vw);box-shadow:0 10px 40px rgba(0,0,0,.3);">
+                                <h3 style="font-size:16px;font-weight:700;margin:0 0 12px;">Export Analytics</h3>
+                                <label style="display:block;font-size:13px;margin-bottom:4px;">Name</label>
+                                <input type="text" wire:model="exportName"
+                                       style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;margin-bottom:12px;">
+                                <label style="display:block;font-size:13px;margin-bottom:4px;">Description</label>
+                                <textarea wire:model="exportDescription" rows="3"
+                                          style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;margin-bottom:16px;"></textarea>
+                                <div style="display:flex;justify-content:flex-end;gap:8px;">
+                                    <button type="button" class="sl-ca__btn" @click="exportOpen = false">Cancel</button>
+                                    <button type="button" class="sl-ca__btn is-active" wire:click="exportSpreadsheet" @click="exportOpen = false">Export Analytics</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

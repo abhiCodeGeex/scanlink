@@ -51,6 +51,9 @@ class ListProfiles extends ListRecords
             'canRenewCodes' => $this->isPrimaryUser(),
             'hasProfiles' => $this->getAllTableRecordsCount() > 0,
             'bindToolbarActions' => true,
+            // The working "Multiple Code Analytics" / "Renew Selected Codes" live in the
+            // Filament table bulk-action bar; hide the duplicate (non-working) toolbar copies.
+            'hideBulkActions' => true,
         ]);
     }
 

@@ -131,9 +131,12 @@ class CodeProfileRenewalService
 
                 $monthly = (float) ($amounts[$index] ?? $this->monthlyAmountForProfile($profile));
 
+                // Legacy renew updates ONLY expired_at (codepurchase.php:302-307); it does
+                // NOT repoint profiles.code_purchase_id — the renewal links to the profile
+                // via code_purchase_detail. Overwriting it would corrupt the later
+                // "original purchase" pre-expiry price lookup on the next renewal.
                 $profile->update([
                     'expired_at' => $base->copy()->addYear(),
-                    'code_purchase_id' => $order->id,
                 ]);
 
                 CodePurchaseDetail::query()->create([

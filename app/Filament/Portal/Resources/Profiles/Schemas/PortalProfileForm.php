@@ -25,6 +25,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\HtmlString;
 
 /**
@@ -67,6 +68,16 @@ class PortalProfileForm
                         TextInput::make('code_profile_name')
                             ->hiddenLabel()
                             ->maxLength(255)
+                            // Legacy: "Code Profile Name" is the one required field on the
+                            // standard code editor (jQuery validate `txt_code_profile_name`),
+                            // for every standard type. The type "name" field is NOT required.
+                            // Excluded: code (no field), customqr & people (legacy requires
+                            // their own url/name instead, not code_profile_name).
+                            ->required(fn (Get $get): bool => in_array(
+                                self::slug($get('type_id')),
+                                ['location', 'plant', 'asset', 'product', 'procedure', 'misc', 'survey', 'exhibit', 'voc'],
+                                true,
+                            ))
                             ->columnSpanFull(),
                         Placeholder::make('activation_period_hint')
                             ->hiddenLabel()
@@ -75,9 +86,23 @@ class PortalProfileForm
                             ))
                             ->columnSpanFull(),
                         DatePicker::make('activation_start_date')
-                            ->label('Start Date'),
+                            ->label('Start Date')
+                            // Legacy: if one activation date is set, the other is required.
+                            ->required(fn (Get $get): bool => filled($get('activation_end_date')))
+                            ->beforeOrEqual('activation_end_date')
+                            // Legacy: range must fall before expiry unless code needs renewal.
+                            ->maxDate(fn (?Model $record): ?string => self::activationMaxDate($record))
+                            ->validationMessages([
+                                'max_date' => "Date range can't be set until the code is renewed.",
+                            ]),
                         DatePicker::make('activation_end_date')
-                            ->label('End Date'),
+                            ->label('End Date')
+                            ->required(fn (Get $get): bool => filled($get('activation_start_date')))
+                            ->afterOrEqual('activation_start_date')
+                            ->maxDate(fn (?Model $record): ?string => self::activationMaxDate($record))
+                            ->validationMessages([
+                                'max_date' => "Date range can't be set until the code is renewed.",
+                            ]),
                         Actions::make([
                             Action::make('clear_activation_dates')
                                 ->label('Clear')
@@ -852,5 +877,22 @@ class PortalProfileForm
         }
 
         return EquipmentType::query()->whereKey((int) $typeId)->value('slag');
+    }
+
+    /**
+     * Legacy: the activation date range must fall before the code's expiry, unless the
+     * code is a free/non-expiring code that has not been flagged for renewal. Returns the
+     * ceiling date (expired_at) or null when no ceiling applies.
+     */
+    private static function activationMaxDate(?Model $record): ?string
+    {
+        if (! $record instanceof \App\Models\Profile || $record->expired_at === null) {
+            return null;
+        }
+
+        $applies = ! $record->free_code
+            || ($record->free_code && (bool) ($record->getAttribute('renewal_required') ?? false));
+
+        return $applies ? $record->expired_at->toDateString() : null;
     }
 }
