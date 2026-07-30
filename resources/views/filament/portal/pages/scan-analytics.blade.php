@@ -2,9 +2,120 @@
     @if ($selectedProfileId && $viewMode === 'charts' && $formAnalyticsEnabled)
         <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     @endif
-    @if ($viewMode === 'map')
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-    @endif
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+    <script>
+        (function () {
+            if (window.__slSaMapBootBound) {
+                return;
+            }
+            window.__slSaMapBootBound = true;
+
+            var leafletCssHref = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+            var leafletJsSrc = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+            var leafletLoading = null;
+
+            function ensureLeaflet(cb) {
+                if (typeof L !== 'undefined') {
+                    cb();
+                    return;
+                }
+                if (! leafletLoading) {
+                    leafletLoading = new Promise(function (resolve, reject) {
+                        if (! document.querySelector('link[data-sl-sa-leaflet]')) {
+                            var link = document.createElement('link');
+                            link.rel = 'stylesheet';
+                            link.href = leafletCssHref;
+                            link.setAttribute('data-sl-sa-leaflet', '1');
+                            document.head.appendChild(link);
+                        }
+                        var script = document.createElement('script');
+                        script.src = leafletJsSrc;
+                        script.async = true;
+                        script.onload = function () { resolve(); };
+                        script.onerror = function () { reject(new Error('Leaflet failed to load')); };
+                        document.head.appendChild(script);
+                    });
+                }
+                leafletLoading.then(cb).catch(function () { /* ignore */ });
+            }
+
+            function renderEmpty(el, message) {
+                el.innerHTML = '<div class="sl-sa__map-note">' + message + '</div>';
+            }
+
+            function bootMap(detail) {
+                var attempts = 0;
+                function tryBoot() {
+                    var el = document.getElementById('sl-sa-map');
+                    if (! el) {
+                        if (attempts++ < 20) {
+                            setTimeout(tryBoot, 50);
+                        }
+                        return;
+                    }
+                    ensureLeaflet(function () {
+                        if (typeof L === 'undefined') {
+                            return;
+                        }
+                        if (el._slMap) {
+                            el._slMap.remove();
+                            el._slMap = null;
+                        }
+                        el.innerHTML = '';
+
+                        var points = (detail && detail.points) ? detail.points : [];
+                        if (! points.length) {
+                            renderEmpty(el, 'No map coordinates recorded for this profile.');
+                            return;
+                        }
+
+                        var focusId = parseInt((detail && detail.focus) || 0, 10) || 0;
+                        var map = L.map(el).setView([points[0].lat, points[0].lng], 4);
+                        el._slMap = map;
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            maxZoom: 18,
+                            attribution: '&copy; OpenStreetMap'
+                        }).addTo(map);
+
+                        var bounds = [];
+                        var focusLatLng = null;
+                        points.forEach(function (p) {
+                            var color = (String(p.scan_type).toLowerCase() === 'gps') ? '#008901' : '#c0392b';
+                            var marker = L.circleMarker([p.lat, p.lng], {
+                                radius: 8,
+                                color: '#fff',
+                                weight: 2,
+                                fillColor: color,
+                                fillOpacity: 0.95
+                            }).addTo(map);
+                            marker.bindPopup(p.label || ('Scan #' + p.id));
+                            bounds.push([p.lat, p.lng]);
+                            if (focusId && Number(p.id) === focusId) {
+                                focusLatLng = [p.lat, p.lng];
+                                marker.openPopup();
+                            }
+                        });
+
+                        if (focusLatLng) {
+                            map.setView(focusLatLng, 10);
+                        } else if (bounds.length > 1) {
+                            map.fitBounds(bounds, { padding: [30, 30] });
+                        } else {
+                            map.setView(bounds[0], 8);
+                        }
+
+                        setTimeout(function () { map.invalidateSize(); }, 150);
+                        setTimeout(function () { map.invalidateSize(); }, 400);
+                    });
+                }
+                tryBoot();
+            }
+
+            window.addEventListener('sl-sa-boot-map', function (event) {
+                bootMap(event.detail || {});
+            });
+        })();
+    </script>
 
     <style>
         .sl-sa {
@@ -539,17 +650,18 @@
                         </div>
                         <button type="button" class="sl-sa__btn" wire:click="showCharts">Back</button>
                     </div>
+                    {{-- wire:ignore keeps Leaflet's DOM intact; map is booted via sl-sa-boot-map. --}}
                     <div
                         id="sl-sa-map"
                         class="sl-sa__map"
                         wire:ignore
-                        data-points='@json($mapPoints)'
-                        data-focus="{{ $focusRowId }}"
-                    >
-                        @if ($mapPoints === [])
-                            <div class="sl-sa__map-note">No map coordinates recorded for this profile.</div>
-                        @endif
-                    </div>
+                        wire:key="sl-sa-map-shell"
+                    ></div>
+                    <script>
+                        window.dispatchEvent(new CustomEvent('sl-sa-boot-map', {
+                            detail: @json(['points' => $mapPoints, 'focus' => $focusRowId])
+                        }));
+                    </script>
 
                 @else
                     <div class="sl-sa__toolbar">
@@ -615,43 +727,4 @@
             @endif
         </div>
     </div>
-
-    @if ($viewMode === 'map' && $mapPoints !== [])
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-        <script>
-            (function () {
-                function bootMap() {
-                    var el = document.getElementById('sl-sa-map');
-                    if (! el || typeof L === 'undefined') return;
-                    if (el._slMap) { el._slMap.remove(); el._slMap = null; }
-                    var points = [];
-                    try { points = JSON.parse(el.getAttribute('data-points') || '[]'); } catch (e) { points = []; }
-                    if (! points.length) return;
-                    var focusId = parseInt(el.getAttribute('data-focus') || '0', 10) || 0;
-                    var map = L.map(el).setView([points[0].lat, points[0].lng], 4);
-                    el._slMap = map;
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        maxZoom: 18, attribution: '&copy; OpenStreetMap'
-                    }).addTo(map);
-                    var bounds = [];
-                    var focusLatLng = null;
-                    points.forEach(function (p) {
-                        var color = (p.scan_type === 'gps') ? '#008901' : '#c0392b';
-                        var marker = L.circleMarker([p.lat, p.lng], {
-                            radius: 8, color: '#fff', weight: 2, fillColor: color, fillOpacity: 0.95
-                        }).addTo(map);
-                        marker.bindPopup(p.label || ('Scan #' + p.id));
-                        bounds.push([p.lat, p.lng]);
-                        if (focusId && p.id === focusId) { focusLatLng = [p.lat, p.lng]; marker.openPopup(); }
-                    });
-                    if (focusLatLng) map.setView(focusLatLng, 10);
-                    else if (bounds.length > 1) map.fitBounds(bounds, { padding: [30, 30] });
-                    else map.setView(bounds[0], 8);
-                    setTimeout(function () { map.invalidateSize(); }, 150);
-                }
-                if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootMap);
-                else bootMap();
-            })();
-        </script>
-    @endif
 </x-filament-panels::page>

@@ -660,6 +660,32 @@ trait HasLegacyFormBuilderSidebar
             return;
         }
 
+        // Legacy parity (location/edit.php:1001-1021): a configured participant list
+        // (any participant rows or notification recipients) requires a Participant Name
+        // element (question_type_id 18) on the form, otherwise submissions can never be
+        // matched back to a participant. Block the save with the legacy message.
+        $hasParticipantList = (\Illuminate\Support\Facades\Schema::hasTable('participant')
+                && \App\Models\Participant::query()->where('profile_id', $profile->id)->exists())
+            || (\Illuminate\Support\Facades\Schema::hasTable('participant_recipient')
+                && \App\Models\ParticipantRecipient::query()->where('profile_id', $profile->id)->exists());
+
+        if ($hasParticipantList) {
+            $hasParticipantNameField = \App\Models\FormBuilderQuestion::query()
+                ->where('profile_id', $profile->id)
+                ->where('question_type_id', 18)
+                ->exists();
+
+            if (! $hasParticipantNameField) {
+                $message = 'This form has an active participant list but no Participant Name field has been added. Please add a Participant Name field to the form before saving.';
+
+                Notification::make()->title($message)->danger()->send();
+
+                throw ValidationException::withMessages([
+                    'data.form_is_enable' => $message,
+                ]);
+            }
+        }
+
         $enabled = filter_var(data_get($this->data, 'form_is_enable'), FILTER_VALIDATE_BOOLEAN);
         $formName = trim($formName);
         $emailTag = trim($emailTag);

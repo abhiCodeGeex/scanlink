@@ -291,16 +291,28 @@ class ManageParticipants extends Page
 
         $filename = 'participant_list.xlsx';
 
-        return response()->streamDownload(function () use ($participants): void {
+        $today = Carbon::today();
+
+        return response()->streamDownload(function () use ($participants, $today): void {
             $writer = new XlsxWriter;
             $writer->openToFile('php://output');
-            $writer->addRow(Row::fromValues(['Name', 'Employer/Company', 'Response Due By']));
+            // Legacy export columns: Name, Employer/Company, Due Date, Status.
+            $writer->addRow(Row::fromValues(['Name', 'Employer/Company', 'Response Due By', 'Status']));
 
             foreach ($participants as $participant) {
+                if ($participant->is_participated) {
+                    $status = 'Form Received';
+                } elseif ($participant->due_date && $participant->due_date->lt($today)) {
+                    $status = 'Overdue';
+                } else {
+                    $status = 'Pending';
+                }
+
                 $writer->addRow(Row::fromValues([
                     $participant->name,
                     $participant->employer_cmp,
                     optional($participant->due_date)->format('d/m/Y'),
+                    $status,
                 ]));
             }
 

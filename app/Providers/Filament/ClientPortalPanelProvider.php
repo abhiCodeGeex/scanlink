@@ -130,6 +130,10 @@ class ClientPortalPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::BODY_END,
+                fn (): string => view('filament.hooks.navigation-feedback')->render(),
+            )
+            ->renderHook(
+                PanelsRenderHook::BODY_END,
                 fn (): string => view('filament.hooks.sidebar-position')->render(),
             )
             ->renderHook(

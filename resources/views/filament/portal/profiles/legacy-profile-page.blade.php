@@ -228,6 +228,16 @@
                     closeVideo();
                 }
             });
+
+            // The Form Builder iframe (same origin) posts its help-video requests here
+            // so the in-iframe "?" help icons reuse this working modal.
+            window.addEventListener('message', function (e) {
+                if (e.origin !== window.location.origin) return;
+                var d = e.data || {};
+                if (d && d.type === 'scanlink-open-help-video' && d.url) {
+                    openVideo(d.url);
+                }
+            });
         })();
     </script>
 

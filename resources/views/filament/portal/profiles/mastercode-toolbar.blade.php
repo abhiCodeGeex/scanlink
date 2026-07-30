@@ -143,18 +143,51 @@
     @if (empty($hideActionBar) || empty($hideLegend))
     <div class="sl-mastercode-controls">
         <div class="sl-colorcode-define" @if (! empty($hideLegend)) style="display:none" @endif>
-            <div class="sl-mainbox">
+            @php
+                $canFilterByExpiry = ! empty($canFilterByExpiry);
+                $expiryStatusFilter = $expiryStatusFilter ?? null;
+                $legendTag = $canFilterByExpiry ? 'button' : 'div';
+            @endphp
+            <{{ $legendTag }}
+                @if ($canFilterByExpiry) type="button" @endif
+                class="sl-mainbox {{ $canFilterByExpiry ? 'sl-mainbox--filterable' : '' }} {{ $expiryStatusFilter === 'expired' ? 'is-active' : '' }}"
+                @if ($canFilterByExpiry)
+                    wire:click="setExpiryStatusFilter('expired')"
+                    title="Show expired codes only"
+                @endif
+            >
                 <div class="sl-colorcodebox sl-red">&nbsp;</div>
                 <div class="sl-colorbox-text">Expired</div>
-            </div>
-            <div class="sl-mainbox">
+            </{{ $legendTag }}>
+            <{{ $legendTag }}
+                @if ($canFilterByExpiry) type="button" @endif
+                class="sl-mainbox {{ $canFilterByExpiry ? 'sl-mainbox--filterable' : '' }} {{ $expiryStatusFilter === 'expiring' ? 'is-active' : '' }}"
+                @if ($canFilterByExpiry)
+                    wire:click="setExpiryStatusFilter('expiring')"
+                    title="Show codes expiring within 30 days"
+                @endif
+            >
                 <div class="sl-colorcodebox sl-orange">&nbsp;</div>
                 <div class="sl-colorbox-text">Expires within 30 days</div>
-            </div>
-            <div class="sl-mainbox">
+            </{{ $legendTag }}>
+            <{{ $legendTag }}
+                @if ($canFilterByExpiry) type="button" @endif
+                class="sl-mainbox {{ $canFilterByExpiry ? 'sl-mainbox--filterable' : '' }} {{ $expiryStatusFilter === 'active' ? 'is-active' : '' }}"
+                @if ($canFilterByExpiry)
+                    wire:click="setExpiryStatusFilter('active')"
+                    title="Show active codes only"
+                @endif
+            >
                 <div class="sl-colorcodebox sl-green">&nbsp;</div>
                 <div class="sl-colorbox-text">Active</div>
-            </div>
+            </{{ $legendTag }}>
+            @if ($canFilterByExpiry && filled($expiryStatusFilter))
+                <button
+                    type="button"
+                    class="sl-expiry-filter-clear"
+                    wire:click="clearExpiryStatusFilter"
+                >Clear status filter</button>
+            @endif
         </div>
 
         @if (empty($hideActionBar))

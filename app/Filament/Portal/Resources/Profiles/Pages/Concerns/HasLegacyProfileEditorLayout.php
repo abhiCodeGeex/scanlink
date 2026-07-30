@@ -103,7 +103,11 @@ trait HasLegacyProfileEditorLayout
         $showPreviewQr = ! (($isUrlLinkCode || $isSurvey || $isExhibit || $isVoc) && $isCreateEditor);
         $showCodePreviewImage = $showPreviewQr;
 
-        if (($isSurvey || $isExhibit || $isVoc) && $isCreateEditor) {
+        // Legacy parity: the create screens (location/index.php etc.) render an EMPTY
+        // iphone-preview — no profile is previewed until the code is saved. Only the edit
+        // screens show the live mobile preview. (Previously only survey/exhibit/voc create
+        // were blanked, so location/plant/… create leaked the unsaved slot profile.)
+        if ($isCreateEditor) {
             $previewUrl = null;
         }
 

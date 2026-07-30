@@ -24,6 +24,9 @@ class ListProfiles extends ListRecords
 
     protected static ?string $title = 'Master Code List';
 
+    /** @var 'expired'|'expiring'|'active'|null */
+    public ?string $expiryStatusFilter = null;
+
     public function mount(): void
     {
         parent::mount();
@@ -41,6 +44,37 @@ class ListProfiles extends ListRecords
         }
     }
 
+    public function setExpiryStatusFilter(?string $status): void
+    {
+        $allowed = ['expired', 'expiring', 'active'];
+
+        // Clicking the active legend item again clears the filter.
+        if ($status === $this->expiryStatusFilter || ! in_array($status, $allowed, true)) {
+            $this->expiryStatusFilter = null;
+        } else {
+            $this->expiryStatusFilter = $status;
+        }
+
+        $this->resetPage();
+    }
+
+    public function clearExpiryStatusFilter(): void
+    {
+        $this->expiryStatusFilter = null;
+        $this->resetPage();
+    }
+
+    protected function modifyQueryWithActiveTab(Builder $query, bool $isResolvingRecord = false): Builder
+    {
+        $query = parent::modifyQueryWithActiveTab($query, $isResolvingRecord);
+
+        if (filled($this->expiryStatusFilter)) {
+            $query->whereExpiryStatus((string) $this->expiryStatusFilter);
+        }
+
+        return $query;
+    }
+
     public function getHeader(): ?View
     {
         return view('filament.portal.profiles.mastercode-toolbar', [
@@ -54,6 +88,8 @@ class ListProfiles extends ListRecords
             // The working "Multiple Code Analytics" / "Renew Selected Codes" live in the
             // Filament table bulk-action bar; hide the duplicate (non-working) toolbar copies.
             'hideBulkActions' => true,
+            'canFilterByExpiry' => true,
+            'expiryStatusFilter' => $this->expiryStatusFilter,
         ]);
     }
 

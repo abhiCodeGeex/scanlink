@@ -117,6 +117,10 @@ class ScanAnalytics extends Page
         if ($requestedProfile > 0) {
             $this->loadProfileAnalytics($requestedProfile);
         }
+
+        if ($this->viewMode === 'map') {
+            $this->dispatchMapBoot();
+        }
     }
 
     public function showCharts(): void
@@ -130,6 +134,7 @@ class ScanAnalytics extends Page
         $this->viewMode = 'map';
         $this->focusRowId = $rowId;
         $this->rebuildMapPoints();
+        $this->dispatchMapBoot();
     }
 
     public function showLocations(): void
@@ -369,6 +374,24 @@ class ScanAnalytics extends Page
                 ]))) ?: ('Scan #'.$row->id),
             ];
         }
+    }
+
+    /**
+     * Livewire morphs do not re-run inline <script> tags, so Location Map /
+     * "Show on map" must boot Leaflet via a client event after each update.
+     */
+    protected function dispatchMapBoot(): void
+    {
+        $payload = [
+            'points' => $this->mapPoints,
+            'focus' => $this->focusRowId,
+        ];
+
+        $this->js(
+            'window.dispatchEvent(new CustomEvent("sl-sa-boot-map", { detail: '
+            .json_encode($payload, JSON_THROW_ON_ERROR)
+            .' }))'
+        );
     }
 
     /**

@@ -193,6 +193,51 @@
         .sl-ol__btn--ghost:hover {
             background: #f3fff3;
         }
+
+        /* --- Step 2: Order Summary (legacy .OrderSummaryListing parity) --- */
+        .sl-os { max-width: 640px; }
+        .sl-os__title {
+            font-size: 22px;
+            color: #333;
+            margin: 4px 0 14px;
+            font-weight: bold;
+        }
+        .sl-os__list {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            border: 1px solid #ccc;
+            border-top: 0;
+        }
+        .sl-os__row {
+            list-style: none;
+            line-height: 30px;
+            padding: 6px 12px;
+            border-top: 1px solid #ccc;
+            overflow: hidden;
+            font-size: 13px;
+            color: #333;
+        }
+        .sl-os__row--noborder { border-top: 0; }
+        .sl-os__row--head {
+            background: #004a00;
+            color: #fff;
+            font-size: 13px;
+            font-weight: bold;
+            text-transform: uppercase;
+            border-top: 0;
+        }
+        .sl-os__amount { float: right; text-align: right; }
+        .sl-os__amount--total { font-weight: bold; }
+        .sl-os__desc { display: inline-block; }
+        .sl-os__pay { float: left; max-width: 340px; }
+        .sl-os__radio { float: left; margin: 6px 8px 0 0; }
+        .sl-os__pay-text { overflow: hidden; line-height: 20px; }
+        .sl-os__agree { float: right; width: 230px; line-height: 20px; }
+        .sl-os__agree-label { display: block; font-size: 13px; margin-bottom: 12px; }
+        .sl-os__checkbox { margin-right: 6px; vertical-align: middle; }
+        .sl-os__agree-actions { margin-top: 4px; }
+        .sl-os__agree-actions .sl-ol__btn { padding: 8px 22px; margin: 0 0 8px; }
     </style>
 
     <div class="sl-ol">
@@ -206,6 +251,7 @@
                     {{ filled($profileName) ? ucwords($profileName) : '' }}
                 </h1>
 
+                @if ($step === 'form')
                 <div class="sl-ol__layout">
                     <section class="sl-ol__left">
                         <h3>Industrial Grade Labels</h3>
@@ -291,7 +337,7 @@
                         </table>
 
                         <div class="sl-ol__actions-row">
-                            <button type="button" class="sl-ol__btn" wire:click="submitOrder">NEXT</button>
+                            <button type="button" class="sl-ol__btn" wire:click="goToSummary" wire:loading.attr="disabled">NEXT</button>
                             <a class="sl-ol__btn sl-ol__btn--ghost" href="{{ $this->returnToListUrl() }}">Return to list</a>
                         </div>
 
@@ -305,6 +351,57 @@
                         </div>
                     </section>
                 </div>
+                @else
+                    {{-- Step 2: legacy Order Summary (invoice confirmation) --}}
+                    @php($sum = $this->orderSummary())
+                    <section class="sl-os">
+                        <h2 class="sl-os__title">Order Summary</h2>
+                        <ul class="sl-os__list">
+                            <li class="sl-os__row sl-os__row--head">Item</li>
+                            <li class="sl-os__row sl-os__row--noborder">
+                                <span class="sl-os__amount">${{ number_format($sum['tot_small'], 2) }} AUD</span>
+                                <span class="sl-os__desc">QTY {{ $sum['qty_small'] }} ScanLink Label/s 50 x 40 mm</span>
+                            </li>
+                            <li class="sl-os__row sl-os__row--noborder">
+                                <span class="sl-os__amount">${{ number_format($sum['tot_large'], 2) }} AUD</span>
+                                <span class="sl-os__desc">QTY {{ $sum['qty_large'] }} ScanLink Label/s 100 x 75 mm</span>
+                            </li>
+                            <li class="sl-os__row">
+                                <span class="sl-os__amount">${{ number_format($sum['postage'], 2) }} AUD</span>
+                                <span class="sl-os__desc"><b>Postage</b></span>
+                            </li>
+                            <li class="sl-os__row">
+                                <span class="sl-os__amount sl-os__amount--total">${{ number_format($sum['grand_total'], 2) }} (includes GST)</span>
+                                <span class="sl-os__desc"><b>Total</b></span>
+                            </li>
+                            <li class="sl-os__row sl-os__row--head">Secure Payment Option</li>
+                            <li class="sl-os__row">
+                                <div class="sl-os__pay">
+                                    <input type="radio" checked disabled class="sl-os__radio">
+                                    <div class="sl-os__pay-text">
+                                        <b>By Invoice</b><br>
+                                        ScanLink will mail an invoice to you. Terms are 14 days.
+                                    </div>
+                                </div>
+                                <div class="sl-os__agree">
+                                    <label class="sl-os__agree-label">
+                                        <input type="checkbox" wire:model="agreeTerms" class="sl-os__checkbox">
+                                        I agree with terms &amp; conditions.
+                                    </label>
+                                    <div class="sl-os__agree-actions">
+                                        <button
+                                            type="button"
+                                            class="sl-ol__btn"
+                                            wire:click="placeOrder"
+                                            wire:loading.attr="disabled"
+                                        >Proceed</button>
+                                        <button type="button" class="sl-ol__btn sl-ol__btn--ghost" wire:click="backToForm">Back</button>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+                    </section>
+                @endif
             @endif
         </div>
     </div>

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class AnalyticsApiService
 {
@@ -19,33 +20,60 @@ class AnalyticsApiService
         return rtrim((string) config('scanlink.analytics_api_url'), '/').'/';
     }
 
+    /**
+     * @return list<string>
+     */
+    protected function baseUrls(): array
+    {
+        $primary = $this->baseUrl();
+        $fallbacks = config('scanlink.analytics_api_fallback_urls', []);
+
+        if (! is_array($fallbacks)) {
+            $fallbacks = [];
+        }
+
+        $urls = array_values(array_filter(array_map(
+            static fn (mixed $url): string => rtrim((string) $url, '/').'/',
+            array_merge([$primary], $fallbacks),
+        ), static fn (string $url): bool => filled($url)));
+
+        return array_values(array_unique($urls));
+    }
+
     protected function get(string $path, array $query = []): mixed
     {
-        try {
-            $response = Http::timeout(10)
-                ->acceptJson()
-                ->get($this->baseUrl().ltrim($path, '/'), $query);
+        $lastError = null;
 
-            if (! $response->successful()) {
-                static::$remoteAvailable = false;
+        foreach ($this->baseUrls() as $baseUrl) {
+            try {
+                $response = Http::timeout(10)
+                    ->acceptJson()
+                    ->get($baseUrl.ltrim($path, '/'), $query);
 
-                return null;
+                if (! $response->successful()) {
+                    $lastError = 'HTTP '.$response->status();
+
+                    continue;
+                }
+
+                $json = $response->json();
+                static::$remoteAvailable = true;
+
+                return $json ?? $response->body();
+            } catch (\Throwable $exception) {
+                $lastError = $exception->getMessage();
             }
-
-            $json = $response->json();
-            static::$remoteAvailable = true;
-
-            return $json ?? $response->body();
-        } catch (\Throwable $exception) {
-            static::$remoteAvailable = false;
-
-            Log::warning('Analytics API request failed', [
-                'path' => $path,
-                'message' => $exception->getMessage(),
-            ]);
-
-            return null;
         }
+
+        static::$remoteAvailable = false;
+
+        Log::warning('Analytics API request failed', [
+            'path' => $path,
+            'message' => $lastError ?? 'Unknown failure',
+            'base_urls' => $this->baseUrls(),
+        ]);
+
+        return null;
     }
 
     public function registerUrl(string $url): ?object
@@ -107,7 +135,11 @@ class AnalyticsApiService
         }
 
         if (blank($key)) {
-            return null;
+            if (! (bool) config('scanlink.analytics_local_key_fallback', true)) {
+                return null;
+            }
+
+            $key = $this->generateLocalAnalyticKey($profile);
         }
 
         try {
@@ -130,6 +162,15 @@ class AnalyticsApiService
         }
 
         return (string) $key;
+    }
+
+    protected function generateLocalAnalyticKey(Profile $profile): string
+    {
+        return sprintf(
+            'LOCAL-%d-%s',
+            (int) $profile->getKey(),
+            Str::upper(Str::random(18))
+        );
     }
 
     public function getChartData(string $key): ?array

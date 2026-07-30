@@ -5,25 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $profile->name }} — ScanLink</title>
     <style>
-        body { font-family: Arial, Helvetica, sans-serif; margin: 0; background: #f5f5f5; color: #222; font-size: 14px; line-height: 22px; }
+        /* Legacy mobile page: plain white body, 12px #555755 base text. */
+        body { font-family: Arial, Helvetica, sans-serif; margin: 0; background: #fff; color: #555755; font-size: 12px; line-height: 22px; }
         .wrap { max-width: 640px; margin: 0 auto; padding: 1.5rem; }
-        .card { background: #fff; border-radius: 4px; padding: 1rem 1.1rem 1.25rem; box-shadow: 0 2px 8px rgba(0,0,0,.12); margin-bottom: .75rem; }
-        /* Legacy MobileBottomText: label then value — not a green form-name hero. */
+        /* Legacy has no elevated card — content sits directly on white. */
+        .card { background: #fff; border-radius: 0; padding: 10px 12px; box-shadow: none; margin-bottom: 0; }
+        a { color: #278b28; }
+        /* Legacy MobileBottomText: label (bold) then value; block runs at 14px/22px. */
+        .MobileBottomText { font-size: 14px; line-height: 22px; }
         .MobileBottomText h3 { margin: 0 0 7px 0; font-size: 1rem; font-weight: 700; color: #222; }
-        .MobileBottomText p { margin: 0 0 7px 0; color: #222; }
+        .MobileBottomText p { margin: 0 0 7px 0; color: #555755; }
         h1 { color: #222; margin: 0 0 .5rem; font-size: 1.25rem; }
         h2 { font-size: 1.1rem; margin-top: 1.5rem; }
         .btn { display: inline-block; background: #008C00; color: #fff; padding: .6rem 1rem; border-radius: 8px; text-decoration: none; border: 0; cursor: pointer; margin: .25rem .25rem .25rem 0; }
         .btn-outline { background: #fff; color: #008C00; border: 1px solid #008C00; }
-        /* Legacy WeblinkList / document tiles: full-width colored bars with text alignment. */
+        /* Legacy View Map (.gray-mob-btn): solid grey button floated right. */
+        .gray-mob-btn { display: inline-block; float: right; background: #808080; color: #fff !important; height: 40px; line-height: 40px; padding: 0 16px; border: 0; border-radius: 6px; font-weight: bold; text-decoration: none; }
+        .gray-mob-btn:hover { background: #777; }
+        /* Legacy WeblinkList / documentList tiles: full-width UPPERCASE bars, 6px radius,
+           drop shadow, and a right-aligned arrow icon. The tile colour is applied inline
+           via background-color so it never clears this arrow background-image. */
         .btn-weblink,
         .btn-document {
             display: block;
             width: 100%;
             box-sizing: border-box;
-            border-radius: 8px;
-            margin: .25rem 0;
             color: #fff !important;
+            font-weight: bold;
+            font-size: 13px;
+            line-height: 20px;
+            text-transform: uppercase;
+            padding: 17px 10px;
+            margin: 5px 0;
+            border-radius: 6px;
+            box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.2);
+            background-image: url('{{ asset('images/mobile-list-icon.png') }}');
+            background-repeat: no-repeat;
+            background-position: right center;
         }
         .btn-weblink a,
         .btn-document a { color: inherit; text-decoration: none; }
@@ -181,6 +199,12 @@
                 <p>{{ $profile->name2 }}</p>
             @endif
 
+            {{-- Legacy mobile/index.php: Position renders between Name and ID (people type). --}}
+            @if (filled($profile->position))
+                <h3>Position</h3>
+                <p>{{ $profile->position }}</p>
+            @endif
+
             @if ($profile->identification && ! in_array($profile->typeSlug(), ['asset', 'exhibit', 'voc'], true))
                 <h3>{{ $profile->typeSlug() === 'plant' ? 'ID' : 'Identification' }}</h3>
                 <p>{{ $profile->identification }}</p>
@@ -261,7 +285,8 @@
                 @endif
                 <p>{{ $profile->address }}</p>
                 @if (in_array($profile->typeSlug(), ['location', 'asset'], true))
-                    <p>&nbsp;<a class="btn btn-outline" href="https://maps.google.com?q={{ urlencode($profile->address) }}" target="_blank" rel="noopener">View Map</a></p>
+                    <p>&nbsp;<a class="gray-mob-btn" href="https://maps.google.com?q={{ urlencode($profile->address) }}" target="_blank" rel="noopener">View Map</a></p>
+                    <div style="clear:both;"></div>
                 @endif
             @endif
 
@@ -299,113 +324,9 @@
             @endif
         </div>
 
-        @php
-            $visibleWeblinks = $profile->weblinks->filter(function ($weblink): bool {
-                $enabled = $weblink->link_button === true
-                    || $weblink->link_button === 1
-                    || $weblink->link_button === '1';
-
-                return $enabled && filled($weblink->link_button_url);
-            });
-        @endphp
-        @if ($visibleWeblinks->isNotEmpty())
-            <h2>Links</h2>
-            <div class="tile-grid" style="display:block;">
-                @foreach ($visibleWeblinks as $weblink)
-                    @php
-                        $color = trim((string) ($weblink->link_button_color ?: '007A01'));
-                        $color = str_starts_with($color, '#') ? $color : '#'.$color;
-                        $align = in_array($weblink->link_button_align, ['left', 'center', 'right'], true)
-                            ? $weblink->link_button_align
-                            : 'left';
-                    @endphp
-                    <a
-                        class="btn btn-weblink"
-                        href="{{ $weblink->link_button_url }}"
-                        target="_blank"
-                        rel="noopener"
-                        style="background:{{ $color }};text-align:{{ $align }};"
-                    >
-                        {{ $weblink->link_button_text ?: 'Open link' }}
-                    </a>
-                @endforeach
-            </div>
-        @endif
-
-        @if ($profile->display_share_link)
-            @php
-                $shareUrl = filled($profile->shorturl)
-                    ? (string) $profile->shorturl
-                    : url('/'.$clientUrl.'/'.$profile->id);
-                $shareText = trim((string) ($profile->name ?: $profile->code_profile_name ?: 'ScanLink'));
-            @endphp
-            <div class="shareNav-mob">
-                <a
-                    class="shareFB"
-                    href="https://www.facebook.com/share.php?u={{ urlencode($shareUrl) }}"
-                    target="_blank"
-                    rel="noopener"
-                    title="Facebook"
-                >Facebook</a>
-                <a
-                    class="shareTWT"
-                    href="https://twitter.com/share?text={{ urlencode($shareText.'  '.$shareUrl) }}"
-                    target="_blank"
-                    rel="noopener"
-                    title="Twitter"
-                >Twitter</a>
-                <a
-                    class="shareEML"
-                    href="mailto:?subject={{ rawurlencode('Visit this link') }}&body={{ rawurlencode('Hi, I found this information for you! Have a nice day :) : '.$shareUrl) }}"
-                    target="_blank"
-                    rel="noopener"
-                    title="Email"
-                >Email</a>
-            </div>
-        @endif
-
-        @if ($profile->documents->isNotEmpty())
-            <h2>Documents</h2>
-            <div class="tile-grid" style="display:block;">
-                @foreach ($profile->documents as $document)
-                    @if ($docUrl = $publicMediaUrl($document->doc_name))
-                        @php
-                            $docColor = trim((string) ($document->btn_color ?: '007A01'));
-                            $docColor = str_starts_with($docColor, '#') ? $docColor : '#'.$docColor;
-                            $docAlign = in_array($document->txt_align, ['left', 'center', 'right'], true)
-                                ? $document->txt_align
-                                : 'left';
-                        @endphp
-                        <a
-                            class="btn btn-document"
-                            href="{{ $docUrl }}"
-                            target="_blank"
-                            rel="noopener"
-                            style="background:{{ $docColor }};text-align:{{ $docAlign }};"
-                        >
-                            {{ $document->name ?: 'Download document' }}
-                        </a>
-                    @endif
-                @endforeach
-            </div>
-        @endif
-
-        @if ($profile->pictures->isNotEmpty())
-            <h2>Gallery</h2>
-            <div class="gallery">
-                @foreach ($profile->pictures as $picture)
-                    @if ($picUrl = $publicMediaUrl($picture->picture_name))
-                        <figure>
-                            <img src="{{ $picUrl }}" alt="{{ $picture->txt_footer ?: 'Picture' }}">
-                            @if ($picture->txt_footer)
-                                <figcaption style="font-size:.85rem;color:#666;margin-top:.25rem;">{{ $picture->txt_footer }}</figcaption>
-                            @endif
-                        </figure>
-                    @endif
-                @endforeach
-            </div>
-        @endif
-
+        {{-- Legacy ordering: Gallery / Documents / Links / Share render AFTER the form
+             builder (see block below). Kept here only is the media that legacy shows
+             above the form. --}}
         @if ($profile->videos->isNotEmpty())
             <h2>Videos</h2>
             @foreach ($profile->videos as $video)
@@ -849,6 +770,114 @@
             </script>
         @endif
 
+        {{-- Legacy mobile order: Form → Gallery → Documents → Links → Share (mobile/index.php). --}}
+        @if ($profile->pictures->isNotEmpty())
+            <h2>Gallery</h2>
+            <div class="gallery">
+                @foreach ($profile->pictures as $picture)
+                    @if ($picUrl = $publicMediaUrl($picture->picture_name))
+                        <figure>
+                            <img src="{{ $picUrl }}" alt="{{ $picture->txt_footer ?: 'Picture' }}">
+                            @if ($picture->txt_footer)
+                                <figcaption style="font-size:.85rem;color:#666;margin-top:.25rem;">{{ $picture->txt_footer }}</figcaption>
+                            @endif
+                        </figure>
+                    @endif
+                @endforeach
+            </div>
+        @endif
+
+        @if ($profile->documents->isNotEmpty())
+            <h2>Documents</h2>
+            <div class="tile-grid" style="display:block;">
+                @foreach ($profile->documents as $document)
+                    @if ($docUrl = $publicMediaUrl($document->doc_name))
+                        @php
+                            $docColor = trim((string) ($document->btn_color ?: '007A01'));
+                            $docColor = str_starts_with($docColor, '#') ? $docColor : '#'.$docColor;
+                            $docAlign = in_array($document->txt_align, ['left', 'center', 'right'], true)
+                                ? $document->txt_align
+                                : 'left';
+                        @endphp
+                        <a
+                            class="btn btn-document"
+                            href="{{ $docUrl }}"
+                            target="_blank"
+                            rel="noopener"
+                            style="background-color:{{ $docColor }};text-align:{{ $docAlign }};"
+                        >
+                            {{ $document->name ?: 'Download document' }}
+                        </a>
+                    @endif
+                @endforeach
+            </div>
+        @endif
+
+        @php
+            $visibleWeblinks = $profile->weblinks->filter(function ($weblink): bool {
+                $enabled = $weblink->link_button === true
+                    || $weblink->link_button === 1
+                    || $weblink->link_button === '1';
+
+                return $enabled && filled($weblink->link_button_url);
+            });
+        @endphp
+        @if ($visibleWeblinks->isNotEmpty())
+            <h2>Links</h2>
+            <div class="tile-grid" style="display:block;">
+                @foreach ($visibleWeblinks as $weblink)
+                    @php
+                        $color = trim((string) ($weblink->link_button_color ?: '007A01'));
+                        $color = str_starts_with($color, '#') ? $color : '#'.$color;
+                        $align = in_array($weblink->link_button_align, ['left', 'center', 'right'], true)
+                            ? $weblink->link_button_align
+                            : 'left';
+                    @endphp
+                    <a
+                        class="btn btn-weblink"
+                        href="{{ $weblink->link_button_url }}"
+                        target="_blank"
+                        rel="noopener"
+                        style="background-color:{{ $color }};text-align:{{ $align }};"
+                    >
+                        {{ $weblink->link_button_text ?: 'Open link' }}
+                    </a>
+                @endforeach
+            </div>
+        @endif
+
+        @if ($profile->display_share_link)
+            @php
+                $shareUrl = filled($profile->shorturl)
+                    ? (string) $profile->shorturl
+                    : url('/'.$clientUrl.'/'.$profile->id);
+                $shareText = trim((string) ($profile->name ?: $profile->code_profile_name ?: 'ScanLink'));
+            @endphp
+            <div class="shareNav-mob">
+                <a
+                    class="shareFB"
+                    href="https://www.facebook.com/share.php?u={{ urlencode($shareUrl) }}"
+                    target="_blank"
+                    rel="noopener"
+                    title="Facebook"
+                >Facebook</a>
+                <a
+                    class="shareTWT"
+                    href="https://twitter.com/share?text={{ urlencode($shareText.'  '.$shareUrl) }}"
+                    target="_blank"
+                    rel="noopener"
+                    title="Twitter"
+                >Twitter</a>
+                <a
+                    class="shareEML"
+                    href="mailto:?subject={{ rawurlencode('Visit this link') }}&body={{ rawurlencode('Hi, I found this information for you! Have a nice day :) : '.$shareUrl) }}"
+                    target="_blank"
+                    rel="noopener"
+                    title="Email"
+                >Email</a>
+            </div>
+        @endif
+
         @if ($needsVisitorInfo)
             <div class="visitor-form">
                 <h2>Visitor information</h2>
@@ -888,5 +917,53 @@
         </figure>
     </footer>
 </div>
+
+{{--
+    Legacy parity: on every live scan the old app fires js/galatech/wpanalytics(analytic_key)
+    which reads HTML5 geolocation and JSONP-pings the Galatech API (item/index) so the scan is
+    recorded (device / browser / country / IP derived server-side from the request). Suppressed
+    for the editor phone-preview (ask_for_location=no / portalPreview) and right after a form
+    submit — exactly as legacy mobile/index.php guards `$form_submit_success == ''`.
+--}}
+@if (! ($portalPreview ?? false)
+    && request('ask_for_location') !== 'no'
+    && ! session('form_submitted')
+    && filled($profile->analytic_key))
+    <script>
+        (function () {
+            var API = @json(rtrim((string) config('scanlink.analytics_api_url'), '/') . '/item/index');
+            var KEY = @json((string) $profile->analytic_key);
+
+            // JSONP no-op — the recording happens server-side; we ignore the response.
+            window.__slAnalyticsCb = window.__slAnalyticsCb || function () {};
+
+            function ping(lat, lng) {
+                var s = document.createElement('script');
+                s.src = API
+                    + '?key=' + encodeURIComponent(KEY)
+                    + '&lat=' + (lat == null ? '' : lat)
+                    + '&lng=' + (lng == null ? '' : lng)
+                    + '&callback=__slAnalyticsCb';
+                s.async = true;
+                (document.body || document.documentElement).appendChild(s);
+            }
+
+            function fire() {
+                if (!navigator.geolocation) { ping('', ''); return; }
+                navigator.geolocation.getCurrentPosition(
+                    function (p) { ping(p.coords.latitude.toFixed(2), p.coords.longitude.toFixed(2)); },
+                    function () { ping('', ''); },
+                    { enableHighAccuracy: true, timeout: 1000 }
+                );
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', fire);
+            } else {
+                fire();
+            }
+        })();
+    </script>
+@endif
 </body>
 </html>

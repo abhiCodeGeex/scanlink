@@ -444,14 +444,16 @@ class ProfileQrService
     protected function shortenUrl(string $url, string $token): ?string
     {
         try {
-            $response = Http::timeout(10)->get('https://api.galatech.com.au/item/addurl', [
-                'url' => $url,
-                'token' => $token,
-            ]);
+            // Legacy parity (classes/shortURL.php shortenUrl): TinyURL create API —
+            // POST with a Bearer token, body {"url": <longUrl>}, returns data.tiny_url.
+            $response = Http::timeout(10)
+                ->withToken($token)
+                ->acceptJson()
+                ->post('https://api.tinyurl.com/create', ['url' => $url]);
 
-            $short = $response->json('shortLink') ?? $response->json('short_url');
+            $short = $response->json('data.tiny_url');
 
-            return is_string($short) ? $short : null;
+            return is_string($short) && $short !== '' ? $short : null;
         } catch (\Throwable) {
             return null;
         }

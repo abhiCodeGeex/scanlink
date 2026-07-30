@@ -8,8 +8,9 @@
     $isCreateEditor = (bool) ($isCreateEditor ?? false);
     $showSidebarFormBuilder = ! $isUrlLinkCode && ! $isSurvey;
     $showPhonePreview = ! $isUrlLinkCode;
-    // Exhibit/survey/voc create: blank phone like legacy index (empty iphone shell).
-    $blankCreatePhone = ($isSurvey || $isExhibit || $isVoc) && $isCreateEditor;
+    // Legacy parity: every create screen shows a blank iphone shell (empty
+    // <section class="iphone-preview">); the live preview only appears on edit.
+    $blankCreatePhone = $isCreateEditor;
     // Legacy location/plant/… create has no QR download block — only edit (and code preview).
     $showQrBlock = $isUrlLinkCode
         || (! $isCreateEditor && (

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ChecklistItem;
 use App\Models\Client;
+use App\Models\AnaItemAnalytics;
 use App\Models\FormBuilderAnswer;
 use App\Models\FormBuilderQuestion;
 use App\Models\FormBuilderRecipient;
@@ -22,12 +23,13 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class MobileProfileController extends Controller
 {
-    public function show(string $clientUrl, int $profileId, ProfileQrService $qrService, AnalyticsApiService $analytics, MobileProfileViewResolver $views): View|RedirectResponse
+    public function show(Request $request, string $clientUrl, int $profileId, ProfileQrService $qrService, AnalyticsApiService $analytics, MobileProfileViewResolver $views): View|RedirectResponse
     {
         $profile = $this->resolveProfile($clientUrl, $profileId, eager: true);
         $portalPreview = PortalProfilePreview::canBypassScanRestrictions($profile);
@@ -59,6 +61,7 @@ class MobileProfileController extends Controller
             // Legacy registers the URL on create; backfill analytic_key here for any
             // profile that still lacks one (idempotent once stored).
             $analytics->ensureAnalyticKey($profile, $qrService->profileUrl($profile));
+            $this->recordScanHit($request, $profile);
         }
 
         $questions = FormBuilderQuestion::query()
@@ -539,32 +542,37 @@ class MobileProfileController extends Controller
         ]);
         $subject = $subjectParts !== [] ? implode(' — ', $subjectParts) : 'Form submission — '.$profile->name;
 
-        $lines = ["Form submission for {$profile->name}", "Session: {$sessionId}", ''];
-
+        // Legacy builds an HTML email: each answer prefixed with its question label
+        // (falls back to "User Input" for label-less questions, matching legacy).
+        $rows = [];
         foreach ($savedAnswers as $questionId => $answer) {
             $question = $questions->get((int) $questionId);
-            $label = strip_tags((string) ($question?->question_text ?: "Question #{$questionId}"));
-            $lines[] = "{$label}: {$answer}";
+            $rows[] = [
+                'label' => strip_tags((string) ($question?->question_text ?: 'User Input')),
+                'answer' => (string) $answer,
+            ];
         }
 
-        $body = implode("\n", $lines);
+        $html = view('emails.form-submission', [
+            'profile' => $profile,
+            'profileName' => trim((string) ($profile->code_profile_name ?: $profile->name)),
+            'submittedAt' => now()->format('d/m/Y H:i'),
+            'sessionId' => $sessionId,
+            'rows' => $rows,
+        ])->render();
+
         $attachPdf = (int) ($profile->form_submission_format ?? 0) === 1;
         $pdfContent = $attachPdf ? $this->buildFormSubmissionPdf($profile, $sessionId, $questions, $savedAnswers) : null;
 
         foreach ($recipients as $email) {
             try {
-                if ($pdfContent !== null) {
-                    Mail::send([], [], function ($message) use ($email, $subject, $body, $pdfContent): void {
-                        $message->to($email)
-                            ->subject($subject)
-                            ->text($body)
-                            ->attachData($pdfContent, 'form-submission.pdf', ['mime' => 'application/pdf']);
-                    });
-                } else {
-                    Mail::raw($body, function ($message) use ($email, $subject): void {
-                        $message->to($email)->subject($subject);
-                    });
-                }
+                Mail::html($html, function ($message) use ($email, $subject, $pdfContent): void {
+                    $message->to($email)->subject($subject);
+
+                    if ($pdfContent !== null) {
+                        $message->attachData($pdfContent, 'form-submission.pdf', ['mime' => 'application/pdf']);
+                    }
+                });
             } catch (\Throwable $exception) {
                 Log::warning('Form submission email failed', [
                     'profile_id' => $profile->id,
@@ -620,5 +628,163 @@ class MobileProfileController extends Controller
 
             return null;
         }
+    }
+
+    protected function recordScanHit(Request $request, Profile $profile): void
+    {
+        if (! Schema::hasTable('ana_item_analytics')) {
+            return;
+        }
+
+        $ua = strtolower((string) $request->userAgent());
+        [$platformId, $deviceId, $scanTypeDefault] = $this->resolveScanPlatformDevice($ua);
+        [$browserId, $browserVersion] = $this->resolveScanBrowser($ua, (string) $request->userAgent());
+
+        $scanType = strtolower((string) $request->query('scan_type', $scanTypeDefault)) === 'gps' ? 'gps' : 'ip';
+        $lat = (string) $request->query('latitude', '');
+        $lng = (string) $request->query('longitude', '');
+
+        try {
+            AnaItemAnalytics::query()->create([
+                'event_id' => 'LARAVEL-'.(string) $profile->id.'-'.Str::uuid(),
+                'id_item' => (string) $profile->id,
+                'country_code' => null,
+                'country_name' => null,
+                'region_name' => null,
+                'city_name' => null,
+                'zipcode' => null,
+                'latitude' => $lat !== '' ? $lat : null,
+                'longitude' => $lng !== '' ? $lng : null,
+                'ip_add' => (string) ($request->ip() ?? ''),
+                'timezone' => null,
+                'id_browser' => (string) $browserId,
+                'browser_version' => $browserVersion,
+                'id_platform' => $platformId,
+                'id_device' => $deviceId,
+                'scan_type' => $scanType,
+                'screen_size' => (string) $request->query('screensize', ''),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Throwable $exception) {
+            Log::warning('Failed to record local scan hit', [
+                'profile_id' => $profile->id,
+                'message' => $exception->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Legacy match_data.php browser IDs (ana_browsers):
+     * 1 Firefox, 2 Safari, 3 IE, 4 Chrome, 5 Opera, 6 Netscape.
+     *
+     * @return array{0: int, 1: string}
+     */
+    protected function resolveScanBrowser(string $uaLower, string $uaRaw): array
+    {
+        $version = '';
+
+        if (str_contains($uaLower, 'edg/') || str_contains($uaLower, 'edge/')) {
+            if (preg_match('/(?:edg|edge)\/([\d.]+)/i', $uaRaw, $m)) {
+                $version = $m[1];
+            }
+
+            return [4, $version]; // closest legacy bucket = Chrome
+        }
+
+        if (str_contains($uaLower, 'opr/') || str_contains($uaLower, 'opera')) {
+            if (preg_match('/(?:opr|opera)\/([\d.]+)/i', $uaRaw, $m)) {
+                $version = $m[1];
+            }
+
+            return [5, $version];
+        }
+
+        if (str_contains($uaLower, 'firefox/')) {
+            if (preg_match('/firefox\/([\d.]+)/i', $uaRaw, $m)) {
+                $version = $m[1];
+            }
+
+            return [1, $version];
+        }
+
+        if (str_contains($uaLower, 'chrome/') && ! str_contains($uaLower, 'chromium')) {
+            if (preg_match('/chrome\/([\d.]+)/i', $uaRaw, $m)) {
+                $version = $m[1];
+            }
+
+            return [4, $version];
+        }
+
+        if (str_contains($uaLower, 'safari/') && ! str_contains($uaLower, 'chrome') && ! str_contains($uaLower, 'chromium')) {
+            if (preg_match('/version\/([\d.]+)/i', $uaRaw, $m)) {
+                $version = $m[1];
+            }
+
+            return [2, $version];
+        }
+
+        if (str_contains($uaLower, 'msie') || str_contains($uaLower, 'trident/')) {
+            if (preg_match('/(?:msie |rv:)([\d.]+)/i', $uaRaw, $m)) {
+                $version = $m[1];
+            }
+
+            return [3, $version];
+        }
+
+        if (str_contains($uaLower, 'netscape')) {
+            return [6, $version];
+        }
+
+        return [4, $version]; // default Chrome (most common modern UA)
+    }
+
+    /**
+     * Legacy match_data.php platform/device mapping:
+     * platforms: 1 Desktop, 2 Mobile, 3 Tablet
+     * devices: 3 iphone, 4 Windows, 7 blackberry, 8 ipad, 9 android, 11 Linux, 12 Mac
+     *
+     * @return array{0: int, 1: int, 2: string}
+     */
+    protected function resolveScanPlatformDevice(string $uaLower): array
+    {
+        $isIpad = str_contains($uaLower, 'ipad')
+            || (str_contains($uaLower, 'macintosh') && str_contains($uaLower, 'mobile'));
+        $isIphone = str_contains($uaLower, 'iphone') || str_contains($uaLower, 'ipod');
+        $isAndroid = str_contains($uaLower, 'android');
+        $isTablet = $isIpad
+            || ($isAndroid && ! str_contains($uaLower, 'mobile'))
+            || str_contains($uaLower, 'tablet');
+
+        if ($isIpad) {
+            return [3, 8, 'gps']; // Tablet / iPad
+        }
+
+        if ($isTablet && $isAndroid) {
+            return [3, 9, 'gps']; // Tablet / Android
+        }
+
+        if ($isIphone) {
+            return [2, 3, 'gps']; // Mobile / iPhone
+        }
+
+        if ($isAndroid) {
+            return [2, 9, 'gps']; // Mobile / Android
+        }
+
+        if (str_contains($uaLower, 'blackberry')) {
+            return [2, 7, 'gps']; // Mobile / Blackberry
+        }
+
+        if (str_contains($uaLower, 'mac os') || str_contains($uaLower, 'macintosh')) {
+            return [1, 12, 'ip']; // Desktop / Mac
+        }
+
+        if (str_contains($uaLower, 'linux')) {
+            return [1, 11, 'ip']; // Desktop / Linux
+        }
+
+        // Windows / unknown desktop
+        return [1, 4, 'ip'];
     }
 }

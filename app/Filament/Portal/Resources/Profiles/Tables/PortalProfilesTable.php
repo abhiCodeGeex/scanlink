@@ -8,17 +8,20 @@ use App\Filament\Portal\Pages\FormSubmissions;
 use App\Filament\Portal\Pages\OrderLabel;
 use App\Filament\Portal\Pages\ScanAnalytics;
 use App\Filament\Portal\Pages\VisitorLog;
+use App\Filament\Portal\Resources\Profiles\Pages\ListProfiles;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Filament\Support\SearchTableFilter;
 use App\Filament\Support\TableFilterDefaults;
 use App\Models\Profile;
 use App\Filament\Portal\Pages\RenewCodeSummary;
 use App\Services\ProfileQrService;
+use App\Support\LegacyEquipmentTypeLabels;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\DeleteAction;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -50,6 +53,23 @@ class PortalProfilesTable
                     ->getStateUsing(fn (Profile $record): string => filled(trim((string) $record->code_profile_name))
                         ? (string) $record->code_profile_name
                         : $record->displayLabel())
+                    ->toggleable()
+                    ->wrap(),
+                // Only when viewing all templates (no type tab selected) on Master Code List.
+                TextColumn::make('equipmentType.name')
+                    ->label('Template Type')
+                    ->getStateUsing(fn (Profile $record): string => $record->equipmentType
+                        ? LegacyEquipmentTypeLabels::labelFor($record->equipmentType)
+                        : '—')
+                    ->visible(function (HasTable $livewire): bool {
+                        if (! $livewire instanceof ListProfiles) {
+                            return false;
+                        }
+
+                        $tab = $livewire->activeTab;
+
+                        return blank($tab) || $tab === 'all';
+                    })
                     ->toggleable()
                     ->wrap(),
                 TextColumn::make('address')

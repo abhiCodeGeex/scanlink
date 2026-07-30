@@ -599,18 +599,15 @@
 				var result = (url.match(p)) ? RegExp.$1 : false;
 
 				if (result) {
-					$p('#how_to_pop_up').html('<iframe src="' + url + '" frameborder="0" allowfullscreen wmode="transparent" width="480" height="300" ></iframe>');
-					$p('.black-tint').show();
-					$p('.player-window').show(500);
+					// Portal parity: the parent Filament page has no #how_to_pop_up/.player-window
+					// overlay — it exposes a shared help-video modal instead. Post the embeddable
+					// URL up to it so the in-iframe help icons actually open the tutorial.
+					var embed = 'https://www.youtube.com/embed/' + result + '?rel=0';
+					try {
+						window.parent.postMessage({ type: 'scanlink-open-help-video', url: embed }, window.location.origin);
+					} catch (err) {}
 				} else {
-					var substr = 'image#';
-					if (url.indexOf(substr) !== -1) {
-						url = url.replace(substr, "");
-						$p('.black-tint').show();
-						$p('.player-window-image').show(500);
-					} else {
-						return false;
-					}
+					return false;
 				}
 			} else {
 				return false;
@@ -2063,13 +2060,18 @@
 			url: "<?php echo url('/portal/legacy-form-builder/remove-element'); ?>",
 			dataType: "html",
 			data: {
+				"profile_id": '<?php echo $profile_id; ?>',
 				'question_id': question_id
 			},
-			complete: function() {
+			success: function() {
+				// Only drop the element from the canvas once the server confirms the
+				// soft-delete, so the UI can never desync from the stored form.
 				$('#' + obj).remove();
+				notifyParentFormSaved();
+			},
+			error: function() {
+				alert('Could not remove this element. Please try again.');
 			}
-
-
 		});
 	}
 </script>

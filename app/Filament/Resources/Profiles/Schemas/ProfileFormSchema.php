@@ -176,10 +176,12 @@ class ProfileFormSchema
                 Textarea::make('notes')->label('Notes:')->columnSpanFull(),
             ],
             'plant' => [
-                // Legacy plant/edit.php Words labels (colons + Identification, not create's "ID:").
                 // Legacy: only code_profile_name is required — Make/Model is not.
                 TextInput::make('name')->label('Make / Model:'),
-                TextInput::make('identification')->label('Identification:'),
+                // Legacy quirk parity: plant/index.php (create) labels this "ID:",
+                // plant/edit.php (edit) labels it "Identification:".
+                TextInput::make('identification')
+                    ->label(fn (string $operation): string => $operation === 'create' ? 'ID:' : 'Identification:'),
                 TextInput::make('serial_no')->label('Serial No.:'),
                 Textarea::make('description')->label('Description:')->columnSpanFull(),
                 Textarea::make('notes')->label('Note:')->columnSpanFull(),
@@ -289,7 +291,8 @@ class ProfileFormSchema
             ],
             'people' => [
                 // Legacy people/index.php requires only txtname (Name); Position is not required.
-                TextInput::make('identification')->label('Position'),
+                // Legacy stores Position in its own `position` column (not `identification`).
+                TextInput::make('position')->label('Position'),
                 TextInput::make('name')->label('Name')->required(),
                 Textarea::make('description')->label('Description')->columnSpanFull(),
                 Textarea::make('notes')->label('Notes')->columnSpanFull(),

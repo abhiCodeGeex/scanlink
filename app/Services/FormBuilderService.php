@@ -406,20 +406,7 @@ class FormBuilderService
 
     public function answerUsesAutoIncrement(): bool
     {
-        if (! Schema::hasTable('form_builder_answers')) {
-            return true;
-        }
-
-        try {
-            $column = DB::selectOne(
-                'SELECT EXTRA FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
-                ['form_builder_answers', 'answer_id']
-            );
-
-            return $column && str_contains((string) ($column->EXTRA ?? ''), 'auto_increment');
-        } catch (\Throwable) {
-            return false;
-        }
+        return (new FormBuilderAnswer)->getIncrementing();
     }
 
     /**
@@ -427,11 +414,45 @@ class FormBuilderService
      */
     public function createAnswer(array $data): FormBuilderAnswer
     {
-        if (! $this->answerUsesAutoIncrement()) {
-            $nextId = (int) FormBuilderAnswer::query()->max('answer_id') + 1;
-            $data['answer_id'] = max(1, $nextId);
+        $answer = new FormBuilderAnswer;
+        $key = $answer->getKeyName();
+
+        if (! $answer->getIncrementing()) {
+            $nextId = (int) FormBuilderAnswer::query()->max($key) + 1;
+            $data[$key] = max(1, $nextId);
         } else {
-            unset($data['answer_id']);
+            unset($data['answer_id'], $data['form_builder_answer_id'], $data[$key]);
+        }
+
+        // Live schema has many NOT NULL text/int columns without defaults.
+        $defaults = [
+            'row_number' => 0,
+            'question_answer' => '',
+            'signature_name_text' => '',
+            'signature_employer_text' => '',
+            'signature_email_text' => '',
+            'signature_phone_text' => '',
+            'participant_signature_image' => '',
+            'participant_employer_text' => '',
+            'session_id' => '',
+            'app_user_firstname' => '',
+            'app_user_lastname' => '',
+            'app_user_email' => '',
+            'app_user_mobile' => '',
+        ];
+
+        foreach ($defaults as $column => $default) {
+            if (! Schema::hasColumn('form_builder_answers', $column)) {
+                continue;
+            }
+
+            if (! array_key_exists($column, $data) || $data[$column] === null) {
+                $data[$column] = $default;
+            }
+        }
+
+        if (! isset($data['date_time']) && Schema::hasColumn('form_builder_answers', 'date_time')) {
+            $data['date_time'] = now();
         }
 
         return FormBuilderAnswer::query()->create($data);

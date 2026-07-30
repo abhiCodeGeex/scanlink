@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
-    'client_id', 'user_id', 'type_id', 'name', 'code_profile_name', 'identification',
+    'client_id', 'user_id', 'type_id', 'name', 'position', 'code_profile_name', 'identification',
     'serial_no', 'address', 'description', 'notes', 'name_company', 'telephone',
     'mobile', 'email', 'name2', 'description2',
     'gps_coordinates', 'shorturl', 'url', 'protect', 'password', 'code_type', 'color_code', 'show_header',
@@ -281,7 +281,11 @@ class Profile extends Model
 
     public function documents(): HasMany
     {
-        return $this->hasMany(Document::class);
+        // Legacy parity: documents display in their saved drag-order (sort_order),
+        // falling back to insertion order for rows never reordered.
+        return $this->hasMany(Document::class)
+            ->orderBy('sort_order')
+            ->orderBy('id');
     }
 
     public function videos(): HasMany
@@ -389,6 +393,41 @@ class Profile extends Model
             $inner->where('free_code', 0)
                 ->orWhere('renewal_required', 1);
         });
+    }
+
+    /**
+     * Filter by Master Code List row colour buckets (expired / expiring / active).
+     * Mirrors expiryStatusClass() so legend clicks match painted rows.
+     */
+    public function scopeWhereExpiryStatus(Builder $query, string $status): Builder
+    {
+        $now = now();
+        $within30 = now()->copy()->addDays(30);
+
+        return match ($status) {
+            'expired' => $query
+                ->expiryManaged()
+                ->whereNotNull('expired_at')
+                ->where('expired_at', '<', $now),
+            'expiring' => $query
+                ->expiryManaged()
+                ->whereNotNull('expired_at')
+                ->where('expired_at', '>=', $now)
+                ->where('expired_at', '<=', $within30),
+            'active' => $query->where(function (Builder $q) use ($within30): void {
+                $q->whereNull('expired_at')
+                    ->orWhere(function (Builder $free): void {
+                        // Free codes not flagged for renewal stay "Active" regardless of date.
+                        $free->where('free_code', 1)
+                            ->where(function (Builder $renewal): void {
+                                $renewal->where('renewal_required', 0)
+                                    ->orWhereNull('renewal_required');
+                            });
+                    })
+                    ->orWhere('expired_at', '>', $within30);
+            }),
+            default => $query,
+        };
     }
 
     public function scopeLegacyVisible(Builder $query): Builder

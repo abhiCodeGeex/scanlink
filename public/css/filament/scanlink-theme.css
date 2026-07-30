@@ -774,10 +774,20 @@ html:not(.dark) .fi-topbar-collapse-sidebar-btn-ctn .fi-icon-btn:hover {
     padding-right: 2px;
 }
 
-.sl-sub-navigation li a:hover,
+.sl-sub-navigation li a:hover {
+    color: #bababa;
+}
+
+/* Selected template tab — match Add a New Code green CTA */
+.sl-sub-navigation li.is-active,
+.sl-sub-navigation li:has(> a.active) {
+    background: linear-gradient(to bottom, #008901 0%, #007a01 100%);
+    border-left-color: #006201;
+}
+
 .sl-sub-navigation li a.active,
 .sl-sub-navigation li.is-active a {
-    color: #bababa;
+    color: #fff !important;
 }
 
 .sl-preview-icon-link {
@@ -820,8 +830,8 @@ html:not(.dark) .fi-topbar-collapse-sidebar-btn-ctn .fi-icon-btn:hover {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 4px 12px;
-    padding: 0;
+    gap: 8px 10px;
+    padding: 4px 0;
     float: none;
     font-size: 12px;
     color: #333;
@@ -830,22 +840,74 @@ html:not(.dark) .fi-topbar-collapse-sidebar-btn-ctn .fi-icon-btn:hover {
 .sl-mainbox {
     display: inline-flex;
     align-items: center;
+    gap: 8px;
     margin-left: 0;
     vertical-align: middle;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font: inherit;
+    color: inherit;
+    line-height: 1.2;
+    cursor: default;
+    box-sizing: border-box;
+}
+
+.sl-mainbox--filterable {
+    cursor: pointer;
+}
+
+.sl-mainbox--filterable:hover {
+    border-color: #999;
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.sl-mainbox--filterable.is-active {
+    border-color: #006201;
+    background: rgba(0, 137, 1, 0.12);
+}
+
+.sl-mainbox:disabled {
+    cursor: default;
+    opacity: 1;
+}
+
+.sl-expiry-filter-clear {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 2px;
+    padding: 6px 12px;
+    border: 1px solid #006201;
+    border-radius: 6px;
+    background: #fff;
+    color: #006201;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.2;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.sl-expiry-filter-clear:hover {
+    background: #e8f8e8;
 }
 
 .sl-colorcodebox {
-    min-height: 20px;
-    width: 20px;
+    min-height: 18px;
+    height: 18px;
+    width: 18px;
     float: none;
-    margin-right: 5px;
+    margin-right: 0;
     border: 1px solid #ccc;
     flex-shrink: 0;
+    box-sizing: border-box;
 }
 
 .sl-colorbox-text {
     float: none;
     padding-top: 0;
+    white-space: nowrap;
 }
 
 .sl-colorcodebox.sl-red {

@@ -401,6 +401,10 @@ class PortalProfileForm
                             ])
                             ->defaultItems(0)
                             ->addActionLabel('Upload a Document')
+                            // Legacy parity: documents are drag-sortable and the mobile page
+                            // renders them in that saved order (persisted to `sort_order`).
+                            ->reorderable()
+                            ->orderColumn('sort_order')
                             ->mutateRelationshipDataBeforeCreateUsing(fn (array $data, Get $get): array => self::stampMediaOwner($data, $get))
                             ->mutateRelationshipDataBeforeSaveUsing(fn (array $data, Get $get): array => self::stampMediaOwner($data, $get))
                             ->columnSpanFull(),

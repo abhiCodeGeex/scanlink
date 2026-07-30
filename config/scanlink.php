@@ -30,6 +30,14 @@ return [
     |--------------------------------------------------------------------------
     */
     'analytics_api_url' => env('SCANLINK_ANALYTICS_API_URL', 'https://www.scanlink.com.au/api/web/api.php/'),
+    'analytics_api_fallback_urls' => array_values(array_filter([
+        env('SCANLINK_ANALYTICS_API_FALLBACK_URL'),
+        // Legacy endpoint kept as fallback for outage scenarios.
+        'http://api.galatech.com.au/web/api.php/',
+    ])),
+    // When remote analytics API is down, still assign a local key so profile setup
+    // never blocks and key-dependent screens can proceed.
+    'analytics_local_key_fallback' => (bool) env('SCANLINK_ANALYTICS_LOCAL_KEY_FALLBACK', true),
 
     /*
     |--------------------------------------------------------------------------

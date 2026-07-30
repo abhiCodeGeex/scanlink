@@ -1,21 +1,35 @@
 <style>
+    /* Indeterminate top progress bar shown during any Livewire request
+       (navigation, filters, pagination, tab switches, table/page actions). */
     #nav-feedback-loader {
         position: fixed;
         top: 0;
         left: 0;
-        width: 100%;
+        right: 0;
         height: 3px;
-        z-index: 9999;
+        z-index: 99999;
         opacity: 0;
         pointer-events: none;
-        transition: opacity 0.12s ease;
-        background: linear-gradient(90deg, transparent, rgb(59 130 246), transparent);
-        background-size: 200% 100%;
+        overflow: hidden;
+        background: rgba(0, 122, 1, 0.12);
+        transition: opacity 0.18s ease;
+    }
+
+    #nav-feedback-loader::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: -35%;
+        width: 35%;
+        border-radius: 3px;
+        background: linear-gradient(90deg, rgba(0, 179, 0, 0) 0%, #00b400 45%, #007a01 80%, rgba(0, 122, 1, 0) 100%);
+        box-shadow: 0 0 10px rgba(0, 179, 0, 0.45);
+        animation: nav-feedback-slide 1.05s cubic-bezier(0.4, 0, 0.2, 1) infinite;
     }
 
     #nav-feedback-loader[data-active="true"] {
         opacity: 1;
-        animation: nav-feedback-shimmer 0.9s linear infinite;
     }
 
     body.nav-busy {
@@ -26,16 +40,73 @@
     body.nav-busy a.fi-topbar-item-button,
     body.nav-busy a.fi-section {
         cursor: progress !important;
-        opacity: 0.85;
     }
 
-    @keyframes nav-feedback-shimmer {
-        from { background-position: 200% 0; }
-        to { background-position: -200% 0; }
+    @keyframes nav-feedback-slide {
+        0% { left: -35%; }
+        100% { left: 100%; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        #nav-feedback-loader::before { animation-duration: 2.2s; }
+    }
+
+    /* Centred "Please wait" card for slower round-trips (saves, heavy filters,
+       page loads) — deliberately non-blocking (pointer-events:none). */
+    #nav-feedback-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 99998;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(17, 24, 39, 0.06);
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+
+    #nav-feedback-overlay[data-active="true"] {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    #nav-feedback-overlay .nav-feedback-card {
+        display: inline-flex;
+        align-items: center;
+        gap: 14px;
+        padding: 15px 26px;
+        border-radius: 12px;
+        background: rgba(74, 74, 74, 0.94);
+        color: #fff;
+        font: 500 14px/1.2 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+        box-shadow: 0 12px 34px rgba(0, 0, 0, 0.28);
+        -webkit-backdrop-filter: blur(1.5px);
+        backdrop-filter: blur(1.5px);
+    }
+
+    #nav-feedback-overlay .nav-feedback-spin {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        border: 3px solid rgba(255, 255, 255, 0.32);
+        border-top-color: #fff;
+        animation: nav-feedback-spin 0.7s linear infinite;
+    }
+
+    @keyframes nav-feedback-spin {
+        to { transform: rotate(360deg); }
     }
 </style>
 
 <div id="nav-feedback-loader" data-active="false" aria-hidden="true"></div>
+<div id="nav-feedback-overlay" data-active="false" aria-hidden="true">
+    <div class="nav-feedback-card">
+        <span class="nav-feedback-spin"></span>
+        <span>Please wait&hellip;</span>
+    </div>
+</div>
 
 <script>
     (() => {
@@ -47,23 +118,94 @@
         const loader = document.getElementById('nav-feedback-loader');
         if (!loader) return;
 
-        let timeoutId = null;
-        const prefetched = new Set();
+        // Only reveal the bar once a request is slow enough to notice, so quick
+        // interactions don't flicker; a hard cap clears it if a response is lost.
+        const BAR_DELAY = 110;    // slim top bar — quick feedback
+        const BOX_DELAY = 320;    // centred "Please wait" card — for slower waits
+        const MAX_VISIBLE = 15000;
 
-        const setBusy = (busy) => {
-            loader.setAttribute('data-active', busy ? 'true' : 'false');
-            document.body.classList.toggle('nav-busy', busy);
+        const overlay = document.getElementById('nav-feedback-overlay');
+
+        let navActive = false;
+        let requestCount = 0;
+        let barVisible = false;
+        let boxVisible = false;
+        let barTimer = null;
+        let boxTimer = null;
+        let maxTimer = null;
+
+        const setBar = (on) => {
+            loader.setAttribute('data-active', on ? 'true' : 'false');
+            document.body.classList.toggle('nav-busy', on);
         };
 
-        const start = () => {
-            clearTimeout(timeoutId);
-            setBusy(true);
-            timeoutId = setTimeout(() => setBusy(false), 8000);
+        const setBox = (on) => {
+            if (overlay) {
+                overlay.setAttribute('data-active', on ? 'true' : 'false');
+            }
         };
 
-        const stop = () => {
-            clearTimeout(timeoutId);
-            setBusy(false);
+        const forceClear = () => {
+            navActive = false;
+            requestCount = 0;
+            if (barTimer !== null) { clearTimeout(barTimer); barTimer = null; }
+            if (boxTimer !== null) { clearTimeout(boxTimer); boxTimer = null; }
+            clearTimeout(maxTimer);
+            barVisible = false;
+            boxVisible = false;
+            setBar(false);
+            setBox(false);
+        };
+
+        const apply = () => {
+            const busy = navActive || requestCount > 0;
+
+            if (busy) {
+                if (!barVisible && barTimer === null) {
+                    barTimer = setTimeout(() => {
+                        barTimer = null;
+                        barVisible = true;
+                        setBar(true);
+                        clearTimeout(maxTimer);
+                        maxTimer = setTimeout(forceClear, MAX_VISIBLE);
+                    }, BAR_DELAY);
+                }
+
+                if (!boxVisible && boxTimer === null) {
+                    boxTimer = setTimeout(() => {
+                        boxTimer = null;
+                        boxVisible = true;
+                        setBox(true);
+                    }, BOX_DELAY);
+                }
+
+                return;
+            }
+
+            if (barTimer !== null) { clearTimeout(barTimer); barTimer = null; }
+            if (boxTimer !== null) { clearTimeout(boxTimer); boxTimer = null; }
+            clearTimeout(maxTimer);
+            if (barVisible) { barVisible = false; setBar(false); }
+            if (boxVisible) { boxVisible = false; setBox(false); }
+        };
+
+        // Safety: a real SPA navigation clears on `livewire:navigated`, but if that
+        // event never arrives (query-only URL syncs, aborted nav) auto-clear so the
+        // loader can never get stuck on.
+        let navSafetyTimer = null;
+
+        const navStart = () => {
+            navActive = true;
+            clearTimeout(navSafetyTimer);
+            navSafetyTimer = setTimeout(() => { navActive = false; apply(); }, 10000);
+            apply();
+        };
+
+        const navEnd = () => {
+            navActive = false;
+            requestCount = 0;
+            clearTimeout(navSafetyTimer);
+            apply();
         };
 
         const isNavigationLink = (el) => {
@@ -97,6 +239,8 @@
             return el instanceof HTMLAnchorElement ? el : el.closest('a');
         };
 
+        const prefetched = new Set();
+
         // Prefetch on hover so the next click feels instant (Livewire SPA).
         document.addEventListener('pointerover', (event) => {
             const anchor = resolveAnchor(event.target);
@@ -111,38 +255,29 @@
 
             prefetched.add(href);
 
-            if (typeof window.Livewire !== 'undefined' && typeof window.Livewire.navigate === 'function') {
-                try {
-                    // Hint the browser + Livewire by warming the page when supported.
-                    const link = document.createElement('link');
-                    link.rel = 'prefetch';
-                    link.href = href;
-                    link.as = 'document';
-                    document.head.appendChild(link);
-                } catch (e) {
-                    // ignore
-                }
+            try {
+                const link = document.createElement('link');
+                link.rel = 'prefetch';
+                link.href = href;
+                link.as = 'document';
+                document.head.appendChild(link);
+            } catch (e) {
+                // ignore
             }
         }, { passive: true });
 
-        document.addEventListener('click', (event) => {
-            const anchor = resolveAnchor(event.target);
-
-            if (!anchor || !isNavigationLink(anchor)) {
-                return;
-            }
-
-            start();
-        }, true);
-
-        document.addEventListener('livewire:navigate', start);
-        document.addEventListener('livewire:navigating', start);
-        document.addEventListener('livewire:navigated', stop);
-        window.addEventListener('pageshow', stop);
-        window.addEventListener('load', stop);
+        // Note: link clicks are intentionally NOT flagged as navigations here. Filament
+        // renders tabs/filters as <a href="?…"> links that resolve to Livewire AJAX
+        // commits (not real navigations), so the reliable `livewire:navigate*` events and
+        // the `commit` hook below drive the loader instead — preventing a stuck loader.
+        document.addEventListener('livewire:navigate', navStart);
+        document.addEventListener('livewire:navigating', navStart);
+        document.addEventListener('livewire:navigated', navEnd);
+        window.addEventListener('pageshow', navEnd);
+        window.addEventListener('load', navEnd);
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden) {
-                stop();
+                forceClear();
             }
         });
 
@@ -160,10 +295,22 @@
         document.addEventListener('livewire:navigated', saveListPageState);
         window.addEventListener('popstate', saveListPageState);
 
+        // Show the bar for every Livewire round-trip (filters, pagination, tabs,
+        // table/page actions, live fields) — not just SPA navigations.
         document.addEventListener('livewire:init', () => {
-            window.Livewire.hook('commit', ({ succeed }) => {
+            window.Livewire.hook('commit', ({ succeed, fail }) => {
+                requestCount++;
+                apply();
+
                 succeed(() => {
+                    requestCount = Math.max(0, requestCount - 1);
+                    apply();
                     queueMicrotask(saveListPageState);
+                });
+
+                fail(() => {
+                    requestCount = Math.max(0, requestCount - 1);
+                    apply();
                 });
             });
         });

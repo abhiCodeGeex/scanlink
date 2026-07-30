@@ -52,6 +52,19 @@ class OrderLabel extends Page
 
     public float $priceLarge = 5.0;
 
+    /**
+     * Legacy 2-step flow: 'form' = quantity entry, 'summary' = invoice confirmation.
+     */
+    public string $step = 'form';
+
+    public bool $agreeTerms = false;
+
+    /**
+     * Legacy on-screen postage stays 0 (controller $postage = 0; the 8.95 hidden
+     * field is dead code the JS never reads).
+     */
+    public float $postage = 0.0;
+
     public static function getNavigationGroup(): ?string
     {
         return 'Orders';
@@ -107,12 +120,52 @@ class OrderLabel extends Page
         $this->qtyLarge = $this->normalizeQty($value);
     }
 
-    public function submitOrder(LabelOrderService $labelOrders): void
+    /**
+     * Legacy step 1 → step 2: NEXT stores quantities and shows the order summary.
+     * Legacy requires at least one non-zero quantity ("Select quantity.").
+     */
+    public function goToSummary(): void
     {
         if (! $this->selectedProfileId) {
             Notification::make()->title('Please select a profile.')->danger()->send();
 
             return;
+        }
+
+        $qtySmall = (int) ($this->qtySmall ?: 0);
+        $qtyLarge = (int) ($this->qtyLarge ?: 0);
+
+        if ($qtySmall < 1 && $qtyLarge < 1) {
+            Notification::make()->title('Select quantity.')->danger()->send();
+
+            return;
+        }
+
+        $this->agreeTerms = false;
+        $this->step = 'summary';
+    }
+
+    public function backToForm(): void
+    {
+        $this->step = 'form';
+    }
+
+    /**
+     * Legacy step 2 (ordersummary POST): requires the terms checkbox, then places the
+     * temp order, emails client + admin, and returns to the master code list.
+     */
+    public function placeOrder(LabelOrderService $labelOrders)
+    {
+        if (! $this->selectedProfileId) {
+            Notification::make()->title('Please select a profile.')->danger()->send();
+
+            return null;
+        }
+
+        if (! $this->agreeTerms) {
+            Notification::make()->title('Please check the terms and conditions.')->danger()->send();
+
+            return null;
         }
 
         $client = $this->requireClient();
@@ -129,7 +182,7 @@ class OrderLabel extends Page
                 ->danger()
                 ->send();
 
-            return;
+            return null;
         }
 
         try {
@@ -140,12 +193,14 @@ class OrderLabel extends Page
                 $member,
             );
         } catch (ValidationException $e) {
+            $this->step = 'form';
+
             Notification::make()
                 ->title($e->validator->errors()->first() ?: 'Select quantity.')
                 ->danger()
                 ->send();
 
-            return;
+            return null;
         } catch (\Throwable $e) {
             report($e);
 
@@ -155,19 +210,19 @@ class OrderLabel extends Page
                 ->danger()
                 ->send();
 
-            return;
+            return null;
         }
 
         $this->dispatchOrderLabelEmails($profile, $member);
 
         Notification::make()
-            ->title('Label order created')
-            ->body("Order #{$order->id} has been placed. Postage and handling may apply.")
+            ->title('Label order placed')
+            ->body("Order #{$order->id} has been placed. ScanLink will mail an invoice to you (terms 14 days).")
             ->success()
             ->send();
 
-        $this->qtySmall = '';
-        $this->qtyLarge = '';
+        // Legacy redirects back to the profile-type list after placing the order.
+        return $this->redirect($this->returnToListUrl(), navigate: false);
     }
 
     /**
