@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'data_collection_mobile', 'data_collection_email', 'data_collection_name',
     'data_collection_surname', 'data_collection_content', 'data_collection_btn_text',
     'data_collection_btn_color', 'display_share_link', 'application', 'activate_bridge_graphic',
-    'deleted', 'update_or_not', 'code_purchase_id', 'form_id', 'form_title',
+    'deleted', 'update_or_not', 'code_purchase_id', 'reseller_client_id', 'form_id', 'form_title',
     'form_active', 'form_is_enable', 'form_submission_format', 'form_email_tag',
     'pop_up_formbuilder', 'free_code', 'is_reseller_code', 'enable_form_analytics',
     'expired_at', 'activation_start_date', 'activation_end_date',
@@ -291,6 +291,14 @@ class Profile extends Model
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('deleted', false);
+    }
+
+    /**
+     * Unused paid code slots shown in Code Balance.
+     */
+    public function scopeOpenSlot(Builder $query): Builder
+    {
+        return $query->where('update_or_not', '0');
     }
 
     /**

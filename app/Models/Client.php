@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'shortcut_image1',
     'shortcut_image2',
     'reseller_code',
+    'reseller_code_active',
     'reseller_email',
     'is_password_change',
 ])]
@@ -47,6 +48,7 @@ class Client extends Model
             'shortcut_image1' => '',
             'shortcut_image2' => '',
             'reseller_code' => '',
+            'reseller_code_active' => true,
             'reseller_email' => '',
             'is_password_change' => false,
         ];
@@ -57,6 +59,7 @@ class Client extends Model
         return [
             'regi_date' => 'date',
             'approve' => MysqlEnumBoolean::class,
+            'reseller_code_active' => MysqlEnumBoolean::class,
             'is_password_change' => 'boolean',
         ];
     }
