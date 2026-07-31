@@ -23,6 +23,10 @@ return new class extends Migration
 
     public function up(): void
     {
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         foreach ($this->phoneColumns as [$table, $column]) {
             $this->changePhoneColumnToString($table, $column);
         }

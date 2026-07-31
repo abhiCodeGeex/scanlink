@@ -327,6 +327,8 @@ class FormBuilder extends Page
     public function saveSettings(): void
     {
         $profile = $this->resolveProfile();
+        $this->formActive = (bool) $profile->form_active;
+        $this->formIsEnable = (bool) $profile->form_active && $this->formIsEnable;
 
         $this->formBuilder->updateFormSettings($profile, [
             'form_title' => $this->formTitle,
@@ -340,6 +342,18 @@ class FormBuilder extends Page
         Notification::make()->title('Form settings saved')->success()->send();
 
         $this->loadProfileData();
+    }
+
+    public function purchaseFormBuilderUrl(): ?string
+    {
+        if (! $this->selectedProfileId || $this->formActive || ! $this->isPrimaryUser()) {
+            return null;
+        }
+
+        return PurchaseFormBuilder::getUrl(
+            ['profile' => $this->selectedProfileId],
+            panel: 'portal',
+        );
     }
 
     public function openComposer(int $typeId): void

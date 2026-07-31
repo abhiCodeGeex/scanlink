@@ -1,6 +1,6 @@
 <x-emails.layout title="Scanlink Form Builder order summary">
     <p>Dear Administrator,</p>
-    <p>User has ordered a form builder at scanlink.</p>
+    <p>{{ $intro ?? 'User has ordered a form builder at scanlink.' }}</p>
     <br/>
     <p>Here is user details</p>
     <table cellpadding="3" cellspacing="0">

@@ -63,6 +63,7 @@ class EditProfile extends EditRecord
             return;
         }
 
+        $this->consumeFormBuilderOrderSuccess($this->record);
         $this->loadFormBuilderSidebarState($this->record);
     }
 

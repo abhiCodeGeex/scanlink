@@ -50,6 +50,21 @@
         </section>
     </div>
 
+    @if ($showFormBuilderOrderSuccess)
+        <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50" role="dialog" aria-modal="true">
+            <div class="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl text-center">
+                <h2 class="text-xl font-bold text-green-800">Thank you for your order.</h2>
+                <p class="mt-3 text-sm text-gray-700">
+                    The form builder function is now activated<br>
+                    for this code profile.
+                </p>
+                <div class="mt-5">
+                    <button type="button" class="green-btn" wire:click="closeFormBuilderOrderSuccess">OK</button>
+                </div>
+            </div>
+        </div>
+    @endif
+
     @if ($usesCkEditor)
         <script src="{{ asset('ckeditor/ckeditor.js') }}"></script>
         <style>

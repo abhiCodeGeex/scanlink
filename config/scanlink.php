@@ -50,6 +50,15 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Testing: only deliver outbound mail to this domain (e.g. yopmail.com).
+    | Set SCANLINK_MAIL_RESTRICT_ENABLED=false to allow real recipients again.
+    |--------------------------------------------------------------------------
+    */
+    'mail_restrict_enabled' => (bool) env('SCANLINK_MAIL_RESTRICT_ENABLED', true),
+    'mail_restrict_domain' => env('SCANLINK_MAIL_RESTRICT_DOMAIN', 'yopmail.com'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Physical QR label prices (AUD) — legacy dashboard constants
     |--------------------------------------------------------------------------
     */

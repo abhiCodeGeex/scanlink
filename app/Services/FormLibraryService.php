@@ -110,8 +110,7 @@ class FormLibraryService
 
             $targetProfile->update([
                 'form_id' => $targetFormId,
-                'form_active' => true,
-                'form_is_enable' => true,
+                'form_is_enable' => (bool) $targetProfile->form_active,
             ]);
         }
 
@@ -200,8 +199,7 @@ class FormLibraryService
         }
 
         $targetProfile->update([
-            'form_active' => true,
-            'form_is_enable' => true,
+            'form_is_enable' => (bool) $targetProfile->form_active,
         ]);
 
         return $cloned;

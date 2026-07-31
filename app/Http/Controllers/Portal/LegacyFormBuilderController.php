@@ -195,7 +195,6 @@ class LegacyFormBuilderController extends Controller
         $this->formBuilder->updateFormSettings($profile, [
             'form_title' => $formName !== '' ? $formName : ($profile->form_title ?: 'Form'),
             'form_is_enable' => $enableForm,
-            'form_active' => $enableForm,
             'recipients' => $emails,
         ]);
 
@@ -291,8 +290,7 @@ class LegacyFormBuilderController extends Controller
             || $request->input('enable_form') === true;
 
         $profile->forceFill([
-            'form_is_enable' => $enabled,
-            'form_active' => $enabled,
+            'form_is_enable' => (bool) $profile->form_active && $enabled,
         ])->save();
 
         return response('OK');

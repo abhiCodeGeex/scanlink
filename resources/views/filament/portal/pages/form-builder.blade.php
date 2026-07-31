@@ -139,11 +139,13 @@
                     <input type="text" wire:model="formEmailTag" class="fb-input" placeholder="Email subject tag">
 
                     <div style="margin-top:1rem; display:flex; flex-direction:column; gap:.5rem;">
+                        @if (! $formActive && $this->purchaseFormBuilderUrl())
+                            <a href="{{ $this->purchaseFormBuilderUrl() }}" class="fb-btn fb-btn-primary" style="text-decoration:none; justify-content:center;">
+                                Activate Form Builder — $5 AUD
+                            </a>
+                        @endif
                         <label style="display:flex; align-items:center; gap:.5rem; font-size:.875rem;">
-                            <input type="checkbox" wire:model="formIsEnable"> Enable form
-                        </label>
-                        <label style="display:flex; align-items:center; gap:.5rem; font-size:.875rem;">
-                            <input type="checkbox" wire:model="formActive"> Form active on scan page
+                            <input type="checkbox" wire:model="formIsEnable" @disabled(! $formActive)> Enable form
                         </label>
                         <div>
                             <label class="fb-label">Submission format</label>

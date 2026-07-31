@@ -85,17 +85,25 @@ html:not(.dark) .fi-topbar .fi-icon-btn.fi-topbar-database-notifications-btn:hov
     background-color: rgb(255 255 255 / 0.15) !important;
 }
 
-/* Topbar breathing room — the search / bell / avatar row was cramped against the
-   top edge with no vertical padding. Applies in both light and dark. */
+/* Topbar breathing room — the search / bell / avatar row was cramped (vertically
+   against the top and horizontally against the right edge). Force generous padding
+   on all sides and vertically centre the row. Applies in both light and dark. */
 .fi-topbar {
-    padding-top: 0.6rem !important;
-    padding-bottom: 0.6rem !important;
-    min-height: 3.75rem;
+    min-height: 4rem !important;
+    padding-top: 0.65rem !important;
+    padding-bottom: 0.65rem !important;
+    padding-inline: 1.5rem !important;
+    align-items: center !important;
 }
 
 .fi-topbar .fi-topbar-end {
-    column-gap: 0.625rem;
-    padding-right: 0.35rem;
+    column-gap: 0.75rem !important;
+    align-items: center !important;
+}
+
+/* Keep the avatar / user-menu trigger from sitting flush against the right edge. */
+.fi-topbar .fi-topbar-end > :last-child {
+    margin-right: 0.25rem !important;
 }
 
 /* ---------------------------------------------------------------------------

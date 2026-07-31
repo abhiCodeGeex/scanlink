@@ -12,8 +12,11 @@ return new class extends Migration
             return;
         }
 
-        // MySQL-only syntax; SQLite tests create the column as nullable already.
         if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            Schema::table('users', function ($table): void {
+                $table->string('admin_role')->nullable()->default(null)->change();
+            });
+
             return;
         }
 
@@ -27,6 +30,10 @@ return new class extends Migration
         }
 
         if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            Schema::table('users', function ($table): void {
+                $table->string('admin_role')->default('super_admin')->nullable(false)->change();
+            });
+
             return;
         }
 

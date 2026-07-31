@@ -4,6 +4,8 @@
         ?? 'https://www.youtube.com/embed/CfLEhcgvgrA?rel=0';
     $formBuilderPanelClass = $formBuilderPanelClass ?? '';
     $analyticsLocked = (bool) ($record?->enable_form_analytics ?? false);
+    $formBuilderPurchased = (bool) ($formBuilderPurchased ?? $record?->form_active);
+    $canPurchaseFormBuilder = (bool) ($canPurchaseFormBuilder ?? false);
 @endphp
 
 <div class="form-builder-box sl-form-builder-panel {{ $formBuilderPanelClass }}">
@@ -25,10 +27,28 @@
                     id="enable_form"
                     wire:model.live="data.form_is_enable"
                     value="1"
+                    @disabled(! $formBuilderPurchased)
                 >
             </span>
         </div>
     </div>
+
+    @if ($record?->exists && ! $formBuilderPurchased)
+        <div class="existing-item sl-form-builder-purchase">
+            @if ($canPurchaseFormBuilder && ! empty($formBuilderPurchaseUrl))
+                <button
+                    type="button"
+                    class="green-btn"
+                    wire:click="startFormBuilderPurchase"
+                    wire:loading.attr="disabled"
+                >
+                    Activate Form Builder — $5 AUD
+                </button>
+            @else
+                <span>Form Builder activation must be purchased by the primary account user.</span>
+            @endif
+        </div>
+    @endif
 
     <div class="existing-item">
         <span>

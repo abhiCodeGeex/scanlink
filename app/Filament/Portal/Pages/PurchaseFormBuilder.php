@@ -2,30 +2,15 @@
 
 namespace App\Filament\Portal\Pages;
 
-use App\Enums\CodeOrderStatus;
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
 use App\Filament\Portal\Concerns\RestrictsToPrimaryClientUser;
-use App\Mail\ScanlinkMail;
 use App\Models\Client;
-use App\Models\ClientUser;
-use App\Models\FormBuilderOrder;
-use App\Models\FormBuilderOrderDetail;
 use App\Models\Profile;
-use App\Support\SystemNotifier;
-use Illuminate\Support\Facades\Mail;
 use BackedEnum;
-use Filament\Actions\Action;
-use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Filament\Schemas\Components\Actions;
-use Filament\Schemas\Components\Component;
-use Filament\Schemas\Components\EmbeddedSchema;
-use Filament\Schemas\Components\Form;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Contracts\Support\Htmlable;
 
 class PurchaseFormBuilder extends Page
 {
@@ -42,189 +27,184 @@ class PurchaseFormBuilder extends Page
 
     protected static bool $shouldRegisterNavigation = false;
 
-    protected static ?int $navigationSort = 3;
+    protected string $view = 'filament.portal.pages.purchase-form-builder';
 
-    /**
-     * @var array<string, mixed>|null
-     */
-    public ?array $data = [];
+    public const SESSION_CHECKOUT = 'form_builder_purchase.checkout';
 
-    public static function getNavigationGroup(): ?string
-    {
-        return 'Forms';
-    }
+    public const SESSION_BILLING = 'form_builder_purchase.billing';
+
+    public ?int $profileId = null;
+
+    public string $firstName = '';
+
+    public string $lastName = '';
+
+    public string $companyName = '';
+
+    public string $billingAddress = '';
+
+    public string $email = '';
+
+    public string $town = '';
+
+    public string $phone = '';
+
+    public string $postalCode = '';
 
     public function mount(): void
     {
-        $this->form->fill([
-            'profile_id' => null,
-        ]);
+        $client = $this->requireClient();
+        $member = $this->requireClientUser();
+        $requestedProfileId = (int) request()->query('profile', 0);
+        $savedCheckout = session(self::SESSION_CHECKOUT, []);
+        $savedBilling = session(self::SESSION_BILLING, []);
+
+        $this->profileId = $requestedProfileId > 0
+            ? $requestedProfileId
+            : ((int) ($savedCheckout['profile_id'] ?? 0) ?: null);
+
+        if ($this->profileId !== null) {
+            $profile = $this->resolveProfile($this->profileId);
+
+            if ((bool) $profile->form_active) {
+                Notification::make()
+                    ->title('Form Builder is already activated for this profile.')
+                    ->warning()
+                    ->send();
+
+                $this->redirect($this->profileEditUrl($profile), navigate: false);
+
+                return;
+            }
+        }
+
+        $this->firstName = (string) ($savedBilling['first_name'] ?? $member->first_name ?? '');
+        $this->lastName = (string) ($savedBilling['last_name'] ?? $member->last_name ?? '');
+        $this->companyName = (string) ($savedBilling['company_name'] ?? $member->company_name ?? $client->client_name ?? '');
+        $this->billingAddress = (string) ($savedBilling['billing_address'] ?? $member->billing_address ?? $client->address ?? '');
+        $this->email = (string) ($savedBilling['email'] ?? $member->email ?? $client->email ?? '');
+        $this->town = (string) ($savedBilling['town'] ?? $member->town ?? '');
+        $this->phone = (string) ($savedBilling['phone'] ?? $member->phone ?? $client->telephone ?? '');
+        $this->postalCode = (string) ($savedBilling['postal_code'] ?? $member->postal_code ?? '');
     }
 
-    public function defaultForm(Schema $schema): Schema
+    public function getHeading(): string|Htmlable
     {
-        return $schema->statePath('data');
+        return '';
     }
 
-    public function form(Schema $schema): Schema
+    public function getTitle(): string|Htmlable
+    {
+        return '';
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function profileOptions(): array
     {
         $client = $this->currentClient();
 
-        return $schema
-            ->components([
-                Section::make('Activate form builder on a profile')
-                    ->schema([
-                        Select::make('profile_id')
-                            ->label('Profile')
-                            ->options(fn (): array => $client
-                                ? Profile::selectOptionsForClient((int) $client->id)->all()
-                                : [])
-                            ->required()
-                            ->searchable(),
-                    ]),
-            ]);
-    }
+        if (! $client) {
+            return [];
+        }
 
-    public function submitOrder(): void
-    {
-        $data = $this->form->getState();
-        $client = $this->requireClient();
-        $member = $this->requireClientUser();
-
-        $profile = Profile::query()
+        return Profile::query()
             ->where('client_id', $client->id)
             ->active()
-            ->findOrFail($data['profile_id']);
-
-        $order = DB::transaction(function () use ($client, $member, $profile): FormBuilderOrder {
-            $order = FormBuilderOrder::query()->create([
-                'client_id' => $client->id,
-                'email' => $member->email ?: $client->email,
-                'first_name' => $member->first_name,
-                'last_name' => $member->last_name,
-                'company_name' => $member->company_name ?: $client->client_name,
-                'billing_address' => $member->billing_address ?: $client->address,
-                'phone' => $member->phone ?: $client->telephone,
-                'status' => CodeOrderStatus::New,
-                'enable' => false,
-                'total_amount' => 0,
-                'no_of_codes' => 1,
-            ]);
-
-            FormBuilderOrderDetail::query()->create([
-                'form_builder_order_id' => $order->id,
-                'profile_id' => $profile->id,
-            ]);
-
-            $profile->update([
-                'form_active' => true,
-                'form_is_enable' => true,
-            ]);
-
-            return $order;
-        });
-
-        // Legacy client_mail_for_formbuilder + admin_mail_for_formbuilder.
-        $this->dispatchFormBuilderPurchaseEmails($order, $member, $client);
-
-        Notification::make()
-            ->title('Form builder activated')
-            ->body('Form builder is enabled for the selected profile. Admin will invoice as needed.')
-            ->success()
-            ->send();
-
-        $this->form->fill(['profile_id' => null]);
+            ->claimedSlot()
+            ->where('form_active', false)
+            ->orderBy('name')
+            ->get()
+            ->reject(fn (Profile $profile): bool => $profile->isExpired())
+            ->mapWithKeys(fn (Profile $profile): array => [
+                (int) $profile->id => $profile->displayLabel(),
+            ])
+            ->all();
     }
 
-    /**
-     * Legacy client_mail_for_formbuilder + admin_mail_for_formbuilder (+ bell notifications).
-     */
-    protected function dispatchFormBuilderPurchaseEmails(FormBuilderOrder $order, ClientUser $member, Client $client): void
+    public function next(): void
     {
-        $email = strtolower(trim((string) ($member->email ?: $client->email)));
-        $first = (string) ($member->first_name ?? '');
-        $last = (string) ($member->last_name ?? '');
-        $amount = number_format((float) $order->total_amount, 2);
-        $adminEmail = (string) config('scanlink.admin_email');
-
-        $this->trySendFormBuilderMail($email, new ScanlinkMail(
-            'ScanLink order confirmation - order number:'.$order->id,
-            'emails.formbuilder-purchase-client',
-            ['firstName' => $first, 'lastName' => $last, 'orderId' => $order->id, 'amount' => $amount],
-        ));
-
-        $this->trySendFormBuilderMail($adminEmail, new ScanlinkMail(
-            'Scanlink Form Builder order summary - order number:'.$order->id,
-            'emails.formbuilder-purchase-admin',
-            [
-                'orderId' => $order->id,
-                'email' => $email,
-                'firstName' => $first,
-                'lastName' => $last,
-                'noOfCodes' => (int) $order->no_of_codes,
-                'amount' => $amount,
-            ],
-        ));
-
-        SystemNotifier::toMember(
-            $member,
-            'Form builder activated',
-            'Form builder was activated for your profile (order #'.$order->id.'). A tax invoice will follow.',
-            'heroicon-o-document-text',
-            'success',
-        );
-
-        SystemNotifier::toAdmins(
-            'Form builder order',
-            trim($first.' '.$last).' activated form builder (order #'.$order->id.').',
-            'heroicon-o-document-text',
-            'info',
-        );
-    }
-
-    protected function trySendFormBuilderMail(string $email, ScanlinkMail $mail): void
-    {
-        $email = strtolower(trim($email));
-
-        if ($email === '' || ! str_contains($email, '@')) {
+        if (! $this->profileId) {
+            Notification::make()->title('Please select a profile.')->danger()->send();
             return;
         }
 
-        try {
-            Mail::to($email)->send($mail);
-        } catch (\Throwable $exception) {
-            report($exception);
-        }
-    }
-
-    /**
-     * @return array<Action>
-     */
-    protected function getFormActions(): array
-    {
-        return [
-            Action::make('submitOrder')
-                ->label('Submit order')
-                ->submit('submitOrder'),
+        $required = [
+            'firstName' => 'Enter a first name.',
+            'lastName' => 'Enter a last name.',
+            'companyName' => 'Enter a company name.',
+            'billingAddress' => 'Enter a billing address.',
+            'email' => 'Enter an email.',
+            'town' => 'Enter a town.',
+            'phone' => 'Enter a phone.',
+            'postalCode' => 'Enter a postal code.',
         ];
+
+        foreach ($required as $property => $message) {
+            if (trim((string) $this->{$property}) === '') {
+                Notification::make()->title($message)->danger()->send();
+                return;
+            }
+        }
+
+        if (! filter_var($this->email, FILTER_VALIDATE_EMAIL)) {
+            Notification::make()->title('Enter a valid email.')->danger()->send();
+            return;
+        }
+
+        $profile = $this->resolveProfile($this->profileId);
+
+        if ((bool) $profile->form_active) {
+            Notification::make()->title('Form Builder is already activated for this profile.')->warning()->send();
+            $this->redirect($this->profileEditUrl($profile), navigate: false);
+            return;
+        }
+
+        $client = $this->requireClient();
+        $member = $this->requireClientUser();
+        $reseller = Client::findByResellerCode((string) $member->client_reseller_code);
+
+        session([
+            self::SESSION_CHECKOUT => [
+                'profile_id' => (int) $profile->id,
+                'per_code_amount' => 5.00,
+                'quantity' => 1,
+                'return_url' => $this->profileEditUrl($profile),
+                'is_reseller_pricing_code' => $reseller ? '1' : '0',
+                'reseller_client_id' => (int) ($reseller?->id ?? 0),
+            ],
+            self::SESSION_BILLING => [
+                'first_name' => trim($this->firstName),
+                'last_name' => trim($this->lastName),
+                'company_name' => trim($this->companyName),
+                'billing_address' => trim($this->billingAddress),
+                'email' => strtolower(trim($this->email)),
+                'town' => trim($this->town),
+                'phone' => trim($this->phone),
+                'postal_code' => trim($this->postalCode),
+                'client_id' => (int) $client->id,
+            ],
+        ]);
+
+        $this->redirect(FormBuilderOrderSummary::getUrl(panel: 'portal'), navigate: false);
     }
 
-    public function content(Schema $schema): Schema
+    protected function resolveProfile(int $profileId): Profile
     {
-        return $schema
-            ->components([
-                $this->getFormContentComponent(),
-            ]);
+        return Profile::query()
+            ->where('client_id', $this->requireClient()->id)
+            ->active()
+            ->claimedSlot()
+            ->findOrFail($profileId);
     }
 
-    public function getFormContentComponent(): Component
+    protected function profileEditUrl(Profile $profile): string
     {
-        return Form::make([EmbeddedSchema::make('form')])
-            ->id('form')
-            ->livewireSubmitHandler('submitOrder')
-            ->footer([
-                Actions::make($this->getFormActions())
-                    ->key('form-actions'),
-            ]);
+        return \App\Filament\Portal\Resources\Profiles\ProfileResource::getUrl(
+            'edit',
+            ['record' => $profile],
+            panel: 'portal',
+        );
     }
 }

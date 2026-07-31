@@ -344,13 +344,16 @@ class FormBuilderService
     public function updateFormSettings(Profile $profile, array $settings): void
     {
         $formId = $this->ensureFormId($profile);
+        $enabled = (bool) $profile->form_active
+            && (bool) ($settings['form_is_enable'] ?? $profile->form_is_enable);
 
         $profile->update([
             'form_id' => $formId,
-            'form_title' => $settings['form_title'] ?? $profile->form_title,
-            'form_email_tag' => $settings['form_email_tag'] ?? $profile->form_email_tag,
-            'form_is_enable' => (bool) ($settings['form_is_enable'] ?? $profile->form_is_enable),
-            'form_active' => (bool) ($settings['form_is_enable'] ?? $settings['form_active'] ?? $profile->form_active),
+            'form_title' => $settings['form_title'] ?? ($profile->form_title ?: ''),
+            'form_email_tag' => $settings['form_email_tag'] ?? ($profile->form_email_tag ?: ''),
+            'form_is_enable' => $enabled,
+            // form_active is a paid entitlement. Only the purchase lifecycle changes it.
+            'form_active' => (bool) $profile->form_active,
             'form_submission_format' => (int) ($settings['form_submission_format'] ?? $profile->form_submission_format ?? 0),
         ]);
 

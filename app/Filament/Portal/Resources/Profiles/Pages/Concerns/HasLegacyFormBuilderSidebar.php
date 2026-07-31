@@ -320,8 +320,8 @@ trait HasLegacyFormBuilderSidebar
         $this->showExistingFormModal = false;
 
         if (property_exists($this, 'data') && is_array($this->data)) {
-            $this->data['form_is_enable'] = true;
-            $this->data['form_active'] = true;
+            $this->data['form_is_enable'] = (bool) $profile->form_active;
+            $this->data['form_active'] = (bool) $profile->form_active;
         }
 
         Notification::make()
@@ -686,7 +686,8 @@ trait HasLegacyFormBuilderSidebar
             }
         }
 
-        $enabled = filter_var(data_get($this->data, 'form_is_enable'), FILTER_VALIDATE_BOOLEAN);
+        $enabled = (bool) $profile->form_active
+            && filter_var(data_get($this->data, 'form_is_enable'), FILTER_VALIDATE_BOOLEAN);
         $formName = trim($formName);
         $emailTag = trim($emailTag);
         $emails = [];
@@ -743,7 +744,6 @@ trait HasLegacyFormBuilderSidebar
             'form_title' => $formName !== '' ? $formName : ($profile->form_title ?: ''),
             'form_email_tag' => $emailTag,
             'form_is_enable' => $enabled,
-            'form_active' => $enabled,
             'form_submission_format' => $format,
             'recipients' => $emails,
         ]);
@@ -780,7 +780,20 @@ trait HasLegacyFormBuilderSidebar
             return;
         }
 
-        $enabled = filter_var(data_get($this->data, 'form_is_enable'), FILTER_VALIDATE_BOOLEAN);
+        $requestedEnabled = filter_var(data_get($this->data, 'form_is_enable'), FILTER_VALIDATE_BOOLEAN);
+        $enabled = (bool) $profile->form_active && $requestedEnabled;
+
+        if ($requestedEnabled && ! (bool) $profile->form_active) {
+            data_set($this->data, 'form_is_enable', false);
+
+            if ($notifyEnable) {
+                Notification::make()
+                    ->title('Purchase Form Builder activation first')
+                    ->body('The primary account user can activate Form Builder for $5 AUD.')
+                    ->warning()
+                    ->send();
+            }
+        }
         // Legacy: once analytics is on, it stays on (checkbox disabled in UI).
         $analytics = $profile->enable_form_analytics
             || filter_var(data_get($this->data, 'enable_form_analytics'), FILTER_VALIDATE_BOOLEAN);
@@ -796,7 +809,6 @@ trait HasLegacyFormBuilderSidebar
 
         $profile->forceFill([
             'form_is_enable' => $enabled,
-            'form_active' => $enabled,
             'enable_form_analytics' => $analytics,
             'form_submission_format' => $format,
         ])->save();
@@ -813,7 +825,7 @@ trait HasLegacyFormBuilderSidebar
             $this->refreshPhonePreview();
         }
 
-        if ($notifyEnable) {
+        if ($notifyEnable && ! ($requestedEnabled && ! (bool) $profile->form_active)) {
             Notification::make()
                 ->title($enabled ? 'Form enabled on profile' : 'Form disabled on profile')
                 ->success()

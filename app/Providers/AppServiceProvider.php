@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Filament\Support\FormPlaceholderDefaults;
+use App\Support\RestrictOutboundMailToYopmail;
 use Illuminate\Console\Events\CommandStarting;
+use Illuminate\Mail\Events\MessageSending;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Symfony\Component\Console\Input\InputInterface;
@@ -57,6 +59,8 @@ class AppServiceProvider extends ServiceProvider
     {
         FormPlaceholderDefaults::register();
 
+        Event::listen(MessageSending::class, RestrictOutboundMailToYopmail::class);
+
         // Docker/php-fpm: BladeCompiler touch() after compile fails with
         // "Utime failed: Operation not permitted" when compiled views were
         // created as root via `docker exec`. Suppress that warning only.
@@ -81,6 +85,19 @@ class AppServiceProvider extends ServiceProvider
             $command = $event->command;
 
             if ($command === null || ! in_array($command, self::DESTRUCTIVE_COMMANDS, true)) {
+                return;
+            }
+
+            // Feature tests are required to use isolated sqlite :memory:. Allow their
+            // RefreshDatabase migrate:fresh while keeping Docker MySQL hard-locked.
+            if (
+                app()->environment('testing')
+                && (config('database.default') === 'sqlite' || env('DB_CONNECTION') === 'sqlite')
+                && (
+                    config('database.connections.sqlite.database') === ':memory:'
+                    || env('DB_DATABASE') === ':memory:'
+                )
+            ) {
                 return;
             }
 

@@ -6,6 +6,7 @@ use App\Filament\Portal\Pages\FormBuilder;
 use App\Filament\Portal\Pages\FormLibrary;
 use App\Filament\Portal\Pages\ManageParticipants;
 use App\Filament\Portal\Pages\OrderLabel;
+use App\Filament\Portal\Pages\PurchaseFormBuilder;
 use App\Filament\Portal\Resources\Profiles\Pages\CreateProfile;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Models\EquipmentType;
@@ -22,6 +23,57 @@ trait HasLegacyProfileEditorLayout
 
     /** Bumps phone-preview iframe cache key after save / live weblink sync. */
     public int $previewRefreshKey = 0;
+
+    public bool $showFormBuilderOrderSuccess = false;
+
+    public function closeFormBuilderOrderSuccess(): void
+    {
+        $this->showFormBuilderOrderSuccess = false;
+    }
+
+    public function startFormBuilderPurchase(): void
+    {
+        $profile = $this->legacyEditorRecord();
+
+        if (! $profile?->exists || ! method_exists($this, 'isPrimaryUser') || ! $this->isPrimaryUser()) {
+            \Filament\Notifications\Notification::make()
+                ->title('Only the primary account user can purchase Form Builder activation.')
+                ->warning()
+                ->send();
+            return;
+        }
+
+        if ((bool) $profile->form_active) {
+            \Filament\Notifications\Notification::make()
+                ->title('Form Builder is already activated for this profile.')
+                ->warning()
+                ->send();
+            return;
+        }
+
+        // Legacy auto_save_* persisted the profile before entering checkout so no
+        // edits were lost when the user left the editor.
+        if (method_exists($this, 'save')) {
+            $this->save(shouldRedirect: false);
+        }
+
+        $profile->refresh();
+
+        $this->redirect(
+            PurchaseFormBuilder::getUrl(['profile' => $profile->id], panel: 'portal'),
+            navigate: false,
+        );
+    }
+
+    protected function consumeFormBuilderOrderSuccess(Profile $profile): void
+    {
+        if (! (bool) $profile->pop_up_formbuilder) {
+            return;
+        }
+
+        $this->showFormBuilderOrderSuccess = true;
+        $profile->forceFill(['pop_up_formbuilder' => false])->save();
+    }
 
     public function getView(): string
     {
@@ -64,6 +116,7 @@ trait HasLegacyProfileEditorLayout
         $qrImageUrl = null;
         $formBuilderUrl = null;
         $formBuilderEmbedUrl = null;
+        $formBuilderPurchaseUrl = null;
         $orderLabelUrl = null;
         $participantsUrl = null;
         $formLibraryUrl = null;
@@ -82,6 +135,10 @@ trait HasLegacyProfileEditorLayout
                 .'&enable_form_analytics='.$analytics
                 .'&_v=fluid-3'
                 .'&_r='.$embedNonce;
+            $formBuilderPurchaseUrl = PurchaseFormBuilder::getUrl(
+                ['profile' => $record->id],
+                panel: 'portal',
+            );
             $orderLabelUrl = OrderLabel::getUrl(panel: 'portal').'?profile='.$record->id;
             $participantsUrl = ManageParticipants::getUrl(panel: 'portal').'?profile='.$record->id.'&embed=1';
             $formLibraryUrl = FormLibrary::getUrl(panel: 'portal');
@@ -135,6 +192,11 @@ trait HasLegacyProfileEditorLayout
             'qrImageUrl' => $qrImageUrl,
             'formBuilderUrl' => $formBuilderUrl,
             'formBuilderEmbedUrl' => $formBuilderEmbedUrl,
+            'formBuilderPurchaseUrl' => $formBuilderPurchaseUrl,
+            'formBuilderPurchased' => (bool) ($record?->form_active ?? false),
+            'canPurchaseFormBuilder' => method_exists($this, 'isPrimaryUser')
+                ? $this->isPrimaryUser()
+                : false,
             'orderLabelUrl' => $orderLabelUrl,
             'participantsUrl' => $participantsUrl,
             'formLibraryUrl' => $formLibraryUrl,
