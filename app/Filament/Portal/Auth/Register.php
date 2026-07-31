@@ -4,13 +4,14 @@ namespace App\Filament\Portal\Auth;
 
 use App\Enums\ClientUserRole;
 use App\Enums\UserType;
-use App\Mail\RegistrationWelcomeMail;
+use App\Mail\ScanlinkMail;
 use App\Models\Client;
 use App\Models\ClientUser;
 use App\Models\CodePrising;
 use App\Models\CodePurchase;
 use App\Models\User;
 use App\Services\ContactCaptchaService;
+use App\Support\SystemNotifier;
 use DanHarrin\LivewireRateLimiting\Exceptions\TooManyRequestsException;
 use Filament\Auth\Events\Registered;
 use Filament\Auth\Http\Responses\Contracts\RegistrationResponse;
@@ -207,11 +208,42 @@ class Register extends BaseRegister
             return $this->handleRegistration($data);
         });
 
-        Mail::to($data['email'])->send(new RegistrationWelcomeMail(
-            $data['first_name'],
-            $data['last_name'],
-            url('/'),
-        ));
+        // Legacy registration_mail_client (welcome) + registration_mail_admin (notice).
+        $resellerName = ($data['client_reseller_code'] ?? '') !== ''
+            ? (string) (Client::findByResellerCode($data['client_reseller_code'])?->client_name ?? '')
+            : '';
+
+        try {
+            Mail::to($data['email'])->send(new ScanlinkMail('Welcome to ScanLink', 'emails.registration-client', [
+                'firstName' => $data['first_name'],
+                'lastName' => $data['last_name'],
+            ]));
+
+            Mail::to((string) config('scanlink.admin_email'))->send(new ScanlinkMail('Scanlink New User Register', 'emails.registration-admin', [
+                'email' => $data['email'],
+                'firstName' => $data['first_name'],
+                'lastName' => $data['last_name'],
+                'resellerName' => $resellerName,
+            ]));
+        } catch (\Throwable $e) {
+            // Never fail account creation because outbound mail is unavailable.
+            report($e);
+        }
+
+        SystemNotifier::toUser(
+            $user instanceof User ? $user : null,
+            'Welcome to ScanLink',
+            'Your account is ready. Purchase codes and start creating your QR profiles.',
+            'heroicon-o-user-plus',
+            'success',
+        );
+
+        SystemNotifier::toAdmins(
+            'New user registered',
+            trim(($data['first_name'] ?? '').' '.($data['last_name'] ?? '')).' ('.($data['email'] ?? '').') registered a portal account.',
+            'heroicon-o-user-plus',
+            'info',
+        );
 
         event(new Registered($user));
 
@@ -306,9 +338,7 @@ class Register extends BaseRegister
 
         $resellerCode = $data['client_reseller_code'];
         if ($resellerCode !== '') {
-            $resellerExists = Client::query()
-                ->where('reseller_code', $resellerCode)
-                ->exists();
+            $resellerExists = Client::findByResellerCode($resellerCode) !== null;
 
             if (! $resellerExists) {
                 $errors['data.client_reseller_code'] = 'Enter a valid Reseller Code.';
@@ -387,7 +417,7 @@ class Register extends BaseRegister
                 'town' => $data['town'],
                 'phone' => $data['phone'],
                 'postal_code' => $data['postal_code'],
-                'client_reseller_code' => $data['client_reseller_code'] !== '' ? $data['client_reseller_code'] : '',
+                'client_reseller_code' => $data['client_reseller_code'] !== '' ? $data['client_reseller_code'] : null,
                 'is_password_change' => true,
                 'expire_at' => now()->addYear(),
             ]);

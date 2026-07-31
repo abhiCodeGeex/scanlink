@@ -108,4 +108,24 @@ class Client extends Model
             ->where('reseller_code', $resellerCode)
             ->value('client_name');
     }
+
+    /**
+     * Lookup a client by reseller code (used by registration).
+     */
+    public static function findByResellerCode(string $code, bool $activeOnly = true): ?self
+    {
+        $code = trim($code);
+
+        if ($code === '') {
+            return null;
+        }
+
+        $query = static::query()->where('reseller_code', $code);
+
+        if ($activeOnly && \Illuminate\Support\Facades\Schema::hasColumn('clients', 'reseller_code_active')) {
+            $query->where('reseller_code_active', '1');
+        }
+
+        return $query->first();
+    }
 }

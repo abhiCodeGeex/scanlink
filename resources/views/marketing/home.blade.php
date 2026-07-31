@@ -201,6 +201,11 @@
 
         <footer>
             An Australian innovation · Powered by ScanLink Technologies
+            · <a class="admin-link" href="{{ route('marketing.how-to') }}">How to</a>
+            · <a class="admin-link" href="{{ route('marketing.contact') }}">Contact us</a>
+            · <a class="admin-link" href="{{ route('marketing.faq') }}">FAQ</a>
+            · <a class="admin-link" href="{{ route('marketing.terms') }}">Terms</a>
+            · <a class="admin-link" href="{{ route('marketing.privacy') }}">Privacy</a>
         </footer>
     </div>
 </body>

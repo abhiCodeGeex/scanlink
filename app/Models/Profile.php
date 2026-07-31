@@ -293,6 +293,14 @@ class Profile extends Model
         return $query->where('deleted', false);
     }
 
+    /**
+     * Activated / claimed code slots (legacy update_or_not = 1).
+     */
+    public function scopeClaimedSlot(Builder $query): Builder
+    {
+        return $query->where('update_or_not', '1');
+    }
+
     public function scopeLegacyVisible(Builder $query): Builder
     {
         return $query->where('deleted', false)

@@ -9,6 +9,9 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
+/**
+ * Legacy registration welcome (mailsend.php registration_mail_client).
+ */
 class RegistrationWelcomeMail extends Mailable
 {
     use Queueable, SerializesModels;

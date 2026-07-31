@@ -6,7 +6,7 @@
 <body style="font-family:calibri, Arial, Helvetica, sans-serif;">
     <p>
         <a href="{{ url('/') }}">
-            <img src="{{ asset('images/scanlink-logo.png') }}" alt="logo" style="max-height: 60px;">
+            <img src="{{ asset('images/logo.png') }}" alt="logo" style="max-height: 60px;">
         </a>
     </p>
     <hr>

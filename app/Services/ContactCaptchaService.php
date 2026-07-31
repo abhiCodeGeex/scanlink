@@ -10,7 +10,7 @@ class ContactCaptchaService
     public const SESSION_KEY = 'contact_captcha_hash';
 
     /**
-     * Generate a 4-character alpha captcha and store its hash.
+     * Generate a 4-character alpha captcha (legacy Captcha_Alpha style) and store its hash.
      *
      * @return resource|\GdImage
      */
@@ -72,6 +72,9 @@ class ContactCaptchaService
         return $image;
     }
 
+    /**
+     * Validate and consume captcha (one-shot — for contact forms).
+     */
     public function valid(?string $answer): bool
     {
         if (! $this->matches($answer)) {
@@ -83,6 +86,9 @@ class ContactCaptchaService
         return true;
     }
 
+    /**
+     * Check captcha without consuming it (safe for multi-field validation).
+     */
     public function matches(?string $answer): bool
     {
         $hash = Session::get(self::SESSION_KEY);
@@ -101,6 +107,7 @@ class ContactCaptchaService
 
     protected function generateCode(int $length): string
     {
+        // Avoid ambiguous characters (legacy "distinct" alphabet style).
         $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
         $code = '';
 
