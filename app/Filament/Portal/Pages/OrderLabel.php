@@ -5,8 +5,10 @@ namespace App\Filament\Portal\Pages;
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Mail\ScanlinkMail;
+use App\Models\ClientUser;
 use App\Models\Profile;
 use App\Services\LabelOrderService;
+use App\Support\SystemNotifier;
 use App\Services\ProfileQrService;
 use App\Support\LegacyEquipmentTypeLabels;
 use BackedEnum;
@@ -250,6 +252,21 @@ class OrderLabel extends Page
 
         $this->trySendMail($data['email'], new ScanlinkMail('ScanLink order confirmation', 'emails.order-label-client', $data));
         $this->trySendMail((string) config('scanlink.admin_email'), new ScanlinkMail('Scanlink Order Label', 'emails.order-label-admin', $data));
+
+        SystemNotifier::toMember(
+            $member instanceof ClientUser ? $member : $this->currentClientUser(),
+            'Label order placed',
+            'Your label order for code #'.$profile->id.' has been placed (total $'.$data['total'].').',
+            'heroicon-o-tag',
+            'success',
+        );
+
+        SystemNotifier::toAdmins(
+            'New label order',
+            trim($data['firstName'].' '.$data['lastName']).' placed a label order for code #'.$profile->id.'.',
+            'heroicon-o-tag',
+            'success',
+        );
     }
 
     protected function trySendMail(string $email, ScanlinkMail $mail): void

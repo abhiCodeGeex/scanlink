@@ -85,6 +85,19 @@ html:not(.dark) .fi-topbar .fi-icon-btn.fi-topbar-database-notifications-btn:hov
     background-color: rgb(255 255 255 / 0.15) !important;
 }
 
+/* Topbar breathing room — the search / bell / avatar row was cramped against the
+   top edge with no vertical padding. Applies in both light and dark. */
+.fi-topbar {
+    padding-top: 0.6rem !important;
+    padding-bottom: 0.6rem !important;
+    min-height: 3.75rem;
+}
+
+.fi-topbar .fi-topbar-end {
+    column-gap: 0.625rem;
+    padding-right: 0.35rem;
+}
+
 /* ---------------------------------------------------------------------------
  * Dropdown panels â€” always keep labels/icons visible (never inherit topbar white)
  * Covers user menu, theme switcher, and any future topbar dropdowns.
@@ -2012,7 +2025,7 @@ tr.sl-row-active {
     font-size: 13px !important;
 }
 
-/* Master Code List row tools â€” compact, vertically centered */
+/* Master Code List row tools — compact, vertically centered */
 .fi-page:has(.sl-mastercode-toolbar) .fi-ta-actions,
 .fi-resource-profiles .fi-ta-actions {
     display: inline-flex !important;

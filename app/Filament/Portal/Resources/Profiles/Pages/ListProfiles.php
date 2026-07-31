@@ -82,7 +82,7 @@ class ListProfiles extends ListRecords
             'activeTab' => $this->activeTab,
             'addCodeUrl' => $this->addNewCodeUrl(),
             'canAddCode' => $this->canAddCode() && $this->hasSelectedTemplateTab(),
-            'canRenewCodes' => $this->isPrimaryUser(),
+            'canRenewCodes' => true,
             'hasProfiles' => $this->getAllTableRecordsCount() > 0,
             'bindToolbarActions' => true,
             // The working "Multiple Code Analytics" / "Renew Selected Codes" live in the
@@ -106,7 +106,10 @@ class ListProfiles extends ListRecords
             return;
         }
 
-        $renewable = $records->filter(fn (Profile $profile): bool => ! (bool) $profile->free_code);
+        // Legacy: free_code=0 OR renewal_required=1.
+        $renewable = $records->filter(
+            fn (Profile $profile): bool => $profile->isExpiryManaged()
+        );
 
         if ($renewable->isEmpty()) {
             $this->dispatch('sl-toolbar-alert', message: 'Please select the code to be renew.');
@@ -124,7 +127,7 @@ class ListProfiles extends ListRecords
     }
 
     /**
-     * Legacy parity: Multiple Code Analytics requires a non-empty, non-expired selection.
+     * Legacy parity: Multiple Code Analytics requires 2+ non-expired profiles.
      */
     public function toolbarMultipleCodeAnalytics(): void
     {
@@ -132,6 +135,12 @@ class ListProfiles extends ListRecords
 
         if ($records->isEmpty()) {
             $this->dispatch('sl-toolbar-alert', message: 'No code profiles have been selected');
+
+            return;
+        }
+
+        if ($records->count() < 2) {
+            $this->dispatch('sl-toolbar-alert', message: 'Please select more than one profile');
 
             return;
         }

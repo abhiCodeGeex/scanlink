@@ -11,6 +11,7 @@ use App\Models\CodePrising;
 use App\Models\CodePurchase;
 use App\Models\User;
 use App\Services\ContactCaptchaService;
+use App\Support\SystemNotifier;
 use DanHarrin\LivewireRateLimiting\Exceptions\TooManyRequestsException;
 use Filament\Auth\Events\Registered;
 use Filament\Auth\Http\Responses\Contracts\RegistrationResponse;
@@ -228,6 +229,21 @@ class Register extends BaseRegister
             // Never fail account creation because outbound mail is unavailable.
             report($e);
         }
+
+        SystemNotifier::toUser(
+            $user instanceof User ? $user : null,
+            'Welcome to ScanLink',
+            'Your account is ready. Purchase codes and start creating your QR profiles.',
+            'heroicon-o-user-plus',
+            'success',
+        );
+
+        SystemNotifier::toAdmins(
+            'New user registered',
+            trim(($data['first_name'] ?? '').' '.($data['last_name'] ?? '')).' ('.($data['email'] ?? '').') registered a portal account.',
+            'heroicon-o-user-plus',
+            'info',
+        );
 
         event(new Registered($user));
 

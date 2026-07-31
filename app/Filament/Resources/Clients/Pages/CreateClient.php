@@ -7,6 +7,7 @@ use App\Filament\Concerns\HandlesDatabaseSaveFailures;
 use App\Filament\Resources\Clients\ClientResource;
 use App\Mail\ClientWelcomeNotification;
 use App\Models\Client;
+use App\Support\SystemNotifier;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\Mail;
@@ -131,6 +132,14 @@ class CreateClient extends CreateRecord
 
         try {
             Mail::to($client->email)->send(new ClientWelcomeNotification($client, $plainPassword));
+
+            SystemNotifier::toClientPrimary(
+                $client,
+                'Welcome to ScanLink',
+                'Your ScanLink portal account has been created — check your email for login details.',
+                'heroicon-o-user-plus',
+                'success',
+            );
         } catch (\Throwable $exception) {
             report($exception);
 

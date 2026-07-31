@@ -507,6 +507,31 @@ class Profile extends Model
     }
 
     /**
+     * Legacy mastercode Select checkbox / renew eligibility:
+     * free codes are ignored unless renewal_required=1.
+     */
+    public function isExpiryManaged(): bool
+    {
+        if (! (bool) $this->free_code) {
+            return true;
+        }
+
+        return (bool) ($this->getAttribute('renewal_required') ?? false);
+    }
+
+    /**
+     * Legacy paging.php: free + not renewal_required → "N/A"; otherwise show date.
+     */
+    public function expiryDateLabel(): string
+    {
+        if (! $this->isExpiryManaged()) {
+            return 'N/A';
+        }
+
+        return $this->expired_at?->format('d/m/Y') ?? '—';
+    }
+
+    /**
      * Legacy mastercode row colour class (red / orange / green).
      */
     public function expiryStatusClass(): string

@@ -5,10 +5,7 @@ namespace App\Filament\Pages;
 use App\Filament\Resources\Clients\ClientResource;
 use App\Filament\Resources\CodePurchases\CodePurchaseResource;
 use App\Filament\Resources\FormBuilderOrders\FormBuilderOrderResource;
-use App\Filament\Resources\Galleries\GalleryResource;
 use App\Filament\Resources\Orders\OrderResource;
-use App\Filament\Resources\Profiles\ProfileResource;
-use App\Filament\Resources\Testimonials\TestimonialResource;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 
@@ -32,8 +29,7 @@ class AdminHome extends Page
     }
 
     /**
-     * Quick-launch tiles for areas hidden from the sidebar or primary daily workflows.
-     * Settings and Reports items live in the sidebar only.
+     * Quick-launch tiles matching items available in the admin sidebar.
      *
      * @return list<array{label: string, url: string, icon: string}>
      */
@@ -56,11 +52,6 @@ class AdminHome extends Page
                 'icon' => 'heroicon-o-arrows-right-left',
             ],
             [
-                'label' => 'Manage Product',
-                'url' => ProfileResource::getUrl('index'),
-                'icon' => 'heroicon-o-squares-2x2',
-            ],
-            [
                 'label' => 'Manage Order',
                 'url' => OrderResource::getUrl('index'),
                 'icon' => 'heroicon-o-truck',
@@ -74,16 +65,6 @@ class AdminHome extends Page
                 'label' => 'Manage Form Builder Order',
                 'url' => FormBuilderOrderResource::getUrl('index'),
                 'icon' => 'heroicon-o-document-text',
-            ],
-            [
-                'label' => 'Manage Testimonial',
-                'url' => TestimonialResource::getUrl('index'),
-                'icon' => 'heroicon-o-chat-bubble-left-right',
-            ],
-            [
-                'label' => 'Manage Gallery',
-                'url' => GalleryResource::getUrl('index'),
-                'icon' => 'heroicon-o-photo',
             ],
         ];
     }

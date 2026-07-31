@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\UserType;
 use App\Mail\ContactUsMessage;
+use App\Support\SystemNotifier;
 use App\Models\CodePrising;
 use App\Models\Gallery;
 use App\Models\Setting;
@@ -166,6 +167,13 @@ class MarketingController extends Controller
                 'message' => $exception->getMessage(),
             ]);
         }
+
+        SystemNotifier::toAdmins(
+            'New contact message',
+            trim($name).' ('.$email.') sent a message via the website contact form.',
+            'heroicon-o-envelope',
+            'info',
+        );
 
         return redirect()
             ->route('marketing.contact')

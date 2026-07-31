@@ -39,6 +39,8 @@ class PortalProfilesTable
             ->deferColumnManager(false)
             ->persistColumnsInSession()
             ->recordClasses(fn (Profile $record): string => $record->expiryStatusClass())
+            // Legacy: free codes without renewal_required cannot be selected.
+            ->checkIfRecordIsSelectableUsing(fn (Profile $record): bool => $record->isExpiryManaged())
             ->columns([
                 TextColumn::make('id')
                     ->label('Profile No.')
@@ -82,13 +84,7 @@ class PortalProfilesTable
                     ->sortable()
                     ->toggleable()
                     ->alignCenter()
-                    ->formatStateUsing(function (Profile $record): string {
-                        if ((bool) $record->free_code) {
-                            return 'N/A';
-                        }
-
-                        return $record->expired_at?->format('d/m/Y') ?? '—';
-                    }),
+                    ->formatStateUsing(fn (Profile $record): string => $record->expiryDateLabel()),
             ])
             ->filters([
                 SearchTableFilter::make(
@@ -106,6 +102,16 @@ class PortalProfilesTable
                         if ($records->isEmpty()) {
                             Notification::make()
                                 ->title('No code profiles have been selected')
+                                ->danger()
+                                ->send();
+
+                            return null;
+                        }
+
+                        // Legacy getCumulativeProfile: require more than one profile on the list.
+                        if ($records->count() < 2) {
+                            Notification::make()
+                                ->title('Please select more than one profile')
                                 ->danger()
                                 ->send();
 
@@ -134,9 +140,12 @@ class PortalProfilesTable
                     ->icon('heroicon-o-arrow-path')
                     ->color('success')
                     ->deselectRecordsAfterCompletion()
-                    ->visible(fn (): bool => InteractsWithClientMembership::portalMembership()?->isPrimary() ?? false)
+                    // Legacy mastercode renew is available to primary and sub-users.
                     ->action(function (Collection $records) {
-                        $renewable = $records->filter(fn (Profile $profile): bool => ! (bool) $profile->free_code);
+                        // Legacy: free_code=0 OR renewal_required=1.
+                        $renewable = $records->filter(
+                            fn (Profile $profile): bool => $profile->isExpiryManaged()
+                        );
 
                         if ($renewable->isEmpty()) {
                             Notification::make()

@@ -266,10 +266,29 @@
             }
         }, { passive: true });
 
-        // Note: link clicks are intentionally NOT flagged as navigations here. Filament
-        // renders tabs/filters as <a href="?…"> links that resolve to Livewire AJAX
-        // commits (not real navigations), so the reliable `livewire:navigate*` events and
-        // the `commit` hook below drive the loader instead — preventing a stuck loader.
+        // Immediate feedback on a real page navigation (sidebar/topbar/menu), so the loader
+        // shows the instant a link is clicked — even before livewire:navigate fires, and
+        // even when the link does a full page load. Crucially, this only triggers when the
+        // target PATH differs from the current one: same-page query-string links (tabs,
+        // filters, pagination) are Livewire commits and must NOT be flagged here, otherwise
+        // livewire:navigated never arrives and the loader would get stuck.
+        document.addEventListener('click', (event) => {
+            var anchor = resolveAnchor(event.target);
+            if (!anchor) return;
+
+            var href = anchor.getAttribute('href');
+            if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
+
+            try {
+                var url = new URL(anchor.href, window.location.origin);
+                if (url.origin === window.location.origin && url.pathname !== window.location.pathname) {
+                    navStart();
+                }
+            } catch (e) {
+                // ignore malformed href
+            }
+        }, true);
+
         document.addEventListener('livewire:navigate', navStart);
         document.addEventListener('livewire:navigating', navStart);
         document.addEventListener('livewire:navigated', navEnd);
@@ -298,7 +317,14 @@
         // Show the bar for every Livewire round-trip (filters, pagination, tabs,
         // table/page actions, live fields) — not just SPA navigations.
         document.addEventListener('livewire:init', () => {
-            window.Livewire.hook('commit', ({ succeed, fail }) => {
+            window.Livewire.hook('commit', ({ component, succeed, fail }) => {
+                // Ignore the background database-notifications poll (60s) — it's not a
+                // user action and must not flash the loader.
+                var name = (component && component.name) ? String(component.name).toLowerCase() : '';
+                if (name.indexOf('notifications') !== -1) {
+                    return;
+                }
+
                 requestCount++;
                 apply();
 

@@ -6,6 +6,7 @@ use App\Mail\ContactUsMessage;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\ContactCaptchaService;
+use App\Support\SystemNotifier;
 use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -106,6 +107,13 @@ class ContactUs extends Page
                 'message' => $exception->getMessage(),
             ]);
         }
+
+        SystemNotifier::toAdmins(
+            'New contact message',
+            trim($name).' ('.$email.') sent a message via the portal contact form.',
+            'heroicon-o-envelope',
+            'info',
+        );
 
         $this->comments = '';
         $this->captcha = '';

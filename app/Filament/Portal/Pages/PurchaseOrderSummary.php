@@ -10,6 +10,7 @@ use App\Models\Client;
 use App\Models\CodePurchaseDetail;
 use App\Models\EquipmentType;
 use App\Models\Profile;
+use App\Support\SystemNotifier;
 use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -206,6 +207,15 @@ class PurchaseOrderSummary extends Page
             'supportPhone' => $supportPhone,
         ]));
 
+        // Bell notification for the buyer (same person the confirmation email targets).
+        SystemNotifier::toMember(
+            $this->currentClientUser(),
+            'Order confirmed',
+            "Your purchase of {$qty} code(s) is confirmed — total \${$total} AUD.",
+            'heroicon-o-shopping-cart',
+            'success',
+        );
+
         // Admin notification.
         $this->trySendMail($adminEmail, new ScanlinkMail('Scanlink Purchase Code', 'emails.admin-code', [
             'title' => 'Scanlink Purchase Code',
@@ -218,6 +228,13 @@ class PurchaseOrderSummary extends Page
             'total' => $total,
             'resellerName' => (string) ($reseller?->client_name ?? ''),
         ]));
+
+        SystemNotifier::toAdmins(
+            'New code purchase',
+            trim($firstName.' '.$lastName).' purchased '.$qty.' code(s) — total $'.$total.' AUD.',
+            'heroicon-o-shopping-cart',
+            'success',
+        );
 
         // When a reseller code was used, notify the reseller + admin.
         if ($reseller) {
@@ -246,6 +263,15 @@ class PurchaseOrderSummary extends Page
                 'total' => $total,
                 'resellerName' => '',
             ]));
+
+            // Notify the reseller account owner that their code was used.
+            SystemNotifier::toClientPrimary(
+                $reseller,
+                'Your reseller code was used',
+                trim($firstName.' '.$lastName).' purchased '.$qty.' code(s) using your reseller code.',
+                'heroicon-o-ticket',
+                'info',
+            );
         }
     }
 

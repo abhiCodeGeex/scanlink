@@ -3,9 +3,9 @@
 namespace App\Filament\Portal\Pages;
 
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
-use App\Filament\Portal\Concerns\RestrictsToPrimaryClientUser;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Mail\ScanlinkMail;
+use App\Support\SystemNotifier;
 use App\Models\Client;
 use App\Models\ClientUser;
 use App\Models\Profile;
@@ -24,7 +24,6 @@ use Illuminate\Support\Facades\Mail;
 class RenewCodeSummary extends Page
 {
     use InteractsWithClientMembership;
-    use RestrictsToPrimaryClientUser;
 
     public const SESSION_RENEW = 'portal_renew_checkout';
 
@@ -41,6 +40,15 @@ class RenewCodeSummary extends Page
     protected string $view = 'filament.portal.pages.renew-order-summary';
 
     public bool $agreeTerms = false;
+
+    /**
+     * Legacy mastercode renew is available to primary and account sub-users.
+     * (Multiple Code Renewal menu remains primary-only.)
+     */
+    public static function canAccess(): bool
+    {
+        return static::portalMembership() !== null;
+    }
 
     /**
      * Stage selected profiles into session and return the summary URL.
@@ -257,6 +265,21 @@ class RenewCodeSummary extends Page
                 'total' => $total,
                 'resellerName' => (string) ($client->resellerName() ?? ''),
             ]));
+
+            SystemNotifier::toMember(
+                $member,
+                'Codes renewed',
+                "{$ownCount} code(s) renewed — total \${$total} AUD.",
+                'heroicon-o-arrow-path',
+                'success',
+            );
+
+            SystemNotifier::toAdmins(
+                'Codes renewed',
+                trim(($member->first_name ?? '').' '.($member->last_name ?? '')).' renewed '.$ownCount.' code(s) — total $'.$total.' AUD.',
+                'heroicon-o-arrow-path',
+                'success',
+            );
         }
 
         // Reseller groups.
@@ -294,6 +317,21 @@ class RenewCodeSummary extends Page
                 'total' => $total,
                 'resellerName' => '',
             ]));
+
+            SystemNotifier::toClientPrimary(
+                $reseller,
+                'Reseller codes renewed',
+                $count.' code(s) using your reseller code were renewed.',
+                'heroicon-o-arrow-path',
+                'info',
+            );
+
+            SystemNotifier::toAdmins(
+                'Reseller codes renewed',
+                $resellerName.' — '.$count.' reseller code(s) renewed.',
+                'heroicon-o-arrow-path',
+                'info',
+            );
         }
     }
 

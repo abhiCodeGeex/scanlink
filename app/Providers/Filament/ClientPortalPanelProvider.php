@@ -77,6 +77,8 @@ class ClientPortalPanelProvider extends PanelProvider
             ->login(Login::class)
             ->registration(Register::class)
             ->passwordReset()
+            ->databaseNotifications()
+            ->databaseNotificationsPolling('5s')
             ->profile(isSimple: false)
             // Demo: land on Edit user profile (was Master Code List).
             ->homeUrl(fn (): string => EditAccount::getUrl())
@@ -150,7 +152,7 @@ class ClientPortalPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=52">',
+                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=57">',
             )
             ->widgets([])
             ->middleware([

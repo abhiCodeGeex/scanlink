@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Mail\ScanlinkMail;
 use App\Models\ClientUser;
 use App\Models\Profile;
+use App\Support\SystemNotifier;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Mail;
@@ -103,6 +104,18 @@ class SendExpiryNotifications extends Command
     ): int {
         $first = (string) ($member->first_name ?? '');
         $last = (string) ($member->last_name ?? '');
+
+        // Bell notification for the code owner (same user the expiry email targets).
+        $bucketCount = $userProfiles->count();
+        SystemNotifier::toMember(
+            $member,
+            $expired ? 'Code(s) expired' : 'Code(s) expiring soon',
+            $expired
+                ? $bucketCount.' code(s) have expired ('.$expiryDate.'). Renew to keep them active.'
+                : $bucketCount.' code(s) expire in '.$days.' day(s) — '.$expiryDate.'.',
+            'heroicon-o-exclamation-triangle',
+            $expired ? 'danger' : 'warning',
+        );
 
         // >2 codes in this bucket → one consolidated email (legacy "_multiple").
         if ($userProfiles->count() > 2) {

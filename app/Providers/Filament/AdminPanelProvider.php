@@ -37,6 +37,8 @@ class AdminPanelProvider extends PanelProvider
             ->login()
             // Self-registration disabled — legacy siteadmin had no open signup.
             ->passwordReset()
+            ->databaseNotifications()
+            ->databaseNotificationsPolling('5s')
             ->profile(isSimple: false)
             ->multiFactorAuthentication([
                 ScanLinkAppAuthentication::make()
@@ -121,7 +123,7 @@ class AdminPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=47">',
+                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=57">',
             )
             ->widgets([
                 Widgets\AccountWidget::class,
