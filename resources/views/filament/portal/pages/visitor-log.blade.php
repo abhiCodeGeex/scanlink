@@ -102,13 +102,17 @@
                 </div>
                 @if ($selectedProfileId)
                     <div class="sl-vlog__actions">
-                        <button type="button" class="sl-vlog__btn" wire:click="exportCsv">EXPORT</button>
+                        @unless ($profileExpired)
+                            <button type="button" class="sl-vlog__btn" wire:click="exportXlsx">EXPORT</button>
+                        @endunless
                         <a class="sl-vlog__btn" href="{{ $this->returnToListUrl() }}">RETURN TO LIST</a>
                     </div>
                 @endif
             </div>
 
-            @if ($selectedProfileId)
+            @if ($profileExpired)
+                <div class="sl-vlog__empty">You can not perform this action on expired profile.</div>
+            @elseif ($selectedProfileId)
                 <table class="listing-table" width="100%" cellspacing="0" cellpadding="0">
                     <thead>
                         <tr>

@@ -272,8 +272,9 @@ class ProfileFormSchema
             ],
             'voc' => [
                 // Legacy voc/edit.php "Profile Information" (not a Words section).
-                TextInput::make('voc_first_name')->label('First Name')->maxLength(200),
-                TextInput::make('voc_last_name')->label('Last Name')->maxLength(200),
+                // Legacy requires First + Last name (submit handler); everything else optional.
+                TextInput::make('voc_first_name')->label('First Name')->maxLength(200)->required(),
+                TextInput::make('voc_last_name')->label('Last Name')->maxLength(200)->required(),
                 TextInput::make('voc_address')->label('Address')->maxLength(200)->columnSpanFull(),
                 TextInput::make('voc_town')->label('Town')->maxLength(50),
                 TextInput::make('voc_state')->label('State/Territory')->maxLength(50),
@@ -290,12 +291,28 @@ class ProfileFormSchema
                 TextInput::make('voc_emp_phone')->label('Telephone No.')->maxLength(30),
             ],
             'people' => [
-                // Legacy people/index.php requires only txtname (Name); Position is not required.
-                // Legacy stores Position in its own `position` column (not `identification`).
-                TextInput::make('position')->label('Position'),
-                TextInput::make('name')->label('Name')->required(),
-                Textarea::make('description')->label('Description')->columnSpanFull(),
-                Textarea::make('notes')->label('Notes')->columnSpanFull(),
+                // Legacy people/index.php: Position ABOVE Name; Name (txtname) is the required
+                // profile name; there is NO Description column (people uses `notes`).
+                TextInput::make('position')->label('Position:'),
+                TextInput::make('name')->label('Name:')->required(),
+                Textarea::make('notes')->label('Notes:')->columnSpanFull(),
+                // Legacy people stores a single Contact + Telephone on the PROFILE row
+                // (name_company / telephone), not the profile_contact repeater.
+                TextInput::make('name_company')->label('CONTACT:'),
+                TextInput::make('telephone')->label('TELEPHONE:'),
+                // Legacy people: mobile call-button colours (buttonbackcolor / buttonfontcolor).
+                ColorPicker::make('buttonbackcolor')
+                    ->label('Mobile button back color:')
+                    ->formatStateUsing(fn ($state): ?string => filled($state)
+                        ? (str_starts_with((string) $state, '#') ? (string) $state : '#'.$state)
+                        : null)
+                    ->dehydrateStateUsing(fn ($state): string => ltrim((string) ($state ?? ''), '#')),
+                ColorPicker::make('buttonfontcolor')
+                    ->label('Mobile button font color:')
+                    ->formatStateUsing(fn ($state): ?string => filled($state)
+                        ? (str_starts_with((string) $state, '#') ? (string) $state : '#'.$state)
+                        : null)
+                    ->dehydrateStateUsing(fn ($state): string => ltrim((string) ($state ?? ''), '#')),
             ],
             'customqr' => [
                 TextInput::make('name')

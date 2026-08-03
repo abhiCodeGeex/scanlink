@@ -320,7 +320,8 @@ trait HasLegacyFormBuilderSidebar
         $this->showExistingFormModal = false;
 
         if (property_exists($this, 'data') && is_array($this->data)) {
-            $this->data['form_is_enable'] = (bool) $profile->form_active;
+            // Legacy: survey / voc Form Builder is free; others need form_active.
+            $this->data['form_is_enable'] = $profile->formBuilderEntitled();
             $this->data['form_active'] = (bool) $profile->form_active;
         }
 
@@ -686,7 +687,7 @@ trait HasLegacyFormBuilderSidebar
             }
         }
 
-        $enabled = (bool) $profile->form_active
+        $enabled = $profile->formBuilderEntitled()
             && filter_var(data_get($this->data, 'form_is_enable'), FILTER_VALIDATE_BOOLEAN);
         $formName = trim($formName);
         $emailTag = trim($emailTag);
@@ -781,9 +782,11 @@ trait HasLegacyFormBuilderSidebar
         }
 
         $requestedEnabled = filter_var(data_get($this->data, 'form_is_enable'), FILTER_VALIDATE_BOOLEAN);
-        $enabled = (bool) $profile->form_active && $requestedEnabled;
+        // Legacy: survey / voc Form Builder is free (no $5 purchase); all other types must buy.
+        $entitled = $profile->formBuilderEntitled();
+        $enabled = $entitled && $requestedEnabled;
 
-        if ($requestedEnabled && ! (bool) $profile->form_active) {
+        if ($requestedEnabled && ! $entitled) {
             data_set($this->data, 'form_is_enable', false);
 
             if ($notifyEnable) {

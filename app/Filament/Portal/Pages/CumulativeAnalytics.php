@@ -211,53 +211,6 @@ class CumulativeAnalytics extends Page
         return ProfileResource::getUrl('index', panel: 'portal');
     }
 
-    public function exportAnalytics(): StreamedResponse
-    {
-        $filename = 'cumulative-analytics-'.now()->format('Y-m-d').'.csv';
-
-        return response()->streamDownload(function (): void {
-            $handle = fopen('php://output', 'w');
-
-            if ($handle === false) {
-                return;
-            }
-
-            fputcsv($handle, ['Section', 'Profile', 'Date', 'Location', 'Device', 'Scan Type', 'Question', 'Option', 'Count']);
-
-            foreach ($this->formCharts as $chart) {
-                foreach ($chart['slices'] as $slice) {
-                    fputcsv($handle, [
-                        'Form Analytics',
-                        '',
-                        '',
-                        '',
-                        '',
-                        '',
-                        $chart['title'],
-                        $slice['label'],
-                        $slice['value'],
-                    ]);
-                }
-            }
-
-            foreach ($this->locationRows as $row) {
-                fputcsv($handle, [
-                    'Scan Locations',
-                    $row['profile_name'] ?? '',
-                    $row['date'] ?? '',
-                    $row['location'] ?? '',
-                    $row['device'] ?? '',
-                    $row['scan_type'] ?? '',
-                    '',
-                    '',
-                    '',
-                ]);
-            }
-
-            fclose($handle);
-        }, $filename, ['Content-Type' => 'text/csv']);
-    }
-
     /**
      * Legacy "EXPORT ANALYTICS": a named spreadsheet (Name + Description header, profile
      * list, then per-question option counts & percentages). Produced as an Excel-openable
@@ -312,9 +265,17 @@ class CumulativeAnalytics extends Page
      */
     public function downloadPdf(): StreamedResponse
     {
+        // Render a real pie image per chart (legacy parity) — GD, no external services.
+        $pie = app(\App\Services\PieChartRenderer::class);
+        $charts = array_map(function (array $chart) use ($pie): array {
+            $chart['image'] = $pie->renderDataUri($chart['slices']);
+
+            return $chart;
+        }, $this->formCharts);
+
         $html = view('filament.portal.pages.cumulative-analytics-pdf', [
             'profiles' => $this->selectedProfiles,
-            'charts' => $this->formCharts,
+            'charts' => $charts,
             'formSubmissionCount' => $this->formSubmissionCount,
             'scanTotal' => $this->scanTotal,
             'date' => now()->format('d/m/Y H:i:s'),

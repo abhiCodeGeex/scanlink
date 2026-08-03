@@ -159,9 +159,12 @@
                 </div>
             </div>
 
-            @if ($selectedProfileId)
+            @if ($selectedProfileId && $profileExpired)
+                <div class="sl-fslog__empty">You can not perform this action on expired profile.</div>
+            @elseif ($selectedProfileId)
                 <div class="sl-fslog__toolbar">
                     <button type="button" class="sl-fslog__btn sl-fslog__btn--wide" wire:click="downloadAll">DOWNLOAD ALL</button>
+                    <button type="button" class="sl-fslog__btn" wire:click="exportXlsx">EXPORT</button>
 
                     <span>
                         <label for="from_date">From Date</label>
@@ -223,7 +226,7 @@
                                                     <a class="view" href="{{ $this->viewUrl($session->session_id) }}" title="View Submission Response">View</a>
                                                 </td>
                                                 <td>
-                                                    <a class="download" href="{{ $this->printSessionUrl($session->session_id) }}" target="_blank" rel="noopener" title="Download Submission Response">Download</a>
+                                                    <a class="download" href="#" wire:click.prevent="downloadSessionPdf('{{ $session->session_id }}')" title="Download Submission Response">Download</a>
                                                 </td>
                                                 @if ($this->canDeleteCode())
                                                     <td>

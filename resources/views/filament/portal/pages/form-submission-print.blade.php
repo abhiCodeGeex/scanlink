@@ -34,9 +34,44 @@
     <table>
         <tbody>
             @foreach ($answers as $answer)
+                @php
+                    $q = $answer->question;
+                    $type = (int) ($q?->question_type_id ?? 0);
+                    $raw = (string) ($answer->question_answer ?? '');
+                    $label = $q && filled($q->log_columntitle)
+                        ? $q->log_columntitle
+                        : strip_tags($q?->question_text ?: 'Question #'.$answer->question_id);
+                @endphp
                 <tr>
-                    <th>{{ strip_tags($answer->question?->question_text ?: 'Question #'.$answer->question_id) }}</th>
-                    <td>{{ $answer->question_answer ?: '—' }}</td>
+                    <th>{{ $label }}</th>
+                    <td>
+                        @if ($raw === '')
+                            —
+                        @elseif (\Illuminate\Support\Str::startsWith($raw, 'data:image'))
+                            {{-- Signature / image answer --}}
+                            <img src="{{ $raw }}" alt="Signature" style="max-width:280px;border:1px solid #ccc;">
+                        @elseif ($type === 25)
+                            {{-- COVID check-in: Name:::Phone:::Date:::Time:::Venue:::Address:::Location[:::Vehicle] --}}
+                            @php $p = explode(':::', $raw); @endphp
+                            <table style="width:auto;">
+                                <tr><th style="width:auto;">Visitor name</th><td>{{ $p[0] ?? '' }}</td></tr>
+                                <tr><th style="width:auto;">Phone</th><td>{{ $p[1] ?? '' }}</td></tr>
+                                <tr><th style="width:auto;">Date</th><td>{{ $p[2] ?? '' }}</td></tr>
+                                <tr><th style="width:auto;">Time</th><td>{{ $p[3] ?? '' }}</td></tr>
+                                <tr><th style="width:auto;">Venue name</th><td>{{ $p[4] ?? '' }}</td></tr>
+                                <tr><th style="width:auto;">Venue address</th><td>{{ $p[5] ?? '' }}</td></tr>
+                                <tr><th style="width:auto;">Location type</th><td>{{ $p[6] ?? '' }}</td></tr>
+                                @if (($p[6] ?? '') === 'Vehicle' && isset($p[7]))
+                                    <tr><th style="width:auto;">Vehicle registration</th><td>{{ $p[7] }}</td></tr>
+                                @endif
+                            </table>
+                        @elseif ($type === 7)
+                            {{-- Grid: stored as "row → col; row → col" --}}
+                            {!! nl2br(e(str_replace('; ', "\n", $raw))) !!}
+                        @else
+                            {!! \App\Support\FormAnswerHtml::text($raw) !!}
+                        @endif
+                    </td>
                 </tr>
             @endforeach
         </tbody>

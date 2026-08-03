@@ -109,27 +109,8 @@
                         <span class="text"><span>How to</span></span>
                     </a>
                     <ul class="subMenu" id="subMenu2">
-                        @foreach ([
-                            ['Create a ScanLink account', 'https://www.youtube.com/embed/9aTjweHyAWw?rel=0'],
-                            ['Getting Started', 'https://www.youtube.com/embed/o6NxTt0CmYI?rel=0'],
-                            ['Register a new code', 'https://www.youtube.com/embed/GZ12nXTO7_w?rel=0'],
-                            ['Upload a logo', 'https://www.youtube.com/embed/hGrBYsys2Oo?rel=0'],
-                            ['Upload a video', 'https://www.youtube.com/embed/H33caspIlcc?rel=0'],
-                            ['Add text and phone numbers', 'https://www.youtube.com/embed/CZx8xplEfoU?rel=0'],
-                            ['Upload pictures', 'https://www.youtube.com/embed/GshHCp9F0wU?rel=0'],
-                            ['Upload documents', 'https://www.youtube.com/embed/ujiEr65yg30?rel=0'],
-                            ['Add web link buttons', 'https://www.youtube.com/embed/id0I8j8RTuY?rel=0'],
-                            ['Add social media and email share buttons', 'https://www.youtube.com/embed/qOi6tSBsII4?rel=0'],
-                            ['Create pop up messages to collect data', 'https://www.youtube.com/embed/C_vH14MFtXA?rel=0'],
-                            ['Select a code type - QR or Data matrix', 'https://www.youtube.com/embed/jCeyQOfm7uc?rel=0'],
-                            ['Feature code profile number on mobile display', 'https://www.youtube.com/embed/eJtzHbZoCPw?rel=0'],
-                            ['Password protect a code profile', 'https://www.youtube.com/embed/KcXJnxuMVyc?rel=0'],
-                            ['Link a code to a URL', 'https://www.youtube.com/embed/uEDTnBPUk28?rel=0'],
-                            ['Delete a code profile', 'https://www.youtube.com/embed/Gu12cnKn16s?rel=0'],
-                            ['View and download scan activity', 'https://www.youtube.com/embed/Y0bVkzDA5Rc?rel=0'],
-                            ['Create a form', 'https://www.youtube.com/embed/cYQnzxkp528?rel=0'],
-                        ] as $howto)
-                            <li><a href="{{ $howto[1] }}" title="{{ $howto[0] }}">{{ $howto[0] }}</a></li>
+                        @foreach (($howToLinks ?? []) as $howto)
+                            <li><a href="{{ $howto['url'] }}" title="{{ $howto['title'] }}">{{ $howto['title'] }}</a></li>
                         @endforeach
                     </ul>
                 </li>

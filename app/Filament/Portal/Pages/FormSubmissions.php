@@ -7,6 +7,7 @@ use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Models\FormBuilderAnswer;
 use App\Models\FormBuilderQuestion;
 use App\Models\Profile;
+use App\Support\FormAnswerHtml;
 use App\Support\LegacyEquipmentTypeLabels;
 use BackedEnum;
 use Filament\Notifications\Notification;
@@ -18,6 +19,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -53,6 +55,9 @@ class FormSubmissions extends Page
     public Collection $logQuestions;
 
     public ?string $profileName = null;
+
+    /** Legacy form_submissions.php blocks the log for expired codes with a message. */
+    public bool $profileExpired = false;
 
     public static function getNavigationGroup(): ?string
     {
@@ -106,13 +111,6 @@ class FormSubmissions extends Page
         $this->page = 1;
     }
 
-    public function clearDates(): void
-    {
-        $this->fromDate = '';
-        $this->toDate = '';
-        $this->page = 1;
-    }
-
     public function goToPage(int $page): void
     {
         $this->page = max(1, $page);
@@ -122,81 +120,185 @@ class FormSubmissions extends Page
     {
         $client = $this->requireClient();
 
-        FormBuilderAnswer::query()
-            ->whereHas('profile', fn ($q) => $q->where('client_id', $client->id))
+        $scoped = fn ($q) => $q
+            ->whereHas('profile', fn ($p) => $p->where('client_id', $client->id))
             ->where('profile_id', $this->selectedProfileId)
-            ->where('session_id', $sessionId)
-            ->delete();
+            ->where('session_id', $sessionId);
+
+        // Legacy delete_answer_by_session_id unlinks uploaded files before deleting rows.
+        $paths = [];
+        foreach ($scoped(FormBuilderAnswer::query())->get() as $answer) {
+            $paths = array_merge($paths, FormAnswerHtml::extractFilePaths((string) $answer->question_answer));
+        }
+
+        if ($paths !== []) {
+            Storage::disk('public')->delete(array_values(array_unique($paths)));
+        }
+
+        $scoped(FormBuilderAnswer::query())->delete();
 
         Notification::make()->title('Removed Successfully.')->success()->send();
     }
 
-    public function exportCsv(): StreamedResponse
+    /**
+     * Build the flat submission table (headers + rows) shared by CSV / XLSX exports.
+     *
+     * @return array{0: list<string>, 1: list<list<string|int>>}
+     */
+    protected function buildSubmissionTable(Profile $profile): array
     {
-        $profile = $this->resolveProfile();
-        $logQuestions = $this->logQuestions;
-        $filename = 'form-submissions-'.$profile->id.'-'.now()->format('Y-m-d').'.csv';
+        $headers = ['#', 'Date/Time', 'Session ID'];
+        foreach ($this->logQuestions as $question) {
+            if ((int) $question->question_type_id === 25) {
+                array_push($headers, 'Name', 'Phone', 'Venue Address', 'Location Description/Type', 'Vehicle Reg No');
+            } else {
+                $headers[] = $question->log_columntitle ?: strip_tags((string) $question->question_text);
+            }
+        }
 
-        return response()->streamDownload(function () use ($profile, $logQuestions): void {
-            $out = fopen('php://output', 'w');
-            fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF));
+        $rows = [];
+        $rowNum = 0;
 
-            $headers = ['#', 'Date/Time', 'Session ID'];
-            foreach ($logQuestions as $question) {
+        foreach ($this->filteredSessionsQuery($profile->id)->get() as $session) {
+            $rowNum++;
+            $answers = FormBuilderAnswer::query()
+                ->where('profile_id', $profile->id)
+                ->where('session_id', $session->session_id)
+                ->get()
+                ->keyBy('question_id');
+
+            $row = [$rowNum, (string) $session->submitted_at, (string) $session->session_id];
+
+            foreach ($this->logQuestions as $question) {
+                $raw = (string) ($answers->get($question->question_id)?->question_answer ?? '');
                 if ((int) $question->question_type_id === 25) {
-                    array_push($headers, 'Name', 'Phone', 'Venue Address', 'Location Description/Type', 'Vehicle Reg No');
+                    $parts = explode(':::', $raw);
+                    array_push(
+                        $row,
+                        $parts[0] ?? '',
+                        $parts[1] ?? '',
+                        $parts[5] ?? '',
+                        $parts[6] ?? '',
+                        (($parts[6] ?? '') === 'Vehicle') ? ($parts[7] ?? '') : '',
+                    );
                 } else {
-                    $headers[] = $question->log_columntitle ?: strip_tags((string) $question->question_text);
+                    $row[] = $raw;
                 }
             }
-            fputcsv($out, $headers);
 
-            $sessions = $this->filteredSessionsQuery($profile->id)->get();
-            $rowNum = 0;
+            $rows[] = $row;
+        }
 
-            foreach ($sessions as $session) {
-                $rowNum++;
-                $answers = FormBuilderAnswer::query()
-                    ->where('profile_id', $profile->id)
-                    ->where('session_id', $session->session_id)
-                    ->get()
-                    ->keyBy('question_id');
-
-                $row = [
-                    $rowNum,
-                    $session->submitted_at,
-                    $session->session_id,
-                ];
-
-                foreach ($logQuestions as $question) {
-                    $raw = (string) ($answers->get($question->question_id)?->question_answer ?? '');
-                    if ((int) $question->question_type_id === 25) {
-                        $parts = explode(':::', $raw);
-                        array_push(
-                            $row,
-                            $parts[0] ?? '',
-                            $parts[1] ?? '',
-                            $parts[5] ?? '',
-                            $parts[6] ?? '',
-                            (($parts[6] ?? '') === 'Vehicle') ? ($parts[7] ?? '') : '',
-                        );
-                    } else {
-                        $row[] = $raw;
-                    }
-                }
-
-                fputcsv($out, $row);
-            }
-
-            fclose($out);
-        }, $filename, [
-            'Content-Type' => 'text/csv; charset=UTF-8',
-        ]);
+        return [$headers, $rows];
     }
 
+    /**
+     * Legacy "Export" — a real .xlsx of the submission log.
+     */
+    public function exportXlsx(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        $profile = $this->resolveProfile();
+        [$headers, $rows] = $this->buildSubmissionTable($profile);
+
+        $tmp = tempnam(sys_get_temp_dir(), 'fslog_').'.xlsx';
+        $writer = new \OpenSpout\Writer\XLSX\Writer;
+        $writer->openToFile($tmp);
+        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues($headers));
+        foreach ($rows as $row) {
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(array_map('strval', $row)));
+        }
+        $writer->close();
+
+        return response()
+            ->download($tmp, 'form-submission-log-'.$profile->id.'.xlsx')
+            ->deleteFileAfterSend();
+    }
+
+    /**
+     * Legacy per-row "Download" — a single submission as a PDF.
+     */
+    public function downloadSessionPdf(string $sessionId): StreamedResponse
+    {
+        $profile = $this->resolveProfile();
+
+        return $this->renderSessionsPdf(
+            $profile,
+            [$sessionId],
+            'form-submission-'.$profile->id.'-'.now()->format('YmdHis').'.pdf',
+        );
+    }
+
+    /**
+     * Legacy "Download All" — every (filtered) submission as one PDF.
+     */
     public function downloadAll(): StreamedResponse
     {
-        return $this->exportCsv();
+        $profile = $this->resolveProfile();
+        $sessionIds = $this->filteredSessionsQuery($profile->id)->get()
+            ->pluck('session_id')
+            ->map(fn ($id): string => (string) $id)
+            ->all();
+
+        return $this->renderSessionsPdf(
+            $profile,
+            $sessionIds,
+            'form-submissions-'.$profile->id.'-'.now()->format('Ymd').'.pdf',
+        );
+    }
+
+    /**
+     * @param  list<string>  $sessionIds
+     */
+    protected function renderSessionsPdf(Profile $profile, array $sessionIds, string $filename): StreamedResponse
+    {
+        $pdf = new \TCPDF;
+        $pdf->SetCreator('ScanLink');
+        $pdf->SetAuthor('ScanLink');
+        $pdf->SetTitle('Form Submissions — '.$profile->id);
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+        $pdf->SetMargins(12, 12, 12);
+        $pdf->SetAutoPageBreak(true, 12);
+
+        $rendered = 0;
+        foreach ($sessionIds as $sessionId) {
+            $answers = FormBuilderAnswer::query()
+                ->with('question')
+                ->where('profile_id', $profile->id)
+                ->where('session_id', $sessionId)
+                ->orderBy('question_id')
+                ->get();
+
+            if ($answers->isEmpty()) {
+                continue;
+            }
+
+            $html = view('filament.portal.pages.form-submission-print', [
+                'profile' => $profile,
+                'sessionId' => $sessionId,
+                'answers' => $answers,
+                'submittedAt' => $answers->min('date_time'),
+            ])->render();
+
+            $pdf->AddPage();
+            $pdf->writeHTML($html, true, false, true, false, '');
+            $rendered++;
+        }
+
+        if ($rendered === 0) {
+            $pdf->AddPage();
+            $pdf->writeHTML('<p>No submissions found.</p>');
+        }
+
+        $content = (string) $pdf->Output('', 'S');
+
+        return response()->streamDownload(
+            function () use ($content): void {
+                echo $content;
+            },
+            $filename,
+            ['Content-Type' => 'application/pdf'],
+        );
     }
 
     public function viewUrl(string $sessionId): string
@@ -204,14 +306,6 @@ class FormSubmissions extends Page
         return FormSubmissionView::getUrl().'?profile='.$this->selectedProfileId.'&session_id='.urlencode($sessionId)
             .'&from_date='.urlencode($this->fromDate)
             .'&to_date='.urlencode($this->toDate);
-    }
-
-    public function printSessionUrl(string $sessionId): string
-    {
-        return route('portal.form-submissions.print', [
-            'sessionId' => $sessionId,
-            'profile' => $this->selectedProfileId,
-        ]);
     }
 
     public function returnToListUrl(): string
@@ -316,9 +410,16 @@ class FormSubmissions extends Page
             ->findOrFail($profileId);
 
         $this->selectedProfileId = $profileId;
+        $this->profileExpired = $profile->isExpired();
         $this->profileName = filled(trim((string) $profile->code_profile_name))
             ? (string) $profile->code_profile_name
             : $profile->displayLabel();
+
+        if ($this->profileExpired) {
+            $this->logQuestions = collect();
+
+            return;
+        }
 
         $q = FormBuilderQuestion::query()
             ->where('profile_id', $profileId)

@@ -110,7 +110,8 @@ class FormLibraryService
 
             $targetProfile->update([
                 'form_id' => $targetFormId,
-                'form_is_enable' => (bool) $targetProfile->form_active,
+                // Legacy: survey / voc Form Builder is free; others need form_active.
+                'form_is_enable' => $targetProfile->formBuilderEntitled(),
             ]);
         }
 
@@ -199,7 +200,8 @@ class FormLibraryService
         }
 
         $targetProfile->update([
-            'form_is_enable' => (bool) $targetProfile->form_active,
+            // Legacy: survey / voc Form Builder is free; others need form_active.
+            'form_is_enable' => $targetProfile->formBuilderEntitled(),
         ]);
 
         return $cloned;

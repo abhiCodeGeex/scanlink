@@ -1,6 +1,7 @@
 <x-emails.layout title="Form submission">
     {{-- Legacy parity (mobile.php action_save_form_builder_data): HTML email with a
-         profile header followed by each answer. --}}
+         profile header, each answer prefixed with its question label, ending with
+         "END OF SUBMISSION". Signature answers embed as an image. --}}
     <div><b>Profile Number</b> : {{ $profile->id }}</div>
     <div><b>Profile Name</b> : {{ $profileName }}</div>
     <div><b>Submission Date/Time</b> : {{ $submittedAt }}</div>
@@ -8,8 +9,22 @@
     <hr/>
 
     @forelse ($rows as $row)
-        <div><b>{{ $row['label'] }}:</b> {!! nl2br(e($row['answer'])) !!}</div>
+        @php
+            $ans = trim((string) $row['answer']);
+            $isSignature = str_starts_with($ans, 'data:image');
+        @endphp
+        <div style="margin-bottom:8px;">
+            <b>{{ $row['label'] }}:</b>
+            @if ($isSignature)
+                <br><img src="{{ $ans }}" alt="Signature" style="max-width:320px;border:1px solid #ccc;">
+            @else
+                {!! \App\Support\FormAnswerHtml::text($ans) !!}
+            @endif
+        </div>
     @empty
         <div>No answers were submitted.</div>
     @endforelse
+
+    <br/>
+    <div><b>END OF SUBMISSION</b></div>
 </x-emails.layout>

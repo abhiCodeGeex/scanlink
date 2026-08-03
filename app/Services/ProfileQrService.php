@@ -93,18 +93,56 @@ class ProfileQrService
 
         $this->ensureWritableFile($fullPath);
 
-        // Legacy uses dm_code/index.php — use QR library with compact output as fallback.
-        $options = new QROptions([
-            'outputType' => QRCode::OUTPUT_IMAGE_PNG,
-            'scale' => 6,
-            'version' => 3,
-            'imageBase64' => false,
-            'moduleValues' => $this->moduleValuesForColor($profile->color_code),
-        ]);
+        // Real ECC200 Data Matrix (legacy dm_code/index.php parity) via TCPDF's 2D encoder.
+        $barcode = new \TCPDF2DBarcode($data, 'DATAMATRIX');
+        $png = $barcode->getBarcodePngData(8, 8, $this->colorToRgb($profile->color_code));
 
-        (new QRCode($options))->render($data, $fullPath);
+        if (! is_string($png) || $png === '') {
+            throw new \RuntimeException('Failed to generate Data Matrix image.');
+        }
+
+        // Add a white quiet zone (2 modules) so scanners reliably read the code.
+        $src = @imagecreatefromstring($png);
+        if ($src !== false) {
+            $quiet = 16;
+            $w = imagesx($src);
+            $h = imagesy($src);
+            $dst = imagecreatetruecolor($w + 2 * $quiet, $h + 2 * $quiet);
+            $white = imagecolorallocate($dst, 255, 255, 255);
+            imagefill($dst, 0, 0, $white);
+            imagecopy($dst, $src, $quiet, $quiet, 0, 0, $w, $h);
+            ob_start();
+            imagepng($dst);
+            $bordered = ob_get_clean();
+            imagedestroy($src);
+            imagedestroy($dst);
+
+            if (is_string($bordered) && $bordered !== '') {
+                $png = $bordered;
+            }
+        }
+
+        file_put_contents($fullPath, $png);
 
         return $this->saveRecord($profile, 'storage/'.$relativePath);
+    }
+
+    /**
+     * @return array{0: int, 1: int, 2: int} foreground RGB (defaults to black)
+     */
+    private function colorToRgb(?string $colorCode): array
+    {
+        $hex = ltrim(trim((string) $colorCode), '#');
+
+        if (! preg_match('/^[0-9a-fA-F]{6}$/', $hex)) {
+            return [0, 0, 0];
+        }
+
+        return [
+            (int) hexdec(substr($hex, 0, 2)),
+            (int) hexdec(substr($hex, 2, 2)),
+            (int) hexdec(substr($hex, 4, 2)),
+        ];
     }
 
     /**
@@ -305,9 +343,12 @@ class ProfileQrService
             return $binary;
         }
 
-        // TIFF/EPS without Imagick: fall back to PNG bytes with requested extension name
-        // so Download As still works in local/dev without ImageMagick.
-        return (string) file_get_contents($sourcePath);
+        // TIFF/EPS need ImageMagick. Rather than hand out a PNG under a .tiff/.eps name
+        // (a corrupt file), fail clearly so the UI can ask for a supported format.
+        throw new \App\Exceptions\UnsupportedDownloadFormatException(
+            'The '.strtoupper($extension).' format requires ImageMagick, which is not available on this server. '
+            .'Please choose PDF, PNG or JPG instead.'
+        );
     }
 
     /**

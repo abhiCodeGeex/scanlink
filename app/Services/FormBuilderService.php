@@ -344,7 +344,8 @@ class FormBuilderService
     public function updateFormSettings(Profile $profile, array $settings): void
     {
         $formId = $this->ensureFormId($profile);
-        $enabled = (bool) $profile->form_active
+        // Legacy: survey / voc Form Builder is free (no $5 purchase); all other types must buy.
+        $enabled = $profile->formBuilderEntitled()
             && (bool) ($settings['form_is_enable'] ?? $profile->form_is_enable);
 
         $profile->update([

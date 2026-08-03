@@ -38,7 +38,7 @@ class AdminPanelProvider extends PanelProvider
             // Self-registration disabled — legacy siteadmin had no open signup.
             ->passwordReset()
             ->databaseNotifications()
-            ->databaseNotificationsPolling('5s')
+            ->databaseNotificationsPolling('30s')
             ->profile(isSimple: false)
             ->multiFactorAuthentication([
                 ScanLinkAppAuthentication::make()

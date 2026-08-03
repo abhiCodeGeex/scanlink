@@ -44,6 +44,20 @@ class MobileProfileController extends Controller
 
         if ($redirectUrl = $this->codeRedirectUrl($profile)) {
             if (! $portalPreview) {
+                // Legacy records the scan for URL-link codes too, and (when data collection is
+                // enabled) captures the visitor BEFORE redirecting to the destination URL.
+                $analytics->ensureAnalyticKey($profile, $qrService->profileUrl($profile));
+                $this->recordScanHit($request, $profile);
+
+                if ($profile->enable_data_collection && $this->needsVisitorInfo($profile)) {
+                    return view('scan.code-redirect', [
+                        'profile' => $profile,
+                        'clientUrl' => $clientUrl,
+                        'redirectUrl' => $redirectUrl,
+                        'publicMediaUrl' => fn (?string $path): ?string => \App\Support\PublicMediaPath::url($path),
+                    ]);
+                }
+
                 return redirect()->away($redirectUrl);
             }
         }
@@ -57,11 +71,13 @@ class MobileProfileController extends Controller
             ]);
         }
 
+        $scanHitId = null;
+
         if (! $portalPreview) {
             // Legacy registers the URL on create; backfill analytic_key here for any
             // profile that still lacks one (idempotent once stored).
             $analytics->ensureAnalyticKey($profile, $qrService->profileUrl($profile));
-            $this->recordScanHit($request, $profile);
+            $scanHitId = $this->recordScanHit($request, $profile);
         }
 
         $questions = FormBuilderQuestion::query()
@@ -77,6 +93,9 @@ class MobileProfileController extends Controller
             'nameHeading' => $views->nameHeading($profile),
             'portalPreview' => $portalPreview,
             'needsVisitorInfo' => $portalPreview ? false : $this->needsVisitorInfo($profile),
+            // Legacy blanks the page content when scanned outside the activation window.
+            'withinActivationWindow' => $portalPreview ? true : $profile->isWithinActivationWindow(),
+            'scanHitId' => $scanHitId,
             'publicMediaUrl' => fn (?string $path): ?string => \App\Support\PublicMediaPath::url($path),
             'youtubeEmbedUrl' => fn (string $videoName): ?string => $this->youtubeEmbedUrl($videoName),
         ];
@@ -133,15 +152,16 @@ class MobileProfileController extends Controller
     {
         $profile = $this->resolveProfile($clientUrl, $profileId);
 
+        // Legacy JS validation: a supplied mobile must be exactly 10 digits.
         $validated = $request->validate([
             'name' => ['nullable', 'string', 'max:255'],
             'surname' => ['nullable', 'string', 'max:255'],
-            'mobile' => ['nullable', 'string', 'max:50'],
+            'mobile' => ['nullable', 'digits:10'],
             'email' => ['nullable', 'email', 'max:255'],
             // Legacy field aliases still accepted from older scan markup.
             'user_name' => ['nullable', 'string', 'max:255'],
             'user_email' => ['nullable', 'email', 'max:255'],
-            'user_mobile' => ['nullable', 'string', 'max:50'],
+            'user_mobile' => ['nullable', 'digits:10'],
         ]);
 
         $name = trim((string) ($validated['name'] ?? $validated['user_name'] ?? ''));
@@ -149,8 +169,8 @@ class MobileProfileController extends Controller
         $mobile = trim((string) ($validated['mobile'] ?? $validated['user_mobile'] ?? ''));
         $email = trim((string) ($validated['email'] ?? $validated['user_email'] ?? ''));
 
-        // Legacy dashboard/visitorlog reads from `contacts` (name/surname/mobile/email).
-        if ($name !== '' || $surname !== '' || $mobile !== '' || $email !== '') {
+        // Legacy addUserInfo stores a row only when name OR mobile OR email is non-empty.
+        if ($name !== '' || $mobile !== '' || $email !== '') {
             CollectedContact::query()->create([
                 'id_profile' => $profile->id,
                 'name' => $name,
@@ -162,6 +182,14 @@ class MobileProfileController extends Controller
         }
 
         session()->put('user_info', (string) $profile->id);
+
+        // Legacy suppresses the popup across sessions via the isContactDialog cookie.
+        \Illuminate\Support\Facades\Cookie::queue('visitor_info_'.$profile->id, '1', 60 * 24 * 365);
+
+        // Legacy: a URL-link code redirects to its destination after capturing the visitor.
+        if ($profile->typeSlug() === 'code' && ($destination = $this->codeRedirectUrl($profile))) {
+            return redirect()->away($destination);
+        }
 
         return redirect()->route('scan.show', [$clientUrl, $profileId]);
     }
@@ -176,8 +204,9 @@ class MobileProfileController extends Controller
             'answers_meta' => ['nullable', 'array'],
             'answers_sig_text' => ['nullable', 'array'],
             'answers_sig_text.*' => ['nullable', 'string', 'max:5000'],
+            // answers_file[qid] is a single file (SWMS) OR answers_file[qid][] an array (multi-upload);
+            // validity + size are checked per file in the loop below.
             'answers_file' => ['nullable', 'array'],
-            'answers_file.*' => ['nullable', 'file', 'max:10240'],
             'session_id' => ['nullable', 'string', 'max:100'],
             'app_user_firstname' => ['nullable', 'string', 'max:100'],
             'app_user_lastname' => ['nullable', 'string', 'max:100'],
@@ -233,7 +262,16 @@ class MobileProfileController extends Controller
 
             $parts = [];
             foreach ($meta as $key => $value) {
-                if (filled($value) && is_scalar($value)) {
+                if (is_array($value)) {
+                    // Repeatable sub-fields (e.g. participant employer[]) arrive as arrays.
+                    $joined = implode(', ', array_filter(
+                        array_map(fn ($v): string => trim((string) $v), $value),
+                        fn (string $v): bool => $v !== '',
+                    ));
+                    if ($joined !== '') {
+                        $parts[] = ucfirst(str_replace('_', ' ', (string) $key)).': '.$joined;
+                    }
+                } elseif (filled($value) && is_scalar($value)) {
                     $parts[] = ucfirst(str_replace('_', ' ', (string) $key)).': '.$value;
                 }
             }
@@ -254,17 +292,30 @@ class MobileProfileController extends Controller
             }
         }
 
-        /** @var array<int, UploadedFile|null> $files */
         $files = $request->file('answers_file') ?? [];
 
         foreach ($files as $questionId => $file) {
-            if ($file instanceof UploadedFile && $file->isValid()) {
-                $path = $file->store('form-uploads/'.$profile->id, 'public');
-                $existing = $answerMap[$questionId] ?? null;
-                $answerMap[$questionId] = filled($existing)
-                    ? trim((string) $existing.' | File: '.$path)
-                    : $path;
+            // "Add another" upload sends an array of files; SWMS sends a single file.
+            $fileList = is_array($file) ? $file : [$file];
+            $storedPaths = [];
+
+            foreach ($fileList as $singleFile) {
+                if ($singleFile instanceof UploadedFile
+                    && $singleFile->isValid()
+                    && $singleFile->getSize() <= 10240 * 1024) {
+                    $storedPaths[] = $singleFile->store('form-uploads/'.$profile->id, 'public');
+                }
             }
+
+            if ($storedPaths === []) {
+                continue;
+            }
+
+            $pathStr = implode(', ', $storedPaths);
+            $existing = $answerMap[$questionId] ?? null;
+            $answerMap[$questionId] = filled($existing)
+                ? trim((string) $existing.' | File: '.$pathStr)
+                : $pathStr;
         }
 
         foreach ($questions as $question) {
@@ -347,8 +398,23 @@ class MobileProfileController extends Controller
             $savedAnswers[(int) $questionId] = (string) $answer;
         }
 
+        // Legacy type-24 "Add recipient": every entered email also gets the submission.
+        $additionalRecipients = [];
+        foreach ($questions as $question) {
+            if ((int) $question->question_type_id !== 24) {
+                continue;
+            }
+            $raw = $rawAnswers[$question->question_id] ?? $rawAnswers[(string) $question->question_id] ?? null;
+            foreach ((is_array($raw) ? $raw : [$raw]) as $candidate) {
+                $email = strtolower(trim((string) $candidate));
+                if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    $additionalRecipients[] = $email;
+                }
+            }
+        }
+
         $this->markParticipatedParticipants($profile, $questions, $rawAnswers);
-        $this->notifyFormSubmissionRecipients($profile, $sessionId, $questions, $savedAnswers);
+        $this->notifyFormSubmissionRecipients($profile, $sessionId, $questions, $savedAnswers, $additionalRecipients);
 
         return redirect()
             ->route('scan.show', [$clientUrl, $profileId])
@@ -393,11 +459,14 @@ class MobileProfileController extends Controller
         if ($eager) {
             $query->with([
                 'logos',
+                'logosExtra',
                 'pictures',
+                'picturesExtra',
                 'documents',
                 'videos',
                 'weblinks',
                 'checklistItems',
+                'vocDocuments',
                 'equipmentType',
                 'client',
                 'owner',
@@ -448,6 +517,11 @@ class MobileProfileController extends Controller
             return false;
         }
 
+        // Legacy: already-signed-in visitors aren't re-prompted (session flag or cross-session cookie).
+        if (request()->cookie('visitor_info_'.$profile->id)) {
+            return false;
+        }
+
         return session()->get('user_info') !== (string) $profile->id;
     }
 
@@ -474,20 +548,44 @@ class MobileProfileController extends Controller
 
         foreach ($participantQuestions as $question) {
             $raw = $savedAnswers[$question->question_id] ?? $savedAnswers[(string) $question->question_id] ?? '';
-            $name = is_array($raw) ? trim((string) ($raw[0] ?? '')) : trim((string) $raw);
+            // "Add another" submits multiple participant names as an array — mark every one.
+            $names = is_array($raw) ? $raw : [$raw];
 
-            if ($name === '') {
-                continue;
+            foreach ($names as $rawName) {
+                $name = trim((string) $rawName);
+
+                if ($name === '') {
+                    continue;
+                }
+
+                Participant::query()
+                    ->where('profile_id', $profile->id)
+                    ->whereRaw('LOWER(name) = ?', [strtolower($name)])
+                    ->where('is_participated', false)
+                    ->update([
+                        'is_participated' => true,
+                        'participated_date' => now()->toDateString(),
+                    ]);
+
+                // Legacy update_participant_status: a walk-up participant whose name is not yet
+                // on the list is inserted as an already-participated row.
+                $exists = Participant::query()
+                    ->where('profile_id', $profile->id)
+                    ->whereRaw('LOWER(name) = ?', [strtolower($name)])
+                    ->exists();
+
+                if (! $exists) {
+                    // participant columns are all NOT NULL (no usable defaults) — set every one.
+                    Participant::query()->create([
+                        'profile_id' => $profile->id,
+                        'name' => $name,
+                        'employer_cmp' => '',
+                        'due_date' => now()->toDateString(),
+                        'participated_date' => now()->toDateString(),
+                        'is_participated' => true,
+                    ]);
+                }
             }
-
-            Participant::query()
-                ->where('profile_id', $profile->id)
-                ->whereRaw('LOWER(name) = ?', [strtolower($name)])
-                ->where('is_participated', false)
-                ->update([
-                    'is_participated' => true,
-                    'participated_date' => now()->toDateString(),
-                ]);
         }
     }
 
@@ -500,6 +598,7 @@ class MobileProfileController extends Controller
         string $sessionId,
         Collection $questions,
         array $savedAnswers,
+        array $additionalRecipients = [],
     ): void {
         $formId = (int) ($profile->form_id ?: 0);
 
@@ -515,16 +614,9 @@ class MobileProfileController extends Controller
                 ->pluck('recipient_email');
         }
 
-        foreach ($savedAnswers as $questionId => $answer) {
-            $question = $questions->get((int) $questionId);
-
-            if ($question && (int) $question->question_type_id === 24) {
-                $email = strtolower(trim($answer));
-
-                if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                    $recipients->push($email);
-                }
-            }
+        // Legacy type-24 "Add recipient" emails (already extracted from the raw answers).
+        foreach ($additionalRecipients as $extra) {
+            $recipients->push($extra);
         }
 
         $recipients = $recipients->map(fn (string $email): string => strtolower(trim($email)))
@@ -536,11 +628,9 @@ class MobileProfileController extends Controller
             return;
         }
 
-        $subjectParts = array_filter([
-            trim((string) ($profile->form_email_tag ?? '')),
-            trim((string) ($profile->form_title ?? '')),
-        ]);
-        $subject = $subjectParts !== [] ? implode(' — ', $subjectParts) : 'Form submission — '.$profile->name;
+        // Legacy: subject is the form's email tag alone, else a default profile-number line.
+        $emailTag = trim((string) ($profile->form_email_tag ?? ''));
+        $subject = $emailTag !== '' ? $emailTag : 'User response for profile No. '.$profile->id;
 
         // Legacy builds an HTML email: each answer prefixed with its question label
         // (falls back to "User Input" for label-less questions, matching legacy).
@@ -630,22 +720,31 @@ class MobileProfileController extends Controller
         }
     }
 
-    protected function recordScanHit(Request $request, Profile $profile): void
+    protected function recordScanHit(Request $request, Profile $profile): ?int
     {
         if (! Schema::hasTable('ana_item_analytics')) {
-            return;
+            return null;
         }
 
-        $ua = strtolower((string) $request->userAgent());
+        $rawUa = (string) $request->userAgent();
+
+        // Legacy is_bot(): skip crawlers / link-preview bots so they don't inflate scans.
+        if ($this->isBot($rawUa)) {
+            return null;
+        }
+
+        $ua = strtolower($rawUa);
         [$platformId, $deviceId, $scanTypeDefault] = $this->resolveScanPlatformDevice($ua);
-        [$browserId, $browserVersion] = $this->resolveScanBrowser($ua, (string) $request->userAgent());
+        [$browserId, $browserVersion] = $this->resolveScanBrowser($ua, $rawUa);
 
         $scanType = strtolower((string) $request->query('scan_type', $scanTypeDefault)) === 'gps' ? 'gps' : 'ip';
         $lat = (string) $request->query('latitude', '');
         $lng = (string) $request->query('longitude', '');
 
         try {
-            AnaItemAnalytics::query()->create([
+            // Geo (country/region/city) is filled asynchronously by recordScanGeo() once the
+            // browser reports its position; it also does the IP lookup off the page-load path.
+            $row = AnaItemAnalytics::query()->create([
                 'event_id' => 'LARAVEL-'.(string) $profile->id.'-'.Str::uuid(),
                 'id_item' => (string) $profile->id,
                 'country_code' => null,
@@ -666,12 +765,94 @@ class MobileProfileController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+
+            return (int) $row->getKey();
         } catch (\Throwable $exception) {
             Log::warning('Failed to record local scan hit', [
                 'profile_id' => $profile->id,
                 'message' => $exception->getMessage(),
             ]);
+
+            return null;
         }
+    }
+
+    /**
+     * Client geolocation ping — attaches GPS + IP-derived country/region/city to the scan row
+     * created on page load. Fire-and-forget; never fails the visitor's experience.
+     */
+    public function recordScanGeo(Request $request, string $clientUrl, int $profileId): \Illuminate\Http\Response
+    {
+        $validated = $request->validate([
+            'scan_hit_id' => ['required', 'integer'],
+            'lat' => ['nullable', 'string', 'max:32'],
+            'lng' => ['nullable', 'string', 'max:32'],
+            'screensize' => ['nullable', 'string', 'max:32'],
+        ]);
+
+        if (! Schema::hasTable('ana_item_analytics')) {
+            return response('OK');
+        }
+
+        $row = AnaItemAnalytics::query()
+            ->where('id', (int) $validated['scan_hit_id'])
+            ->where('id_item', (string) $profileId)
+            ->first();
+
+        if (! $row) {
+            return response('OK');
+        }
+
+        $geo = app(\App\Services\IpGeolocationService::class)->locate((string) ($request->ip() ?? ''));
+
+        $lat = trim((string) ($validated['lat'] ?? ''));
+        $lng = trim((string) ($validated['lng'] ?? ''));
+        $hasGps = $lat !== '' && $lng !== '';
+
+        $update = ['scan_type' => $hasGps ? 'gps' : ($row->scan_type ?: 'ip')];
+
+        if (filled($validated['screensize'] ?? null)) {
+            $update['screen_size'] = $validated['screensize'];
+        }
+
+        foreach (['country_code', 'country_name', 'region_name', 'city_name', 'zipcode', 'timezone'] as $key) {
+            if (filled($geo[$key] ?? null)) {
+                $update[$key] = $geo[$key];
+            }
+        }
+
+        if ($hasGps) {
+            $update['latitude'] = $lat;
+            $update['longitude'] = $lng;
+        } elseif (filled($geo['latitude'] ?? null)) {
+            $update['latitude'] = $geo['latitude'];
+            $update['longitude'] = $geo['longitude'];
+        }
+
+        try {
+            $row->forceFill($update)->save();
+        } catch (\Throwable $exception) {
+            Log::warning('Failed to attach scan geolocation', [
+                'scan_hit_id' => $row->getKey(),
+                'message' => $exception->getMessage(),
+            ]);
+        }
+
+        return response('OK');
+    }
+
+    protected function isBot(string $ua): bool
+    {
+        $ua = trim($ua);
+
+        if ($ua === '') {
+            return true;
+        }
+
+        return (bool) preg_match(
+            '/bot|crawl|spider|slurp|mediapartners|facebookexternalhit|facebot|whatsapp|telegram|preview|monitor|curl|wget|headless|python|axios|okhttp|java\/|semrush|ahrefs|bingpreview|embedly|discord|skype|linkedinbot|pinterest|google(?:bot| favicon)|yandex|baidu|duckduck|applebot/i',
+            $ua,
+        );
     }
 
     /**

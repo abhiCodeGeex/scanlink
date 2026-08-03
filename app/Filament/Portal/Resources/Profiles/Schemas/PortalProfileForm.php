@@ -114,8 +114,8 @@ class PortalProfileForm
                         ])->columnSpanFull(),
                     ])
                     ->columns(2)
-                    // Legacy code/index.php has no Code Profile Name / activation block.
-                    ->visible(fn (Get $get): bool => self::slug($get('type_id')) !== 'code'),
+                    // Legacy code/index.php + people/index.php have no Code Profile Name / activation block.
+                    ->visible(fn (Get $get): bool => ! in_array(self::slug($get('type_id')), ['code', 'people'], true)),
 
                 // Legacy voc/index.php — Additional User Access Login (before Logo).
                 Section::make(LegacySectionHelp::heading('Additional User Access Login'))
@@ -133,12 +133,15 @@ class PortalProfileForm
                                     ->label('Password:')
                                     ->password()
                                     ->revealable()
+                                    // Legacy voc: additional-login password must be at least 6 chars (when set).
+                                    ->minLength(6)
                                     ->maxLength(255)
                                     ->dehydrated(fn (?string $state): bool => filled($state))
                                     ->dehydrateStateUsing(fn (?string $state): string => (string) ($state ?? '')),
                             ])
                             ->columns(2)
-                            ->defaultItems(1)
+                            // Legacy voc skips blank additional-login rows; don't seed a forced empty row.
+                            ->defaultItems(0)
                             ->addActionLabel('Add Another')
                             ->mutateRelationshipDataBeforeCreateUsing(function (array $data): array {
                                 $data['voc_user_id'] = self::nextLegacyId('voc_users', 'voc_user_id');
@@ -163,7 +166,8 @@ class PortalProfileForm
                                     ->maxLength(255)
                                     ->required(),
                             ])
-                            ->defaultItems(1)
+                            // Legacy voc recipients are optional (blanks skipped) — no forced required row.
+                            ->defaultItems(0)
                             ->addActionLabel('Add Another')
                             ->mutateRelationshipDataBeforeCreateUsing(function (array $data): array {
                                 $data['voc_recipient_id'] = self::nextLegacyId('voc_recipients', 'voc_recipient_id');
@@ -188,6 +192,16 @@ class PortalProfileForm
                                 'data-ck-toolbar' => 'custom',
                             ])
                             ->columnSpanFull(),
+                        // Legacy voc has a second signature line (voc_email_sign_line2). Rich text
+                        // (CKEditor) supersedes the legacy per-line bold/italic/underline flags.
+                        Textarea::make('voc_email_sign_line2')
+                            ->label('Email Signature (line 2):')
+                            ->rows(3)
+                            ->extraInputAttributes([
+                                'class' => 'sl-ckeditor',
+                                'data-ck-toolbar' => 'custom',
+                            ])
+                            ->columnSpanFull(),
                         Placeholder::make('voc_email_preview_hint')
                             ->hiddenLabel()
                             ->content(new HtmlString(
@@ -198,6 +212,32 @@ class PortalProfileForm
                             ->columnSpanFull(),
                     ])
                     ->visible(fn (Get $get): bool => self::slug($get('type_id')) === 'voc'),
+
+                // Legacy exhibit/voc tile drag-reordering (tiles_order): the scan page renders
+                // content tiles in this order. Reorder-only (no add/remove).
+                Section::make(LegacySectionHelp::heading('Display Order'))
+                    ->description('Drag to set the order these sections appear on the scanned mobile page.')
+                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box'])
+                    ->schema([
+                        Repeater::make('tile_order')
+                            ->hiddenLabel()
+                            ->dehydrated()
+                            ->schema([
+                                Hidden::make('id'),
+                                Hidden::make('label'),
+                                Placeholder::make('tile_label')
+                                    ->hiddenLabel()
+                                    ->content(fn (Get $get): string => (string) $get('label')),
+                            ])
+                            ->itemLabel(fn (array $state): ?string => $state['label'] ?? null)
+                            ->reorderable()
+                            ->reorderableWithButtons()
+                            ->addable(false)
+                            ->deletable(false)
+                            ->columns(1)
+                            ->default(fn (Get $get): array => \App\Models\Profile::tileOrderFormItems(self::slug($get('type_id')), null)),
+                    ])
+                    ->visible(fn (Get $get): bool => in_array(self::slug($get('type_id')), ['exhibit', 'voc'], true)),
 
                 Section::make(LegacySectionHelp::heading('Logo'))
                     ->extraAttributes(['class' => 'SectionTitleBox sl-section-box'])
@@ -283,8 +323,8 @@ class PortalProfileForm
                                     ->maxSize(10240)
                                     ->required(),
                             ])
+                            // Legacy voc allows multiple profile pictures (gallery).
                             ->defaultItems(0)
-                            ->maxItems(1)
                             ->addActionLabel('Upload a picture')
                             ->mutateRelationshipDataBeforeCreateUsing(fn (array $data, Get $get): array => self::stampMediaOwner($data, $get))
                             ->mutateRelationshipDataBeforeSaveUsing(fn (array $data, Get $get): array => self::stampMediaOwner($data, $get))
@@ -320,7 +360,8 @@ class PortalProfileForm
                                     ->columnSpanFull(),
                             ])
                             ->columns(2)
-                            ->defaultItems(1)
+                            // Legacy voc skips blank document rows; don't seed a forced empty row.
+                            ->defaultItems(0)
                             ->addActionLabel('Add Another')
                             ->mutateRelationshipDataBeforeCreateUsing(function (array $data): array {
                                 $data['voc_document_id'] = self::nextLegacyId('voc_documents', 'voc_document_id');
@@ -347,14 +388,14 @@ class PortalProfileForm
                                 TextInput::make('txt_footer')
                                     ->label('Text Footer')
                                     ->maxLength(500)
-                                    // Legacy misc/index.php Pictures has upload only (no Text Footer).
+                                    // Legacy misc/people Pictures are upload only (no Text Footer).
                                     ->visible(function (Get $get): bool {
                                         $typeId = $get('../../type_id') ?? $get('type_id');
                                         if (filled($typeId)) {
-                                            return self::slug($typeId) !== 'misc';
+                                            return ! in_array(self::slug($typeId), ['misc', 'people'], true);
                                         }
 
-                                        return request()->query('type') !== 'misc';
+                                        return ! in_array(request()->query('type'), ['misc', 'people'], true);
                                     }),
                             ])
                             ->defaultItems(0)
@@ -388,10 +429,13 @@ class PortalProfileForm
                                         'right' => 'Right',
                                     ])
                                     ->default('left')
-                                    ->inline(),
+                                    ->inline()
+                                    // Legacy people Documents are upload + name only (no styling).
+                                    ->visible(fn (Get $get): bool => self::slug($get('../../type_id') ?? $get('type_id')) !== 'people'),
                                 ColorPicker::make('btn_color')
                                     ->label('Button Color')
                                     ->default('#007A01')
+                                    ->visible(fn (Get $get): bool => self::slug($get('../../type_id') ?? $get('type_id')) !== 'people')
                                     ->formatStateUsing(function ($state): string {
                                         $value = trim((string) ($state ?: '007A01'));
 
@@ -476,11 +520,13 @@ class PortalProfileForm
                                     ->dehydrateStateUsing(fn ($state): string => ltrim((string) ($state ?: '007A01'), '#')),
                             ])
                             ->columns(2)
-                            ->defaultItems(1)
+                            // Legacy skips blank web-link rows; don't seed a forced empty row.
+                            ->defaultItems(0)
                             ->addActionLabel('AND ANOTHER WEB LINK')
                             ->columnSpanFull(),
                     ])
-                    ->visible(fn (Get $get): bool => ! in_array(self::slug($get('type_id')), ['survey', 'code', 'voc'], true)),
+                    // Legacy people/index.php has no Web Link section.
+                    ->visible(fn (Get $get): bool => ! in_array(self::slug($get('type_id')), ['survey', 'code', 'voc', 'people'], true)),
 
                 // Legacy exhibit tile order: Share sits before Logo #2 / Words #2 / Data Collection.
                 Section::make(LegacySectionHelp::heading('Share'))
@@ -508,6 +554,11 @@ class PortalProfileForm
                             ->directory('profiles/logos')
                             ->disk('public')
                             ->maxSize(10240),
+                        // Legacy exhibit Logo #2 has a click-through URL saved to logo_extra.logo_url.
+                        TextInput::make('logo_extra_url')
+                            ->label('URL (start with http://)')
+                            ->url()
+                            ->maxLength(255),
                     ])
                     ->visible(fn (Get $get): bool => self::slug($get('type_id')) === 'exhibit'),
 
@@ -586,7 +637,8 @@ class PortalProfileForm
                         Checkbox::make('set_up_compulsory')
                             ->label('Set as compulsory')
                             ->columnSpanFull()
-                            ->visible(fn (Get $get): bool => self::dataCollectionEnabled($get)),
+                            // Legacy people Data Collection is Mobile/Email/Content only.
+                            ->visible(fn (Get $get): bool => self::dataCollectionEnabled($get) && self::slug($get('type_id')) !== 'people'),
                         Checkbox::make('data_collection_mobile')
                             ->label('Mobile')
                             ->visible(fn (Get $get): bool => self::dataCollectionEnabled($get)),
@@ -595,10 +647,10 @@ class PortalProfileForm
                             ->visible(fn (Get $get): bool => self::dataCollectionEnabled($get)),
                         Checkbox::make('data_collection_name')
                             ->label('Name')
-                            ->visible(fn (Get $get): bool => self::dataCollectionEnabled($get)),
+                            ->visible(fn (Get $get): bool => self::dataCollectionEnabled($get) && self::slug($get('type_id')) !== 'people'),
                         Checkbox::make('data_collection_surname')
                             ->label('Surname')
-                            ->visible(fn (Get $get): bool => self::dataCollectionEnabled($get)),
+                            ->visible(fn (Get $get): bool => self::dataCollectionEnabled($get) && self::slug($get('type_id')) !== 'people'),
                         Textarea::make('data_collection_content')
                             ->label('Content')
                             ->maxLength(150)
@@ -683,7 +735,8 @@ class PortalProfileForm
                         Checkbox::make('show_header')
                             ->label('Display the code number at the top of mobile screen'),
                     ])
-                    ->visible(fn (Get $get): bool => ! in_array(self::slug($get('type_id')), ['code', 'survey', 'voc'], true)),
+                    // Legacy people/index.php has no Header section.
+                    ->visible(fn (Get $get): bool => ! in_array(self::slug($get('type_id')), ['code', 'survey', 'voc', 'people'], true)),
 
                 // Live: Yes/No radios + always-visible Password field.
                 Section::make(LegacySectionHelp::heading('User Access Security'))
@@ -704,6 +757,8 @@ class PortalProfileForm
                             ->label('Password:')
                             ->maxLength(255)
                             // Legacy plant/location: password field stays visible even when protect = No.
+                            // Legacy people has the protect radio but NO password input — hide it for people.
+                            ->visible(fn (Get $get): bool => self::slug($get('type_id')) !== 'people')
                             ->dehydrated(fn (?string $state): bool => filled($state))
                             ->dehydrateStateUsing(fn (?string $state): string => (string) ($state ?? '')),
                     ])
@@ -723,7 +778,8 @@ class PortalProfileForm
                                 .'</div>'
                             )),
                     ])
-                    ->visible(fn (Get $get): bool => ! in_array(self::slug($get('type_id')), ['code', 'survey', 'exhibit', 'voc'], true)),
+                    // Legacy people/index.php has no Share section.
+                    ->visible(fn (Get $get): bool => ! in_array(self::slug($get('type_id')), ['code', 'survey', 'exhibit', 'voc', 'people'], true)),
 
                 // Legacy plant/edit.php checklist UI is commented out — omit for plant parity.
             ]);
@@ -850,7 +906,8 @@ class PortalProfileForm
                     TextInput::make('telephone')->label('TELEPHONE:'),
                 ])
                 ->columns(2)
-                ->defaultItems(1)
+                // Legacy skips blank contact rows; don't seed a forced empty row.
+                ->defaultItems(0)
                 ->addActionLabel('And another')
                 ->columnSpanFull(),
         ];

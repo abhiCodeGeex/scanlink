@@ -39,6 +39,10 @@ return [
     // never blocks and key-dependent screens can proceed.
     'analytics_local_key_fallback' => (bool) env('SCANLINK_ANALYTICS_LOCAL_KEY_FALLBACK', true),
 
+    // Visitor IP -> country/region/city for scan analytics (legacy used ipgeolocation.io).
+    'ip_geolocation_enabled' => (bool) env('SCANLINK_IP_GEOLOCATION_ENABLED', true),
+    'ip_geolocation_url' => env('SCANLINK_IP_GEOLOCATION_URL', 'http://ip-api.com/json'),
+
     /*
     |--------------------------------------------------------------------------
     | Notification addresses / support details (legacy hardcoded values)

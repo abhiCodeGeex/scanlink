@@ -59,6 +59,12 @@ class OrderLabel extends Page
      */
     public string $step = 'form';
 
+    /**
+     * Legacy blocks the order form for expired (non-free / free+renewal-required)
+     * profiles and shows a message in place of it (dashboard.php:922-924).
+     */
+    public bool $profileExpired = false;
+
     public bool $agreeTerms = false;
 
     /**
@@ -134,6 +140,12 @@ class OrderLabel extends Page
             return;
         }
 
+        if ($this->profileExpired) {
+            Notification::make()->title('You can not perform this action on expired profile.')->danger()->send();
+
+            return;
+        }
+
         $qtySmall = (int) ($this->qtySmall ?: 0);
         $qtyLarge = (int) ($this->qtyLarge ?: 0);
 
@@ -187,6 +199,18 @@ class OrderLabel extends Page
             return null;
         }
 
+        // Legacy: cannot order labels for an expired profile (dashboard.php:922-924).
+        if ($profile->isExpired()) {
+            $this->profileExpired = true;
+
+            Notification::make()
+                ->title('You can not perform this action on expired profile.')
+                ->danger()
+                ->send();
+
+            return null;
+        }
+
         try {
             $order = $labelOrders->createLabelOrder(
                 $profile,
@@ -217,9 +241,9 @@ class OrderLabel extends Page
 
         $this->dispatchOrderLabelEmails($profile, $member);
 
+        // Legacy success popup wording (views/template/orderlabel.php).
         Notification::make()
-            ->title('Label order placed')
-            ->body("Order #{$order->id} has been placed. ScanLink will mail an invoice to you (terms 14 days).")
+            ->title('Your order has been successful and your ScanLink label/s will be dispatched within the next 48 hours.')
             ->success()
             ->send();
 
@@ -346,6 +370,7 @@ class OrderLabel extends Page
         }
 
         $this->selectedProfileId = $profileId;
+        $this->profileExpired = $profile->isExpired();
         $this->profileName = filled(trim((string) $profile->code_profile_name))
             ? (string) $profile->code_profile_name
             : (string) ($profile->name ?? '');

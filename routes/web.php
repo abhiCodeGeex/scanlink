@@ -76,6 +76,11 @@ Route::post('/{clientUrl}/{profileId}/form', [MobileProfileController::class, 's
     ->whereNumber('profileId')
     ->name('scan.form');
 
+// Async scan geolocation ping (GPS + IP-derived country/city) attached to the scan row.
+Route::post('/{clientUrl}/{profileId}/scan-geo', [MobileProfileController::class, 'recordScanGeo'])
+    ->whereNumber('profileId')
+    ->name('scan.geo');
+
 Route::post('/{clientUrl}/{profileId}/checklist/{itemId}/check', [MobileProfileController::class, 'checkChecklistItem'])
     ->whereNumber('profileId')
     ->whereNumber('itemId')

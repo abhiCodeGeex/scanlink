@@ -161,11 +161,29 @@
 <body @class(['portal-preview' => $portalPreview ?? false])>
 <div class="wrap">
     <div class="card">
+        {{-- Legacy: a success popup with a green check + "Thank You / …submitted successfully". --}}
         @if (session('form_submitted'))
-            <div class="notice">Thank you — your form was submitted.</div>
+            <div class="success-popup" style="text-align:center;padding:1.5rem 1rem;margin-bottom:1rem;border:1px solid #cde9cd;background:#e8f5e9;border-radius:8px;">
+                <svg width="46" height="46" viewBox="0 0 24 24" style="margin-bottom:.35rem;" aria-hidden="true">
+                    <circle cx="12" cy="12" r="11" fill="#008C00"/>
+                    <path d="M7 12.5l3.2 3.2L17 9" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <h2 style="margin:.15rem 0;color:#1b5e20;font-size:1.1rem;">Thank You</h2>
+                <p style="margin:0;color:#1b5e20;">Your response has been submitted successfully</p>
+            </div>
         @endif
 
-        @if ($profile->logos->isNotEmpty())
+        {{-- Legacy tiles_order: exhibit/voc render their content tiles in the user-saved order. --}}
+        @php $slOrderedTileTypes = ['exhibit', 'voc']; @endphp
+
+        {{-- Legacy mobile/index.php: outside the activation window the page shows only the logo. --}}
+        @if ($withinActivationWindow ?? true)
+
+        @if (in_array($profile->typeSlug(), $slOrderedTileTypes, true))
+            @include('scan.partials.ordered-tiles')
+        @endif
+
+        @if ($profile->logos->isNotEmpty() && ! in_array($profile->typeSlug(), $slOrderedTileTypes, true))
             <div class="logo-row">
                 @foreach ($profile->logos as $logo)
                     @if ($logoUrl = $publicMediaUrl($logo->logo_name))
@@ -179,20 +197,23 @@
             <nav class="top-navigation" style="margin:0 0 .75rem;padding:.35rem 0;border-bottom:1px solid #eee;">
                 <h2 style="margin:0;font-size:.95rem;font-weight:700;color:#222;">Profile No: {{ $profile->id }}</h2>
             </nav>
-        @elseif ($profile->name_company)
+        @elseif ($profile->name_company && $profile->typeSlug() !== 'people')
             <p class="text-sm" style="color:#555;margin:0 0 .5rem;">
                 {{ $profile->name_company }}
             </p>
         @endif
 
         {{-- Legacy mobile/index.php: only show Make/Model / Location name when profile name is set.
-             Never fall back to form_title (that caused duplicate green+black titles). --}}
+             Never fall back to form_title (that caused duplicate green+black titles).
+             exhibit/voc render Words / Profile Information via the ordered-tiles partial. --}}
+        @unless (in_array($profile->typeSlug(), $slOrderedTileTypes, true))
         <div class="MobileBottomText">
             @if (filled($profile->name))
                 @if (! empty($nameHeading))
                     <h3>{{ $nameHeading }}</h3>
                 @endif
-                <p>{{ $profile->name }}</p>
+                {{-- Legacy echoes name/notes as raw HTML (rich text), like description. --}}
+                <p>{!! $profile->name !!}</p>
             @endif
 
             @if ($profile->typeSlug() === 'exhibit' && filled($profile->name2))
@@ -292,7 +313,13 @@
 
             @if ($profile->notes && ! in_array($profile->typeSlug(), ['asset', 'exhibit', 'voc', 'misc'], true))
                 <h3>{{ $profile->typeSlug() === 'plant' ? 'Note' : 'Notes' }}</h3>
-                <p>{{ $profile->notes }}</p>
+                <p>{!! $profile->notes !!}</p>
+            @endif
+
+            {{-- Legacy people mobile: Contact (name_company) renders after Notes, before Telephone. --}}
+            @if ($profile->typeSlug() === 'people' && filled($profile->name_company))
+                <h3>Contact</h3>
+                <p>{{ $profile->name_company }}</p>
             @endif
 
             @if ($profile->telephone && $profile->typeSlug() !== 'voc')
@@ -323,21 +350,34 @@
                 <p><a href="{{ $profile->url }}" target="_blank" rel="noopener">{{ $profile->url }}</a></p>
             @endif
         </div>
+        @endunless
 
         {{-- Legacy ordering: Gallery / Documents / Links / Share render AFTER the form
              builder (see block below). Kept here only is the media that legacy shows
              above the form. --}}
-        @if ($profile->videos->isNotEmpty())
+        @if ($profile->videos->isNotEmpty() && ! in_array($profile->typeSlug(), $slOrderedTileTypes, true))
             <h2>Videos</h2>
             @foreach ($profile->videos as $video)
-                @php $embedUrl = $youtubeEmbedUrl((string) $video->video_name); @endphp
+                @php
+                    $embedUrl = $youtubeEmbedUrl((string) $video->video_name);
+                    $vName = (string) $video->video_name;
+                    // Legacy: a video_name that is a file (has an extension) is an uploaded clip.
+                    $vFileUrl = (! $embedUrl && preg_match('/\.(mp4|m4v|mov|webm|ogg)$/i', $vName))
+                        ? $publicMediaUrl(str_contains($vName, '/') ? $vName : 'images/video/'.$vName)
+                        : null;
+                @endphp
                 @if ($embedUrl)
                     <p style="margin:.5rem 0 .25rem;font-weight:600;">{{ $video->title ?: 'Video' }}</p>
                     <div class="video-wrap">
                         <iframe src="{{ $embedUrl }}" allowfullscreen loading="lazy" title="{{ $video->title ?: 'YouTube video' }}"></iframe>
                     </div>
-                @elseif (filled($video->video_name))
-                    <a class="btn" href="{{ $video->video_name }}" target="_blank" rel="noopener">{{ $video->title ?: 'Watch video' }}</a>
+                @elseif ($vFileUrl)
+                    <p style="margin:.5rem 0 .25rem;font-weight:600;">{{ $video->title ?: 'Video' }}</p>
+                    <div class="video-wrap">
+                        <video controls playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;"><source src="{{ $vFileUrl }}"></video>
+                    </div>
+                @elseif (filled($vName))
+                    <a class="btn" href="{{ $vName }}" target="_blank" rel="noopener">{{ $video->title ?: 'Watch video' }}</a>
                 @endif
             @endforeach
         @endif
@@ -599,21 +639,34 @@
 
                             @case(17)
                                 <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
-                                <input type="file" name="answers_file[{{ $qid }}]" {{ $required }}>
+                                {{-- Legacy "Add another": native multi-file selection. --}}
+                                <input type="file" name="answers_file[{{ $qid }}][]" multiple {{ $required }}>
                                 @break
 
                             @case(18)
                                 <label>{{ $question->question_text ?: 'Participant name' }}@if($question->is_mandatory) *@endif</label>
-                                <input type="text" name="answers[{{ $qid }}]" placeholder="Full name" {{ $required }}>
-                                @if ($question->participant_include_employer)
-                                    <label>Employer / company</label>
-                                    <input type="text" name="answers_meta[{{ $qid }}][employer]">
-                                @endif
                                 @if ($question->participant_include_signature)
+                                    {{-- With a signature pad this stays single-instance (one canvas). --}}
+                                    <input type="text" name="answers[{{ $qid }}]" placeholder="Full name" {{ $required }}>
+                                    @if ($question->participant_include_employer)
+                                        <label>Employer / company</label>
+                                        <input type="text" name="answers_meta[{{ $qid }}][employer]">
+                                    @endif
                                     <div class="signature-wrap">
                                         <canvas id="sig-{{ $qid }}" width="320" height="120"></canvas>
                                         <input type="hidden" name="answers_meta[{{ $qid }}][signature]" id="sig-input-{{ $qid }}">
                                         <p style="margin:.35rem 0;"><button type="button" class="btn-outline btn" onclick="clearSig({{ $qid }})">Clear signature</button></p>
+                                    </div>
+                                @else
+                                    {{-- Legacy "Add another": collect multiple participants in one submission. --}}
+                                    <div class="sl-repeat" data-sl-repeat>
+                                        <div class="sl-repeat-item">
+                                            <input type="text" name="answers[{{ $qid }}][]" placeholder="Full name" {{ $required }}>
+                                            @if ($question->participant_include_employer)
+                                                <input type="text" name="answers_meta[{{ $qid }}][employer][]" placeholder="Employer / company" style="margin-top:.35rem;">
+                                            @endif
+                                        </div>
+                                        <a href="javascript:;" class="sl-add-another" style="display:inline-block;margin-top:.4rem;font-size:.9rem;color:#008C00;font-weight:600;">+ Add another</a>
                                     </div>
                                 @endif
                                 @break
@@ -639,7 +692,13 @@
 
                             @case(24)
                                 <label>{{ $question->question_text ?: 'Additional recipient email' }}@if($question->is_mandatory) *@endif</label>
-                                <input type="email" name="answers[{{ $qid }}]" {{ $required }}>
+                                {{-- Legacy "Add another": multiple additional recipient emails. --}}
+                                <div class="sl-repeat" data-sl-repeat>
+                                    <div class="sl-repeat-item">
+                                        <input type="email" name="answers[{{ $qid }}][]" {{ $required }}>
+                                    </div>
+                                    <a href="javascript:;" class="sl-add-another" style="display:inline-block;margin-top:.4rem;font-size:.9rem;color:#008C00;font-weight:600;">+ Add another</a>
+                                </div>
                                 @break
 
                             @case(25)
@@ -768,10 +827,29 @@
                     };
                 })();
             </script>
+            <script>
+                // Legacy "Add another": clone the last repeat item, clearing its inputs.
+                (function () {
+                    document.addEventListener('click', function (e) {
+                        var link = e.target.closest('.sl-add-another');
+                        if (!link) return;
+                        e.preventDefault();
+                        var wrap = link.closest('[data-sl-repeat]');
+                        if (!wrap) return;
+                        var items = wrap.querySelectorAll('.sl-repeat-item');
+                        if (!items.length) return;
+                        var clone = items[items.length - 1].cloneNode(true);
+                        clone.querySelectorAll('input, textarea, select').forEach(function (el) {
+                            if (el.type === 'checkbox' || el.type === 'radio') { el.checked = false; } else { el.value = ''; }
+                        });
+                        wrap.insertBefore(clone, link);
+                    });
+                })();
+            </script>
         @endif
 
         {{-- Legacy mobile order: Form → Gallery → Documents → Links → Share (mobile/index.php). --}}
-        @if ($profile->pictures->isNotEmpty())
+        @if ($profile->pictures->isNotEmpty() && ! in_array($profile->typeSlug(), $slOrderedTileTypes, true))
             <h2>Gallery</h2>
             <div class="gallery">
                 @foreach ($profile->pictures as $picture)
@@ -787,7 +865,7 @@
             </div>
         @endif
 
-        @if ($profile->documents->isNotEmpty())
+        @if ($profile->documents->isNotEmpty() && ! in_array($profile->typeSlug(), $slOrderedTileTypes, true))
             <h2>Documents</h2>
             <div class="tile-grid" style="display:block;">
                 @foreach ($profile->documents as $document)
@@ -822,7 +900,7 @@
                 return $enabled && filled($weblink->link_button_url);
             });
         @endphp
-        @if ($visibleWeblinks->isNotEmpty())
+        @if ($visibleWeblinks->isNotEmpty() && ! in_array($profile->typeSlug(), $slOrderedTileTypes, true))
             <h2>Links</h2>
             <div class="tile-grid" style="display:block;">
                 @foreach ($visibleWeblinks as $weblink)
@@ -846,17 +924,17 @@
             </div>
         @endif
 
-        @if ($profile->display_share_link)
+        @if ($profile->display_share_link && ! in_array($profile->typeSlug(), $slOrderedTileTypes, true))
             @php
-                $shareUrl = filled($profile->shorturl)
-                    ? (string) $profile->shorturl
-                    : url('/'.$clientUrl.'/'.$profile->id);
+                // Legacy: Facebook shares the live page URL; Twitter/Email use the short URL.
+                $liveUrl = url('/'.$clientUrl.'/'.$profile->id);
+                $shareUrl = filled($profile->shorturl) ? (string) $profile->shorturl : $liveUrl;
                 $shareText = trim((string) ($profile->name ?: $profile->code_profile_name ?: 'ScanLink'));
             @endphp
             <div class="shareNav-mob">
                 <a
                     class="shareFB"
-                    href="https://www.facebook.com/share.php?u={{ urlencode($shareUrl) }}"
+                    href="https://www.facebook.com/share.php?u={{ urlencode($liveUrl) }}"
                     target="_blank"
                     rel="noopener"
                     title="Facebook"
@@ -878,30 +956,55 @@
             </div>
         @endif
 
+        {{-- Legacy: data collection is a popup shown over the content on load (name/surname/mobile/email). --}}
         @if ($needsVisitorInfo)
-            <div class="visitor-form">
-                <h2>Visitor information</h2>
-                <form method="post" action="{{ route('scan.visitor', [$clientUrl, $profile->id]) }}">
-                    @csrf
-                    @if ($profile->data_collection_name)
-                        <label>Name</label>
-                        <input type="text" name="name" required>
-                    @endif
-                    @if ($profile->data_collection_surname)
-                        <label>Surname</label>
-                        <input type="text" name="surname" {{ $profile->set_up_compulsory ? 'required' : '' }}>
-                    @endif
-                    @if ($profile->data_collection_email)
-                        <label>Email</label>
-                        <input type="email" name="email" required>
-                    @endif
-                    @if ($profile->data_collection_mobile)
-                        <label>Mobile</label>
-                        <input type="text" name="mobile">
-                    @endif
-                    <p style="margin-top:1rem;"><button class="btn" type="submit">Continue</button></p>
-                </form>
+            @php
+                $dcBtnText = filled($profile->data_collection_btn_text) ? $profile->data_collection_btn_text : 'Proceed';
+                $dcBtnColor = trim((string) ($profile->data_collection_btn_color ?: ''));
+                $dcBtnStyle = $dcBtnColor !== ''
+                    ? 'background-color:'.(str_starts_with($dcBtnColor, '#') ? $dcBtnColor : '#'.$dcBtnColor).';'
+                    : '';
+            @endphp
+            <div class="sl-dc-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow:auto;">
+                <div style="background:#fff;border-radius:8px;max-width:380px;width:100%;padding:1.25rem;box-sizing:border-box;">
+                    <p style="margin:0 0 .75rem;font-weight:600;">{{ $profile->data_collection_content ?: 'Register your mobile number to receive exclusive weekly offers.' }}</p>
+                    <form method="post" action="{{ route('scan.visitor', [$clientUrl, $profile->id]) }}">
+                        @csrf
+                        {{-- Legacy: fields are required only in compulsory mode (set_up_compulsory);
+                             in that mode every enabled field is required, incl. mobile. --}}
+                        @if ($profile->data_collection_name)
+                            <label>Name</label>
+                            <input type="text" name="name" {{ $profile->set_up_compulsory ? 'required' : '' }}>
+                        @endif
+                        @if ($profile->data_collection_surname)
+                            <label>Surname</label>
+                            <input type="text" name="surname" {{ $profile->set_up_compulsory ? 'required' : '' }}>
+                        @endif
+                        @if ($profile->data_collection_mobile)
+                            <label>Mobile Number</label>
+                            <input type="text" name="mobile" inputmode="numeric" maxlength="10" pattern="[0-9]{10}" title="Enter a valid 10 digit mobile phone number" {{ $profile->set_up_compulsory ? 'required' : '' }}>
+                        @endif
+                        @if ($profile->data_collection_email)
+                            <label>Email Address</label>
+                            <input type="email" name="email" maxlength="255" {{ $profile->set_up_compulsory ? 'required' : '' }}>
+                        @endif
+                        <p style="margin-top:1rem;text-align:center;"><button class="btn" type="submit" style="{{ $dcBtnStyle }}">{{ $dcBtnText }}</button></p>
+                    </form>
+                </div>
             </div>
+        @endif
+
+        @else
+            {{-- Outside the activation window: legacy shows only the company logo. --}}
+            @if ($profile->logos->isNotEmpty())
+                <div class="logo-row">
+                    @foreach ($profile->logos as $logo)
+                        @if ($outLogoUrl = $publicMediaUrl($logo->logo_name))
+                            <img src="{{ $outLogoUrl }}" alt="Company logo">
+                        @endif
+                    @endforeach
+                </div>
+            @endif
         @endif
     </div>
 
@@ -919,41 +1022,43 @@
 </div>
 
 {{--
-    Legacy parity: on every live scan the old app fires js/galatech/wpanalytics(analytic_key)
-    which reads HTML5 geolocation and JSONP-pings the Galatech API (item/index) so the scan is
-    recorded (device / browser / country / IP derived server-side from the request). Suppressed
-    for the editor phone-preview (ask_for_location=no / portalPreview) and right after a form
-    submit — exactly as legacy mobile/index.php guards `$form_submit_success == ''`.
+    Scan geolocation: attach the visitor's GPS (and IP-derived country/region/city, resolved
+    server-side) to the scan row recorded on page load. Self-contained — posts back to this app
+    instead of the external Galatech API. Suppressed for the editor preview and right after a
+    form submit (legacy guarded on `$form_submit_success == ''`).
 --}}
 @if (! ($portalPreview ?? false)
     && request('ask_for_location') !== 'no'
     && ! session('form_submitted')
-    && filled($profile->analytic_key))
+    && ! empty($scanHitId))
     <script>
         (function () {
-            var API = @json(rtrim((string) config('scanlink.analytics_api_url'), '/') . '/item/index');
-            var KEY = @json((string) $profile->analytic_key);
+            var ENDPOINT = @json(route('scan.geo', [$clientUrl, $profile->id]));
+            var TOKEN = @json(csrf_token());
+            var HITID = @json((int) $scanHitId);
 
-            // JSONP no-op — the recording happens server-side; we ignore the response.
-            window.__slAnalyticsCb = window.__slAnalyticsCb || function () {};
-
-            function ping(lat, lng) {
-                var s = document.createElement('script');
-                s.src = API
-                    + '?key=' + encodeURIComponent(KEY)
-                    + '&lat=' + (lat == null ? '' : lat)
-                    + '&lng=' + (lng == null ? '' : lng)
-                    + '&callback=__slAnalyticsCb';
-                s.async = true;
-                (document.body || document.documentElement).appendChild(s);
+            function send(lat, lng) {
+                var body = 'scan_hit_id=' + encodeURIComponent(HITID)
+                    + '&lat=' + encodeURIComponent(lat == null ? '' : lat)
+                    + '&lng=' + encodeURIComponent(lng == null ? '' : lng)
+                    + '&screensize=' + encodeURIComponent(window.screen ? (window.screen.width + 'x' + window.screen.height) : '');
+                try {
+                    fetch(ENDPOINT, {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': TOKEN, 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: body,
+                        keepalive: true,
+                        credentials: 'same-origin'
+                    }).catch(function () {});
+                } catch (e) {}
             }
 
             function fire() {
-                if (!navigator.geolocation) { ping('', ''); return; }
+                if (!navigator.geolocation) { send('', ''); return; }
                 navigator.geolocation.getCurrentPosition(
-                    function (p) { ping(p.coords.latitude.toFixed(2), p.coords.longitude.toFixed(2)); },
-                    function () { ping('', ''); },
-                    { enableHighAccuracy: true, timeout: 1000 }
+                    function (p) { send(p.coords.latitude.toFixed(4), p.coords.longitude.toFixed(4)); },
+                    function () { send('', ''); },
+                    { enableHighAccuracy: true, timeout: 3000 }
                 );
             }
 

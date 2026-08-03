@@ -125,8 +125,10 @@ class CumulativeAnalyticsBuilder
             ->values()
             ->all();
 
+        // Legacy getCumulativeProfile compared option sets for radio(3), checkbox(4),
+        // dropdown(5), scale(6) and grid(7) — not just the analytics-pie types [3,5,6].
         $analytics = $questions
-            ->whereIn('question_type_id', [3, 5, 6])
+            ->whereIn('question_type_id', [3, 4, 5, 6, 7])
             ->map(function (FormBuilderQuestion $q): string {
                 $opts = array_map(
                     fn ($o): string => $this->normalizeSignatureValue((string) $o),
@@ -140,7 +142,8 @@ class CumulativeAnalyticsBuilder
             ->values()
             ->all();
 
-        return ['text' => $text, 'analytics' => $analytics];
+        // Legacy also required an identical total field count (get_total_fields_count).
+        return ['text' => $text, 'analytics' => $analytics, 'count' => $questions->count()];
     }
 
     protected function normalizeSignatureValue(string $value): string

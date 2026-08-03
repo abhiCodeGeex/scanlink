@@ -102,7 +102,9 @@ class CreateProfile extends EditRecord
             $slot = $drafts->claimSpecific((int) $client->id, $requestedSlotId, (string) $typeSlag, $member?->id);
         }
 
-        if (! $slot && $existingId > 0) {
+        // A specific slot was requested (from Code Balance): only claimSpecific may satisfy it —
+        // never silently substitute a session draft or an arbitrary open slot.
+        if (! $slot && $existingId > 0 && $requestedSlotId === 0) {
             $slot = \App\Models\Profile::query()
                 ->whereKey($existingId)
                 ->where('client_id', $client->id)
@@ -123,7 +125,7 @@ class CreateProfile extends EditRecord
             }
         }
 
-        if (! $slot) {
+        if (! $slot && $requestedSlotId === 0) {
             $slot = $drafts->claimForCreate((int) $client->id, (string) $typeSlag, $member?->id);
         }
 
@@ -234,6 +236,12 @@ class CreateProfile extends EditRecord
         $data['form_active'] = false;
         $data['enable_form_analytics'] = false;
 
+        // Legacy tiles_order: seed the exhibit/voc "Display Order" control (default order on create).
+        $slag = $profile->equipmentType?->slag;
+        if (in_array($slag, ['exhibit', 'voc'], true)) {
+            $data['tile_order'] = \App\Models\Profile::tileOrderFormItems($slag, $profile->tiles_order);
+        }
+
         return $data;
     }
 
@@ -265,6 +273,16 @@ class CreateProfile extends EditRecord
     protected function mutateFormDataBeforeSave(array $data): array
     {
         $data['update_or_not'] = true;
+
+        if (array_key_exists('tile_order', $data)) {
+            $ids = \App\Models\Profile::tileOrderToString($data['tile_order']);
+
+            if ($ids !== null) {
+                $data['tiles_order'] = $ids;
+            }
+
+            unset($data['tile_order']);
+        }
 
         return $data;
     }

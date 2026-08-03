@@ -30,7 +30,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'voc_known_allergies', 'voc_blood_type', 'voc_next_of_kin', 'voc_contact_phone',
     'voc_employer', 'voc_emp_address', 'voc_emp_town', 'voc_emp_state', 'voc_emp_phone',
     'voc_email_text', 'voc_email_url', 'voc_email_sign_line1', 'voc_email_sign_line2',
-    'voc_title_bar_enable', 'voc_title_bar_text', 'voc_title_bar_colour',
+    'voc_title_bar_enable', 'voc_title_bar_text', 'voc_title_bar_colour', 'tiles_order',
 ])]
 class Profile extends Model
 {
@@ -328,11 +328,6 @@ class Profile extends Model
         return $this->hasMany(FormBuilderAnswer::class);
     }
 
-    public function visitors(): HasMany
-    {
-        return $this->hasMany(VisitorContact::class);
-    }
-
     public function participants(): HasMany
     {
         return $this->hasMany(Participant::class);
@@ -560,5 +555,132 @@ class Profile extends Model
     public function typeSlug(): ?string
     {
         return $this->equipmentType?->slag;
+    }
+
+    /**
+     * Legacy parity: the Form/Survey/Checklist ("survey") and VOC types have Form Builder
+     * inherent/free — legacy has no auto_save purchase bridge for them, so the form can be
+     * enabled without the $5 activation. Every other type must purchase (form_active).
+     */
+    public function formBuilderEntitled(): bool
+    {
+        return (bool) $this->form_active
+            || in_array($this->typeSlug(), ['survey', 'voc'], true);
+    }
+
+    /**
+     * Legacy parity: exhibit/voc mobile pages render their content tiles in the
+     * user-saved order (profiles.tiles_order). Returns the ordered list of tile ids,
+     * falling back to the legacy default when unset/invalid.
+     *
+     * @return array<int, int>
+     */
+    public function mobileTileOrder(): array
+    {
+        $labels = self::mobileTileLabels($this->typeSlug());
+        $default = array_keys($labels);
+
+        $raw = trim((string) $this->getAttribute('tiles_order'));
+
+        if ($raw === '') {
+            return $default;
+        }
+
+        // Keep only ids known for this type, in the saved order.
+        $ids = array_values(array_filter(
+            array_map('intval', explode(',', $raw)),
+            fn (int $n): bool => isset($labels[$n]),
+        ));
+
+        return $ids !== [] ? $ids : $default;
+    }
+
+    /**
+     * Legacy parity: the draggable content tiles for exhibit/voc mobile pages, in
+     * their default display order. id => human label. Single source for both the
+     * scan-page renderer (mobileTileOrder) and the editor "Display Order" control.
+     *
+     * @return array<int, string>
+     */
+    public static function mobileTileLabels(string $slug): array
+    {
+        return match ($slug) {
+            'exhibit' => [
+                1 => 'Logo', 2 => 'Videos', 3 => 'Words', 4 => 'Pictures',
+                5 => 'Documents', 6 => 'Web Links', 11 => 'Share',
+                17 => 'Logo #2', 14 => 'Videos #2', 15 => 'Words #2', 16 => 'Pictures #2',
+            ],
+            'voc' => [
+                1 => 'Logo', 2 => 'Title Bar', 3 => 'Profile Picture',
+                4 => 'Profile Information', 5 => 'Documents',
+            ],
+            default => [],
+        };
+    }
+
+    /**
+     * Build the reorderable editor items for tiles_order: seeded from a saved order
+     * (comma-separated ids), pruned to the type's known tiles, with any missing tiles
+     * appended in default order. Empty for types without draggable tiles.
+     *
+     * @return list<array{id: int, label: string}>
+     */
+    public static function tileOrderFormItems(?string $slug, ?string $savedOrder): array
+    {
+        $labels = self::mobileTileLabels((string) $slug);
+
+        if ($labels === []) {
+            return [];
+        }
+
+        $order = array_values(array_filter(
+            array_map('intval', explode(',', (string) $savedOrder)),
+            fn (int $n): bool => isset($labels[$n]),
+        ));
+
+        foreach (array_keys($labels) as $id) {
+            if (! in_array($id, $order, true)) {
+                $order[] = $id;
+            }
+        }
+
+        return array_map(fn (int $id): array => ['id' => $id, 'label' => $labels[$id]], $order);
+    }
+
+    /**
+     * Map editor "Display Order" repeater state back to the tiles_order string.
+     * Returns null when there is nothing orderable (so callers don't overwrite).
+     */
+    public static function tileOrderToString(mixed $items): ?string
+    {
+        if (! is_array($items)) {
+            return null;
+        }
+
+        $ids = array_values(array_filter(
+            array_map(fn ($row): int => (int) (is_array($row) ? ($row['id'] ?? 0) : 0), $items),
+            fn (int $n): bool => $n > 0,
+        ));
+
+        return $ids !== [] ? implode(',', $ids) : null;
+    }
+
+    /**
+     * Legacy mobile/index.php: the public page blanks its content when scanned outside the
+     * activation window. The window is only enforced when BOTH dates are set; a single date
+     * (or none) leaves the code always active.
+     */
+    public function isWithinActivationWindow(): bool
+    {
+        $start = $this->activation_start_date;
+        $end = $this->activation_end_date;
+
+        if ($start === null || $end === null) {
+            return true;
+        }
+
+        $today = now()->startOfDay();
+
+        return $today->betweenIncluded($start->copy()->startOfDay(), $end->copy()->startOfDay());
     }
 }

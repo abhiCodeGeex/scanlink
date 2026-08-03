@@ -12,7 +12,7 @@ class LogoExtra extends Model
 
     protected $table = 'logo_extra';
 
-    protected $fillable = ['client_id', 'user_id', 'profile_id', 'logo_name', 'is_temp'];
+    protected $fillable = ['client_id', 'user_id', 'profile_id', 'logo_name', 'logo_url', 'is_temp'];
 
     /**
      * @return array<string, mixed>
@@ -21,6 +21,7 @@ class LogoExtra extends Model
     {
         return [
             'logo_name' => '',
+            'logo_url' => '',
             'is_temp' => 0,
         ];
     }

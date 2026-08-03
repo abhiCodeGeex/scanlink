@@ -197,21 +197,25 @@ class PortalProfilesTable
                     ->tooltip('Form Submissions')
                     ->icon('heroicon-o-clipboard-document-list')
                     ->url(fn (Profile $record): string => FormSubmissions::getUrl(['profile' => $record->id]))
-                    ->visible(fn (): bool => InteractsWithClientMembership::memberCanAccessFormSubmissions(
-                        InteractsWithClientMembership::portalMembership(),
-                    )),
+                    // Legacy: URL-Link (code) and People dedicated lists have no Form Submissions tool.
+                    ->visible(fn (Profile $record): bool => ! in_array($record->typeSlug(), ['code', 'people'], true)
+                        && InteractsWithClientMembership::memberCanAccessFormSubmissions(
+                            InteractsWithClientMembership::portalMembership(),
+                        )),
                 Action::make('downloadQr')
                     ->label('Download QR/DM Code')
                     ->iconButton()
                     ->tooltip('Download QR/DM Code')
                     ->icon('heroicon-o-arrow-down-tray')
                     // Legacy: Download is blocked on expired codes.
+                    // Legacy row tool (dashboard/getQR) defaults to a PDF; the multi-format
+                    // picker (PNG/JPG/TIFF/EPS) lives in the editor sidebar.
                     ->action(function (Profile $record): mixed {
                         if (self::blockIfExpired($record)) {
                             return null;
                         }
 
-                        return app(ProfileQrService::class)->downloadQrImage($record);
+                        return app(ProfileQrService::class)->downloadPdf($record);
                     })
                     ->visible(fn (): bool => InteractsWithClientMembership::memberCanDownload(
                         InteractsWithClientMembership::portalMembership(),

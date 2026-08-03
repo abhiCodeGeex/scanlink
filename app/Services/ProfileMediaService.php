@@ -22,12 +22,22 @@ class ProfileMediaService
         if (array_key_exists('logo_upload', $uploads)) {
             if (! empty($uploads['logo_upload'])) {
                 $this->syncLogo($profile, (string) $uploads['logo_upload']);
+            } else {
+                // Legacy: clearing the logo in the editor removes it — an empty field on
+                // save means "no logo", so drop the existing row.
+                $profile->logos()->delete();
             }
         }
 
         if (array_key_exists('logo_extra_upload', $uploads)) {
             if (! empty($uploads['logo_extra_upload'])) {
-                $this->syncLogoExtra($profile, (string) $uploads['logo_extra_upload']);
+                $this->syncLogoExtra(
+                    $profile,
+                    (string) $uploads['logo_extra_upload'],
+                    (string) ($uploads['logo_extra_url'] ?? ''),
+                );
+            } else {
+                $profile->logosExtra()->delete();
             }
         }
 
@@ -110,7 +120,7 @@ class ProfileMediaService
         }
     }
 
-    protected function syncLogoExtra(Profile $profile, string $path): void
+    protected function syncLogoExtra(Profile $profile, string $path, string $url = ''): void
     {
         $profile->logosExtra()->delete();
 
@@ -118,6 +128,7 @@ class ProfileMediaService
             'client_id' => $profile->client_id,
             'user_id' => $profile->user_id,
             'logo_name' => $this->relativeStoragePath($path),
+            'logo_url' => trim($url),
             'is_temp' => false,
         ]);
     }

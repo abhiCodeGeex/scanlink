@@ -251,7 +251,9 @@
                     {{ filled($profileName) ? ucwords($profileName) : '' }}
                 </h1>
 
-                @if ($step === 'form')
+                @if ($profileExpired)
+                <div class="sl-ol__empty">You can not perform this action on expired profile.</div>
+                @elseif ($step === 'form')
                 <div class="sl-ol__layout">
                     <section class="sl-ol__left">
                         <h3>Industrial Grade Labels</h3>

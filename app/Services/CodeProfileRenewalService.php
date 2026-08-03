@@ -117,7 +117,8 @@ class CodeProfileRenewalService
                 'total_amount' => $total,
                 'status' => CodeOrderStatus::Renew,
                 'enable' => false,
-                'exipry_date' => now()->addYear(),
+                // Legacy code_purchase.exipry_date = now + 365 days (codepurchase.php:239).
+                'exipry_date' => now()->addDays(365),
                 'is_reseller_pricing_code' => $mixingCode,
                 'reseller_client_id' => 0,
                 'free_code' => false,
@@ -135,8 +136,10 @@ class CodeProfileRenewalService
                 // NOT repoint profiles.code_purchase_id — the renewal links to the profile
                 // via code_purchase_detail. Overwriting it would corrupt the later
                 // "original purchase" pre-expiry price lookup on the next renewal.
+                // Legacy add_date() adds a fixed 365 days (codepurchase.php:343-347),
+                // not a calendar year — keep the same arithmetic for expiry parity.
                 $profile->update([
-                    'expired_at' => $base->copy()->addYear(),
+                    'expired_at' => $base->copy()->addDays(365),
                 ]);
 
                 CodePurchaseDetail::query()->create([

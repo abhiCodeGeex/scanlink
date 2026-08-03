@@ -57,7 +57,25 @@
                 @else
                     <div class="qa">
                         <strong>{{ strip_tags((string) $question->question_text) ?: ('Question #'.$question->question_id) }}</strong>
-                        <div>{{ $answer?->question_answer ?: '—' }}</div>
+                        @php $raw = (string) ($answer?->question_answer ?? ''); @endphp
+                        @if ($raw === '')
+                            <div>—</div>
+                        @elseif (\Illuminate\Support\Str::startsWith($raw, 'data:image'))
+                            <div><img src="{{ $raw }}" alt="Signature" style="max-width:300px;border:1px solid #ccc;"></div>
+                        @elseif ($tid === 25)
+                            @php $p = explode(':::', $raw); @endphp
+                            <div>
+                                Visitor name: {{ $p[0] ?? '' }}<br>
+                                Phone: {{ $p[1] ?? '' }}<br>
+                                Date/Time: {{ trim(($p[2] ?? '').' '.($p[3] ?? '')) }}<br>
+                                Venue: {{ trim(($p[4] ?? '').', '.($p[5] ?? ''), ', ') }}<br>
+                                Location type: {{ $p[6] ?? '' }}@if (($p[6] ?? '') === 'Vehicle' && isset($p[7])) — Vehicle: {{ $p[7] }}@endif
+                            </div>
+                        @elseif ($tid === 7)
+                            <div>{!! nl2br(e(str_replace('; ', "\n", $raw))) !!}</div>
+                        @else
+                            <div>{!! \App\Support\FormAnswerHtml::text($raw) !!}</div>
+                        @endif
                     </div>
                 @endif
             @endforeach

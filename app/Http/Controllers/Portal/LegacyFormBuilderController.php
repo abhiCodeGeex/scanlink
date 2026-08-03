@@ -290,7 +290,8 @@ class LegacyFormBuilderController extends Controller
             || $request->input('enable_form') === true;
 
         $profile->forceFill([
-            'form_is_enable' => (bool) $profile->form_active && $enabled,
+            // Legacy: survey / voc Form Builder is free; all other types need form_active.
+            'form_is_enable' => $profile->formBuilderEntitled() && $enabled,
         ])->save();
 
         return response('OK');

@@ -239,6 +239,155 @@ class ScanAnalytics extends Page
         }, $filename, ['Content-Type' => 'text/csv']);
     }
 
+    /**
+     * Legacy exported scan analytics as .xls — produce a real .xlsx of the scan rows.
+     */
+    public function exportXlsx(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        $profileId = (int) $this->selectedProfileId;
+        $rows = $this->analyticsQuery($profileId)->orderByDesc('id')->get();
+        $platforms = $this->platformNames();
+        $devices = $this->deviceNames();
+
+        $tmp = tempnam(sys_get_temp_dir(), 'sanl_').'.xlsx';
+        $writer = new \OpenSpout\Writer\XLSX\Writer;
+        $writer->openToFile($tmp);
+        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+            '#', 'Date Time', 'IP', 'Location', 'Latitude', 'Longitude',
+            'Device', 'Platform', 'Screen Size', 'Browser', 'Browser Version', 'Scan Type',
+        ]));
+
+        foreach ($rows as $index => $row) {
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                (string) ($index + 1),
+                $row->created_at?->format('Y-m-d H:i:s') ?? '',
+                (string) $row->ip_add,
+                trim(implode(', ', array_filter([
+                    (string) $row->city_name,
+                    (string) $row->region_name,
+                    (string) $row->country_name,
+                ]))),
+                (string) $row->latitude,
+                (string) $row->longitude,
+                $this->resolvePlatformLabel($row->id_platform, $platforms),
+                $this->resolveDeviceLabel($row->id_device, $devices),
+                (string) ($row->screen_size ?? ''),
+                $this->browserLabel((string) $row->id_browser),
+                (string) ($row->browser_version ?? ''),
+                strtolower((string) ($row->scan_type ?? '')) === 'gps' ? 'GPS' : 'IP',
+            ]));
+        }
+
+        $writer->close();
+
+        return response()
+            ->download($tmp, 'scan-analytics-'.$profileId.'.xlsx')
+            ->deleteFileAfterSend();
+    }
+
+    /**
+     * Legacy form-analytics "submission rate" = form submissions ÷ scans.
+     */
+    public function submissionRatePercent(): int
+    {
+        if ($this->analyticsCount <= 0) {
+            return 0;
+        }
+
+        return (int) round($this->formSubmissionCount * 100 / $this->analyticsCount);
+    }
+
+    /**
+     * Top-level scan breakdowns (country / platform / browser) for the PDF bar charts.
+     *
+     * @return array{country: list<array{label: string, value: int}>, platform: list<array{label: string, value: int}>, browser: list<array{label: string, value: int}>}
+     */
+    protected function chartBreakdowns(int $profileId): array
+    {
+        $rows = $this->analyticsQuery($profileId)->get();
+        $platforms = $this->platformNames();
+
+        $group = function (\Illuminate\Support\Collection $rows, callable $keyer, callable $labeler): array {
+            $out = [];
+            foreach ($rows->groupBy($keyer) as $key => $group) {
+                $out[] = ['label' => $labeler((string) $key), 'value' => $group->count()];
+            }
+            usort($out, fn ($a, $b): int => $b['value'] <=> $a['value']);
+
+            return array_slice($out, 0, 12);
+        };
+
+        return [
+            'country' => $group(
+                $rows,
+                fn ($r): string => trim((string) $r->country_name) !== '' ? (string) $r->country_name : 'Unknown',
+                fn (string $k): string => $k,
+            ),
+            'platform' => $group(
+                $rows,
+                fn ($r): string => (string) $r->id_platform,
+                fn (string $k): string => $this->resolvePlatformLabel($k, $platforms),
+            ),
+            'browser' => $group(
+                $rows,
+                fn ($r): string => (string) $r->id_browser,
+                fn (string $k): string => $this->browserLabel($k),
+            ),
+        ];
+    }
+
+    /**
+     * Legacy "Download PDF": a real server-generated PDF with rendered chart images
+     * (GD bar/pie charts — no browser print, no external services).
+     */
+    public function downloadPdf(): StreamedResponse
+    {
+        $profileId = (int) $this->selectedProfileId;
+        $bar = app(\App\Services\BarChartRenderer::class);
+        $pie = app(\App\Services\PieChartRenderer::class);
+
+        $breakdowns = $this->chartBreakdowns($profileId);
+
+        $barCharts = [
+            'Scans by Country' => $bar->renderDataUri($breakdowns['country'], 540, '#185FA5'),
+            'Scans by Platform' => $bar->renderDataUri($breakdowns['platform'], 540, '#639922'),
+            'Scans by Browser' => $bar->renderDataUri($breakdowns['browser'], 540, '#BA7517'),
+        ];
+
+        $formPies = array_map(
+            fn (array $chart): array => [
+                'title' => $chart['title'],
+                'image' => $pie->renderDataUri($chart['slices']),
+            ],
+            $this->formCharts,
+        );
+
+        $html = view('filament.portal.pages.scan-analytics-pdf', [
+            'profileName' => $this->profileName,
+            'profileId' => $profileId,
+            'analyticsCount' => $this->analyticsCount,
+            'formSubmissionCount' => $this->formSubmissionCount,
+            'submissionRate' => $this->submissionRatePercent(),
+            'barCharts' => $barCharts,
+            'formPies' => $formPies,
+            'locationRows' => $this->locationRows,
+            'date' => now()->format('d/m/Y H:i:s'),
+        ])->render();
+
+        return response()->streamDownload(function () use ($html): void {
+            $pdf = new \TCPDF('P', 'mm', 'A4', true, 'UTF-8');
+            $pdf->SetCreator('ScanLink');
+            $pdf->SetTitle('Scan Analytics');
+            $pdf->setPrintHeader(false);
+            $pdf->setPrintFooter(false);
+            $pdf->SetMargins(12, 12, 12);
+            $pdf->SetAutoPageBreak(true, 12);
+            $pdf->AddPage();
+            $pdf->writeHTML($html, true, false, true, false, '');
+            echo $pdf->Output('scan-analytics.pdf', 'S');
+        }, 'scan-analytics-'.$profileId.'.pdf', ['Content-Type' => 'application/pdf']);
+    }
+
     protected function loadProfileAnalytics(int $profileId): void
     {
         $client = $this->requireClient();

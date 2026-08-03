@@ -20,6 +20,75 @@
     <style>
         html, body { margin: 0; padding: 0; background: #fff; width: 100%; max-width: 100%; overflow-x: hidden; box-sizing: border-box; }
         .progressbar { display: none; }
+
+        /* Professional, responsive form-config controls (Form Name / Recipients / Email Tag / Participant). */
+        .from-box { font-family: Arial, Helvetica, sans-serif; color: #374151; }
+        .top-part > h2, h2.click-drag {
+            font-size: 13px;
+            font-weight: 700;
+            color: #111827;
+            margin: 16px 0 6px;
+            text-transform: none;
+            letter-spacing: 0;
+        }
+        .top-part .rounded {
+            margin: 0 0 6px;
+            background: none;
+            border: 0;
+            padding: 0;
+            box-shadow: none;
+            /* flex row keeps the trailing required "*" inline to the right of the field */
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #dc2626;
+            font-weight: 700;
+        }
+        .top-part .rounded input[type="text"] {
+            flex: 1 1 auto;
+            width: auto;
+            min-width: 0;
+            height: 42px;
+            padding: 0 13px;
+            box-sizing: border-box;
+            border: 1px solid #d1d5db;
+            border-radius: 9px;
+            font-size: 14px;
+            background: #fff;
+            color: #111827;
+            font-weight: 400;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .top-part .rounded input[type="text"]:hover { border-color: #b6bcc4; }
+        .top-part .rounded input[type="text"]:focus {
+            outline: none;
+            border-color: #008C00;
+            box-shadow: 0 0 0 3px rgba(0, 140, 0, 0.15);
+        }
+        .top-part .parent_content { position: relative; }
+        .top-part #remove_ele { margin: 2px 0 4px; }
+        .top-part #remove_ele a { color: #dc2626; font-size: 12px; font-weight: 600; text-decoration: none; }
+        .top-part #remove_ele a:hover { text-decoration: underline; }
+        .top-part .add-another { text-align: right; margin: 2px 0 8px; }
+        .top-part .add-another a { color: #008C00; font-weight: 600; font-size: 13px; text-decoration: none; }
+        .top-part .add-another a:hover { text-decoration: underline; }
+        .from-box .green-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #008C00;
+            color: #fff;
+            border: 0;
+            border-radius: 9px;
+            height: 42px;
+            padding: 0 20px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 140, 0, 0.22);
+            transition: background 0.15s ease;
+        }
+        .from-box .green-btn:hover { background: #00a300; }
     </style>
 </head>
 <body>

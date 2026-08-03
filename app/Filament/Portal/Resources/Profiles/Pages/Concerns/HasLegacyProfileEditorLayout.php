@@ -193,7 +193,8 @@ trait HasLegacyProfileEditorLayout
             'formBuilderUrl' => $formBuilderUrl,
             'formBuilderEmbedUrl' => $formBuilderEmbedUrl,
             'formBuilderPurchaseUrl' => $formBuilderPurchaseUrl,
-            'formBuilderPurchased' => (bool) ($record?->form_active ?? false),
+            // Legacy: survey / voc get Form Builder free (no $5 gate); others need form_active.
+            'formBuilderPurchased' => (bool) ($record?->formBuilderEntitled() ?? false),
             'canPurchaseFormBuilder' => method_exists($this, 'isPrimaryUser')
                 ? $this->isPrimaryUser()
                 : false,
@@ -307,6 +308,14 @@ trait HasLegacyProfileEditorLayout
 
         try {
             return app(ProfileQrService::class)->downloadAs($record, $format);
+        } catch (\App\Exceptions\UnsupportedDownloadFormatException $e) {
+            // e.g. TIFF/EPS without ImageMagick — tell the user which formats work.
+            \Filament\Notifications\Notification::make()
+                ->title($e->getMessage())
+                ->warning()
+                ->send();
+
+            return null;
         } catch (\Throwable $e) {
             report($e);
 

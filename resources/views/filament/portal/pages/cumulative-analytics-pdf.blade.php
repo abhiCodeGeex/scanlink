@@ -22,6 +22,9 @@
 @forelse ($charts as $chart)
     @php($total = array_sum(array_column($chart['slices'], 'value')))
     <h2>{{ $chart['title'] }}</h2>
+    @if (! empty($chart['image']))
+        <img src="{{ $chart['image'] }}" alt="{{ $chart['title'] }}" style="margin:4px 0 8px;">
+    @endif
     <table>
         <thead>
             <tr><th>Option</th><th>Count</th><th>Percentage</th></tr>

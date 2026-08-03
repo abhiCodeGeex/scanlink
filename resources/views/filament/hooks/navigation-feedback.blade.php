@@ -314,14 +314,59 @@
         document.addEventListener('livewire:navigated', saveListPageState);
         window.addEventListener('popstate', saveListPageState);
 
-        // Show the bar for every Livewire round-trip (filters, pagination, tabs,
-        // table/page actions, live fields) — not just SPA navigations.
-        document.addEventListener('livewire:init', () => {
-            window.Livewire.hook('commit', ({ component, succeed, fail }) => {
-                // Ignore the background database-notifications poll (60s) — it's not a
-                // user action and must not flash the loader.
-                var name = (component && component.name) ? String(component.name).toLowerCase() : '';
-                if (name.indexOf('notifications') !== -1) {
+        // Show the bar for user-driven Livewire round-trips (filters, pagination,
+        // tabs, table/page actions) — not background polls like the bell badge.
+        const isSilentBackgroundCommit = (component, commit) => {
+            const name = String(
+                (component && (component.name || component?.snapshot?.memo?.name)) || ''
+            ).toLowerCase();
+
+            // Livewire 4 registers Filament\Livewire\DatabaseNotifications (FQCN).
+            // Also cover toast Notifications and any kebab aliases.
+            if (
+                name.indexOf('notification') !== -1
+                || name.indexOf('databasenotifications') !== -1
+            ) {
+                return true;
+            }
+
+            try {
+                const el = component && (component.el || component.entrypoint);
+                if (el && typeof el.closest === 'function' && el.closest('.fi-no-database')) {
+                    return true;
+                }
+            } catch (e) {
+                // ignore
+            }
+
+            // wire:poll.$interval defaults to $refresh — never treat as user action.
+            const calls = commit && commit.calls;
+            if (Array.isArray(calls) && calls.length > 0) {
+                const onlyRefresh = calls.every((call) => {
+                    const method = String(
+                        (call && (call.method || call.path || call[0])) || ''
+                    );
+
+                    return method === '$refresh' || method === 'refresh';
+                });
+
+                if (onlyRefresh) {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+
+        const attachCommitHook = () => {
+            if (window.__scanlinkNavFeedbackCommitHook || ! window.Livewire || typeof window.Livewire.hook !== 'function') {
+                return;
+            }
+
+            window.__scanlinkNavFeedbackCommitHook = true;
+
+            window.Livewire.hook('commit', ({ component, commit, succeed, fail }) => {
+                if (isSilentBackgroundCommit(component, commit)) {
                     return;
                 }
 
@@ -339,7 +384,11 @@
                     apply();
                 });
             });
-        });
+        };
+
+        // Livewire may already be booted by BODY_END (init already fired).
+        attachCommitHook();
+        document.addEventListener('livewire:init', attachCommitHook);
 
         window.scanlinkAdminBack = (button) => {
             const fallbackUrl = button.dataset.fallbackUrl;

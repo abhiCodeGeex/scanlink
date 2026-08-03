@@ -673,7 +673,8 @@
                                 <option value="city_name" @selected($locationSort === 'city_name')>Location</option>
                             </select>
                         </label>
-                        <button type="button" class="sl-sa__btn" wire:click="exportAnalytics">Export Analytics</button>
+                        <button type="button" class="sl-sa__btn" wire:click="exportXlsx">Export Analytics</button>
+                        <button type="button" class="sl-sa__btn" wire:click="downloadPdf">Download PDF</button>
                     </div>
                     <div class="sl-sa__table-wrap">
                         <table class="listing-table" width="100%" cellspacing="0" cellpadding="0">

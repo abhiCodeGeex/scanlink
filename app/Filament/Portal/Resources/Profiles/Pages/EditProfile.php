@@ -80,6 +80,7 @@ class EditProfile extends EditRecord
 
         $logoExtra = $profile->logosExtra->first();
         $data['logo_extra_upload'] = $logoExtra?->logo_name;
+        $data['logo_extra_url'] = $logoExtra?->logo_url;
 
         $data['video_titles'] = $profile->videos
             ->where('is_extra', false)
@@ -102,6 +103,43 @@ class EditProfile extends EditRecord
         // Legacy code/index.php defaults destination_url to "http://".
         if (($profile->equipmentType?->slag === 'code') && blank($data['url'] ?? null)) {
             $data['url'] = 'http://';
+        }
+
+        // Legacy tiles_order: seed the exhibit/voc "Display Order" control.
+        $slag = $profile->equipmentType?->slag;
+        if (in_array($slag, ['exhibit', 'voc'], true)) {
+            $data['tile_order'] = \App\Models\Profile::tileOrderFormItems($slag, $profile->tiles_order);
+        }
+
+        return $data;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        return $this->applyTileOrder($data);
+    }
+
+    /**
+     * Map the "Display Order" repeater state (exhibit/voc) to the tiles_order column and
+     * drop the non-column form key so the model update doesn't choke on it.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function applyTileOrder(array $data): array
+    {
+        if (array_key_exists('tile_order', $data)) {
+            $ids = \App\Models\Profile::tileOrderToString($data['tile_order']);
+
+            if ($ids !== null) {
+                $data['tiles_order'] = $ids;
+            }
+
+            unset($data['tile_order']);
         }
 
         return $data;
