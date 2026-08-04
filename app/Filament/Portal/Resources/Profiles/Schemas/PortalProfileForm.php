@@ -73,7 +73,7 @@ class PortalProfileForm
                             // for every standard type. The type "name" field is NOT required.
                             // Excluded: code (no field), customqr & people (legacy requires
                             // their own url/name instead, not code_profile_name).
-                            ->required(fn (Get $get): bool => in_array(
+                            ->required(fn (Get $get, $livewire): bool => empty($livewire->bypassRequiredForCheckout ?? null) && in_array(
                                 self::slug($get('type_id')),
                                 ['location', 'plant', 'asset', 'product', 'procedure', 'misc', 'survey', 'exhibit', 'voc'],
                                 true,
@@ -825,7 +825,7 @@ class PortalProfileForm
                 ))
                 ->placeholder('http://')
                 ->default('http://')
-                ->required()
+                ->required(fn ($livewire): bool => empty($livewire->bypassRequiredForCheckout ?? null))
                 ->url()
                 ->columnSpanFull(),
             Radio::make('enable_data_collection')

@@ -10,6 +10,12 @@
     </style>
 </head>
 <body>
+{{-- The jQuery File Uploader (ckeditor/fileuploader) reads #status ('success'|'error')
+     and #message from the response to stop its "Uploading file..." progress bar. Without
+     these it never clears the "uploading" state and the bar sticks. Harmless to the
+     iframe-form mechanism (its window.parent script below still runs). --}}
+<div id="status" style="display:none">{{ $ok ? 'success' : 'error' }}</div>
+<div id="message" style="display:none">{{ $ok ? 'Uploaded: '.$filename : $message }}</div>
 @if ($ok)
     <div class="ok">Uploaded: {{ $filename }}</div>
     <script>

@@ -61,7 +61,13 @@
                         @if ($raw === '')
                             <div>—</div>
                         @elseif (\Illuminate\Support\Str::startsWith($raw, 'data:image'))
-                            <div><img src="{{ $raw }}" alt="Signature" style="max-width:300px;border:1px solid #ccc;"></div>
+                            {{-- Signature/image answers can carry appended meta ("data:image... | Name: X");
+                                 only the data URI belongs in src, or the image renders broken. --}}
+                            @php [$sigSrc, $sigMeta] = array_pad(explode(' | ', $raw, 2), 2, ''); @endphp
+                            <div>
+                                <img src="{{ $sigSrc }}" alt="Signature" style="max-width:300px;border:1px solid #ccc;" onerror="this.style.display='none';">
+                                @if (filled($sigMeta))<div>{!! \App\Support\FormAnswerHtml::text($sigMeta) !!}</div>@endif
+                            </div>
                         @elseif ($tid === 25)
                             @php $p = explode(':::', $raw); @endphp
                             <div>

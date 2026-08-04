@@ -26,6 +26,13 @@ trait HasLegacyProfileEditorLayout
 
     public bool $showFormBuilderOrderSuccess = false;
 
+    /**
+     * Set during the pre-checkout auto-save so the form-schema required() rules relax —
+     * legacy auto_save_* persisted the profile with NO validation before Form Builder
+     * activation, so a blank required field must not block the purchase.
+     */
+    public bool $bypassRequiredForCheckout = false;
+
     public function closeFormBuilderOrderSuccess(): void
     {
         $this->showFormBuilderOrderSuccess = false;
@@ -51,10 +58,16 @@ trait HasLegacyProfileEditorLayout
             return;
         }
 
-        // Legacy auto_save_* persisted the profile before entering checkout so no
-        // edits were lost when the user left the editor.
+        // Legacy auto_save_* persisted the profile before checkout with NO validation, so
+        // a blank required field (e.g. code profile name) must not block activation.
         if (method_exists($this, 'save')) {
-            $this->save(shouldRedirect: false);
+            $this->bypassRequiredForCheckout = true;
+
+            try {
+                $this->save(shouldRedirect: false);
+            } finally {
+                $this->bypassRequiredForCheckout = false;
+            }
         }
 
         $profile->refresh();

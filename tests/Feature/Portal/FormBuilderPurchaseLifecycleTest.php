@@ -237,7 +237,7 @@ class FormBuilderPurchaseLifecycleTest extends TestCase
             ),
         ])->get('/portal/form-builder-order-summary')
             ->assertOk()
-            ->assertSee('ScanLink Form Builder Activation')
+            ->assertSee('Scanlink Form Builder Activation')
             ->assertSee('$5.00');
     }
 
@@ -275,6 +275,28 @@ class FormBuilderPurchaseLifecycleTest extends TestCase
             'client_id' => $this->client->id,
             'total_amount' => 5,
         ]);
+    }
+
+    public function test_activate_form_builder_does_not_block_on_blank_code_profile_name(): void
+    {
+        // Legacy auto_save_* proceeded to activation with NO validation. Blanking the
+        // required Code Profile Name must NOT block "Activate Form Builder".
+        Mail::fake();
+        $this->actingAs($this->user);
+
+        $location = EquipmentType::query()->where('slag', 'location')->firstOrFail();
+        $this->profile->forceFill([
+            'type_id' => $location->id,
+            'code_profile_name' => '',
+        ])->save();
+
+        Livewire::test(\App\Filament\Portal\Resources\Profiles\Pages\EditProfile::class, [
+            'record' => $this->profile->getRouteKey(),
+        ])
+            ->set('data.code_profile_name', '')
+            ->call('startFormBuilderPurchase')
+            ->assertHasNoErrors()
+            ->assertRedirect(PurchaseFormBuilder::getUrl(['profile' => $this->profile->id], panel: 'portal'));
     }
 
     public function test_sub_user_cannot_access_purchase_pages(): void

@@ -373,7 +373,11 @@ class MobileProfileController extends Controller
                         $col = implode(': ', array_filter($col, fn ($v) => filled($v)));
                     }
                     if (filled($col)) {
-                        $parts[] = is_string($row) ? "{$row} → {$col}" : (string) $col;
+                        // Grid rows carry a string label ("Row: value"); the "_meta" key holds
+                        // participant/signature sub-fields and renders as plain text. Keep the
+                        // separator ASCII — form_builder_answers is a latin1 column and a
+                        // non-latin1 char (e.g. an arrow) makes the insert fail.
+                        $parts[] = (is_string($row) && $row !== '_meta') ? "{$row}: {$col}" : (string) $col;
                     }
                 }
                 $answer = implode('; ', array_filter($parts, fn ($v) => filled($v)));

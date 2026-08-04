@@ -16,7 +16,9 @@
         <div style="margin-bottom:8px;">
             <b>{{ $row['label'] }}:</b>
             @if ($isSignature)
-                <br><img src="{{ $ans }}" alt="Signature" style="max-width:320px;border:1px solid #ccc;">
+                @php [$sigSrc, $sigMeta] = array_pad(explode(' | ', $ans, 2), 2, ''); @endphp
+                <br><img src="{{ $sigSrc }}" alt="Signature" style="max-width:320px;border:1px solid #ccc;">
+                @if (filled($sigMeta))<br>{!! \App\Support\FormAnswerHtml::text($sigMeta) !!}@endif
             @else
                 {!! \App\Support\FormAnswerHtml::text($ans) !!}
             @endif

@@ -117,56 +117,76 @@
 </style>
 <script>
     (function () {
-        var collapsedIframeHeight = null;
-        var collapsedDropHeight = null;
+        function fbPx(value) {
+            var n = parseInt(value, 10);
+            return isNaN(n) ? 0 : n;
+        }
 
+        // State is read from the button LABEL (the visible source of truth) and the
+        // collapsed heights are cached on the elements themselves — never in a JS closure,
+        // which would desync from the DOM whenever Livewire re-renders the panel or the
+        // form-builder iframe reloads after a save. That desync was the "not working" bug.
         function toggleFormBuilderWindow() {
             var iframe = document.getElementById('iframe_frm_builder');
             var label = document.getElementById('sl-expand-reduce-label');
             var img = document.getElementById('expand_reduce_img');
-            if (! iframe) {
+            if (! iframe || ! label) {
                 return;
             }
 
-            var drop = iframe.contentWindow && iframe.contentWindow.document
-                ? iframe.contentWindow.document.getElementById('drop')
+            // Inner canvas id varies across the ported markup ('div_drop_area' / 'drop_area').
+            var innerDoc = null;
+            try {
+                innerDoc = iframe.contentWindow ? iframe.contentWindow.document : null;
+            } catch (err) {
+                innerDoc = null;
+            }
+            var drop = innerDoc
+                ? (innerDoc.getElementById('div_drop_area') || innerDoc.getElementById('drop_area'))
                 : null;
 
-            if (collapsedIframeHeight === null) {
-                collapsedIframeHeight = iframe.offsetHeight || 1114;
-                collapsedDropHeight = drop ? (drop.offsetHeight || 900) : 900;
-                iframe.style.height = Math.max(collapsedIframeHeight * 2, 1800) + 'px';
+            var expanding = label.textContent.trim().toLowerCase().indexOf('expand') === 0;
+
+            if (expanding) {
+                var curIframe = iframe.offsetHeight || 1114;
+                iframe.setAttribute('data-fb-collapsed-h', curIframe);
+                iframe.style.height = Math.max(curIframe * 2, 1800) + 'px';
+
                 if (drop) {
-                    drop.style.height = Math.max(collapsedDropHeight * 2, 1600) + 'px';
+                    var curDrop = fbPx(drop.style.height) || drop.offsetHeight || 900;
+                    drop.setAttribute('data-fb-collapsed-h', curDrop);
+                    drop.style.height = Math.max(curDrop * 2, 1600) + 'px';
                 }
-                if (label) {
-                    label.textContent = 'Reduce Window';
-                }
+
+                label.textContent = 'Reduce Window';
                 if (img) {
                     img.src = @json(asset('images/reduce_window.png'));
                 }
             } else {
-                iframe.style.height = collapsedIframeHeight + 'px';
+                iframe.style.height = (fbPx(iframe.getAttribute('data-fb-collapsed-h')) || 1114) + 'px';
+
                 if (drop) {
-                    drop.style.height = collapsedDropHeight + 'px';
+                    drop.style.height = (fbPx(drop.getAttribute('data-fb-collapsed-h')) || 900) + 'px';
                 }
-                collapsedIframeHeight = null;
-                collapsedDropHeight = null;
-                if (label) {
-                    label.textContent = 'Expand Window';
-                }
+
+                label.textContent = 'Expand Window';
                 if (img) {
                     img.src = @json(asset('images/expand_window.png'));
                 }
             }
         }
 
-        document.addEventListener('click', function (e) {
-            if (e.target.closest('.sl-fb-expand-footer, .expand-reduce')) {
-                e.preventDefault();
-                toggleFormBuilderWindow();
-            }
-        });
+        // Bind the delegated click listener exactly once, even if this partial is
+        // re-evaluated on a Livewire update — otherwise it would stack and double-toggle.
+        if (! window.__slFbExpandReduceBound) {
+            window.__slFbExpandReduceBound = true;
+            document.addEventListener('click', function (e) {
+                if (e.target.closest('.sl-fb-expand-footer, .expand-reduce')) {
+                    e.preventDefault();
+                    toggleFormBuilderWindow();
+                }
+            });
+        }
 
         function closeParticipantModal() {
             var overlay = document.getElementById('sl-participant-modal');

@@ -48,8 +48,10 @@
                         @if ($raw === '')
                             —
                         @elseif (\Illuminate\Support\Str::startsWith($raw, 'data:image'))
-                            {{-- Signature / image answer --}}
-                            <img src="{{ $raw }}" alt="Signature" style="max-width:280px;border:1px solid #ccc;">
+                            {{-- Signature / image answer (strip any appended " | meta" from the data URI). --}}
+                            @php [$sigSrc, $sigMeta] = array_pad(explode(' | ', $raw, 2), 2, ''); @endphp
+                            <img src="{{ $sigSrc }}" alt="Signature" style="max-width:280px;border:1px solid #ccc;">
+                            @if (filled($sigMeta))<div>{!! \App\Support\FormAnswerHtml::text($sigMeta) !!}</div>@endif
                         @elseif ($type === 25)
                             {{-- COVID check-in: Name:::Phone:::Date:::Time:::Venue:::Address:::Location[:::Vehicle] --}}
                             @php $p = explode(':::', $raw); @endphp

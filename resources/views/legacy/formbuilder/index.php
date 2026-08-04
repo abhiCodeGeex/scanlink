@@ -523,8 +523,10 @@
 		$('#iframe_current_height').val($p('#iframe_frm_builder').height()); ///new hidden
 		$('#div_drop_area_current_height').val($('#div_drop_area').css('height')); //new hidden
 
-		// Expand/Reduce is handled on the parent portal page (no jQuery there).
-		if ($p && $p !== $) {
+		// Expand/Reduce is owned solely by the parent portal page (legacy-form-builder-assets,
+		// vanilla JS). This legacy jQuery fallback is disabled so it can never double-bind and
+		// double-toggle if jQuery is ever present on the parent.
+		if (false) {
 			$p('body').off('click.slExpandReduce', '.expand-reduce').on('click.slExpandReduce', '.expand-reduce', function() {
 				var $label = $p('#sl-expand-reduce-label');
 				if (! $label.length) {

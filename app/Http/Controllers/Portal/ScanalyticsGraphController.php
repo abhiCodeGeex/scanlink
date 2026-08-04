@@ -36,9 +36,20 @@ class ScanalyticsGraphController extends Controller
 
         $base = url('/portal');
 
+        // A ddBarChart with an empty dataset renders a degenerate blank "1" bar. Only
+        // render a chart when it actually has data (e.g. country is empty when scans have
+        // no geolocation), and show a friendly note if there's nothing to plot at all.
+        $engine = app(\App\Services\ScanalyticsGraphEngine::class);
+        $hasCountry = ! empty($engine->country($profileId)['DATA'] ?? []);
+        $hasDevice = ! empty($engine->device($profileId)['DATA'] ?? []);
+        $hasBrowser = ! empty($engine->browser($profileId)['DATA'] ?? []);
+
         return view('portal.scanalytics-charts', [
             'profileId' => $profileId,
             'profileName' => $name,
+            'hasCountry' => $hasCountry,
+            'hasDevice' => $hasDevice,
+            'hasBrowser' => $hasBrowser,
             'analyticsCount' => Schema::hasTable('ana_item_analytics')
                 ? AnaItemAnalytics::query()->where('id_item', (string) $profileId)->count()
                 : 0,

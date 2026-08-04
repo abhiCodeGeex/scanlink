@@ -67,9 +67,18 @@
 
         <div class="c-form">
             <div align="center" style="position:relative; margin-top:20px;">
-                <div class="ui-widget" style="height:500px !important;"><div style="position:relative; width:100%; height:95%;"><div id="chart_div_country" style="position:relative; height:95%; width:100%;"></div></div></div>
-                <div class="ui-widget" style="height:500px !important;"><div style="position:relative; width:100%; height:95%;"><div id="chart_div_device" style="position:relative; height:95%; width:100%;"></div></div></div>
-                <div class="ui-widget" style="height:500px !important;"><div style="position:relative; width:100%; height:95%;"><div id="chart_div_browser" style="position:relative; height:95%; width:100%;"></div></div></div>
+                @if ($hasCountry)
+                    <div class="ui-widget" style="height:500px !important;"><div style="position:relative; width:100%; height:95%;"><div id="chart_div_country" style="position:relative; height:95%; width:100%;"></div></div></div>
+                @endif
+                @if ($hasDevice)
+                    <div class="ui-widget" style="height:500px !important;"><div style="position:relative; width:100%; height:95%;"><div id="chart_div_device" style="position:relative; height:95%; width:100%;"></div></div></div>
+                @endif
+                @if ($hasBrowser)
+                    <div class="ui-widget" style="height:500px !important;"><div style="position:relative; width:100%; height:95%;"><div id="chart_div_browser" style="position:relative; height:95%; width:100%;"></div></div></div>
+                @endif
+                @unless ($hasCountry || $hasDevice || $hasBrowser)
+                    <p style="text-align:center; padding:60px 20px; color:#666; font-size:15px;">No scan analytics data available for this code yet.</p>
+                @endunless
             </div>
         </div>
     </div>
@@ -96,9 +105,15 @@
             };
 
             var pid = {{ (int) $profileId }};
+            @if ($hasCountry)
             $("#chart_div_country").ddBarChart($.extend({}, common, { chartDataLink: @json(route('portal.graphengine.country')) + "?pid=" + pid }));
+            @endif
+            @if ($hasDevice)
             $("#chart_div_device").ddBarChart($.extend({}, common, { chartDataLink: @json(route('portal.graphengine.device')) + "?pid=" + pid }));
+            @endif
+            @if ($hasBrowser)
             $("#chart_div_browser").ddBarChart($.extend({}, common, { chartDataLink: @json(route('portal.graphengine.browser')) + "?pid=" + pid }));
+            @endif
 
             function postHeight() { try { parent.postMessage({ slChartsHeight: document.body.scrollHeight }, '*'); } catch (e) {} }
             [700, 1600, 3200].forEach(function (ms) { setTimeout(postHeight, ms); });

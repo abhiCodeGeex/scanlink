@@ -294,7 +294,7 @@ class ProfileFormSchema
                 // Legacy people/index.php: Position ABOVE Name; Name (txtname) is the required
                 // profile name; there is NO Description column (people uses `notes`).
                 TextInput::make('position')->label('Position:'),
-                TextInput::make('name')->label('Name:')->required(),
+                TextInput::make('name')->label('Name:')->required(fn ($livewire): bool => empty($livewire->bypassRequiredForCheckout ?? null)),
                 Textarea::make('notes')->label('Notes:')->columnSpanFull(),
                 // Legacy people stores a single Contact + Telephone on the PROFILE row
                 // (name_company / telephone), not the profile_contact repeater.

@@ -79,35 +79,37 @@
             </div>
         </div>
     @elseif ($showQrBlock && ($qrImageUrl || $qrUrl))
+        {{-- Legacy plant/edit: QR float-left + button-section float-right, then URL below. --}}
         <div class="sl-qr-block form-view1">
-            @if ($qrImageUrl)
-                <img class="sl-qr-image" src="{{ $qrImageUrl }}" alt="QR code" width="175" height="175">
-            @endif
-            <section class="button-section sl-qr-actions">
-                @if ($canDownloadQr ?? true)
-                    <select
-                        wire:model="qrDownloadFormat"
-                        class="sl-qr-download-select noUniform"
-                        aria-label="Download As"
-                    >
-                        <option value="">Download As</option>
-                        <option value="pdf">PDF</option>
-                        <option value="tiff">TIFF</option>
-                        <option value="eps">Eps(Vector)</option>
-                        <option value="png">PNG</option>
-                        <option value="jpg">JPG</option>
-                    </select>
-                    <button
-                        type="button"
-                        class="green-btn sl-qr-download-btn"
-                        wire:click="downloadQrCode"
-                    >DOWNLOAD</button>
+            <div class="sl-qr-row">
+                @if ($qrImageUrl)
+                    <img class="sl-qr-image" src="{{ $qrImageUrl }}" alt="QR code" width="175" height="175">
                 @endif
-                @if ($orderLabelUrl)
-                    <a class="gray-btn" href="{{ $orderLabelUrl }}">ORDER LABEL</a>
-                @endif
-            </section>
-            <div class="clear"></div>
+                <section class="button-section sl-qr-actions">
+                    @if ($canDownloadQr ?? true)
+                        <select
+                            wire:model="qrDownloadFormat"
+                            class="sl-qr-download-select noUniform"
+                            aria-label="Download As"
+                        >
+                            <option value="">Download As</option>
+                            <option value="pdf">PDF</option>
+                            <option value="tiff">TIFF</option>
+                            <option value="eps">Eps(Vector)</option>
+                            <option value="png">PNG</option>
+                            <option value="jpg">JPG</option>
+                        </select>
+                        <button
+                            type="button"
+                            class="green-btn sl-qr-download-btn"
+                            wire:click="downloadQrCode"
+                        >Download</button>
+                    @endif
+                    @if ($orderLabelUrl)
+                        <a class="gray-btn" href="{{ $orderLabelUrl }}">Order Label</a>
+                    @endif
+                </section>
+            </div>
             @if ($qrUrl)
                 <div class="sl-qr-url-block">
                     URL<br>
