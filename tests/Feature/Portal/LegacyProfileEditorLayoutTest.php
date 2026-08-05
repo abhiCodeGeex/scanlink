@@ -72,8 +72,10 @@ class LegacyProfileEditorLayoutTest extends TestCase
         $response->assertDontSee('GPS Coordinates', false);
         $response->assertDontSee('Map Link', false);
         $response->assertSee('Set Code Type', false);
+        // Legacy seeds one empty CONTACT:/TELEPHONE: row on create (blank rows pruned on save).
         $response->assertSee('CONTACT', false);
         $response->assertSee('TELEPHONE', false);
+        $response->assertSee('And another', false);
         $response->assertSee('Header', false);
         $response->assertSee('User Access Security', false);
         $response->assertSee('Share', false);

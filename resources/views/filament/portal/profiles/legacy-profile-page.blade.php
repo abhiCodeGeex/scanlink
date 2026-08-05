@@ -1,7 +1,7 @@
 <x-filament-panels::page>
     {{-- Legacy ScanLink create/edit: form left (500px), iPhone + Form Builder right (450px) --}}
-    <link rel="stylesheet" href="{{ asset('styles/style.css') }}?v=legacy-profile-16">
-    <link rel="stylesheet" href="{{ asset('css/filament/scanlink-theme.css') }}?v=legacy-profile-16">
+    <link rel="stylesheet" href="{{ asset('styles/style.css') }}?v=legacy-profile-21">
+    <link rel="stylesheet" href="{{ asset('css/filament/scanlink-theme.css') }}?v=legacy-profile-21">
 
     @php
         $previewData = $this->legacyPreviewData();
@@ -51,16 +51,26 @@
     </div>
 
     @if ($showFormBuilderOrderSuccess)
-        <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50" role="dialog" aria-modal="true">
-            <div class="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl text-center">
-                <h2 class="text-xl font-bold text-green-800">Thank you for your order.</h2>
-                <p class="mt-3 text-sm text-gray-700">
+        <div
+            class="sl-fb-order-success-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="sl-fb-order-success-title"
+            wire:key="fb-order-success-modal"
+        >
+            <div class="sl-fb-order-success-dialog">
+                <p class="sl-fb-order-success-body">
+                    <span id="sl-fb-order-success-title" class="nearly-done-title">Thank you for your order.</span>
+                    <br><br>
                     The form builder function is now activated<br>
                     for this code profile.
+                    <br><br>
+                    <button
+                        type="button"
+                        class="green-btn sl-fb-order-success-ok"
+                        wire:click="closeFormBuilderOrderSuccess"
+                    >OK</button>
                 </p>
-                <div class="mt-5">
-                    <button type="button" class="green-btn" wire:click="closeFormBuilderOrderSuccess">OK</button>
-                </div>
             </div>
         </div>
     @endif

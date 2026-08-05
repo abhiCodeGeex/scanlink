@@ -86,6 +86,13 @@
             padding: 28px 12px;
             color: #333;
         }
+        html.dark .sl-vlog__panel { background: rgb(17 24 39) !important; border-color: rgb(55 65 81) !important; }
+        html.dark .sl-vlog { color: rgb(229 231 235) !important; }
+        html.dark .sl-vlog__title,
+        html.dark .sl-vlog__empty { color: rgb(243 244 246) !important; }
+        html.dark .sl-vlog table.listing-table th { background: rgb(31 41 55) !important; color: rgb(243 244 246) !important; border-color: rgb(55 65 81) !important; }
+        html.dark .sl-vlog table.listing-table td { border-color: rgb(55 65 81) !important; color: rgb(229 231 235) !important; }
+        html.dark .sl-vlog table.listing-table tr:nth-child(even) td { background: rgb(31 41 55) !important; }
     </style>
 
     <div class="sl-vlog">

@@ -238,6 +238,15 @@
         .sl-os__checkbox { margin-right: 6px; vertical-align: middle; }
         .sl-os__agree-actions { margin-top: 4px; }
         .sl-os__agree-actions .sl-ol__btn { padding: 8px 22px; margin: 0 0 8px; }
+        html.dark .sl-ol__panel { background: rgb(17 24 39) !important; border-color: rgb(55 65 81) !important; }
+        html.dark .sl-ol,
+        html.dark .sl-ol__crumb,
+        html.dark .sl-ol__empty { color: rgb(243 244 246) !important; }
+        html.dark .sl-ol input,
+        html.dark .sl-ol select { background: rgb(31 41 55) !important; border-color: rgb(75 85 99) !important; color: rgb(243 244 246) !important; }
+        html.dark .sl-ol__btn--ghost { background: rgb(31 41 55) !important; border-color: rgb(75 85 99) !important; color: rgb(243 244 246) !important; }
+        html.dark .sl-ol table th { background: rgb(31 41 55) !important; color: rgb(243 244 246) !important; }
+        html.dark .sl-ol table td { border-color: rgb(55 65 81) !important; color: rgb(229 231 235) !important; }
     </style>
 
     <div class="sl-ol">

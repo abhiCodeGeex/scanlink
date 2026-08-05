@@ -435,6 +435,14 @@
         .sl-plist__table thead th:nth-child(2),
         .sl-plist__table tbody td:nth-child(2) { display: none; }
     }
+    html.dark .sl-plist,
+    html.dark .sl-plist__table-wrap { background: rgb(17 24 39) !important; color: rgb(229 231 235) !important; }
+    html.dark .sl-plist__input,
+    html.dark .sl-plist input,
+    html.dark .sl-plist select,
+    html.dark .sl-plist textarea { background: rgb(31 41 55) !important; border-color: rgb(75 85 99) !important; color: rgb(243 244 246) !important; }
+    html.dark .sl-plist__table th { background: rgb(31 41 55) !important; color: rgb(243 244 246) !important; }
+    html.dark .sl-plist__table td { background: rgb(17 24 39) !important; border-color: rgb(55 65 81) !important; color: rgb(229 231 235) !important; }
 </style>
 
 @if ($embed ?? false)

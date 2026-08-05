@@ -506,6 +506,13 @@
         .sl-sa #switcher a {
             font-size: 12px !important;
         }
+        html.dark .sl-sa__panel { background: rgb(17 24 39) !important; border-color: rgb(55 65 81) !important; }
+        html.dark .sl-sa,
+        html.dark .sl-sa__title,
+        html.dark .sl-sa__profile { color: rgb(243 244 246) !important; }
+        html.dark .sl-sa__box-count { background: rgb(31 41 55) !important; border-color: rgb(55 65 81) !important; color: rgb(243 244 246) !important; }
+        html.dark .sl-sa input,
+        html.dark .sl-sa select { background: rgb(31 41 55) !important; border-color: rgb(75 85 99) !important; color: rgb(243 244 246) !important; }
     </style>
 
     <div class="sl-sa">

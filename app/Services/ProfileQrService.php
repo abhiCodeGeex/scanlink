@@ -284,6 +284,22 @@ class ProfileQrService
     }
 
     /**
+     * Public entry point: guarantee a QR image whose PNG actually exists on disk,
+     * regenerating stale legacy rows (row present, file never imported). Returns the
+     * QrImage, or null if generation was not possible (caller shows the URL fallback).
+     */
+    public function ensureFor(Profile $profile): ?QrImage
+    {
+        try {
+            $this->ensureQrFile($profile);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        return $profile->qrImage;
+    }
+
+    /**
      * Live DB often has qrimage rows whose PNG files were never imported.
      * Regenerate on demand so Download / PDF / format exports keep working.
      */

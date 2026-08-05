@@ -25,7 +25,36 @@
         .scanalytics-box b { display: block; font-size: 13px; color: #444; margin-bottom: 4px; }
         .ui-widget { height: 500px !important; margin-bottom: 24px; }
         .c-form { clear: both; }
+
+        /* Dark mode (mirrors the portal's html.dark) — dark chrome, but the chart
+           itself stays on a light card so the bars remain visible. */
+        html.sl-dark, html.sl-dark body { background: #111827; color: #e5e7eb; }
+        html.sl-dark h3 { color: #f3f4f6; }
+        html.sl-dark .gray-text { color: #e5e7eb; }
+        html.sl-dark .scanalytics-box b { color: #e5e7eb; }
+        html.sl-dark .scanalytics_tot_count {
+            background: #1f2937;
+            border: 3px solid #4b5563;
+            color: #f3f4f6;
+            border-radius: 6px;
+            padding: 8px 14px;
+            font-size: 26px;
+            font-weight: bold;
+            line-height: 1.1;
+            display: inline-block;
+        }
+        html.sl-dark .print-btn { background: #374151; border-color: #4b5563; color: #f3f4f6; }
+        html.sl-dark .ui-widget { background: #fff; border-radius: 8px; padding: 6px; box-sizing: border-box; }
     </style>
+    <script>
+        // Same-origin iframe: inherit the parent portal's dark mode.
+        try {
+            if (window.parent && window.parent !== window &&
+                window.parent.document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.add('sl-dark');
+            }
+        } catch (e) {}
+    </script>
 </head>
 <body>
     <div style="float:left;" id="divToPrint"><h3 style="margin:0;">Profile {{ (int) $profileId }}.@if (filled($profileName)) {{ ucwords($profileName) }}@endif</h3></div>

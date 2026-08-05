@@ -1086,9 +1086,9 @@ tr.sl-row-active {
 .sl-legacy-preview-sidebar .form-builder-box.sl-form-builder-panel {
     clear: both !important;
     margin: 12px 0 0 !important;
-    padding: 12px 10px 12px !important;
+    padding: 10px 12px !important;
     border-radius: 6px 6px 0 0 !important;
-    border: 1px solid #ccc !important;
+    border: 1px solid #cccccc !important;
     box-shadow: inset 0 0 10px rgba(0, 0, 0, .1) !important;
     background: #fff !important;
     width: 100% !important;
@@ -1101,41 +1101,43 @@ tr.sl-row-active {
     display: flex !important;
     flex-wrap: wrap !important;
     align-items: center !important;
-    gap: 8px 12px !important;
+    gap: 6px 10px !important;
     font-size: 18px !important;
     color: #009401 !important;
-    line-height: 1.35 !important;
-    padding: 0 0 10px !important;
-    margin: 0 !important;
+    line-height: 34px !important;
+    font-weight: normal !important;
+    padding: 0 !important;
+    margin: 0 0 6px !important;
+    border-bottom: 0 !important;
 }
 
 .sl-legacy-preview-sidebar .form-builder-title .activate-for-profile {
     float: none !important;
     margin-left: auto !important;
     margin-right: 0 !important;
-    padding: 0 2px 0 0 !important;
+    padding: 0 !important;
     display: inline-flex !important;
     align-items: center !important;
-    gap: 6px !important;
+    gap: 8px !important;
     white-space: nowrap !important;
 }
 
 .sl-legacy-preview-sidebar .existing-item {
     display: flex !important;
-    flex-wrap: wrap !important;
+    flex-wrap: nowrap !important;
     align-items: flex-start !important;
-    gap: 6px 10px !important;
-    padding: 8px 0 !important;
-    margin: 0 !important;
+    gap: 8px !important;
+    padding: 0 !important;
+    margin: 0 0 10px !important;
     overflow-wrap: anywhere !important;
     word-break: break-word !important;
+    height: auto !important;
+    min-height: 0 !important;
 }
 
 .sl-legacy-preview-sidebar .existing-item > span {
-    display: inline-flex !important;
-    align-items: flex-start !important;
-    gap: 4px !important;
-    max-width: 100% !important;
+    display: inline !important;
+    max-width: none !important;
 }
 
 .sl-legacy-preview-sidebar .existing-item label {
@@ -1143,30 +1145,128 @@ tr.sl-row-active {
 }
 
 .sl-legacy-preview-sidebar .existing-item--format {
+    display: flex !important;
     flex-direction: column !important;
     align-items: stretch !important;
-    gap: 8px !important;
+    gap: 10px !important;
+    padding: 14px 16px !important;
+    margin: 4px 0 12px !important;
+    height: auto !important;
+    min-height: 0 !important;
+    background: #f3f4f6 !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 8px !important;
 }
 
 .sl-legacy-preview-sidebar .existing-item--format .existing-item__label {
     font-weight: 700 !important;
-    color: #555 !important;
+    color: #111827 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.sl-legacy-preview-sidebar .existing-item--format .existing-item__options {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 .sl-legacy-preview-sidebar .existing-item--format .existing-item__option {
-    display: inline-flex !important;
+    display: flex !important;
     align-items: center !important;
-    gap: 6px !important;
-    margin-right: 12px !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
 }
 
-.sl-legacy-preview-sidebar .footer-rouded {
+/* Form Builder format box — all placements (sidebar + survey left column) */
+.sl-form-builder-panel.form-builder-box .existing-item--format,
+.form-builder-box.sl-form-builder-panel .existing-item--format,
+.sl-survey-form-builder .existing-item--format {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    padding: 14px 16px !important;
+    margin: 6px 0 12px !important;
+    background: #f3f4f6 !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 8px !important;
+    height: auto !important;
+    min-height: 0 !important;
+    box-sizing: border-box !important;
+}
+
+.sl-form-builder-panel.form-builder-box .existing-item--format .existing-item__label,
+.sl-survey-form-builder .existing-item--format .existing-item__label {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-weight: 700 !important;
+}
+
+.sl-form-builder-panel.form-builder-box .existing-item--format .existing-item__options,
+.sl-survey-form-builder .existing-item--format .existing-item__options {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.sl-form-builder-panel.form-builder-box .existing-item--format .existing-item__option,
+.sl-survey-form-builder .existing-item--format .existing-item__option {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.sl-legacy-preview-sidebar .footer-rouded,
+.sl-legacy-preview-sidebar .sl-fb-expand-footer {
     float: none !important;
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
     margin: 0 !important;
-    padding: 10px 16px !important;
+    padding: 10px !important;
+    background-color: #cccccc !important;
+    border: 0 !important;
+    border-radius: 0 0 8px 8px !important;
+    text-align: right !important;
+    display: block !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 14px !important;
+    font-weight: normal !important;
+    color: #5f5f5f !important;
+    line-height: 25px !important;
+}
+
+.sl-legacy-preview-sidebar .sl-fb-expand-footer span.expand-reduce,
+.sl-legacy-preview-sidebar .footer-rouded span.expand-reduce {
+    cursor: pointer !important;
+    margin-right: 4px !important;
+    vertical-align: middle !important;
+}
+
+.sl-legacy-preview-sidebar .sl-fb-expand-footer img.expand-reduce,
+.sl-legacy-preview-sidebar .footer-rouded img.expand-reduce {
+    cursor: pointer !important;
+    width: 25px !important;
+    height: auto !important;
+    vertical-align: middle !important;
+}
+
+.sl-legacy-preview-sidebar #iframe_frm_builder {
+    display: block !important;
+    width: 100% !important;
+    min-height: 1114px !important;
+    border: 0 !important;
+    background: #fff !important;
 }
 
 .sl-open-form-builder {
@@ -1187,6 +1287,63 @@ tr.sl-row-active {
     background: none !important;
     padding: 0 !important;
     border-radius: 0 !important;
+}
+
+/* Form Builder purchase success — legacy colorbox "Thank you for your order" */
+.sl-fb-order-success-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 10060 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 24px 12px !important;
+    background: rgba(0, 0, 0, 0.55) !important;
+    box-sizing: border-box !important;
+}
+
+.sl-fb-order-success-dialog {
+    width: min(520px, 92vw) !important;
+    min-height: 220px !important;
+    padding: 24px 20px 28px !important;
+    background: #fff !important;
+    border-radius: 6px !important;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35) !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+}
+
+.sl-fb-order-success-body {
+    margin: 0 !important;
+    padding-top: 36px !important;
+    color: #555755 !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 14px !important;
+    line-height: 1.45 !important;
+}
+
+.sl-fb-order-success-body .nearly-done-title {
+    color: #006201 !important;
+    font-size: 25px !important;
+    font-weight: normal !important;
+    line-height: 1.3 !important;
+}
+
+.sl-fb-order-success-ok,
+.sl-fb-order-success-dialog .green-btn {
+    display: inline-block !important;
+    margin-top: 8px !important;
+    min-width: 88px !important;
+    padding: 8px 22px !important;
+    border: 0 !important;
+    border-radius: 5px !important;
+    background: #008901 !important;
+    background-image: linear-gradient(to bottom, #008901 0%, #007a01 100%) !important;
+    color: #fff !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+    cursor: pointer !important;
+    line-height: 1.3 !important;
 }
 
 /* Legacy "Use an existing form" modal (colorbox replacement) */
@@ -1356,14 +1513,14 @@ tr.sl-row-active {
     overflow-x: hidden !important;
 }
 
-/* Filament sections â†’ legacy SectionTitleBox look */
+/* Filament sections → legacy SectionTitleBox look (comfortable padding) */
 .fi-page:has(.sl-profile-editor) .fi-section,
 .fi-page:has(.sl-profile-editor) .fi-sc-section {
-    margin: 0 0 10px !important;
-    padding: 5px 10px !important;
-    border-radius: 6px !important;
-    border: 1px solid #e5e5e5 !important;
-    box-shadow: inset 0 0 10px rgba(0, 0, 0, .1) !important;
+    margin: 0 0 14px !important;
+    padding: 14px 16px 16px !important;
+    border-radius: 8px !important;
+    border: 1px solid #d9d9d9 !important;
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, .06) !important;
     background: #fff !important;
     overflow: visible !important;
 }
@@ -1372,8 +1529,8 @@ tr.sl-row-active {
 .fi-page:has(.sl-profile-editor) .fi-sc-section-header-heading {
     font-size: 18px !important;
     color: #009401 !important;
-    line-height: 34px !important;
-    font-weight: normal !important;
+    line-height: 1.35 !important;
+    font-weight: 700 !important;
     font-family: Arial, Helvetica, sans-serif !important;
     position: relative !important;
     overflow: visible !important;
@@ -1381,6 +1538,7 @@ tr.sl-row-active {
     align-items: center !important;
     gap: 6px !important;
     flex-wrap: wrap !important;
+    margin: 0 0 4px !important;
 }
 
 /* Legacy orange ? help icon + Video Tutorial hover tooltip */
@@ -1504,8 +1662,8 @@ tr.sl-row-active {
     color: #727171 !important;
     font-family: Verdana, Arial, sans-serif !important;
     font-size: 12px !important;
-    line-height: 1.35 !important;
-    margin: 0 0 4px !important;
+    line-height: 1.4 !important;
+    margin: 0 0 6px !important;
 }
 
 .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-field-wrp-hint,
@@ -1527,7 +1685,7 @@ tr.sl-row-active {
     --tw-ring-shadow: 0 0 #0000 !important;
     --tw-ring-color: transparent !important;
     outline: 0 !important;
-    min-height: 32px !important;
+    min-height: 36px !important;
     max-width: 456px !important;
     width: 100% !important;
 }
@@ -1551,8 +1709,8 @@ tr.sl-row-active {
     font-family: Arial, Helvetica, sans-serif !important;
     font-size: 14px !important;
     color: #555755 !important;
-    padding: 5px 10px !important;
-    min-height: 32px !important;
+    padding: 7px 12px !important;
+    min-height: 36px !important;
     line-height: 22px !important;
     width: 100% !important;
     max-width: 456px !important;
@@ -1560,10 +1718,11 @@ tr.sl-row-active {
 
 .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-textarea,
 .fi-page:has(.sl-profile-editor) .sl-add-form-left textarea.fi-textarea {
-    min-height: 50px !important;
+    min-height: 64px !important;
     height: auto !important;
     resize: none !important;
-    line-height: 1.35 !important;
+    line-height: 1.4 !important;
+    padding: 10px 12px !important;
 }
 
 /* Half-width CONTACT / TELEPHONE / weblink pairs */
@@ -1586,8 +1745,8 @@ tr.sl-row-active {
     border: 0 !important;
     box-shadow: none !important;
     background: transparent !important;
-    padding: 4px 0 !important;
-    margin: 0 0 8px !important;
+    padding: 6px 0 !important;
+    margin: 0 0 12px !important;
     border-radius: 0 !important;
 }
 
@@ -1595,7 +1754,7 @@ tr.sl-row-active {
 .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-repeater-item-header {
     background: transparent !important;
     border: 0 !important;
-    padding: 0 0 4px !important;
+    padding: 0 0 8px !important;
 }
 
 .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-btn:not(.fi-color-danger):not([type='submit']),
@@ -1605,10 +1764,13 @@ tr.sl-row-active {
     border: 1px solid #cfcfcf !important;
     border-radius: 6px !important;
     color: #555755 !important;
-    font-size: 12px !important;
+    font-size: 13px !important;
     font-weight: bold !important;
     text-transform: none !important;
     box-shadow: none !important;
+    min-height: 36px !important;
+    padding: 8px 14px !important;
+    line-height: 1.25 !important;
 }
 
 .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-btn.fi-color-danger,
@@ -1625,7 +1787,7 @@ tr.sl-row-active {
     display: block !important;
     width: 100% !important;
     max-width: 456px !important;
-    margin: 8px 0 16px !important;
+    margin: 12px 0 20px !important;
     padding: 0 !important;
     justify-content: stretch !important;
 }
@@ -1638,18 +1800,18 @@ tr.sl-row-active {
     width: 98% !important;
     max-width: 456px !important;
     margin: 5px 0 !important;
-    padding: 8px 0 10px !important;
+    padding: 10px 0 12px !important;
     height: auto !important;
-    min-height: 42px !important;
+    min-height: 44px !important;
     line-height: 1.2 !important;
     text-align: center !important;
     font-family: Arial, Helvetica, sans-serif !important;
-    font-size: 22px !important;
+    font-size: 20px !important;
     font-weight: bold !important;
     color: #fff !important;
     text-transform: none !important;
     border: 0 !important;
-    border-radius: 5px !important;
+    border-radius: 6px !important;
     background: #008901 !important;
     background-image: linear-gradient(to bottom, #008901 0%, #007a01 100%) !important;
     box-shadow: none !important;
@@ -1663,12 +1825,12 @@ tr.sl-row-active {
 /* Compact radios / checkboxes spacing (keep native controls; no Uniform dropboxes) */
 .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-checkbox,
 .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-radio {
-    margin: 2px 0 !important;
+    margin: 4px 0 !important;
 }
 
 .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-field-wrp {
-    margin-bottom: 10px !important;
-    gap: 0.25rem !important;
+    margin-bottom: 12px !important;
+    gap: 0.35rem !important;
 }
 
 /* Soften section header chrome (no Filament divider bars) */
@@ -1676,19 +1838,60 @@ tr.sl-row-active {
 .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-sc-section-header {
     border: 0 !important;
     background: transparent !important;
-    padding: 0 !important;
-    margin: 0 !important;
+    padding: 0 0 8px !important;
+    margin: 0 0 4px !important;
     box-shadow: none !important;
 }
 
 .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-section-content,
 .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-sc-section-content {
-    padding: 0 !important;
+    padding: 4px 0 0 !important;
 }
 
 .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-section-content-ctn,
 .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-sc-section-content-ctn {
-    gap: 0.35rem !important;
+    gap: 0.65rem !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-grid {
+    row-gap: 0.75rem !important;
+    column-gap: 0.75rem !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-section-content .fi-fo-field-wrp:last-child,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-sc-section-content .fi-fo-field-wrp:last-child {
+    margin-bottom: 4px !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-section-content .fi-btn,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-section-content .fi-ac {
+    margin-top: 6px !important;
+    margin-bottom: 2px !important;
+}
+
+/* File upload / dropzone breathing room */
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-file-upload,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .filepond--root,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left [class*='file-upload'] {
+    margin-top: 4px !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .filepond--panel-root,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-file-upload-input-ctn {
+    min-height: 72px !important;
+    padding: 12px !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-rich-editor,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .ck-editor,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .ck.ck-editor {
+    margin-top: 6px !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .ck-editor__editable,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .ck-content {
+    min-height: 120px !important;
+    padding: 10px 12px !important;
 }
 
 /* QR download column — match legacy green/gray btn pair (same size/spacing). */
@@ -2203,11 +2406,11 @@ tr.sl-row-active {
 
 .fi-page:has(.sl-profile-editor) .fi-section,
 .fi-page:has(.sl-profile-editor) .fi-sc-section {
-    margin: 0 0 10px !important;
-    padding: 5px 10px !important;
-    border-radius: 6px !important;
-    border: 1px solid #e5e5e5 !important;
-    box-shadow: inset 0 0 10px rgba(0, 0, 0, .1) !important;
+    margin: 0 0 14px !important;
+    padding: 14px 16px 16px !important;
+    border-radius: 8px !important;
+    border: 1px solid #d9d9d9 !important;
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, .06) !important;
     background: #fff !important;
     width: 100% !important;
     max-width: 100% !important;
@@ -2217,8 +2420,8 @@ tr.sl-row-active {
 .fi-page:has(.sl-profile-editor) .fi-sc-section-header-heading {
     font-size: 18px !important;
     color: #009401 !important;
-    line-height: 34px !important;
-    font-weight: normal !important;
+    line-height: 1.35 !important;
+    font-weight: 700 !important;
     font-family: Arial, Helvetica, sans-serif !important;
 }
 
@@ -2938,12 +3141,41 @@ tr.sl-row-active {
     width: 100%;
     max-width: 458px;
     margin-top: 8px;
+    border-radius: 6px 6px 0 0;
+    margin-bottom: 0;
+}
+
+/* Legacy survey: the "Expand Window" bar is a footer attached to the builder
+   (footer-rouded, ~440px). Width-match it to the builder and sit it flush so it
+   reads as one card instead of a loose full-width banner. */
+.sl-profile-editor--survey .sl-fb-expand-footer {
+    width: 458px;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 0 0 14px;
+    border-top: 0;
+    border-radius: 0 0 8px 8px;
+    background-color: #cccccc;
+    padding: 10px;
+    text-align: right;
 }
 
 .sl-profile-editor--survey .sl-survey-save-wrap {
-    margin: 16px 0 24px;
+    width: 458px;
+    max-width: 100%;
+    margin: 0 0 24px;
     list-style: none;
     padding: 0;
+    text-align: center;
+}
+
+/* .form-view li floats left (legacy global), which strands SAVE in empty space.
+   Undo the float so the button centers cleanly under the builder card. */
+.sl-profile-editor--survey .sl-survey-save-wrap li {
+    float: none;
+    padding: 0;
+    list-style: none;
+    text-align: center;
 }
 
 .sl-profile-editor--survey .sl-survey-save-btn {
@@ -3035,5 +3267,528 @@ tr.sl-row-active {
 @media (max-width: 900px) {
   .sl-cb__header-right { align-items: flex-start; width: 100%; }
   .sl-cb__legend, .sl-cb__actions { justify-content: flex-start; }
+}
+
+/* ===========================================================================
+ * DARK MODE ONLY — portal / shared ScanLink surfaces
+ * Light-mode rules above are untouched. Tokens match dashboard tiles:
+ *   surface: rgb(17 24 39) | nested: rgb(31 41 55) | border: rgb(255 255 255 / 0.1)
+ *   text: rgb(243 244 246) | muted: rgb(156 163 175)
+ * =========================================================================== */
+
+/* --- Edit Account / Manage User --- */
+.dark .sl-edit-account .fi-section,
+.dark .sl-edit-account .fi-sc-section {
+    background: rgb(17 24 39) !important;
+    border-color: rgb(255 255 255 / 0.1) !important;
+    box-shadow: none !important;
+}
+
+.dark .sl-edit-account .fi-section-header-heading,
+.dark .sl-edit-account .fi-sc-section-header-heading,
+.dark .sl-edit-account__users .fi-ta-header-heading {
+    color: rgb(134 239 172) !important;
+}
+
+.dark .sl-edit-account .fi-input-wrp {
+    background-color: rgb(31 41 55) !important;
+    border-color: rgb(75 85 99) !important;
+}
+
+.dark .sl-edit-account .fi-input-wrp:focus-within {
+    border-color: rgb(74 222 128) !important;
+}
+
+.dark .sl-edit-account .fi-input,
+.dark .sl-edit-account .fi-textarea,
+.dark .sl-edit-account input[type='text'],
+.dark .sl-edit-account input[type='email'],
+.dark .sl-edit-account input[type='password'],
+.dark .sl-edit-account input[type='number'],
+.dark .sl-edit-account .fi-fo-field-wrp-label,
+.dark .sl-edit-account .fi-fo-field-wrp-label span,
+.dark .sl-edit-account label {
+    color: rgb(243 244 246) !important;
+}
+
+.dark .sl-edit-account .fi-input::placeholder,
+.dark .sl-edit-account .fi-textarea::placeholder,
+.dark .sl-edit-account input::placeholder {
+    color: rgb(156 163 175) !important;
+}
+
+.dark .sl-edit-account__users .fi-ta-ctn {
+    background: rgb(17 24 39) !important;
+    border-color: rgb(255 255 255 / 0.1) !important;
+}
+
+.dark .sl-edit-account__users .fi-ta-table th {
+    background: rgb(31 41 55) !important;
+    color: rgb(243 244 246) !important;
+}
+
+.dark .sl-edit-account__users .fi-ta-table th,
+.dark .sl-edit-account__users .fi-ta-table td {
+    border-color: rgb(55 65 81) !important;
+    color: rgb(229 231 235) !important;
+}
+
+.dark .sl-edit-user-modal .fi-modal-header-heading {
+    color: rgb(243 244 246) !important;
+}
+
+.dark .sl-edit-user-modal .fi-input-wrp {
+    background-color: rgb(31 41 55) !important;
+    border-color: rgb(75 85 99) !important;
+}
+
+/* --- Profile create/edit sections + left form --- */
+.dark .fi-page:has(.sl-profile-editor) .fi-section,
+.dark .fi-page:has(.sl-profile-editor) .fi-sc-section {
+    background: rgb(17 24 39) !important;
+    border-color: rgb(255 255 255 / 0.1) !important;
+    box-shadow: none !important;
+}
+
+.dark .fi-page:has(.sl-profile-editor) .fi-section-header-heading,
+.dark .fi-page:has(.sl-profile-editor) .fi-sc-section-header-heading {
+    color: rgb(134 239 172) !important;
+}
+
+.dark .fi-page:has(.sl-profile-editor) .sl-add-form-left {
+    color: rgb(209 213 219) !important;
+}
+
+.dark .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-field-wrp-label,
+.dark .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-field-wrp-label span,
+.dark .fi-page:has(.sl-profile-editor) .sl-add-form-left label.fi-fo-field-wrp-label,
+.dark .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fieldset-label {
+    color: rgb(209 213 219) !important;
+}
+
+.dark .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-input-wrp:not(:has(select)):not(:has(.fi-select-input)) {
+    background: rgb(31 41 55) !important;
+    border-color: rgb(75 85 99) !important;
+    box-shadow: none !important;
+}
+
+.dark .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-input:not(select):not(.fi-select-input),
+.dark .fi-page:has(.sl-profile-editor) .sl-add-form-left input.fi-input:not([type='checkbox']):not([type='radio']):not([type='file']),
+.dark .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-textarea,
+.dark .fi-page:has(.sl-profile-editor) .sl-add-form-left textarea.fi-textarea {
+    color: rgb(243 244 246) !important;
+}
+
+.dark .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-btn:not(.fi-color-danger):not([type='submit']),
+.dark .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-ac-btn-action:not(.fi-color-danger):not([type='submit']) {
+    background: rgb(55 65 81) !important;
+    background-image: none !important;
+    border-color: rgb(75 85 99) !important;
+    color: rgb(243 244 246) !important;
+}
+
+.dark .fi-page:has(.sl-profile-editor) .fi-header-heading {
+    color: rgb(243 244 246) !important;
+}
+
+.dark .fi-page:has(.sl-profile-editor) .fi-page-main-ctn,
+.dark .fi-page:has(.sl-profile-editor) .fi-page-content {
+    color: rgb(209 213 219) !important;
+}
+
+/* --- Form Builder outer chrome --- */
+.dark .sl-legacy-preview-sidebar .form-builder-box,
+.dark .sl-legacy-preview-sidebar .form-builder-box.sl-form-builder-panel,
+.dark .sl-form-builder-panel,
+.dark .form-builder-box.sl-form-builder-panel {
+    background: rgb(17 24 39) !important;
+    border-color: rgb(255 255 255 / 0.1) !important;
+    box-shadow: none !important;
+    color: rgb(209 213 219) !important;
+}
+
+.dark .sl-legacy-preview-sidebar .form-builder-title,
+.dark .sl-form-builder-panel .form-builder-title {
+    color: rgb(134 239 172) !important;
+    border-color: rgb(55 65 81) !important;
+}
+
+.dark .sl-form-builder-panel .existing-item,
+.dark .sl-form-builder-panel .existing-item label,
+.dark .sl-form-builder-panel .activate-for-profile,
+.dark .sl-form-builder-panel .activate-for-profile label {
+    color: rgb(209 213 219) !important;
+}
+
+.dark .sl-form-builder-panel .existing-item--format {
+    background: rgb(31 41 55) !important;
+    border-color: rgb(55 65 81) !important;
+}
+
+.dark .sl-form-builder-panel .existing-item__label,
+.dark .sl-legacy-preview-sidebar .existing-item--format .existing-item__label {
+    color: rgb(243 244 246) !important;
+}
+
+.dark .sl-form-builder-panel .sl-fb-iframe-placeholder,
+.dark .sl-form-builder-panel .sl-fb-locked-placeholder {
+    background: rgb(31 41 55) !important;
+    border-color: rgb(75 85 99) !important;
+    color: rgb(156 163 175) !important;
+}
+
+.dark .sl-form-builder-panel .sl-form-builder-purchase-note {
+    background: rgb(66 32 6) !important;
+    border-color: rgb(146 64 14) !important;
+    color: rgb(253 230 138) !important;
+}
+
+.dark .sl-form-builder-panel .sl-form-builder-lock-copy {
+    color: rgb(156 163 175) !important;
+}
+
+.dark .sl-fb-expand-footer,
+.dark .sl-fb-expand-footer.footer-rouded,
+.dark .sl-legacy-preview-sidebar .footer-rouded,
+.dark .sl-legacy-preview-sidebar .sl-fb-expand-footer {
+    background-color: rgb(55 65 81) !important;
+    color: rgb(229 231 235) !important;
+}
+
+.dark .sl-fb-order-success-dialog {
+    background: rgb(17 24 39) !important;
+    color: rgb(229 231 235) !important;
+}
+
+.dark .sl-fb-order-success-body {
+    color: rgb(209 213 219) !important;
+}
+
+.dark .sl-existing-form-dialog {
+    background: rgb(17 24 39) !important;
+    color: rgb(229 231 235) !important;
+}
+
+/* Preview sidebar surfaces (keep iPhone device chrome as-is) */
+.dark .sl-legacy-preview-sidebar .code_preview_qr,
+.dark .sl-legacy-preview-sidebar--code .code_preview_qr {
+    background: rgb(17 24 39) !important;
+    border-color: rgb(55 65 81) !important;
+}
+
+.dark .sl-legacy-preview-sidebar--code .sl-code-preview-empty {
+    color: rgb(156 163 175) !important;
+}
+
+.dark .sl-legacy-preview-sidebar--code .sl-qr-download-select {
+    background: rgb(31 41 55) !important;
+    border-color: rgb(75 85 99) !important;
+    color: rgb(243 244 246) !important;
+}
+
+/* --- Code Balance --- */
+.dark .sl-cb {
+    color: rgb(229 231 235) !important;
+}
+
+.dark .sl-cb__title {
+    color: rgb(243 244 246) !important;
+}
+
+.dark .sl-cb__balance-num,
+.dark .sl-cb__search input,
+.dark .sl-cb__table-wrap,
+.dark .sl-cb table.listing-table.sl-cb__table,
+.dark .sl-cb__empty,
+.dark .sl-cb__pager select {
+    background: rgb(17 24 39) !important;
+    border-color: rgb(55 65 81) !important;
+    color: rgb(229 231 235) !important;
+}
+
+.dark .sl-cb__pager-arrow,
+.dark .sl-cb__footnote {
+    color: rgb(209 213 219) !important;
+}
+
+.dark .sl-cb table.listing-table.sl-cb__table th {
+    background: rgb(31 41 55) !important;
+    color: rgb(243 244 246) !important;
+}
+
+.dark .sl-cb table.listing-table.sl-cb__table td {
+    border-color: rgb(55 65 81) !important;
+    color: rgb(209 213 219) !important;
+}
+
+/* --- Custom portal page panels (blade inline styles overridden only in dark) --- */
+.dark .sl-vlog,
+.dark .sl-ol,
+.dark .sl-fslog,
+.dark .sl-ca,
+.dark .sl-sa,
+.dark .sl-fsview {
+    color: rgb(229 231 235) !important;
+}
+
+.dark .sl-vlog__panel,
+.dark .sl-ol__panel,
+.dark .sl-fslog__panel,
+.dark .sl-ca__panel,
+.dark .sl-sa__panel,
+.dark .sl-fsview,
+.dark .sl-card,
+.dark .fb-card,
+.dark .sl-fbp__card {
+    background: rgb(17 24 39) !important;
+    border-color: rgb(255 255 255 / 0.1) !important;
+    color: rgb(229 231 235) !important;
+    box-shadow: none !important;
+}
+
+.dark .sl-vlog__title,
+.dark .sl-ol__crumb,
+.dark .sl-fslog__title,
+.dark .sl-ca__title,
+.dark .sl-sa__title {
+    color: rgb(243 244 246) !important;
+}
+
+.dark .sl-vlog table,
+.dark .sl-vlog table.listing-table,
+.dark .sl-fslog table,
+.dark .sl-fslog table.listing-table,
+.dark .sl-ca table,
+.dark .sl-ol table {
+    background: rgb(17 24 39) !important;
+    color: rgb(229 231 235) !important;
+}
+
+.dark .sl-vlog table th,
+.dark .sl-fslog table th,
+.dark .sl-ca table th,
+.dark .sl-ol table th {
+    background: rgb(31 41 55) !important;
+    color: rgb(243 244 246) !important;
+    border-color: rgb(55 65 81) !important;
+}
+
+.dark .sl-vlog table td,
+.dark .sl-fslog table td,
+.dark .sl-ca table td,
+.dark .sl-ol table td {
+    border-color: rgb(55 65 81) !important;
+    color: rgb(209 213 219) !important;
+}
+
+.dark .sl-vlog input,
+.dark .sl-vlog select,
+.dark .sl-fslog input,
+.dark .sl-fslog select,
+.dark .sl-ca input,
+.dark .sl-ca select,
+.dark .sl-ol input,
+.dark .sl-ol select,
+.dark .sl-sa input,
+.dark .sl-sa select {
+    background: rgb(31 41 55) !important;
+    border-color: rgb(75 85 99) !important;
+    color: rgb(243 244 246) !important;
+}
+
+.dark .sl-ol__btn--ghost {
+    background: rgb(31 41 55) !important;
+    border-color: rgb(75 85 99) !important;
+    color: rgb(243 244 246) !important;
+}
+
+.dark .sl-sa__box-count,
+.dark .sl-sa .ui-widget-content {
+    background: rgb(31 41 55) !important;
+    border-color: rgb(55 65 81) !important;
+    color: rgb(229 231 235) !important;
+}
+
+.dark .sl-sa .ddchart-x-axis-label {
+    color: rgb(209 213 219) !important;
+}
+
+.dark .sl-ca__modal,
+.dark .sl-help-video-window {
+    background: rgb(17 24 39) !important;
+    color: rgb(229 231 235) !important;
+}
+
+/* Participant list */
+.dark .sl-plist,
+.dark .sl-plist__table-wrap {
+    background: rgb(17 24 39) !important;
+    color: rgb(229 231 235) !important;
+}
+
+.dark .sl-plist__input,
+.dark .sl-plist input[type='text'],
+.dark .sl-plist input[type='email'],
+.dark .sl-plist select,
+.dark .sl-plist textarea {
+    background: rgb(31 41 55) !important;
+    border-color: rgb(75 85 99) !important;
+    color: rgb(243 244 246) !important;
+}
+
+.dark .sl-plist table th {
+    background: rgb(31 41 55) !important;
+    color: rgb(243 244 246) !important;
+}
+
+.dark .sl-plist table td {
+    background: rgb(17 24 39) !important;
+    border-color: rgb(55 65 81) !important;
+    color: rgb(209 213 219) !important;
+}
+
+/* Purchase / register / FB embed helpers */
+.dark .sl-fbp,
+.dark .sl-fbp__card,
+.dark .content-register,
+.dark .sl-reg,
+.dark .sl-reg .content-register,
+.dark .sl-reg-modal {
+    background: rgb(17 24 39) !important;
+    color: rgb(229 231 235) !important;
+    border-color: rgb(255 255 255 / 0.1) !important;
+}
+
+.dark .sl-reg input,
+.dark .sl-reg select,
+.dark .sl-reg textarea,
+.dark .sl-reg .text-fi,
+.dark .sl-reg .reg-reseller-code,
+.dark .fb-input,
+.dark .fb-textarea,
+.dark .fb-canvas {
+    background: rgb(31 41 55) !important;
+    border-color: rgb(75 85 99) !important;
+    color: rgb(243 244 246) !important;
+    box-shadow: none !important;
+}
+
+.dark .sl-reg .sl-reg-field > label:not(.error),
+.dark .sl-reg .sl-reg-reseller-label,
+.dark .sl-reg h3.page-title {
+    color: rgb(209 213 219) !important;
+}
+
+.dark .sl-reg h3.page-title {
+    color: rgb(134 239 172) !important;
+}
+
+.dark .sl-reg-error-banner {
+    background: rgb(69 10 10) !important;
+    border-color: rgb(153 27 27) !important;
+    color: rgb(254 202 202) !important;
+}
+
+.dark .fb-preview-phone {
+    background: rgb(17 24 39) !important;
+}
+
+.dark .sl-fbp__card {
+    background: rgb(17 24 39) !important;
+    border-color: rgb(255 255 255 / 0.1) !important;
+    box-shadow: none !important;
+}
+
+.dark .sl-fbp__title {
+    color: rgb(243 244 246) !important;
+}
+
+.dark .sl-fbp__subtitle,
+.dark .sl-fbp__hint {
+    color: rgb(156 163 175) !important;
+}
+
+.dark .sl-fbp__section {
+    color: rgb(134 239 172) !important;
+    border-color: rgb(55 65 81) !important;
+}
+
+.dark .sl-fbp__label {
+    color: rgb(209 213 219) !important;
+}
+
+.dark .sl-fbp__control {
+    background: rgb(31 41 55) !important;
+    border-color: rgb(75 85 99) !important;
+    color: rgb(243 244 246) !important;
+}
+
+.dark .sl-fbp__control::placeholder {
+    color: rgb(156 163 175) !important;
+}
+
+/* Mastercode toolbar + tabs readability */
+.dark .sl-mastercode-toolbar,
+.dark .sl-mastercode-toolbar a,
+.dark .sl-mastercode-toolbar span {
+    color: rgb(209 213 219) !important;
+}
+
+.dark .fi-panel-portal .fi-tabs-item,
+.dark .fi-panel-portal .fi-tabs-item-label {
+    color: rgb(209 213 219) !important;
+}
+
+.dark .fi-panel-portal .fi-wi-stats-overview-stat,
+.dark .fi-panel-portal .fi-section-content-ctn {
+    color: rgb(229 231 235);
+}
+
+/* ===========================================================================
+ * ADMIN DARK MODE — custom admin views that hardcode light colours. Standard
+ * Filament resources are already theme-aware; only these two custom areas break.
+ * =========================================================================== */
+
+/* --- Global Settings page (.sl-gs) — was a full white card island in dark --- */
+html.dark .sl-gs { color: rgb(229 231 235); }
+html.dark .sl-gs__title { color: rgb(251 146 60); }
+html.dark .sl-gs__title-icon { border-left-color: rgb(156 163 175); }
+html.dark .sl-gs__box {
+    background: rgb(17 24 39);
+    border-color: rgb(255 255 255 / 0.1);
+}
+html.dark .sl-gs__required-bar {
+    background: rgb(31 41 55);
+    color: rgb(229 231 235);
+}
+html.dark .sl-gs__label { color: rgb(209 213 219); }
+html.dark .sl-gs__field input,
+html.dark .sl-gs__field select,
+html.dark .sl-gs__field textarea {
+    background: rgb(31 41 55);
+    border-color: rgb(75 85 99);
+    color: rgb(243 244 246);
+}
+html.dark .sl-gs__btn {
+    background: rgb(55 65 81);
+    background-image: none;
+    border-color: rgb(75 85 99);
+    color: rgb(243 244 246);
+}
+
+/* --- Reseller Code History header + owner card (inside dark fi-section) --- */
+html.dark .sl-rch-avatar {
+    background: rgb(0 140 0 / 0.18) !important;
+    color: rgb(74 222 128) !important;
+}
+html.dark .sl-rch-name { color: rgb(243 244 246) !important; }
+html.dark .sl-rch-muted { color: rgb(156 163 175) !important; }
+html.dark .sl-rch-pill--active {
+    background: rgb(20 83 45 / 0.5) !important;
+    color: rgb(134 239 172) !important;
+}
+html.dark .sl-rch-pill--inactive {
+    background: rgb(127 29 29 / 0.5) !important;
+    color: rgb(252 165 165) !important;
 }
 

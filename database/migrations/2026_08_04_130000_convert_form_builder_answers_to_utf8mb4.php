@@ -22,6 +22,12 @@ return new class extends Migration
             return;
         }
 
+        // Charset/collation is a MySQL concept; sqlite (tests) stores UTF-8 natively and
+        // has no SHOW TABLE STATUS. Skip there so the migration run doesn't abort.
+        if (DB::connection()->getDriverName() !== 'mysql') {
+            return;
+        }
+
         // Already utf8mb4? nothing to do (keeps this idempotent / safe to re-run).
         $collation = collect(DB::select("SHOW TABLE STATUS WHERE Name = 'form_builder_answers'"))->first()->Collation ?? '';
         if (str_starts_with((string) $collation, 'utf8mb4')) {

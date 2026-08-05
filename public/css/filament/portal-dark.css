@@ -1,0 +1,892 @@
+/*
+ * Client portal — DARK MODE ONLY
+ * Loaded after scanlink-theme.css. Does not change light mode.
+ * Scope: .fi-panel-portal (authenticated) + .fi-simple-layout (login/register).
+ */
+
+/* ---------------------------------------------------------------------------
+ * Tokens
+ * ------------------------------------------------------------------------- */
+.dark.fi-body,
+.dark .fi-panel-portal,
+html.dark .fi-panel-portal {
+    --sl-dark-surface: rgb(17 24 39);
+    --sl-dark-raised: rgb(31 41 55);
+    --sl-dark-border: rgb(255 255 255 / 0.1);
+    --sl-dark-border-strong: rgb(75 85 99);
+    --sl-dark-text: rgb(243 244 246);
+    --sl-dark-muted: rgb(156 163 175);
+    --sl-dark-heading: rgb(134 239 172);
+}
+
+/* ---------------------------------------------------------------------------
+ * Chrome: main content, headers, notifications
+ * ------------------------------------------------------------------------- */
+html.dark .fi-panel-portal .fi-main,
+html.dark .fi-panel-portal .fi-main-ctn,
+html.dark .fi-panel-portal .fi-page,
+html.dark .fi-panel-portal .fi-page-content,
+html.dark .fi-panel-portal .fi-page-main-ctn,
+html.dark .fi-panel-portal .fi-resource-list-records,
+html.dark .fi-panel-portal .fi-section-content-ctn {
+    color: var(--sl-dark-text);
+}
+
+html.dark .fi-panel-portal .fi-header-heading,
+html.dark .fi-panel-portal .fi-section-header-heading,
+html.dark .fi-panel-portal .fi-ta-header-heading {
+    color: var(--sl-dark-text) !important;
+}
+
+/* Notification bell — readable on dark topbar */
+html.dark .fi-panel-portal .fi-topbar .fi-icon-btn.fi-topbar-database-notifications-btn,
+html.dark .fi-panel-portal .fi-topbar .fi-icon-btn.fi-topbar-database-notifications-btn svg,
+html.dark .fi-panel-portal .fi-topbar .fi-topbar-actions .fi-icon-btn,
+html.dark .fi-panel-portal .fi-topbar .fi-topbar-actions .fi-icon-btn svg {
+    color: rgb(229 231 235) !important;
+}
+
+html.dark .fi-panel-portal .fi-topbar .fi-icon-btn.fi-topbar-database-notifications-btn:hover {
+    background-color: rgb(255 255 255 / 0.08) !important;
+}
+
+html.dark .fi-panel-portal .fi-badge,
+html.dark .fi-panel-portal .fi-topbar .fi-badge {
+    --bg: #008c00 !important;
+    --text: #fff !important;
+}
+
+/* Global search on dark topbar */
+html.dark .fi-panel-portal .fi-global-search .fi-input-wrp {
+    background-color: var(--sl-dark-raised) !important;
+    border-color: var(--sl-dark-border-strong) !important;
+}
+
+html.dark .fi-panel-portal .fi-global-search .fi-input {
+    color: var(--sl-dark-text) !important;
+}
+
+/* ---------------------------------------------------------------------------
+ * Filament sections / cards / tables (all portal resources)
+ * ------------------------------------------------------------------------- */
+html.dark .fi-panel-portal .fi-section,
+html.dark .fi-panel-portal .fi-sc-section,
+html.dark .fi-panel-portal .fi-ta-ctn,
+html.dark .fi-panel-portal .fi-ta-content,
+html.dark .fi-panel-portal .fi-ta-table,
+html.dark .fi-panel-portal .fi-wi-widget,
+html.dark .fi-panel-portal .fi-modal-window,
+html.dark .fi-panel-portal .fi-dropdown-panel {
+    background-color: var(--sl-dark-surface) !important;
+    border-color: var(--sl-dark-border) !important;
+    color: var(--sl-dark-text) !important;
+}
+
+html.dark .fi-panel-portal .fi-ta-header,
+html.dark .fi-panel-portal .fi-ta-header-toolbar,
+html.dark .fi-panel-portal .fi-ta-table thead th,
+html.dark .fi-panel-portal .fi-ta-table th {
+    background-color: var(--sl-dark-raised) !important;
+    color: var(--sl-dark-text) !important;
+    border-color: rgb(55 65 81) !important;
+}
+
+html.dark .fi-panel-portal .fi-ta-table td,
+html.dark .fi-panel-portal .fi-ta-table tr {
+    border-color: rgb(55 65 81) !important;
+    color: var(--sl-dark-text) !important;
+}
+
+html.dark .fi-panel-portal .fi-ta-empty-state,
+html.dark .fi-panel-portal .fi-ta-empty-state-heading,
+html.dark .fi-panel-portal .fi-ta-empty-state-description {
+    color: var(--sl-dark-muted) !important;
+}
+
+html.dark .fi-panel-portal .fi-input-wrp {
+    background-color: var(--sl-dark-raised) !important;
+    border-color: var(--sl-dark-border-strong) !important;
+}
+
+html.dark .fi-panel-portal .fi-input,
+html.dark .fi-panel-portal .fi-textarea,
+html.dark .fi-panel-portal .fi-select-input,
+html.dark .fi-panel-portal input:not([type='checkbox']):not([type='radio']):not([type='file']),
+html.dark .fi-panel-portal textarea,
+html.dark .fi-panel-portal select {
+    color: var(--sl-dark-text) !important;
+}
+
+html.dark .fi-panel-portal .fi-input::placeholder,
+html.dark .fi-panel-portal .fi-textarea::placeholder,
+html.dark .fi-panel-portal input::placeholder {
+    color: var(--sl-dark-muted) !important;
+}
+
+html.dark .fi-panel-portal .fi-fo-field-wrp-label,
+html.dark .fi-panel-portal .fi-fo-field-wrp-label span,
+html.dark .fi-panel-portal label.fi-fo-field-wrp-label {
+    color: rgb(209 213 219) !important;
+}
+
+html.dark .fi-panel-portal .fi-pagination,
+html.dark .fi-panel-portal .fi-pagination-overview,
+html.dark .fi-panel-portal .fi-pagination-items {
+    color: var(--sl-dark-muted) !important;
+}
+
+/* Secondary / gray buttons that ScanLink forced white */
+html.dark .fi-panel-portal .fi-btn.fi-color-gray:not(.fi-outlined),
+html.dark .fi-panel-portal .fi-btn:not(.fi-color-primary):not(.fi-color-danger):not(.fi-color-success):not([type='submit']) {
+    background-color: var(--sl-dark-raised) !important;
+    border-color: var(--sl-dark-border-strong) !important;
+    color: var(--sl-dark-text) !important;
+}
+
+/* ---------------------------------------------------------------------------
+ * Master Code List — toolbar, legend, expiry rows
+ * ------------------------------------------------------------------------- */
+html.dark .fi-panel-portal .sl-mastercode-toolbar,
+html.dark .fi-panel-portal .sl-mastercode-controls,
+html.dark .fi-panel-portal .sl-user-guide,
+html.dark .fi-panel-portal .sl-colorcode-define,
+html.dark .fi-panel-portal .sl-mainbox {
+    color: var(--sl-dark-text) !important;
+}
+
+html.dark .fi-panel-portal .sl-mastercode-controls {
+    border-bottom-color: rgb(55 65 81) !important;
+}
+
+html.dark .fi-panel-portal .sl-user-guide a,
+html.dark .fi-panel-portal .sl-mastercode-heading {
+    color: var(--sl-dark-text) !important;
+}
+
+html.dark .fi-panel-portal .sl-mainbox--filterable:hover {
+    background: rgb(255 255 255 / 0.06) !important;
+    border-color: var(--sl-dark-border-strong) !important;
+}
+
+html.dark .fi-panel-portal .sl-mainbox--filterable.is-active {
+    background: rgb(0 140 0 / 0.22) !important;
+    border-color: rgb(74 222 128 / 0.5) !important;
+}
+
+/* Status rows: professional dark-mode treatment — subtle status TINT over the dark
+   surface (never the bright light-mode pastels) + light text + a colored left accent
+   so status stays scannable. Overrides the light-mode !important fills in scanlink-theme.css. */
+html.dark .fi-panel-portal .fi-ta-row.sl-row-active,
+html.dark .fi-panel-portal tr.sl-row-active,
+html.dark .fi-panel-portal .fi-ta-row.sl-row-active > td,
+html.dark .fi-panel-portal tr.sl-row-active > td {
+    background-color: rgb(34 197 94 / 0.13) !important;
+    color: var(--sl-dark-text) !important;
+}
+
+html.dark .fi-panel-portal .fi-ta-row.sl-row-expiring,
+html.dark .fi-panel-portal tr.sl-row-expiring,
+html.dark .fi-panel-portal .fi-ta-row.sl-row-expiring > td,
+html.dark .fi-panel-portal tr.sl-row-expiring > td {
+    background-color: rgb(245 158 11 / 0.15) !important;
+    color: var(--sl-dark-text) !important;
+}
+
+html.dark .fi-panel-portal .fi-ta-row.sl-row-expired,
+html.dark .fi-panel-portal tr.sl-row-expired,
+html.dark .fi-panel-portal .fi-ta-row.sl-row-expired > td,
+html.dark .fi-panel-portal tr.sl-row-expired > td {
+    background-color: rgb(239 68 68 / 0.14) !important;
+    color: var(--sl-dark-text) !important;
+}
+
+/* Colored left accent on the first cell of each status row. */
+html.dark .fi-panel-portal tr.sl-row-active > td:first-child { box-shadow: inset 3px 0 0 #22c55e !important; }
+html.dark .fi-panel-portal tr.sl-row-expiring > td:first-child { box-shadow: inset 3px 0 0 #f59e0b !important; }
+html.dark .fi-panel-portal tr.sl-row-expired > td:first-child { box-shadow: inset 3px 0 0 #ef4444 !important; }
+
+/* Text, links and icons inside status rows follow the light dark-mode text colour. */
+html.dark .fi-panel-portal tr[class*="sl-row-"] .fi-ta-text,
+html.dark .fi-panel-portal tr[class*="sl-row-"] .fi-ta-text-item,
+html.dark .fi-panel-portal tr[class*="sl-row-"] .fi-ta-text-item-label,
+html.dark .fi-panel-portal tr[class*="sl-row-"] td,
+html.dark .fi-panel-portal tr[class*="sl-row-"] a {
+    color: var(--sl-dark-text) !important;
+}
+html.dark .fi-panel-portal tr[class*="sl-row-"] .fi-icon,
+html.dark .fi-panel-portal tr[class*="sl-row-"] .fi-icon-btn,
+html.dark .fi-panel-portal tr[class*="sl-row-"] svg {
+    color: var(--sl-dark-muted) !important;
+}
+html.dark .fi-panel-portal tr[class*="sl-row-"] .fi-icon-btn:hover svg {
+    color: var(--sl-dark-text) !important;
+}
+
+/* Table full-bleed within content — reduce right-edge gap */
+html.dark .fi-panel-portal .fi-ta-ctn,
+html.dark .fi-panel-portal .fi-ta-content,
+html.dark .fi-panel-portal .fi-ta-table {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+html.dark .fi-panel-portal .fi-resource-list-records .fi-ta-ctn {
+    overflow-x: auto;
+}
+
+/* ---------------------------------------------------------------------------
+ * Custom page panels (visitor log, analytics, order label, FB, etc.)
+ * ------------------------------------------------------------------------- */
+html.dark .fi-panel-portal .sl-vlog,
+html.dark .fi-panel-portal .sl-ol,
+html.dark .fi-panel-portal .sl-fslog,
+html.dark .fi-panel-portal .sl-ca,
+html.dark .fi-panel-portal .sl-sa,
+html.dark .fi-panel-portal .sl-fsview,
+html.dark .fi-panel-portal .sl-cb,
+html.dark .fi-panel-portal .sl-fbp,
+html.dark .fi-panel-portal .sl-plist,
+html.dark .fi-panel-portal .sl-edit-account,
+html.dark .fi-panel-portal .sl-reg,
+html.dark .fi-panel-portal .fb-card,
+html.dark .fi-panel-portal .sl-card {
+    color: var(--sl-dark-text) !important;
+}
+
+html.dark .fi-panel-portal .sl-vlog__panel,
+html.dark .fi-panel-portal .sl-ol__panel,
+html.dark .fi-panel-portal .sl-fslog__panel,
+html.dark .fi-panel-portal .sl-ca__panel,
+html.dark .fi-panel-portal .sl-sa__panel,
+html.dark .fi-panel-portal .sl-fsview,
+html.dark .fi-panel-portal .sl-fbp__card,
+html.dark .fi-panel-portal .sl-card,
+html.dark .fi-panel-portal .fb-card,
+html.dark .fi-panel-portal .sl-fbp__card,
+html.dark .fi-panel-portal .sl-form-builder-panel,
+html.dark .fi-panel-portal .form-builder-box,
+html.dark .fi-panel-portal .sl-existing-form-dialog,
+html.dark .fi-panel-portal .sl-fb-order-success-dialog,
+html.dark .fi-panel-portal .sl-help-video-window,
+html.dark .fi-panel-portal .sl-ca__modal,
+html.dark .fi-panel-portal .sl-plist__table-wrap,
+html.dark .fi-panel-portal .sl-cb__table-wrap,
+html.dark .fi-panel-portal .content-register {
+    background: var(--sl-dark-surface) !important;
+    background-color: var(--sl-dark-surface) !important;
+    border-color: var(--sl-dark-border) !important;
+    box-shadow: none !important;
+    color: var(--sl-dark-text) !important;
+}
+
+html.dark .fi-panel-portal .sl-vlog__title,
+html.dark .fi-panel-portal .sl-fslog__title,
+html.dark .fi-panel-portal .sl-ca__title,
+html.dark .fi-panel-portal .sl-sa__title,
+html.dark .fi-panel-portal .sl-sa__profile,
+html.dark .fi-panel-portal .sl-ol__crumb,
+html.dark .fi-panel-portal .sl-fbp__title,
+html.dark .fi-panel-portal .sl-cb__title,
+html.dark .fi-panel-portal .form-builder-title {
+    color: var(--sl-dark-text) !important;
+}
+
+html.dark .fi-panel-portal .sl-fbp__subtitle,
+html.dark .fi-panel-portal .sl-fbp__hint,
+html.dark .fi-panel-portal .sl-form-builder-lock-copy {
+    color: var(--sl-dark-muted) !important;
+}
+
+html.dark .fi-panel-portal .sl-fbp__section,
+html.dark .fi-panel-portal .sl-edit-account .fi-section-header-heading,
+html.dark .fi-panel-portal .form-builder-title {
+    color: var(--sl-dark-heading) !important;
+}
+
+/* Tables inside custom pages */
+html.dark .fi-panel-portal .sl-vlog table,
+html.dark .fi-panel-portal .sl-fslog table,
+html.dark .fi-panel-portal .sl-ca table,
+html.dark .fi-panel-portal .sl-ol table,
+html.dark .fi-panel-portal .sl-plist table,
+html.dark .fi-panel-portal .sl-cb table,
+html.dark .fi-panel-portal table.listing-table {
+    background: var(--sl-dark-surface) !important;
+    color: var(--sl-dark-text) !important;
+}
+
+html.dark .fi-panel-portal .sl-vlog table th,
+html.dark .fi-panel-portal .sl-fslog table th,
+html.dark .fi-panel-portal .sl-ca table th,
+html.dark .fi-panel-portal .sl-ol table th,
+html.dark .fi-panel-portal .sl-plist table th,
+html.dark .fi-panel-portal .sl-cb table th,
+html.dark .fi-panel-portal table.listing-table th {
+    background: var(--sl-dark-raised) !important;
+    color: var(--sl-dark-text) !important;
+    border-color: rgb(55 65 81) !important;
+}
+
+html.dark .fi-panel-portal .sl-vlog table td,
+html.dark .fi-panel-portal .sl-fslog table td,
+html.dark .fi-panel-portal .sl-ca table td,
+html.dark .fi-panel-portal .sl-ol table td,
+html.dark .fi-panel-portal .sl-plist table td,
+html.dark .fi-panel-portal .sl-cb table td,
+html.dark .fi-panel-portal table.listing-table td {
+    border-color: rgb(55 65 81) !important;
+    color: var(--sl-dark-text) !important;
+}
+
+/* Inputs on custom pages */
+html.dark .fi-panel-portal .sl-vlog input,
+html.dark .fi-panel-portal .sl-vlog select,
+html.dark .fi-panel-portal .sl-fslog input,
+html.dark .fi-panel-portal .sl-fslog select,
+html.dark .fi-panel-portal .sl-ca input,
+html.dark .fi-panel-portal .sl-ca select,
+html.dark .fi-panel-portal .sl-ol input,
+html.dark .fi-panel-portal .sl-ol select,
+html.dark .fi-panel-portal .sl-sa input,
+html.dark .fi-panel-portal .sl-sa select,
+html.dark .fi-panel-portal .sl-fbp__control,
+html.dark .fi-panel-portal .sl-plist__input,
+html.dark .fi-panel-portal .sl-plist input,
+html.dark .fi-panel-portal .sl-plist select,
+html.dark .fi-panel-portal .sl-plist textarea,
+html.dark .fi-panel-portal .sl-cb__search input,
+html.dark .fi-panel-portal .sl-cb__pager select,
+html.dark .fi-panel-portal .sl-cb__balance-num,
+html.dark .fi-panel-portal .fb-input,
+html.dark .fi-panel-portal .fb-textarea,
+html.dark .fi-panel-portal .sl-reg .text-fi,
+html.dark .fi-panel-portal .sl-reg input,
+html.dark .fi-panel-portal .sl-reg select {
+    background: var(--sl-dark-raised) !important;
+    background-color: var(--sl-dark-raised) !important;
+    border-color: var(--sl-dark-border-strong) !important;
+    color: var(--sl-dark-text) !important;
+    box-shadow: none !important;
+}
+
+html.dark .fi-panel-portal .sl-ol__btn--ghost {
+    background: var(--sl-dark-raised) !important;
+    border-color: var(--sl-dark-border-strong) !important;
+    color: var(--sl-dark-text) !important;
+}
+
+html.dark .fi-panel-portal .sl-sa__box-count {
+    background: var(--sl-dark-raised) !important;
+    border-color: rgb(55 65 81) !important;
+    color: var(--sl-dark-text) !important;
+}
+
+/* Keep chart plot canvas white (legacy) so bars stay visible */
+html.dark .fi-panel-portal .sl-sa .ddchart-x-axis-label {
+    color: var(--sl-dark-muted) !important;
+    background: transparent !important;
+}
+
+html.dark .fi-panel-portal .sl-fb-expand-footer,
+html.dark .fi-panel-portal .footer-rouded {
+    background-color: rgb(55 65 81) !important;
+    color: var(--sl-dark-text) !important;
+}
+
+html.dark .fi-panel-portal .existing-item--format {
+    background: var(--sl-dark-raised) !important;
+    border-color: rgb(55 65 81) !important;
+}
+
+html.dark .fi-panel-portal .sl-form-builder-panel .existing-item,
+html.dark .fi-panel-portal .sl-form-builder-panel .existing-item label,
+html.dark .fi-panel-portal .activate-for-profile {
+    color: var(--sl-dark-text) !important;
+}
+
+html.dark .fi-panel-portal .sl-fb-iframe-placeholder,
+html.dark .fi-panel-portal .sl-fb-locked-placeholder {
+    background: var(--sl-dark-raised) !important;
+    border-color: var(--sl-dark-border-strong) !important;
+    color: var(--sl-dark-muted) !important;
+}
+
+/* Code balance status cells: dark status tint + light text (matches the Master Code
+   List treatment). Higher specificity than the light-mode .sl-cb rule so it wins. */
+html.dark .fi-panel-portal .sl-cb table.listing-table tr.sl-row-active > td {
+    background-color: rgb(34 197 94 / 0.13) !important;
+    color: var(--sl-dark-text) !important;
+}
+html.dark .fi-panel-portal .sl-cb table.listing-table tr.sl-row-expired > td {
+    background-color: rgb(239 68 68 / 0.14) !important;
+    color: var(--sl-dark-text) !important;
+}
+html.dark .fi-panel-portal .sl-cb table.listing-table tr.sl-row-expiring > td {
+    background-color: rgb(245 158 11 / 0.15) !important;
+    color: var(--sl-dark-text) !important;
+}
+html.dark .fi-panel-portal .sl-cb table.listing-table tr.sl-row-active > td:first-child { box-shadow: inset 3px 0 0 #22c55e !important; }
+html.dark .fi-panel-portal .sl-cb table.listing-table tr.sl-row-expiring > td:first-child { box-shadow: inset 3px 0 0 #f59e0b !important; }
+html.dark .fi-panel-portal .sl-cb table.listing-table tr.sl-row-expired > td:first-child { box-shadow: inset 3px 0 0 #ef4444 !important; }
+/* Template-type links inside code-balance rows stay light. */
+html.dark .fi-panel-portal .sl-cb table.listing-table tr[class*="sl-row-"] a,
+html.dark .fi-panel-portal .sl-cb table.listing-table tr[class*="sl-row-"] td {
+    color: var(--sl-dark-text) !important;
+}
+
+html.dark .fi-panel-portal .sl-cb__empty,
+html.dark .fi-panel-portal .sl-cb__footnote,
+html.dark .fi-panel-portal .sl-cb__pager-arrow {
+    background: var(--sl-dark-surface) !important;
+    color: var(--sl-dark-text) !important;
+}
+
+/* Profile editor sections */
+html.dark .fi-panel-portal .fi-page:has(.sl-profile-editor) .fi-section,
+html.dark .fi-panel-portal .fi-page:has(.sl-profile-editor) .fi-sc-section,
+html.dark .fi-panel-portal:has(.sl-profile-editor) .fi-section,
+html.dark .fi-panel-portal:has(.sl-profile-editor) .fi-sc-section {
+    background: var(--sl-dark-surface) !important;
+    border-color: var(--sl-dark-border) !important;
+    box-shadow: none !important;
+}
+
+html.dark .fi-panel-portal:has(.sl-profile-editor) .fi-section-header-heading,
+html.dark .fi-panel-portal:has(.sl-profile-editor) .fi-sc-section-header-heading {
+    color: var(--sl-dark-heading) !important;
+}
+
+html.dark .fi-panel-portal:has(.sl-profile-editor) .sl-add-form-left .fi-input-wrp:not(:has(select)):not(:has(.fi-select-input)) {
+    background: var(--sl-dark-raised) !important;
+    border-color: var(--sl-dark-border-strong) !important;
+    box-shadow: none !important;
+}
+
+html.dark .fi-panel-portal:has(.sl-profile-editor) .sl-add-form-left .fi-btn:not(.fi-color-danger):not([type='submit']),
+html.dark .fi-panel-portal:has(.sl-profile-editor) .sl-add-form-left .fi-ac-btn-action:not(.fi-color-danger):not([type='submit']) {
+    background: var(--sl-dark-raised) !important;
+    background-image: none !important;
+    border-color: var(--sl-dark-border-strong) !important;
+    color: var(--sl-dark-text) !important;
+}
+
+/* Edit account cards */
+html.dark .fi-panel-portal .sl-edit-account .fi-section,
+html.dark .fi-panel-portal .sl-edit-account .fi-sc-section,
+html.dark .fi-panel-portal .sl-edit-account__users .fi-ta-ctn {
+    background: var(--sl-dark-surface) !important;
+    border-color: var(--sl-dark-border) !important;
+    box-shadow: none !important;
+}
+
+html.dark .fi-panel-portal .sl-edit-account .fi-input-wrp,
+html.dark .fi-panel-portal .sl-edit-user-modal .fi-input-wrp {
+    background-color: var(--sl-dark-raised) !important;
+    border-color: var(--sl-dark-border-strong) !important;
+}
+
+/* Modals / dialogs created in JS */
+html.dark .fi-panel-portal .sl-participant-dialog,
+html.dark .sl-participant-dialog {
+    background: var(--sl-dark-surface) !important;
+    color: var(--sl-dark-text) !important;
+}
+
+/* ---------------------------------------------------------------------------
+ * Auth (login / register) — simple layout
+ * ------------------------------------------------------------------------- */
+html.dark .fi-simple-layout .fi-simple-main,
+html.dark .fi-simple-layout .fi-simple-card,
+html.dark .fi-simple-layout .fi-section,
+html.dark .fi-simple-layout .sl-reg,
+html.dark .fi-simple-layout .content-register {
+    background-color: var(--sl-dark-surface) !important;
+    color: var(--sl-dark-text) !important;
+    border-color: var(--sl-dark-border) !important;
+}
+
+html.dark .fi-simple-layout .fi-input-wrp,
+html.dark .fi-simple-layout .sl-reg .text-fi,
+html.dark .fi-simple-layout .sl-reg input,
+html.dark .fi-simple-layout .sl-reg select {
+    background-color: var(--sl-dark-raised) !important;
+    border-color: var(--sl-dark-border-strong) !important;
+    color: var(--sl-dark-text) !important;
+    box-shadow: none !important;
+}
+
+html.dark .fi-simple-layout .fi-fo-field-wrp-label,
+html.dark .fi-simple-layout .sl-reg label,
+html.dark .fi-simple-layout h3.page-title {
+    color: var(--sl-dark-text) !important;
+}
+
+html.dark .fi-simple-layout .sl-reg-error-banner {
+    background: rgb(69 10 10) !important;
+    border-color: rgb(153 27 27) !important;
+    color: rgb(254 202 202) !important;
+}
+
+/* ---------------------------------------------------------------------------
+ * Pages that load legacy style.css (purchase / order summaries)
+ * ------------------------------------------------------------------------- */
+html.dark .fi-panel-portal .SectionTitleBox,
+html.dark .fi-panel-portal .section-title-box,
+html.dark .fi-panel-portal .form-view,
+html.dark .fi-panel-portal .white-bg,
+html.dark .fi-panel-portal .content-area,
+html.dark .fi-panel-portal .scanlink-container {
+    background-color: var(--sl-dark-surface) !important;
+    color: var(--sl-dark-text) !important;
+}
+
+html.dark .fi-panel-portal .form-view input[type='text'],
+html.dark .fi-panel-portal .form-view input[type='email'],
+html.dark .fi-panel-portal .form-view input[type='password'],
+html.dark .fi-panel-portal .form-view textarea,
+html.dark .fi-panel-portal .form-view select {
+    background-color: var(--sl-dark-raised) !important;
+    border-color: var(--sl-dark-border-strong) !important;
+    color: var(--sl-dark-text) !important;
+}
+
+/* Fallback: custom classes without requiring .fi-panel-portal ancestor */
+html.dark .sl-vlog__panel,
+html.dark .sl-ol__panel,
+html.dark .sl-fslog__panel,
+html.dark .sl-ca__panel,
+html.dark .sl-sa__panel,
+html.dark .sl-fsview,
+html.dark .sl-fbp__card,
+html.dark .sl-card,
+html.dark .fb-card,
+html.dark .sl-form-builder-panel,
+html.dark .form-builder-box.sl-form-builder-panel,
+html.dark .sl-edit-account .fi-section,
+html.dark .sl-edit-account .fi-sc-section,
+html.dark .sl-cb__table-wrap,
+html.dark .sl-plist__table-wrap,
+html.dark .content-register {
+    background: rgb(17 24 39) !important;
+    background-color: rgb(17 24 39) !important;
+    border-color: rgb(255 255 255 / 0.1) !important;
+    color: rgb(243 244 246) !important;
+    box-shadow: none !important;
+}
+
+html.dark .sl-vlog,
+html.dark .sl-ol,
+html.dark .sl-fslog,
+html.dark .sl-ca,
+html.dark .sl-sa,
+html.dark .sl-cb,
+html.dark .sl-fbp,
+html.dark .sl-plist {
+    color: rgb(229 231 235) !important;
+}
+
+html.dark .sl-vlog__title,
+html.dark .sl-fslog__title,
+html.dark .sl-ca__title,
+html.dark .sl-sa__title,
+html.dark .sl-fbp__title,
+html.dark .sl-cb__title {
+    color: rgb(243 244 246) !important;
+}
+
+html.dark .sl-fbp__control,
+html.dark .sl-plist__input,
+html.dark .sl-cb__search input,
+html.dark .sl-cb__pager select,
+html.dark .sl-vlog input,
+html.dark .sl-vlog select,
+html.dark .sl-fslog input,
+html.dark .sl-fslog select,
+html.dark .sl-ca input,
+html.dark .sl-ca select,
+html.dark .sl-ol input,
+html.dark .sl-ol select {
+    background: rgb(31 41 55) !important;
+    border-color: rgb(75 85 99) !important;
+    color: rgb(243 244 246) !important;
+}
+
+html.dark .sl-vlog table th,
+html.dark .sl-fslog table th,
+html.dark .sl-ca table th,
+html.dark .sl-ol table th,
+html.dark .sl-plist table th,
+html.dark .sl-cb table th {
+    background: rgb(31 41 55) !important;
+    color: rgb(243 244 246) !important;
+}
+
+html.dark .sl-vlog table td,
+html.dark .sl-fslog table td,
+html.dark .sl-ca table td,
+html.dark .sl-ol table td,
+html.dark .sl-plist table td,
+html.dark .sl-cb table td {
+    border-color: rgb(55 65 81) !important;
+    color: rgb(229 231 235) !important;
+}
+
+html.dark .sl-fb-expand-footer,
+html.dark .footer-rouded.sl-fb-expand-footer {
+    background-color: rgb(55 65 81) !important;
+    color: rgb(229 231 235) !important;
+}
+
+html.dark .existing-item--format {
+    background: rgb(31 41 55) !important;
+    border-color: rgb(55 65 81) !important;
+}
+
+html.dark .form-builder-title {
+    color: rgb(134 239 172) !important;
+}
+
+html.dark .sl-colorcode-define,
+html.dark .sl-user-guide,
+html.dark .sl-mastercode-controls {
+    color: rgb(229 231 235) !important;
+}
+
+html.dark .sl-mastercode-controls {
+    border-bottom-color: rgb(55 65 81) !important;
+}
+
+html.dark .sl-vlog table.listing-table tr:nth-child(even) td,
+html.dark .sl-fslog table tr:nth-child(even) td,
+html.dark .sl-vlog__empty,
+html.dark .sl-fslog__empty {
+    background: rgb(31 41 55) !important;
+    color: rgb(229 231 235) !important;
+}
+
+html.dark .sl-fsview,
+html.dark .sl-fsview .meta,
+html.dark .sl-fsview .results h3 {
+    background: rgb(17 24 39) !important;
+    color: rgb(229 231 235) !important;
+}
+
+html.dark .sl-fsview .results h1 {
+    color: rgb(134 239 172) !important;
+}
+
+/* Filament table icon buttons on non-status rows */
+html.dark .fi-ta-row:not(.sl-row-active):not(.sl-row-expired):not(.sl-row-expiring) .fi-icon-btn,
+html.dark .fi-ta-row:not(.sl-row-active):not(.sl-row-expired):not(.sl-row-expiring) .fi-icon-btn svg {
+    color: rgb(209 213 219) !important;
+}
+
+/* Brand logo: the sidebar header already shows the white-pill logo, so the duplicate
+   copy in the topbar reads as a second glaring white box on the dark chrome. Hide the
+   redundant topbar logo in dark mode (light mode is left untouched). */
+html.dark .fi-panel-portal .fi-topbar .fi-logo-ctn,
+html.dark .fi-panel-portal .fi-topbar a.fi-logo,
+html.dark .fi-panel-portal .fi-topbar img.fi-logo {
+    display: none !important;
+}
+
+/* ===========================================================================
+ * DARK MODE COMPLETION PASS — cover every remaining light-mode surface so no
+ * portal page is left glaring white. Scoped to html.dark .fi-panel-portal.
+ * =========================================================================== */
+
+/* --- A1 Master Code List: expiry-filter clear button + colour-code box --- */
+html.dark .fi-panel-portal .sl-expiry-filter-clear {
+    background: var(--sl-dark-raised) !important;
+    color: rgb(134 239 172) !important;
+    border-color: rgb(0 140 0 / 0.6) !important;
+}
+html.dark .fi-panel-portal .sl-expiry-filter-clear:hover { background: rgb(0 140 0 / 0.22) !important; }
+html.dark .fi-panel-portal .sl-colorcodebox { border-color: var(--sl-dark-border-strong) !important; }
+
+/* --- A2 Profile editor: QR url box, iphone placeholder, nearly-done title --- */
+html.dark .fi-panel-portal .sl-iphone-placeholder { color: var(--sl-dark-muted) !important; }
+html.dark .fi-panel-portal .qr-url-div {
+    background: var(--sl-dark-raised) !important;
+    border-color: var(--sl-dark-border-strong) !important;
+    color: var(--sl-dark-text) !important;
+}
+html.dark .fi-panel-portal .nearly-done-title,
+html.dark .fi-panel-portal .sl-profile-editor--code .SectionTitleCode { color: var(--sl-dark-heading) !important; }
+
+/* --- A3 "Use an existing form" modal inner chrome --- */
+html.dark .fi-panel-portal .sl-existing-form-close {
+    background: var(--sl-dark-raised) !important;
+    color: var(--sl-dark-text) !important;
+    border-color: var(--sl-dark-border-strong) !important;
+}
+html.dark .fi-panel-portal .sl-existing-form-progress,
+html.dark .fi-panel-portal .sl-existing-form-status,
+html.dark .fi-panel-portal .sl-existing-form-empty { color: var(--sl-dark-muted) !important; }
+html.dark .fi-panel-portal .sl-existing-form-tablist { border-bottom-color: var(--sl-dark-border) !important; }
+html.dark .fi-panel-portal .sl-existing-form-tab { background: var(--sl-dark-border-strong) !important; color: var(--sl-dark-text) !important; }
+html.dark .fi-panel-portal .sl-existing-form-preview h2 { color: var(--sl-dark-text) !important; }
+html.dark .fi-panel-portal .sl-existing-form-preview-item {
+    border-bottom-color: var(--sl-dark-border) !important;
+    color: var(--sl-dark-text) !important;
+}
+
+/* --- A4 Help tooltip (profile editor) --- */
+html.dark .fi-panel-portal .fi-page:has(.sl-profile-editor) .help-div {
+    background: var(--sl-dark-raised) !important;
+    color: var(--sl-dark-text) !important;
+}
+html.dark .fi-panel-portal .fi-page:has(.sl-profile-editor) .help-div a { color: var(--sl-dark-text) !important; }
+
+/* --- A5 Legacy QR gray download button --- */
+html.dark .fi-panel-portal .button-section .gray-btn,
+html.dark .fi-panel-portal .sl-legacy-preview-sidebar .gray-btn {
+    background: var(--sl-dark-raised) !important;
+    color: var(--sl-dark-text) !important;
+    border-color: var(--sl-dark-border-strong) !important;
+}
+
+/* --- A6 Preview overlay modal --- */
+html.dark .fi-panel-portal .sl-preview-modal { background: var(--sl-dark-surface) !important; color: var(--sl-dark-text) !important; }
+html.dark .fi-panel-portal .sl-preview-close { color: var(--sl-dark-text) !important; }
+html.dark .fi-panel-portal .sl-preview-heading { color: var(--sl-dark-heading) !important; }
+html.dark .fi-panel-portal .sl-preview-desc { color: var(--sl-dark-text) !important; }
+
+/* --- A7 ScanLink alert dialog --- */
+html.dark .fi-panel-portal .sl-alert-dialog {
+    background: var(--sl-dark-surface) !important;
+    border-color: var(--sl-dark-border-strong) !important;
+}
+html.dark .fi-panel-portal .sl-alert-dialog__body { color: var(--sl-dark-text) !important; }
+
+/* --- A8 Edit-user "profiles" table --- */
+html.dark .fi-panel-portal .sl-edit-user-profiles__heading { color: var(--sl-dark-text) !important; }
+html.dark .fi-panel-portal .sl-edit-user-profiles__table-wrap,
+html.dark .fi-panel-portal .sl-edit-user-profiles__table th,
+html.dark .fi-panel-portal .sl-edit-user-profiles__table td { border-color: var(--sl-dark-border) !important; }
+html.dark .fi-panel-portal .sl-edit-user-profiles__table th {
+    background: var(--sl-dark-raised) !important;
+    color: var(--sl-dark-text) !important;
+}
+html.dark .fi-panel-portal .sl-edit-user-profiles__empty { color: var(--sl-dark-muted) !important; }
+
+/* --- A9 Contact Us page (was fully light) --- */
+html.dark .fi-panel-portal .sl-portal-contact,
+html.dark .fi-panel-portal .sl-portal-contact__box {
+    background: var(--sl-dark-surface) !important;
+    border-color: var(--sl-dark-border) !important;
+    color: var(--sl-dark-text) !important;
+}
+html.dark .fi-panel-portal .sl-portal-contact__title,
+html.dark .fi-panel-portal .sl-portal-contact__tel { color: var(--sl-dark-text) !important; }
+html.dark .fi-panel-portal .sl-portal-contact__fields label,
+html.dark .fi-panel-portal .sl-portal-contact__address,
+html.dark .fi-panel-portal .sl-portal-contact__address strong { color: var(--sl-dark-muted) !important; }
+html.dark .fi-panel-portal .sl-portal-contact__input,
+html.dark .fi-panel-portal textarea.sl-portal-contact__input {
+    background: var(--sl-dark-raised) !important;
+    color: var(--sl-dark-text) !important;
+    border-color: var(--sl-dark-border-strong) !important;
+    box-shadow: none !important;
+}
+html.dark .fi-panel-portal .sl-portal-contact__captcha { border-color: var(--sl-dark-border-strong) !important; }
+html.dark .fi-panel-portal .sl-portal-contact__box-title {
+    background: var(--sl-dark-raised) !important;
+    color: var(--sl-dark-text) !important;
+}
+html.dark .fi-panel-portal .sl-portal-contact__box-section { border-bottom-color: var(--sl-dark-border) !important; }
+
+/* --- A11 Code Balance residual text/links --- */
+html.dark .fi-panel-portal .sl-cb__legend-item { color: var(--sl-dark-text) !important; }
+html.dark .fi-panel-portal .sl-cb__swatch { border-color: var(--sl-dark-border-strong) !important; }
+html.dark .fi-panel-portal .sl-cb__link-clear { color: rgb(147 197 253) !important; }
+
+/* --- C1 Purchase / order-summary family (legacy styles/style.css, were fully light) --- */
+html.dark .fi-panel-portal .legacy-purchase-page,
+html.dark .fi-panel-portal .legacy-purchase-page .content-register,
+html.dark .fi-panel-portal .legacy-purchase-page .content-main-register,
+html.dark .fi-panel-portal .legacy-purchase-page .SecondPurchaseBox,
+html.dark .fi-panel-portal .legacy-purchase-page .code-amount,
+html.dark .fi-panel-portal .legacy-purchase-page .code-total,
+html.dark .fi-panel-portal .SectionTitleBox-orderSummary {
+    background: var(--sl-dark-surface) !important;
+    border-color: var(--sl-dark-border) !important;
+    color: var(--sl-dark-text) !important;
+}
+html.dark .fi-panel-portal .legacy-purchase-page .page-title,
+html.dark .fi-panel-portal .legacy-purchase-page h1,
+html.dark .fi-panel-portal .legacy-purchase-page h2,
+html.dark .fi-panel-portal .legacy-purchase-page h3,
+html.dark .fi-panel-portal .legacy-purchase-page label,
+html.dark .fi-panel-portal .legacy-purchase-page td,
+html.dark .fi-panel-portal .legacy-purchase-page th { color: var(--sl-dark-text) !important; }
+html.dark .fi-panel-portal .legacy-purchase-page .secondstep-title-purchase { color: var(--sl-dark-heading) !important; }
+html.dark .fi-panel-portal .legacy-purchase-page input.text-fi,
+html.dark .fi-panel-portal .legacy-purchase-page select,
+html.dark .fi-panel-portal .legacy-purchase-page textarea,
+html.dark .fi-panel-portal .SectionTitleBox-orderSummary input {
+    background: var(--sl-dark-raised) !important;
+    color: var(--sl-dark-text) !important;
+    border-color: var(--sl-dark-border-strong) !important;
+}
+
+/* --- C2 Scan Analytics non-chart chrome --- */
+html.dark .fi-panel-portal .sl-sa .scanalytics-box b,
+html.dark .fi-panel-portal .sl-sa__box b { color: var(--sl-dark-text) !important; }
+html.dark .fi-panel-portal .sl-sa__print-btn {
+    background: var(--sl-dark-raised) !important;
+    border-color: var(--sl-dark-border-strong) !important;
+    color: var(--sl-dark-text) !important;
+}
+html.dark .fi-panel-portal .sl-sa table.listing-table th {
+    background: var(--sl-dark-raised) !important;
+    border-bottom-color: var(--sl-dark-border) !important;
+    color: var(--sl-dark-text) !important;
+}
+html.dark .fi-panel-portal .sl-sa table.listing-table td { border-bottom-color: var(--sl-dark-border) !important; }
+html.dark .fi-panel-portal .sl-sa table.listing-table tr:nth-child(even) td { background: rgb(255 255 255 / 0.03) !important; }
+html.dark .fi-panel-portal .sl-sa__map { background: var(--sl-dark-raised) !important; border-color: var(--sl-dark-border) !important; }
+html.dark .fi-panel-portal .sl-sa__map-note { color: var(--sl-dark-muted) !important; }
+html.dark .fi-panel-portal .sl-sa__empty-charts {
+    background: var(--sl-dark-raised) !important;
+    border-color: var(--sl-dark-border-strong) !important;
+    color: var(--sl-dark-muted) !important;
+}
+html.dark .fi-panel-portal .sl-sa__loading { background: rgb(17 24 39 / 0.72) !important; color: var(--sl-dark-text) !important; }
+html.dark .fi-panel-portal .sl-sa__sort select { border-color: var(--sl-dark-border-strong) !important; }
+
+/* --- C3 Cumulative Analytics residual text --- */
+html.dark .fi-panel-portal .sl-ca h1,
+html.dark .fi-panel-portal .sl-ca h2,
+html.dark .fi-panel-portal .sl-ca h3,
+html.dark .fi-panel-portal .sl-ca label,
+html.dark .fi-panel-portal .sl-ca td,
+html.dark .fi-panel-portal .sl-ca th { color: var(--sl-dark-text) !important; }
+html.dark .fi-panel-portal .sl-ca table td { border-bottom-color: var(--sl-dark-border) !important; }
+
+/* --- C4 Order Label residual text --- */
+html.dark .fi-panel-portal .sl-ol,
+html.dark .fi-panel-portal .sl-ol label,
+html.dark .fi-panel-portal .sl-ol td,
+html.dark .fi-panel-portal .sl-ol th { color: var(--sl-dark-text) !important; }
+
+/* --- C5 Form Submissions JS confirm modal (inline background:#fff) --- */
+html.dark .fi-panel-portal .sl-fslog [style*="background:#fff"],
+html.dark .fi-panel-portal .sl-fslog-confirm,
+html.dark .fi-panel-portal .sl-fslog__confirm {
+    background: var(--sl-dark-surface) !important;
+    color: var(--sl-dark-text) !important;
+    border-color: var(--sl-dark-border) !important;
+}
+
+/* --- C6 Form Submission View: hr + signature border --- */
+html.dark .fi-panel-portal .sl-fsview hr { border-top-color: var(--sl-dark-border) !important; }
+html.dark .fi-panel-portal .sl-fsview img[style*="border"] { border-color: var(--sl-dark-border-strong) !important; }
+
+/* --- C7 Register form inner decorative cards / error box --- */
+html.dark .fi-panel-portal .sl-reg .content-register,
+html.dark .fi-panel-portal .sl-reg .content-main-register {
+    background: var(--sl-dark-surface) !important;
+    border-color: var(--sl-dark-border) !important;
+    color: var(--sl-dark-text) !important;
+}

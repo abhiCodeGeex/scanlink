@@ -6,33 +6,40 @@
     $analyticsLocked = (bool) ($record?->enable_form_analytics ?? false);
     $formBuilderPurchased = (bool) ($formBuilderPurchased ?? $record?->form_active);
     $canPurchaseFormBuilder = (bool) ($canPurchaseFormBuilder ?? false);
+    $canAccessFormBuilder = (bool) ($canAccessFormBuilder ?? true);
+    $settingsLocked = ! $formBuilderPurchased;
 @endphp
 
 <style>
-    /* Professional, responsive Form Builder panel. */
     .sl-form-builder-panel {
         background: #fff;
-        border: 1px solid #e5e7eb;
-        border-radius: 12px 12px 0 0;
-        padding: 16px 18px 6px;
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+        border: 1px solid #cccccc;
+        border-radius: 6px 6px 0 0;
+        padding: 10px 12px;
         font-family: Arial, Helvetica, sans-serif;
         box-sizing: border-box;
+        box-shadow: inset 0 0 10px rgba(0, 0, 0, .1);
     }
     .sl-form-builder-panel * { box-sizing: border-box; }
+
     .sl-form-builder-panel .form-builder-title {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px 10px;
         flex-wrap: wrap;
-        font-size: 17px;
-        font-weight: 700;
-        color: #008C00;
-        padding-bottom: 12px;
-        margin: 0 0 4px;
-        border-bottom: 1px solid #eef0f2;
+        font-size: 18px;
+        font-weight: normal;
+        color: #009401;
+        padding: 0;
+        margin: 0 0 6px;
+        border-bottom: 0;
+        line-height: 34px;
     }
-    .sl-form-builder-panel .sl-help-wrap { position: relative; display: inline-flex; align-items: center; }
+    .sl-form-builder-panel .sl-help-wrap {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+    }
     .sl-form-builder-panel .activate-for-profile {
         margin-left: auto;
         display: inline-flex;
@@ -42,8 +49,10 @@
         font-weight: 600;
         color: #374151;
     }
-    .sl-form-builder-panel .activate-for-profile span { display: inline-flex; align-items: center; }
-    /* Toggle switch for Enable */
+    .sl-form-builder-panel .activate-for-profile span {
+        display: inline-flex;
+        align-items: center;
+    }
     .sl-form-builder-panel .activate-for-profile input[type="checkbox"] {
         appearance: none;
         -webkit-appearance: none;
@@ -67,91 +76,222 @@
         border-radius: 50%;
         background: #fff;
         transition: left 0.15s ease;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     }
     .sl-form-builder-panel .activate-for-profile input[type="checkbox"]:checked { background: #008C00; }
     .sl-form-builder-panel .activate-for-profile input[type="checkbox"]:checked::after { left: 21px; }
-    .sl-form-builder-panel .activate-for-profile input[type="checkbox"]:disabled { opacity: 0.5; cursor: not-allowed; }
-    /* Regular checkboxes / radios */
-    .sl-form-builder-panel .existing-item input[type="checkbox"],
-    .sl-form-builder-panel .existing-item input[type="radio"] {
-        width: 17px;
-        height: 17px;
-        accent-color: #008C00;
-        cursor: pointer;
-        margin: 0;
-        flex: 0 0 auto;
-    }
+
     .sl-form-builder-panel .existing-item {
         display: flex;
         align-items: flex-start;
-        gap: 9px;
-        margin: 12px 0;
+        gap: 8px;
+        margin: 0 0 10px;
+        padding: 0;
         font-size: 13px;
         color: #374151;
+        line-height: 1.35;
+    }
+    .sl-form-builder-panel .existing-item input[type="checkbox"],
+    .sl-form-builder-panel .existing-item input[type="radio"] {
+        width: 16px;
+        height: 16px;
+        accent-color: #008C00;
+        cursor: pointer;
+        margin: 1px 0 0;
+        flex: 0 0 auto;
+    }
+    .sl-form-builder-panel .existing-item input:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+    }
+    .sl-form-builder-panel .existing-item label {
+        cursor: pointer;
+        font-weight: 500;
+        margin: 0;
+    }
+    .sl-form-builder-panel .existing-item small {
+        display: block;
+        color: #92400e;
+        font-size: 11px;
+        font-weight: 400;
+        margin-top: 2px;
+        line-height: 1.3;
+    }
+
+    .sl-form-builder-panel .existing-item--format {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+        margin: 4px 0 12px !important;
+        padding: 14px 16px !important;
+        background: #f3f4f6 !important;
+        border: 1px solid #e5e7eb !important;
+        border-radius: 8px !important;
+        height: auto !important;
+        min-height: 0 !important;
+    }
+    .sl-form-builder-panel .existing-item__label {
+        font-weight: 700 !important;
+        color: #111827 !important;
+        font-size: 13px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .sl-form-builder-panel .existing-item__options {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .sl-form-builder-panel .existing-item__option {
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        height: auto !important;
+        min-height: 0 !important;
+    }
+
+    /* Purchase CTA — match legacy green-btn (flat gradient, no soft shadow) */
+    .sl-form-builder-panel .sl-form-builder-purchase {
+        display: block;
+        margin: 0 0 4px;
+        padding: 0;
+    }
+    .sl-form-builder-panel .sl-fb-activate-btn {
+        display: block;
+        width: 100%;
+        height: 42px;
+        margin: 0;
+        padding: 0 16px;
+        border: 1px solid #006201;
+        border-radius: 6px;
+        background: #008901;
+        background: linear-gradient(to bottom, #008901 0%, #007a01 100%);
+        color: #fff;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 40px;
+        text-align: center;
+        text-transform: none;
+        letter-spacing: 0;
+        cursor: pointer;
+        box-shadow: none;
+        appearance: none;
+        -webkit-appearance: none;
+    }
+    .sl-form-builder-panel .sl-fb-activate-btn:hover {
+        background: #009a01;
+        background: linear-gradient(to bottom, #009a01 0%, #008901 100%);
+    }
+    .sl-form-builder-panel .sl-fb-activate-btn:disabled {
+        opacity: 0.7;
+        cursor: wait;
+    }
+    .sl-form-builder-panel .sl-fb-activate-btn .sl-fb-activate-price {
+        font-weight: 700;
+        opacity: 0.95;
+    }
+    .sl-form-builder-panel .sl-form-builder-lock-copy {
+        margin: 10px 0 0;
+        color: #4b5563;
+        font-size: 12px;
+        line-height: 1.45;
+        font-weight: 400;
+    }
+    .sl-form-builder-panel .sl-form-builder-purchase-note {
+        display: block;
+        margin: 0;
+        padding: 10px 12px;
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        border-radius: 6px;
+        color: #92400e;
+        font-size: 13px;
         line-height: 1.4;
     }
-    .sl-form-builder-panel .existing-item > span:first-child { flex: 0 0 auto; padding-top: 1px; }
-    .sl-form-builder-panel .existing-item label { cursor: pointer; font-weight: 500; margin: 0; }
-    .sl-form-builder-panel .existing-item small { display: block; color: #d97706; font-weight: 400; margin-top: 2px; }
-    .sl-form-builder-panel .existing-item--format {
-        flex-direction: column;
-        gap: 9px;
-        background: #f7faf7;
-        border: 1px solid #e6efe6;
-        border-radius: 10px;
-        padding: 12px 14px;
+    .sl-form-builder-panel.sl-form-builder-panel--locked {
+        padding-bottom: 14px;
     }
-    .sl-form-builder-panel .existing-item__label { font-weight: 700; color: #111827; }
-    .sl-form-builder-panel .existing-item__option { display: inline-flex; align-items: center; gap: 7px; }
-    .sl-form-builder-panel .existing-item__option label { font-weight: 500; }
-    .sl-form-builder-panel .sl-form-builder-purchase { margin: 12px 0; }
-    .sl-form-builder-panel .green-btn {
-        background: #008C00;
-        color: #fff;
-        border: 0;
-        border-radius: 9px;
-        padding: 11px 20px;
-        font-weight: 700;
-        font-size: 14px;
-        cursor: pointer;
-        box-shadow: 0 4px 12px rgba(0, 140, 0, 0.22);
-        transition: background 0.15s ease;
-    }
-    .sl-form-builder-panel .green-btn:hover { background: #00a300; }
-    .sl-form-builder-panel #iframe_container { margin-top: 6px; }
-    .sl-form-builder-panel .sl-fb-iframe-placeholder {
-        padding: 2rem 1rem;
+
+    .sl-form-builder-panel #iframe_container { margin-top: 4px; }
+    .sl-form-builder-panel .sl-fb-iframe-placeholder,
+    .sl-form-builder-panel .sl-fb-locked-placeholder {
+        padding: 14px 12px;
         text-align: center;
         color: #6b7280;
         font-size: 13px;
+        line-height: 1.4;
         background: #f9fafb;
         border: 1px dashed #d1d5db;
-        border-radius: 9px;
+        border-radius: 6px;
+        min-height: 0;
     }
+
+    /* Legacy .footer-rouded — gray bar under Form Builder iframe */
+    .sl-fb-expand-footer.footer-rouded,
     .sl-fb-expand-footer {
-        background: #f3f4f6;
-        border: 1px solid #e5e7eb;
-        border-top: 0;
-        border-radius: 0 0 12px 12px;
-        padding: 9px 14px;
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 6px;
-        font-size: 12px;
-        font-weight: 600;
-        color: #6b7280;
+        float: none;
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        padding: 10px;
+        box-sizing: border-box;
+        background-color: #cccccc;
+        border: 0;
+        border-radius: 0 0 8px 8px;
+        text-align: right;
+        display: block;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 14px;
+        font-weight: normal;
+        color: #5f5f5f;
+        line-height: 25px;
         cursor: pointer;
+        user-select: none;
     }
+    .sl-fb-expand-footer .expand-reduce {
+        cursor: pointer;
+        vertical-align: middle;
+    }
+    .sl-fb-expand-footer span.expand-reduce {
+        display: inline-block;
+        margin-right: 4px;
+    }
+    .sl-fb-expand-footer img.expand-reduce {
+        display: inline-block;
+        width: 25px;
+        height: auto;
+    }
+
     @media (max-width: 640px) {
-        .sl-form-builder-panel { padding: 14px 12px 6px; border-radius: 10px 10px 0 0; }
+        .sl-form-builder-panel { padding: 12px 10px 8px; }
         .sl-form-builder-panel .form-builder-title { font-size: 16px; }
-        .sl-form-builder-panel .activate-for-profile { margin-left: 0; width: 100%; justify-content: space-between; }
+        .sl-form-builder-panel .activate-for-profile {
+            margin-left: 0;
+            width: 100%;
+            justify-content: space-between;
+        }
     }
+    html.dark .sl-form-builder-panel {
+        background: rgb(17 24 39) !important;
+        border-color: rgb(55 65 81) !important;
+        box-shadow: none !important;
+        color: rgb(229 231 235) !important;
+    }
+    html.dark .sl-form-builder-panel .form-builder-title { color: rgb(134 239 172) !important; border-color: rgb(55 65 81) !important; }
+    html.dark .sl-form-builder-panel .existing-item,
+    html.dark .sl-form-builder-panel .existing-item label,
+    html.dark .sl-form-builder-panel .activate-for-profile { color: rgb(229 231 235) !important; }
+    html.dark .sl-form-builder-panel .existing-item--format { background: rgb(31 41 55) !important; border-color: rgb(55 65 81) !important; }
+    html.dark .sl-fb-expand-footer { background-color: rgb(55 65 81) !important; color: rgb(229 231 235) !important; }
 </style>
 
-<div class="form-builder-box sl-form-builder-panel {{ $formBuilderPanelClass }}">
+<div class="form-builder-box sl-form-builder-panel {{ $formBuilderPanelClass }} {{ $settingsLocked ? 'sl-form-builder-panel--locked' : '' }}">
     <div class="form-builder-title">
         Form Builder
         <span class="sl-help-wrap">
@@ -162,60 +302,61 @@
             </span>
         </span>
 
-        <div class="activate-for-profile">
-            <span><label for="enable_form">Enable</label></span>
-            <span>
-                <input
-                    type="checkbox"
-                    id="enable_form"
-                    wire:model.live="data.form_is_enable"
-                    value="1"
-                    @disabled(! $formBuilderPurchased)
-                >
-            </span>
-        </div>
+        @if (! $settingsLocked)
+            <div class="activate-for-profile">
+                <span><label for="enable_form">Enable</label></span>
+                <span>
+                    <input
+                        type="checkbox"
+                        id="enable_form"
+                        wire:model.live="data.form_is_enable"
+                        value="1"
+                    >
+                </span>
+            </div>
+        @endif
     </div>
 
-    @if ($record?->exists && ! $formBuilderPurchased)
-        <div class="existing-item sl-form-builder-purchase">
-            @if ($canPurchaseFormBuilder && ! empty($formBuilderPurchaseUrl))
-                <button
-                    type="button"
-                    class="green-btn"
-                    wire:click="startFormBuilderPurchase"
-                    wire:loading.attr="disabled"
-                >
-                    Activate Form Builder — $5 AUD
-                </button>
-            @else
-                <span>Form Builder activation must be purchased by the primary account user.</span>
-            @endif
-        </div>
-    @endif
-
-    <div class="existing-item">
-        <span>
+    @if ($settingsLocked)
+        @if ($record?->exists)
+            <div class="sl-form-builder-purchase">
+                @if ($canPurchaseFormBuilder && ! empty($formBuilderPurchaseUrl))
+                    <button
+                        type="button"
+                        class="sl-fb-activate-btn"
+                        wire:click="startFormBuilderPurchase"
+                        wire:loading.attr="disabled"
+                    >
+                        Activate Form Builder — <span class="sl-fb-activate-price">$5 AUD</span>
+                    </button>
+                    <p class="sl-form-builder-lock-copy">
+                        One-time activation for this code profile. After purchase you can enable the form and edit questions.
+                    </p>
+                @else
+                    <span class="sl-form-builder-purchase-note">
+                        Form Builder activation must be purchased by the primary account user ($5 AUD, one-time per profile).
+                    </span>
+                @endif
+            </div>
+        @else
+            <div class="sl-fb-locked-placeholder">
+                Save this code profile first, then activate Form Builder.
+            </div>
+        @endif
+    @else
+        <div class="existing-item">
             <input
                 type="checkbox"
                 id="add_existing"
-                style="margin-right:4px;"
-                @disabled(! ($record?->exists && ($canAccessFormBuilder ?? true)))
+                @disabled(! ($record?->exists && $canAccessFormBuilder))
                 wire:click.prevent="openExistingFormModal"
             >
-        </span>
-        <span><label for="add_existing">Use an existing form</label></span>
-    </div>
+            <label for="add_existing">Use an existing form</label>
+        </div>
 
-    <div class="existing-item">
-        <span>
+        <div class="existing-item">
             @if ($analyticsLocked)
-                <input
-                    type="checkbox"
-                    id="enable_form_analytics"
-                    value="1"
-                    checked
-                    disabled
-                >
+                <input type="checkbox" id="enable_form_analytics" value="1" checked disabled>
             @else
                 <input
                     type="checkbox"
@@ -224,63 +365,73 @@
                     value="1"
                 >
             @endif
-        </span>
-        <span>
             <label for="enable_form_analytics">
                 Enable Form Analytics
                 <small>(Note: editing this form will not be possible once saved)</small>
             </label>
-        </span>
-    </div>
+        </div>
 
-    <div class="existing-item existing-item--format">
-        <span class="existing-item__label">Form submission format</span>
-        <span class="existing-item__option">
-            <input type="radio" name="form_submission_format_sidebar" wire:model.live="data.form_submission_format" value="0" id="email_only">
-            <label for="email_only">Email only</label>
-        </span>
-        <span class="existing-item__option">
-            <input type="radio" name="form_submission_format_sidebar" wire:model.live="data.form_submission_format" value="1" id="email_with_pdf">
-            <label for="email_with_pdf">Email notification with PDF</label>
-        </span>
-    </div>
-
-    <div class="clear">&nbsp;</div>
-
-    <div id="iframe_container" wire:key="fb-iframe-host-{{ $record?->getKey() ?? 'new' }}-{{ $this->formBuilderEmbedNonce ?? 0 }}">
-        @if ($formBuilderEmbedUrl ?? null)
-            <iframe
-                id="iframe_frm_builder"
-                width="100%"
-                height="1114"
-                frameborder="0"
-                scrolling="no"
-                src="{{ $formBuilderEmbedUrl }}"
-                title="Form Builder"
-            ></iframe>
-        @else
-            <div class="sl-fb-iframe-placeholder">
-                @if ($record?->exists)
-                    Form Builder failed to load. Refresh the page.
-                @else
-                    Opening Form Builder…
-                @endif
+        <div class="existing-item existing-item--format">
+            <div class="existing-item__label">Form submission format</div>
+            <div class="existing-item__options">
+                <div class="existing-item__option">
+                    <input
+                        type="radio"
+                        name="form_submission_format_sidebar"
+                        wire:model.live="data.form_submission_format"
+                        value="0"
+                        id="email_only"
+                    >
+                    <label for="email_only">Email only</label>
+                </div>
+                <div class="existing-item__option">
+                    <input
+                        type="radio"
+                        name="form_submission_format_sidebar"
+                        wire:model.live="data.form_submission_format"
+                        value="1"
+                        id="email_with_pdf"
+                    >
+                    <label for="email_with_pdf">Email notification with PDF</label>
+                </div>
             </div>
-        @endif
+        </div>
+
+        <div id="iframe_container" wire:key="fb-iframe-host-{{ $record?->getKey() ?? 'new' }}-{{ $this->formBuilderEmbedNonce ?? 0 }}">
+            @if ($formBuilderEmbedUrl ?? null)
+                <iframe
+                    id="iframe_frm_builder"
+                    width="100%"
+                    height="1114"
+                    frameborder="0"
+                    scrolling="no"
+                    src="{{ $formBuilderEmbedUrl }}"
+                    title="Form Builder"
+                ></iframe>
+            @else
+                <div class="sl-fb-iframe-placeholder">
+                    @if ($record?->exists)
+                        Form Builder failed to load. Refresh the page.
+                    @else
+                        Opening Form Builder…
+                    @endif
+                </div>
+            @endif
+        </div>
+    @endif
+</div>
+
+@unless ($settingsLocked)
+    <div class="footer-rouded sl-fb-expand-footer">
+        <span class="expand-reduce" id="sl-expand-reduce-label">Expand Window</span>
+        <img
+            src="{{ asset('images/expand_window.png') }}"
+            class="expand-reduce"
+            id="expand_reduce_img"
+            width="25"
+            alt=""
+        >
     </div>
-
-    <div class="clear">&nbsp;</div>
-</div>
-
-<div class="footer-rouded sl-fb-expand-footer">
-    <span class="expand-reduce" id="sl-expand-reduce-label">Expand Window</span>
-    <img
-        src="{{ asset('images/expand_window.png') }}"
-        class="expand-reduce"
-        id="expand_reduce_img"
-        width="25"
-        alt=""
-    >
-</div>
+@endunless
 
 @include('filament.portal.profiles.existing-form-modal')

@@ -186,14 +186,12 @@ trait HasLegacyProfileEditorLayout
             && $record instanceof Profile
             && $record->exists
         ) {
-            if (! $record->qrImage) {
-                try {
-                    app(ProfileQrService::class)->generateFor($record);
-                    $record->load('qrImage');
-                } catch (\Throwable) {
-                    // best effort — sidebar still shows URL block
-                }
-            }
+            // Guarantee the PNG actually exists on disk. Legacy-imported qrimage rows
+            // point at files that were never migrated, so a plain "no row?" check leaves
+            // a broken <img>. ensureFor() regenerates when the row exists but the file is
+            // missing (best effort — sidebar still shows the URL block on failure).
+            app(ProfileQrService::class)->ensureFor($record);
+            $record->load('qrImage');
 
             $qrImageUrl = $record->qrImage?->publicUrl();
         }

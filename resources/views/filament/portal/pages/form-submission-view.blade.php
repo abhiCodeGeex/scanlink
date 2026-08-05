@@ -29,6 +29,10 @@
             border-radius: 5px;
             padding: 8px 14px;
         }
+        html.dark .sl-fsview { background: rgb(17 24 39) !important; color: rgb(229 231 235) !important; }
+        html.dark .sl-fsview .meta,
+        html.dark .sl-fsview .results h3 { color: rgb(229 231 235) !important; }
+        html.dark .sl-fsview .results h1 { color: rgb(134 239 172) !important; }
     </style>
 
     <div class="sl-fsview">

@@ -111,6 +111,16 @@ class EditProfile extends EditRecord
             $data['tile_order'] = \App\Models\Profile::tileOrderFormItems($slag, $profile->tiles_order);
         }
 
+        // Dirty legacy rows can have form_is_enable=1 without form_active. Never surface
+        // Enable as ON until the profile is entitled (purchase or survey/voc free).
+        if (! $profile->formBuilderEntitled()) {
+            $data['form_is_enable'] = false;
+
+            if ((bool) $profile->form_is_enable) {
+                $profile->forceFill(['form_is_enable' => false])->saveQuietly();
+            }
+        }
+
         return $data;
     }
 

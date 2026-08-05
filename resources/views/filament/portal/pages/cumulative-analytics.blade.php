@@ -269,6 +269,13 @@
                 grid-template-columns: 1fr;
             }
         }
+        html.dark .sl-ca__panel { background: rgb(17 24 39) !important; border-color: rgb(55 65 81) !important; }
+        html.dark .sl-ca,
+        html.dark .sl-ca__title { color: rgb(243 244 246) !important; }
+        html.dark .sl-ca input,
+        html.dark .sl-ca select { background: rgb(31 41 55) !important; border-color: rgb(75 85 99) !important; color: rgb(243 244 246) !important; }
+        html.dark .sl-ca table th { background: rgb(31 41 55) !important; color: rgb(243 244 246) !important; }
+        html.dark .sl-ca table td { border-color: rgb(55 65 81) !important; color: rgb(229 231 235) !important; }
     </style>
 
     <div class="sl-ca">

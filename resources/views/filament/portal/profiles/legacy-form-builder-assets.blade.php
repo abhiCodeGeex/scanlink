@@ -10,6 +10,7 @@
         display: block;
         width: 100% !important;
         max-width: 100%;
+        min-height: 1114px;
         border: 0;
         background: #fff;
         overflow: hidden;
@@ -24,32 +25,56 @@
         overflow-x: hidden;
         box-sizing: border-box;
     }
+    /* Match legacy .footer-rouded under the builder iframe */
+    .sl-fb-expand-footer.footer-rouded,
     .sl-fb-expand-footer {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 12px;
-        background: #ccc;
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        padding: 10px;
         box-sizing: border-box;
+        background-color: #cccccc;
+        border: 0;
+        border-radius: 0 0 8px 8px;
+        text-align: right;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 14px;
+        color: #5f5f5f;
+        line-height: 25px;
         cursor: pointer;
         user-select: none;
     }
     .sl-fb-expand-footer .expand-reduce {
         cursor: pointer;
+        vertical-align: middle;
     }
-    /* Legacy code/index.php Code Preview column */
+    .sl-fb-expand-footer span.expand-reduce {
+        display: inline-block;
+        margin-right: 4px;
+    }
+    .sl-fb-expand-footer img.expand-reduce {
+        display: inline-block;
+        width: 25px;
+        height: auto;
+    }
+    /* Legacy code/index.php Code Preview column — equal-width stack */
     .sl-legacy-preview-sidebar--code {
         text-align: center;
-        padding-top: 8px;
+        padding: 8px 0 16px;
+    }
+    .sl-legacy-preview-sidebar--code .sl-code-preview-block {
+        width: 220px;
+        max-width: 100%;
+        margin: 0 auto;
+        text-align: left;
     }
     .sl-legacy-preview-sidebar--code .graybar_preview {
         display: block;
-        width: 220px;
-        max-width: 100%;
+        width: 100%;
         height: 35px;
         line-height: 35px;
-        margin: 12px auto 3px;
+        margin: 0 0 0;
         padding: 0;
         background-color: #857d7a;
         color: #fff;
@@ -62,11 +87,11 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 220px;
-        max-width: 100%;
+        width: 100%;
         min-height: 190px;
-        margin: 0 auto;
+        margin: 0;
         border: 1px solid #eeeeee;
+        border-top: 0;
         background: #fff;
         box-sizing: border-box;
     }
@@ -75,34 +100,51 @@
         width: 185px;
         height: 185px;
     }
-    .sl-legacy-preview-sidebar--code .code_review {
-        width: 220px;
-        max-width: 100%;
-        margin: 12px auto 0;
-        text-align: left;
+    .sl-legacy-preview-sidebar--code .sl-code-preview-empty {
+        padding: 24px 16px;
+        color: #6b7280;
+        font-size: 13px;
+        line-height: 1.4;
+        text-align: center;
     }
-    .sl-legacy-preview-sidebar--code .sl-qr-actions {
-        display: block;
-        margin: 0;
+    .sl-legacy-preview-sidebar--code .code_review {
         width: 100%;
+        margin: 12px 0 0;
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
     }
     .sl-legacy-preview-sidebar--code .sl-qr-download-select {
-        width: 100%;
+        display: block;
+        width: 100% !important;
         max-width: 100%;
+        height: 38px;
+        margin: 0;
+        padding: 6px 10px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        background: #fff;
+        font-size: 13px;
         box-sizing: border-box;
-    }
-    .sl-legacy-preview-sidebar--code .download_div {
-        margin: 10px 0 0;
-        width: 100%;
-        text-align: center;
     }
     .sl-legacy-preview-sidebar--code .download_code_as,
     .sl-legacy-preview-sidebar--code .sl-qr-download-btn {
-        display: inline-block;
-        width: auto;
-        min-width: 140px;
-        margin: 0 auto;
-        padding: 8px 18px;
+        display: block !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100%;
+        margin: 0 !important;
+        padding: 0 12px !important;
+        height: 42px;
+        line-height: 40px;
+        text-align: center;
+        box-sizing: border-box;
+    }
+    .sl-legacy-preview-sidebar--code .sl-qr-download-btn:disabled,
+    .sl-legacy-preview-sidebar--code .sl-qr-download-select:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
     }
     /* Survey: Form Builder sits in left column */
     .sl-survey-form-builder {
@@ -118,14 +160,24 @@
 <script>
     (function () {
         function fbPx(value) {
-            var n = parseInt(value, 10);
+            var n = parseInt(String(value || '').replace('px', ''), 10);
             return isNaN(n) ? 0 : n;
         }
 
-        // State is read from the button LABEL (the visible source of truth) and the
-        // collapsed heights are cached on the elements themselves — never in a JS closure,
-        // which would desync from the DOM whenever Livewire re-renders the panel or the
-        // form-builder iframe reloads after a save. That desync was the "not working" bug.
+        function fbInnerDoc(iframe) {
+            try {
+                return iframe.contentWindow ? iframe.contentWindow.document : null;
+            } catch (err) {
+                return null;
+            }
+        }
+
+        /**
+         * Legacy expand/reduce parity (formbuilder/index.php):
+         * Expand  → iframe = ol.scrollHeight + .top-part height; grow #div_drop_area if needed
+         * Reduce  → restore #iframe_current_height / #div_drop_area_current_height
+         * Label + arrow image swap Expand↔Reduce.
+         */
         function toggleFormBuilderWindow() {
             var iframe = document.getElementById('iframe_frm_builder');
             var label = document.getElementById('sl-expand-reduce-label');
@@ -134,44 +186,66 @@
                 return;
             }
 
-            // Inner canvas id varies across the ported markup ('div_drop_area' / 'drop_area').
-            var innerDoc = null;
-            try {
-                innerDoc = iframe.contentWindow ? iframe.contentWindow.document : null;
-            } catch (err) {
-                innerDoc = null;
-            }
+            var innerDoc = fbInnerDoc(iframe);
+            var topPart = innerDoc ? innerDoc.querySelector('.top-part') : null;
             var drop = innerDoc
-                ? (innerDoc.getElementById('div_drop_area') || innerDoc.getElementById('drop_area'))
+                ? (innerDoc.getElementById('div_drop_area') || innerDoc.querySelector('.ui-droppable'))
                 : null;
+            var ol = innerDoc ? innerDoc.querySelector('.ui-widget-content ol') : null;
+            var iframeHInput = innerDoc ? innerDoc.getElementById('iframe_current_height') : null;
+            var dropHInput = innerDoc ? innerDoc.getElementById('div_drop_area_current_height') : null;
 
             var expanding = label.textContent.trim().toLowerCase().indexOf('expand') === 0;
 
             if (expanding) {
-                var curIframe = iframe.offsetHeight || 1114;
-                iframe.setAttribute('data-fb-collapsed-h', curIframe);
-                iframe.style.height = Math.max(curIframe * 2, 1800) + 'px';
+                // Cache collapsed sizes if iframe JS has not written the hidden fields yet.
+                if (iframeHInput && ! fbPx(iframeHInput.value)) {
+                    iframeHInput.value = String(iframe.offsetHeight || 1114);
+                }
+                if (dropHInput && drop && ! fbPx(dropHInput.value)) {
+                    dropHInput.value = (drop.style.height || (drop.offsetHeight + 'px'));
+                }
+
+                var topH = topPart ? topPart.offsetHeight : 0;
+                var olScroll = ol ? Math.max(ol.scrollHeight || 0, ol.offsetHeight || 0) : 0;
+                var dropScroll = drop ? Math.max(drop.scrollHeight || 0, drop.offsetHeight || 0) : 0;
+                var expandedIframeH = Math.max(olScroll + topH, iframe.offsetHeight || 1114, 1114);
+
+                iframe.style.height = expandedIframeH + 'px';
+                iframe.setAttribute('height', String(expandedIframeH));
 
                 if (drop) {
-                    var curDrop = fbPx(drop.style.height) || drop.offsetHeight || 900;
-                    drop.setAttribute('data-fb-collapsed-h', curDrop);
-                    drop.style.height = Math.max(curDrop * 2, 1600) + 'px';
+                    var storedDrop = fbPx(dropHInput && dropHInput.value);
+                    if (! storedDrop || storedDrop < dropScroll) {
+                        drop.style.height = dropScroll + 'px';
+                    }
                 }
 
                 label.textContent = 'Reduce Window';
                 if (img) {
                     img.src = @json(asset('images/reduce_window.png'));
+                    img.alt = 'Reduce Window';
                 }
             } else {
-                iframe.style.height = (fbPx(iframe.getAttribute('data-fb-collapsed-h')) || 1114) + 'px';
+                var restoreIframe = fbPx(iframeHInput && iframeHInput.value)
+                    || fbPx(iframe.getAttribute('data-fb-collapsed-h'))
+                    || 1114;
+                iframe.style.height = restoreIframe + 'px';
+                iframe.setAttribute('height', String(restoreIframe));
 
                 if (drop) {
-                    drop.style.height = (fbPx(drop.getAttribute('data-fb-collapsed-h')) || 900) + 'px';
+                    var restoreDrop = (dropHInput && dropHInput.value)
+                        || drop.getAttribute('data-fb-collapsed-h')
+                        || '411px';
+                    drop.style.height = String(restoreDrop).indexOf('px') >= 0
+                        ? String(restoreDrop)
+                        : (fbPx(restoreDrop) + 'px');
                 }
 
                 label.textContent = 'Expand Window';
                 if (img) {
                     img.src = @json(asset('images/expand_window.png'));
+                    img.alt = 'Expand Window';
                 }
             }
         }
@@ -181,11 +255,44 @@
         if (! window.__slFbExpandReduceBound) {
             window.__slFbExpandReduceBound = true;
             document.addEventListener('click', function (e) {
-                if (e.target.closest('.sl-fb-expand-footer, .expand-reduce')) {
+                if (e.target.closest('.sl-fb-expand-footer')) {
                     e.preventDefault();
                     toggleFormBuilderWindow();
                 }
             });
+        }
+
+        // After iframe load, keep collapsed baseline in sync with legacy hidden fields.
+        if (! window.__slFbIframeLoadBound) {
+            window.__slFbIframeLoadBound = true;
+            document.addEventListener('load', function (e) {
+                var t = e.target;
+                if (! t || t.id !== 'iframe_frm_builder') {
+                    return;
+                }
+                var doc = fbInnerDoc(t);
+                if (! doc) {
+                    return;
+                }
+                var iframeHInput = doc.getElementById('iframe_current_height');
+                var dropHInput = doc.getElementById('div_drop_area_current_height');
+                var drop = doc.getElementById('div_drop_area');
+                // Prefer values written by iframe jQuery init; otherwise seed from DOM.
+                if (iframeHInput && ! fbPx(iframeHInput.value)) {
+                    iframeHInput.value = String(t.offsetHeight || 1114);
+                }
+                if (dropHInput && drop && ! fbPx(dropHInput.value)) {
+                    dropHInput.value = drop.style.height || (drop.offsetHeight + 'px');
+                }
+                var label = document.getElementById('sl-expand-reduce-label');
+                var img = document.getElementById('expand_reduce_img');
+                if (label) {
+                    label.textContent = 'Expand Window';
+                }
+                if (img) {
+                    img.src = @json(asset('images/expand_window.png'));
+                }
+            }, true);
         }
 
         function closeParticipantModal() {
@@ -214,7 +321,7 @@
 
             var dialog = document.createElement('div');
             dialog.className = 'sl-participant-dialog';
-            dialog.style.cssText = 'position:relative;width:min(920px,96vw);height:min(82vh,640px);background:#fff;border-radius:6px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.35);display:flex;flex-direction:column;';
+            dialog.style.cssText = 'position:relative;width:min(920px,96vw);height:min(82vh,640px);background:' + (document.documentElement.classList.contains('dark') ? 'rgb(17,24,39)' : '#fff') + ';color:' + (document.documentElement.classList.contains('dark') ? 'rgb(243,244,246)' : 'inherit') + ';border-radius:6px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.35);display:flex;flex-direction:column;';
 
             var closeBtn = document.createElement('button');
             closeBtn.type = 'button';
@@ -226,7 +333,7 @@
             var frame = document.createElement('iframe');
             frame.src = url;
             frame.title = 'Add/Edit Participant List';
-            frame.style.cssText = 'display:block;width:100%;height:100%;border:0;background:#fff;flex:1 1 auto;min-height:0;';
+            frame.style.cssText = 'display:block;width:100%;height:100%;border:0;background:' + (document.documentElement.classList.contains('dark') ? 'rgb(17,24,39)' : '#fff') + ';flex:1 1 auto;min-height:0;';
 
             function fitParticipantDialog(contentHeight) {
                 var maxH = Math.min(window.innerHeight * 0.82, 720);

@@ -143,6 +143,13 @@
         .sl-fslog .form-submission-table a.download:hover { background-position: -53px 0; }
         .sl-fslog .form-submission-table a.delete { background-position: -104px -25px; }
         .sl-fslog .form-submission-table a.delete:hover { background-position: -104px 0; }
+        html.dark .sl-fslog__panel { background: rgb(17 24 39) !important; border-color: rgb(55 65 81) !important; }
+        html.dark .sl-fslog,
+        html.dark .sl-fslog__title { color: rgb(243 244 246) !important; }
+        html.dark .sl-fslog input,
+        html.dark .sl-fslog select { background: rgb(31 41 55) !important; border-color: rgb(75 85 99) !important; color: rgb(243 244 246) !important; }
+        html.dark .sl-fslog table th { background: rgb(31 41 55) !important; color: rgb(243 244 246) !important; }
+        html.dark .sl-fslog table td { border-color: rgb(55 65 81) !important; color: rgb(229 231 235) !important; }
     </style>
 
     <div class="sl-fslog">

@@ -18,6 +18,13 @@ return new class extends Migration
             return;
         }
 
+        // MySQL-only fix: the live import created postal_code as INT. Sqlite (tests) is
+        // typeless and already stores strings fine, so skip there — `SHOW COLUMNS` is not
+        // valid sqlite and would abort the whole migration run.
+        if (DB::connection()->getDriverName() !== 'mysql') {
+            return;
+        }
+
         $column = collect(DB::select("SHOW COLUMNS FROM `form_builder_orders` WHERE Field = 'postal_code'"))->first();
 
         // Only widen when it is still an integer column (safe: existing numeric values

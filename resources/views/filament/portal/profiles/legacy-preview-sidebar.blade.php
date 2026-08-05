@@ -48,34 +48,38 @@
             <div class="code_preview_qr">
                 @if (($showCodePreviewImage ?? true) && $qrImageUrl)
                     <img class="sl-qr-image" src="{{ $qrImageUrl }}" alt="QR code" width="185" height="185">
+                @else
+                    <div class="sl-code-preview-empty">
+                        @if ($isCreateEditor || ! ($record?->exists ?? false))
+                            Save this code to generate the QR preview.
+                        @else
+                            QR preview unavailable. Try refreshing the page.
+                        @endif
+                    </div>
                 @endif
             </div>
             <div class="code_review">
-                <section class="button-section sl-qr-actions">
-                    @if ($canDownloadQr ?? true)
-                        <select
-                            wire:model="qrDownloadFormat"
-                            class="sl-qr-download-select noUniform"
-                            aria-label="Download As"
-                        >
-                            <option value="">Download As</option>
-                            <option value="pdf">PDF</option>
-                            <option value="tiff">TIFF</option>
-                            <option value="eps">Eps(Vector)</option>
-                            <option value="png">PNG</option>
-                            <option value="jpg">JPG</option>
-                        </select>
-                    @endif
-                </section>
-                <div class="download_div">
-                    @if ($canDownloadQr ?? true)
-                        <button
-                            type="button"
-                            class="green-btn sl-qr-download-btn download_code_as"
-                            wire:click="downloadQrCode"
-                        >DOWNLOAD</button>
-                    @endif
-                </div>
+                @if ($canDownloadQr ?? true)
+                    <select
+                        wire:model="qrDownloadFormat"
+                        class="sl-qr-download-select noUniform"
+                        aria-label="Download As"
+                        @disabled(! $qrImageUrl)
+                    >
+                        <option value="">Download As</option>
+                        <option value="pdf">PDF</option>
+                        <option value="tiff">TIFF</option>
+                        <option value="eps">Eps(Vector)</option>
+                        <option value="png">PNG</option>
+                        <option value="jpg">JPG</option>
+                    </select>
+                    <button
+                        type="button"
+                        class="green-btn sl-qr-download-btn download_code_as"
+                        wire:click="downloadQrCode"
+                        @disabled(! $qrImageUrl)
+                    >Download</button>
+                @endif
             </div>
         </div>
     @elseif ($showQrBlock && ($qrImageUrl || $qrUrl))
