@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\FormBuilderOrders\Schemas;
 
 use App\Enums\CodeOrderStatus;
+use App\Models\FormBuilderOrder;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -28,8 +29,12 @@ class FormBuilderOrderInfolist
                     ->columns(3)
                     ->schema([
                         TextEntry::make('no_of_codes')->label('Number Of Item'),
-                        TextEntry::make('per_code_amount')->label('Price Per Item')->money('AUD'),
-                        TextEntry::make('total_amount')->label('Total')->money('AUD'),
+                        TextEntry::make('per_code_amount')
+                            ->label('Price Per Item')
+                            ->state(fn (FormBuilderOrder $record): string => '$'.number_format((float) $record->per_code_amount, 2)),
+                        TextEntry::make('total_amount_display')
+                            ->label('Total')
+                            ->state(fn (FormBuilderOrder $record): string => '$'.number_format($record->totalAmount(), 2)),
                     ]),
                 Section::make('Billing Detail')
                     ->columns(2)

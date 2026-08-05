@@ -1,44 +1,15 @@
 {{-- Back button on internal admin pages only (edit / view / create sub-pages, etc.). --}}
 @php
-    $routeName = optional(request()->route())->getName() ?? '';
-    $isAuth = str_contains($routeName, '.auth.') || str_contains($routeName, '.login') || str_contains($routeName, '.password-reset');
-    $isHome = $routeName === 'filament.admin.pages.dashboard'
-        || $routeName === 'filament.admin.pages.admin-home';
-
-    $path = trim(request()->path(), '/');
-    $segments = $path === '' ? [] : explode('/', $path);
-
-    $showBack = false;
-    $resourceSlug = null;
-    $fallbackUrl = url('/admin');
-
-    if (! $isAuth && ! $isHome && count($segments) >= 2 && ($segments[0] ?? '') === 'admin') {
-        $resourceSlug = $segments[1] ?? null;
-        $depth = count($segments) - 1;
-
-        if ($depth === 2) {
-            $second = $segments[2] ?? null;
-
-            if ($second === 'create') {
-                // "Add Client" is a sidebar destination — no back button there.
-                $showBack = $resourceSlug !== 'clients';
-            } elseif (is_numeric($second)) {
-                $showBack = true;
-            }
-        } elseif ($depth >= 3) {
-            $showBack = true;
-        }
-
-        if ($showBack && $resourceSlug) {
-            $fallbackUrl = url('/admin/'.$resourceSlug);
-        }
-    }
+    $state = \App\Support\AdminRequestPath::backButtonState();
+    $showBack = $state['show'];
+    $resourceSlug = $state['resource'];
+    $fallbackUrl = $state['fallback'];
 @endphp
 
 @if ($showBack)
     <button
         type="button"
-        class="fi-btn fi-color fi-color-primary fi-btn-color-primary fi-size-md fi-ac-btn-action"
+        class="fi-btn fi-color fi-color-primary fi-btn-color-primary fi-size-md fi-ac-btn-action sl-admin-back-btn"
         style="margin-inline-end: .5rem;"
         data-fallback-url="{{ $fallbackUrl }}"
         data-resource="{{ $resourceSlug }}"

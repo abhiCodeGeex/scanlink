@@ -52,7 +52,9 @@
         }
         window.__scanlinkSidebarResizeInit = true;
 
-        const WIDTH_KEY = 'scanlink.admin.sidebar.width';
+        const WIDTH_KEY = document.body?.classList.contains('fi-panel-portal')
+            ? 'scanlink.portal.sidebar.width'
+            : 'scanlink.admin.sidebar.width';
         const MIN_W = 240;
         const MAX_W = 520;
         const DEFAULT_W = 300;

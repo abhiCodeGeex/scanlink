@@ -1,0 +1,22 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class AnaItemAnalytics extends Model
+{
+    protected $table = 'ana_item_analytics';
+
+    public $timestamps = false;
+
+    protected $guarded = [];
+
+    protected function casts(): array
+    {
+        return [
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
+        ];
+    }
+}

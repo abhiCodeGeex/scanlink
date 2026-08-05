@@ -13,6 +13,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
+/**
+ * Legacy password form (still available at /admin/change-password).
+ * Settings sidebar "Profile" is registered in AdminPanelProvider → /admin/profile.
+ */
 class ChangePassword extends Page implements HasForms
 {
     use InteractsWithForms;
@@ -25,7 +29,10 @@ class ChangePassword extends Page implements HasForms
 
     protected static ?int $navigationSort = 4;
 
-  protected string $view = 'filament.pages.change-password';
+    /** Replaced in Settings nav by Profile → /admin/profile (2FA + password). */
+    protected static bool $shouldRegisterNavigation = false;
+
+    protected string $view = 'filament.pages.change-password';
 
     public ?array $data = [];
 

@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Profiles\Schemas;
 use App\Enums\ProfileCodeType;
 use App\Models\EquipmentType;
 use App\Services\ProfileQrService;
+use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
@@ -153,21 +154,18 @@ class ProfileFormSchema
 
         return match ($slug) {
             'location' => [
-                TextInput::make('name')->label('Location name:')->required(),
+                // Legacy: Location name (txtname) is NOT required — only code_profile_name is.
+                TextInput::make('name')->label('Location name:'),
                 TextInput::make('address')
                     ->label('Address:')
                     ->columnSpanFull()
                     ->live(debounce: 400),
-                // Legacy: View Map builds Google Maps from address — not a stored Map Link/GPS field.
+                // Legacy: View Map only appears after an address is entered.
                 Placeholder::make('view_map_link')
                     ->label('')
+                    ->visible(fn (Get $get): bool => trim((string) $get('address')) !== '')
                     ->content(function (Get $get): HtmlString {
                         $address = trim((string) $get('address'));
-
-                        if ($address === '') {
-                            return new HtmlString('<span class="text-sm text-gray-500">Enter an address, then use View Map.</span>');
-                        }
-
                         $href = 'https://maps.google.com?q='.rawurlencode($address);
 
                         return new HtmlString(
@@ -178,52 +176,143 @@ class ProfileFormSchema
                 Textarea::make('notes')->label('Notes:')->columnSpanFull(),
             ],
             'plant' => [
-                TextInput::make('name')->label('Make / Model')->required(),
-                TextInput::make('identification')->label('ID'),
-                TextInput::make('serial_no')->label('Serial No.'),
-                Textarea::make('description')->label('Description')->columnSpanFull(),
-                Textarea::make('notes')->label('Note')->columnSpanFull(),
+                // Legacy: only code_profile_name is required — Make/Model is not.
+                TextInput::make('name')->label('Make / Model:'),
+                // Legacy quirk parity: plant/index.php (create) labels this "ID:",
+                // plant/edit.php (edit) labels it "Identification:".
+                TextInput::make('identification')
+                    ->label(fn (string $operation): string => $operation === 'create' ? 'ID:' : 'Identification:'),
+                TextInput::make('serial_no')->label('Serial No.:'),
+                Textarea::make('description')->label('Description:')->columnSpanFull(),
+                Textarea::make('notes')->label('Note:')->columnSpanFull(),
             ],
             'asset' => [
-                TextInput::make('name')->label('Name')->required(),
-                Textarea::make('description')->label('Description')->columnSpanFull(),
-                Textarea::make('address')->label('Address')->columnSpanFull(),
-                TextInput::make('telephone')->label('Telephone'),
-                TextInput::make('identification')->label('Email / ID'),
+                // Legacy asset/edit.php Words: checkbox = show heading on mobile.
+                Placeholder::make('asset_show_heading_hint')
+                    ->hiddenLabel()
+                    ->content(new HtmlString(
+                        '<div class="cb-main-right" style="color:#555;font-size:12px;margin-bottom:.35rem;">Tick a box to display the heading on mobile</div>'
+                    ))
+                    ->columnSpanFull(),
+                Checkbox::make('show_name')->label('Name:')->inline()->default(false),
+                TextInput::make('name')->hiddenLabel()->maxLength(255),
+                Checkbox::make('show_description')->label('Description:')->inline()->default(false),
+                // Legacy asset/edit.php Description is CKEditor rich-text (class="input ckeditor").
+                Textarea::make('description')
+                    ->hiddenLabel()
+                    ->rows(4)
+                    ->extraInputAttributes([
+                        'class' => 'sl-ckeditor',
+                        'data-ck-toolbar' => 'MyToolbar',
+                    ])
+                    ->columnSpanFull(),
+                Checkbox::make('show_address')->label('Address:')->inline()->default(false),
+                TextInput::make('address')
+                    ->hiddenLabel()
+                    ->columnSpanFull()
+                    ->live(debounce: 400),
+                Placeholder::make('asset_view_map_link')
+                    ->hiddenLabel()
+                    ->visible(fn (Get $get): bool => trim((string) $get('address')) !== '')
+                    ->content(function (Get $get): HtmlString {
+                        $address = trim((string) $get('address'));
+                        $href = 'https://maps.google.com?q='.rawurlencode($address);
+
+                        return new HtmlString(
+                            '<a href="'.e($href).'" target="_blank" rel="noopener" class="view-map text-sm font-semibold text-[#008901]">View Map</a>'
+                        );
+                    }),
+                Checkbox::make('show_telephone')->label('Telephone:')->inline()->default(false),
+                TextInput::make('telephone')->hiddenLabel()->tel(),
+                Checkbox::make('show_mobile')->label('Mobile:')->inline()->default(false),
+                TextInput::make('mobile')->hiddenLabel()->tel(),
+                Checkbox::make('show_email')->label('Email:')->inline()->default(false),
+                TextInput::make('email')->hiddenLabel()->email(),
+                Checkbox::make('show_url')->label('Website:')->inline()->default(false),
+                TextInput::make('url')->hiddenLabel()->url()->placeholder('https://'),
             ],
             'product' => [
-                TextInput::make('name')->label('Product name')->required(),
-                TextInput::make('identification')->label('Identification'),
-                TextInput::make('serial_no')->label('Serial No.'),
-                Textarea::make('description')->label('Description')->columnSpanFull(),
-                Textarea::make('notes')->label('Notes')->columnSpanFull(),
+                // Legacy product/edit.php — no Identification/Serial in Words.
+                // Legacy: only code_profile_name is required — Product name is not.
+                TextInput::make('name')->label('Product name:'),
+                Textarea::make('description')->label('Description:')->columnSpanFull(),
+                Textarea::make('notes')->label('Notes:')->columnSpanFull(),
             ],
             'procedure' => [
-                TextInput::make('name')->label('Title')->required(),
-                Textarea::make('description')->label('Description')->columnSpanFull(),
-                Textarea::make('notes')->label('Notes')->columnSpanFull(),
+                // Legacy: only code_profile_name is required — Title is not.
+                TextInput::make('name')->label('Title:'),
+                Textarea::make('description')->label('Description:')->columnSpanFull(),
+                Textarea::make('notes')->label('Notes:')->columnSpanFull(),
             ],
             'misc' => [
-                TextInput::make('name')->label('Name')->required(),
-                Textarea::make('description')->label('Description')->columnSpanFull(),
+                // Legacy misc/index.php Words: Name + unlabeled description (CKEditor MyToolbar).
+                // Legacy: only code_profile_name is required — Name is not.
+                TextInput::make('name')->label('Name:'),
+                Textarea::make('description')
+                    ->hiddenLabel()
+                    ->rows(4)
+                    ->extraInputAttributes([
+                        'class' => 'sl-ckeditor',
+                        'data-ck-toolbar' => 'MyToolbar',
+                    ])
+                    ->columnSpanFull(),
             ],
             'exhibit' => [
-                TextInput::make('name')->label('Exhibit name')->required(),
-                TextInput::make('code_profile_name')->label('Code profile name'),
-                Textarea::make('description')->label('Description')->columnSpanFull(),
-                Textarea::make('notes')->label('Notes')->columnSpanFull(),
+                // Legacy exhibit Words tile — unlabeled name + description (CKEditor on live).
+                // Legacy: only code_profile_name is required — name is not.
+                TextInput::make('name')->hiddenLabel(),
+                Textarea::make('description')
+                    ->hiddenLabel()
+                    ->rows(4)
+                    ->extraInputAttributes([
+                        'class' => 'sl-ckeditor',
+                        'data-ck-toolbar' => 'MyToolbar',
+                    ])
+                    ->columnSpanFull(),
             ],
             'voc' => [
-                TextInput::make('name')->label('Name')->required(),
-                TextInput::make('code_profile_name')->label('Code profile name'),
-                Textarea::make('description')->label('Profile information')->columnSpanFull(),
-                Textarea::make('notes')->label('Notes')->columnSpanFull(),
+                // Legacy voc/edit.php "Profile Information" (not a Words section).
+                // Legacy requires First + Last name (submit handler); everything else optional.
+                TextInput::make('voc_first_name')->label('First Name')->maxLength(200)->required(),
+                TextInput::make('voc_last_name')->label('Last Name')->maxLength(200)->required(),
+                TextInput::make('voc_address')->label('Address')->maxLength(200)->columnSpanFull(),
+                TextInput::make('voc_town')->label('Town')->maxLength(50),
+                TextInput::make('voc_state')->label('State/Territory')->maxLength(50),
+                TextInput::make('voc_phone')->label('Telephone No.')->maxLength(30),
+                DatePicker::make('voc_dob')->label('Date of Birth'),
+                Textarea::make('voc_known_allergies')->label('Known Allergies/Medical Conditions')->rows(3)->columnSpanFull(),
+                TextInput::make('voc_blood_type')->label('Blood Type')->maxLength(5),
+                TextInput::make('voc_next_of_kin')->label('Next of Kin')->maxLength(50),
+                TextInput::make('voc_contact_phone')->label('Contact Telephone No.')->maxLength(30),
+                TextInput::make('voc_employer')->label('Employer')->maxLength(200)->columnSpanFull(),
+                TextInput::make('voc_emp_address')->label('Address')->columnSpanFull(),
+                TextInput::make('voc_emp_town')->label('Town')->maxLength(50),
+                TextInput::make('voc_emp_state')->label('State/Territory')->maxLength(50),
+                TextInput::make('voc_emp_phone')->label('Telephone No.')->maxLength(30),
             ],
             'people' => [
-                TextInput::make('identification')->label('Position')->required(),
-                TextInput::make('name')->label('Name')->required(),
-                Textarea::make('description')->label('Description')->columnSpanFull(),
-                Textarea::make('notes')->label('Notes')->columnSpanFull(),
+                // Legacy people/index.php: Position ABOVE Name; Name (txtname) is the required
+                // profile name; there is NO Description column (people uses `notes`).
+                TextInput::make('position')->label('Position:'),
+                TextInput::make('name')->label('Name:')->required(fn ($livewire): bool => empty($livewire->bypassRequiredForCheckout ?? null)),
+                Textarea::make('notes')->label('Notes:')->columnSpanFull(),
+                // Legacy people stores a single Contact + Telephone on the PROFILE row
+                // (name_company / telephone), not the profile_contact repeater.
+                TextInput::make('name_company')->label('CONTACT:'),
+                TextInput::make('telephone')->label('TELEPHONE:'),
+                // Legacy people: mobile call-button colours (buttonbackcolor / buttonfontcolor).
+                ColorPicker::make('buttonbackcolor')
+                    ->label('Mobile button back color:')
+                    ->formatStateUsing(fn ($state): ?string => filled($state)
+                        ? (str_starts_with((string) $state, '#') ? (string) $state : '#'.$state)
+                        : null)
+                    ->dehydrateStateUsing(fn ($state): string => ltrim((string) ($state ?? ''), '#')),
+                ColorPicker::make('buttonfontcolor')
+                    ->label('Mobile button font color:')
+                    ->formatStateUsing(fn ($state): ?string => filled($state)
+                        ? (str_starts_with((string) $state, '#') ? (string) $state : '#'.$state)
+                        : null)
+                    ->dehydrateStateUsing(fn ($state): string => ltrim((string) ($state ?? ''), '#')),
             ],
             'customqr' => [
                 TextInput::make('name')
@@ -252,13 +341,24 @@ class ProfileFormSchema
                     }),
             ],
             'code' => [
-                TextInput::make('application')->label('Application')->required(),
-                TextInput::make('url')->label('Destination URL')->required()->url(),
-                Toggle::make('activate_bridge_graphic')->label('Activate Bridge Graphic'),
+                // Legacy code/index.php — Application is stored in profiles.name; URL in profiles.url.
+                // Portal builds the full form in PortalProfileForm::legacyCodeUrlFields(); keep labels here for parity scripts / admin reuse.
+                TextInput::make('name')->label('Application:'),
+                TextInput::make('url')
+                    ->label('Enter the Web page address(URL) here:')
+                    ->default('http://')
+                    ->required()
+                    ->url(),
+                Textarea::make('description')->label('pop up message:')->columnSpanFull(),
                 ColorPicker::make('color_code')
                     ->label('Colour Selector')
-                    ->default('#000000'),
-                Textarea::make('description')->label('Popup message')->columnSpanFull(),
+                    ->default('#000000')
+                    ->formatStateUsing(function ($state): string {
+                        $value = trim((string) ($state ?: '000000'));
+
+                        return str_starts_with($value, '#') ? $value : '#'.$value;
+                    })
+                    ->dehydrateStateUsing(fn ($state): string => ltrim((string) ($state ?: '000000'), '#')),
             ],
             default => [
                 TextInput::make('name')->label('Name')->required(),

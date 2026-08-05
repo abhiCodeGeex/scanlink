@@ -108,13 +108,35 @@ class Client extends Model
         }
 
         return static::query()
+            ->activeResellerCode()
             ->where('reseller_code', $resellerCode)
             ->value('client_name');
     }
 
     /**
-     * Lookup a client by reseller code (used by registration).
+     * Clients that own a reseller code (assigned, non-empty).
      */
+    public function scopeHasResellerCode($query)
+    {
+        return $query
+            ->whereNotNull('reseller_code')
+            ->where('reseller_code', '!=', '');
+    }
+
+    /**
+     * Reseller code is assigned and currently active (usable in purchase / register).
+     */
+    public function scopeActiveResellerCode($query)
+    {
+        $query = $query->hasResellerCode();
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('clients', 'reseller_code_active')) {
+            $query->where('reseller_code_active', '1');
+        }
+
+        return $query;
+    }
+
     public static function findByResellerCode(string $code, bool $activeOnly = true): ?self
     {
         $code = trim($code);
@@ -125,10 +147,25 @@ class Client extends Model
 
         $query = static::query()->where('reseller_code', $code);
 
-        if ($activeOnly && \Illuminate\Support\Facades\Schema::hasColumn('clients', 'reseller_code_active')) {
-            $query->where('reseller_code_active', '1');
+        if ($activeOnly) {
+            if (\Illuminate\Support\Facades\Schema::hasColumn('clients', 'reseller_code_active')) {
+                $query->where('reseller_code_active', '1');
+            }
         }
 
         return $query->first();
+    }
+
+    public function isResellerCodeActive(): bool
+    {
+        if (! filled($this->reseller_code)) {
+            return false;
+        }
+
+        if (! \Illuminate\Support\Facades\Schema::hasColumn('clients', 'reseller_code_active')) {
+            return true;
+        }
+
+        return (bool) $this->reseller_code_active;
     }
 }

@@ -7,6 +7,7 @@ use App\Filament\Concerns\HandlesDatabaseSaveFailures;
 use App\Filament\Resources\Clients\ClientResource;
 use App\Mail\ClientWelcomeNotification;
 use App\Models\Client;
+use App\Support\SystemNotifier;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\Mail;
@@ -56,6 +57,7 @@ class CreateClient extends CreateRecord
         // Live schema: NOT NULL columns with no DB defaults.
         $data['reseller_email'] = filled($data['reseller_email'] ?? null) ? $data['reseller_email'] : '';
         $data['reseller_code'] = filled($data['reseller_code'] ?? null) ? $data['reseller_code'] : '';
+        $data['reseller_code_active'] = filled($data['reseller_code']);
         $data['shortcut_title'] = $data['shortcut_title'] ?? '';
         $data['shortcut_image1'] = $data['shortcut_image1'] ?? '';
         $data['shortcut_image2'] = $data['shortcut_image2'] ?? '';
@@ -75,7 +77,7 @@ class CreateClient extends CreateRecord
             'video_upload' => true,
             'checklist_option' => false,
             'customqr_option' => false,
-            'is_password_change' => true,
+            'is_password_change' => false,
             'expire_at' => now()->addYear(),
             'first_name' => $client->contact_person ?: '',
             'last_name' => '',
@@ -95,7 +97,7 @@ class CreateClient extends CreateRecord
                 'video_upload' => $this->addUserData['video_upload'],
                 'checklist_option' => false,
                 'customqr_option' => false,
-                'is_password_change' => true,
+                'is_password_change' => false,
                 'expire_at' => now()->addYear(),
                 'client_reseller_code' => $client->reseller_code ?: '',
                 'first_name' => '',
@@ -130,6 +132,14 @@ class CreateClient extends CreateRecord
 
         try {
             Mail::to($client->email)->send(new ClientWelcomeNotification($client, $plainPassword));
+
+            SystemNotifier::toClientPrimary(
+                $client,
+                'Welcome to ScanLink',
+                'Your ScanLink portal account has been created — check your email for login details.',
+                'heroicon-o-user-plus',
+                'success',
+            );
         } catch (\Throwable $exception) {
             report($exception);
 
