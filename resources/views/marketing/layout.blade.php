@@ -73,7 +73,7 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{{ url('/portal/home') }}" class="dashboard">
+                        <a href="{{ url('/portal/profiles') }}" class="dashboard">
                             <span class="text"><span>Dashboard</span></span>
                         </a>
                     </li>
@@ -83,6 +83,10 @@
                         </a>
                         <ul class="subMenu" id="subMenu">
                             <li><a href="{{ url('/portal/account') }}">Edit user profile</a></li>
+                            <li><a href="{{ url('/portal/profiles') }}">Master Code List</a></li>
+                            <li><a href="{{ url('/portal/code-balance') }}">Code Balance</a></li>
+                            <li><a href="{{ url('/portal/purchase-codes') }}">Purchase codes</a></li>
+                            <li><a href="{{ url('/portal/multiple-code-renewal') }}">Multiple Code Renewal</a></li>
                         </ul>
                     </li>
                     <li id="how_to">
@@ -150,6 +154,7 @@
             <section class="footer-left">
                 <ul>
                     <li><a href="{{ route('marketing.home') }}">Home</a></li>
+                    <li><a href="{{ route('marketing.home') }}#content" class="scan-link">What is ScanLink?</a></li>
                     <li><a href="{{ route('marketing.faq') }}">FAQ</a></li>
                     <li><a href="{{ route('marketing.contact') }}">Contact us</a></li>
                     <li><a href="{{ route('marketing.terms') }}">Terms and Conditions</a></li>

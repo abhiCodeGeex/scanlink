@@ -1,8 +1,14 @@
 <?php
 
+use App\Http\Controllers\Portal\FormBuilderUploadController;
+use App\Http\Controllers\Portal\LegacyFormBuilderController;
 use App\Http\Controllers\CaptchaController;
 use App\Http\Controllers\MarketingController;
+use App\Http\Controllers\MobileProfileController;
+use App\Http\Controllers\PayPalNotifyController;
 use App\Http\Controllers\PortalAuthController;
+use App\Services\YouTubeService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [MarketingController::class, 'home'])->name('marketing.home');
@@ -27,3 +33,100 @@ Route::redirect('/termsandcondition/index', '/terms', 301);
 Route::redirect('/privacypolicy/index', '/privacy', 301);
 
 Route::get('/voclogin', fn () => redirect()->to(route('marketing.home').'#login'));
+
+Route::post('/notify/paypal', PayPalNotifyController::class);
+
+Route::get('/oauth/youtube/callback', function (Request $request, YouTubeService $youtube) {
+    $code = $request->string('code')->toString();
+
+    if ($code === '') {
+        return response('Missing authorization code.', 400);
+    }
+
+    $redirectUri = url('/oauth/youtube/callback');
+
+    try {
+        $tokens = $youtube->exchangeAuthorizationCode($code, $redirectUri);
+    } catch (\Throwable $exception) {
+        return response('OAuth failed: '.$exception->getMessage(), 500);
+    }
+
+    if (empty($tokens['refresh_token'])) {
+        return response('No refresh token returned. Revoke prior access in Google Account and authorize again.', 422);
+    }
+
+    \App\Models\Setting::setValue('youtube_refresh_token', $tokens['refresh_token']);
+
+    return response('YouTube connected successfully. You can close this window and return to the admin panel.');
+});
+
+Route::get('/{clientUrl}/{profileId}', [MobileProfileController::class, 'show'])
+    ->whereNumber('profileId')
+    ->name('scan.show');
+
+Route::post('/{clientUrl}/{profileId}/unlock', [MobileProfileController::class, 'unlock'])
+    ->whereNumber('profileId')
+    ->name('scan.unlock');
+
+Route::post('/{clientUrl}/{profileId}/visitor', [MobileProfileController::class, 'storeVisitor'])
+    ->whereNumber('profileId')
+    ->name('scan.visitor');
+
+Route::post('/{clientUrl}/{profileId}/form', [MobileProfileController::class, 'storeFormAnswer'])
+    ->whereNumber('profileId')
+    ->name('scan.form');
+
+// Async scan geolocation ping (GPS + IP-derived country/city) attached to the scan row.
+Route::post('/{clientUrl}/{profileId}/scan-geo', [MobileProfileController::class, 'recordScanGeo'])
+    ->whereNumber('profileId')
+    ->name('scan.geo');
+
+Route::post('/{clientUrl}/{profileId}/checklist/{itemId}/check', [MobileProfileController::class, 'checkChecklistItem'])
+    ->whereNumber('profileId')
+    ->whereNumber('itemId')
+    ->name('scan.checklist.check');
+
+Route::post('/{clientUrl}/{profileId}/checklist/{itemId}/uncheck', [MobileProfileController::class, 'uncheckChecklistItem'])
+    ->whereNumber('profileId')
+    ->whereNumber('itemId')
+    ->name('scan.checklist.uncheck');
+
+Route::middleware(['web', 'auth'])->group(function (): void {
+    Route::get('/portal/graphengine/country', [\App\Http\Controllers\Portal\ScanalyticsGraphController::class, 'country'])
+        ->name('portal.graphengine.country');
+    Route::get('/portal/graphengine/device', [\App\Http\Controllers\Portal\ScanalyticsGraphController::class, 'device'])
+        ->name('portal.graphengine.device');
+    Route::get('/portal/graphengine/browser', [\App\Http\Controllers\Portal\ScanalyticsGraphController::class, 'browser'])
+        ->name('portal.graphengine.browser');
+    // Isolated standalone charts page (legacy jQuery ddchart + jQuery-UI theme) embedded via iframe.
+    Route::get('/portal/scanalytics-charts', [\App\Http\Controllers\Portal\ScanalyticsGraphController::class, 'charts'])
+        ->name('portal.graphengine.charts');
+    Route::get('/portal/scanalytics-export', [\App\Http\Controllers\Portal\ScanalyticsGraphController::class, 'export'])
+        ->name('portal.graphengine.export');
+
+    Route::get('/portal/legacy-form-builder', [LegacyFormBuilderController::class, 'index'])
+        ->name('portal.legacy-form-builder');
+    Route::match(['get', 'post'], '/portal/legacy-form-builder/render-element', [LegacyFormBuilderController::class, 'renderElement'])
+        ->name('portal.legacy-form-builder.render');
+    Route::match(['get', 'post'], '/portal/legacy-form-builder/remove-element', [LegacyFormBuilderController::class, 'removeElement'])
+        ->name('portal.legacy-form-builder.remove');
+    Route::match(['get', 'post'], '/portal/legacy-form-builder/reorder-element', [LegacyFormBuilderController::class, 'reorderElement'])
+        ->name('portal.legacy-form-builder.reorder');
+    Route::match(['get', 'post'], '/portal/legacy-form-builder/update-enable-form', [LegacyFormBuilderController::class, 'updateEnableForm'])
+        ->name('portal.legacy-form-builder.enable');
+
+    Route::get('/test/temp_image_upload', [FormBuilderUploadController::class, 'imageForm']);
+    Route::get('/test/temp_doc_upload', [FormBuilderUploadController::class, 'docForm']);
+    Route::get('/test/temp_doc_multi_upload', [FormBuilderUploadController::class, 'docMultiForm']);
+    Route::post('/portal/legacy-form-builder/upload-image', [FormBuilderUploadController::class, 'storeImage'])
+        ->name('portal.legacy-form-builder.upload-image');
+    Route::post('/portal/legacy-form-builder/upload-doc', [FormBuilderUploadController::class, 'storeDoc'])
+        ->name('portal.legacy-form-builder.upload-doc');
+
+    Route::get('/portal/form-submissions/print/{sessionId}', function (Illuminate\Http\Request $request, string $sessionId) {
+        return \App\Filament\Portal\Pages\FormSubmissions::downloadSessionHtml(
+            $request->integer('profile'),
+            $sessionId,
+        );
+    })->name('portal.form-submissions.print');
+});
