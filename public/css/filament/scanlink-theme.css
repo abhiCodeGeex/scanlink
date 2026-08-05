@@ -1,10 +1,10 @@
-/*
+﻿/*
  * ScanLink admin theme
  *
  * Light theme: green header (topbar) only. Sidebar uses default Filament colours.
- * Dark theme: topbar/sidebar banners untouched — primary accent + logo only.
+ * Dark theme: topbar/sidebar banners untouched â€” primary accent + logo only.
  *
- * IMPORTANT: Never force white text/icons onto dropdown panels — that makes the
+ * IMPORTANT: Never force white text/icons onto dropdown panels â€” that makes the
  * user-menu theme switcher (and any other panel actions) invisible.
  */
 
@@ -49,7 +49,7 @@
 }
 
 /* ---------------------------------------------------------------------------
- * LIGHT THEME ONLY — green header / topbar chrome
+ * LIGHT THEME ONLY â€” green header / topbar chrome
  * ------------------------------------------------------------------------- */
 html:not(.dark) .fi-topbar {
     background-color: var(--scanlink-green) !important;
@@ -62,7 +62,7 @@ html:not(.dark) .fi-topbar > div {
 }
 
 /*
- * White contrast ONLY on the green bar itself — not menus/panels.
+ * White contrast ONLY on the green bar itself â€” not menus/panels.
  * Do NOT target .fi-theme-switcher-btn here (it lives in the user dropdown).
  */
 html:not(.dark) .fi-topbar .fi-topbar-item-label,
@@ -85,8 +85,29 @@ html:not(.dark) .fi-topbar .fi-icon-btn.fi-topbar-database-notifications-btn:hov
     background-color: rgb(255 255 255 / 0.15) !important;
 }
 
+/* Topbar breathing room — the search / bell / avatar row was cramped (vertically
+   against the top and horizontally against the right edge). Force generous padding
+   on all sides and vertically centre the row. Applies in both light and dark. */
+.fi-topbar {
+    min-height: 4rem !important;
+    padding-top: 0.65rem !important;
+    padding-bottom: 0.65rem !important;
+    padding-inline: 1.5rem !important;
+    align-items: center !important;
+}
+
+.fi-topbar .fi-topbar-end {
+    column-gap: 0.75rem !important;
+    align-items: center !important;
+}
+
+/* Keep the avatar / user-menu trigger from sitting flush against the right edge. */
+.fi-topbar .fi-topbar-end > :last-child {
+    margin-right: 0.25rem !important;
+}
+
 /* ---------------------------------------------------------------------------
- * Dropdown panels — always keep labels/icons visible (never inherit topbar white)
+ * Dropdown panels â€” always keep labels/icons visible (never inherit topbar white)
  * Covers user menu, theme switcher, and any future topbar dropdowns.
  * ------------------------------------------------------------------------- */
 html:not(.dark) .fi-dropdown-panel .fi-dropdown-list-item,
@@ -102,7 +123,7 @@ html:not(.dark) .fi-dropdown-panel svg {
     color: rgb(107 114 128) !important; /* gray-500 */
 }
 
-/* Theme switcher (Light / Dark / System) — readable on white panel */
+/* Theme switcher (Light / Dark / System) â€” readable on white panel */
 html:not(.dark) .fi-theme-switcher .fi-theme-switcher-btn,
 html:not(.dark) .fi-theme-switcher .fi-theme-switcher-btn svg {
     color: rgb(156 163 175) !important; /* gray-400 */
@@ -123,7 +144,7 @@ html:not(.dark) .fi-theme-switcher .fi-theme-switcher-btn:hover svg {
 }
 
 /* ---------------------------------------------------------------------------
- * User menu dropdown — brand green accent; readable in light + dark
+ * User menu dropdown â€” brand green accent; readable in light + dark
  * ------------------------------------------------------------------------- */
 .fi-user-menu .fi-dropdown-panel {
     overflow: hidden;
@@ -160,7 +181,7 @@ html:not(.dark) .fi-theme-switcher .fi-theme-switcher-btn:hover svg {
     );
 }
 
-/* Profile — primary action */
+/* Profile â€” primary action */
 .fi-user-menu .fi-dropdown-list:not(:has(.fi-theme-switcher)):first-child .fi-dropdown-list-item {
     margin: 0.25rem 0.375rem 0;
     border-radius: 0.5rem;
@@ -222,7 +243,7 @@ html:not(.dark) .fi-theme-switcher .fi-theme-switcher-btn:hover svg {
     box-shadow: inset 0 0 0 1px var(--scanlink-green-ring);
 }
 
-/* Sign out — neutral in both themes */
+/* Sign out â€” neutral in both themes */
 .fi-user-menu .fi-dropdown-list:not(:has(.fi-theme-switcher)):last-child .fi-dropdown-list-item {
     margin: 0 0.375rem 0.25rem;
     border-radius: 0.5rem;
@@ -249,7 +270,7 @@ html:not(.dark) .fi-theme-switcher .fi-theme-switcher-btn:hover svg {
     color: var(--scanlink-menu-text) !important;
 }
 
-/* Avatar trigger — light topbar ring */
+/* Avatar trigger â€” light topbar ring */
 html:not(.dark) .fi-topbar .fi-user-menu-trigger {
     border-radius: 9999px;
     box-shadow: 0 0 0 2px rgb(255 255 255 / 0.92);
@@ -268,7 +289,7 @@ html:not(.dark) .fi-topbar .fi-user-menu-trigger[aria-expanded='true'] {
         0 0 0 4px rgb(255 255 255 / 0.5);
 }
 
-/* Avatar trigger — dark topbar ring */
+/* Avatar trigger â€” dark topbar ring */
 .dark .fi-topbar .fi-user-menu-trigger {
     border-radius: 9999px;
     box-shadow: 0 0 0 2px rgb(74 222 128 / 0.45);
@@ -283,7 +304,7 @@ html:not(.dark) .fi-topbar .fi-user-menu-trigger[aria-expanded='true'] {
 }
 
 /* ---------------------------------------------------------------------------
- * BOTH THEMES — ScanLink logo
+ * BOTH THEMES â€” ScanLink logo
  * White pill keeps the full-colour logo readable on green (light) and dark banners.
  * ------------------------------------------------------------------------- */
 .fi-logo {
@@ -309,7 +330,7 @@ html:not(.dark) .fi-simple-layout .fi-btn-color-primary {
 }
 
 /* ---------------------------------------------------------------------------
- * Buttons — Filament v5 uses .fi-color-* + CSS vars (--bg / --text).
+ * Buttons â€” Filament v5 uses .fi-color-* + CSS vars (--bg / --text).
  * Shade auto-pick can make primary a light green with dark text; force brand.
  * ------------------------------------------------------------------------- */
 .fi-btn.fi-color-primary:not(.fi-outlined),
@@ -374,7 +395,7 @@ button.fi-btn[type="submit"]:not(.fi-outlined):not(.fi-color-gray):hover {
 }
 
 /* ---------------------------------------------------------------------------
- * BOTH THEMES — Dashboard tile grid
+ * BOTH THEMES â€” Dashboard tile grid
  * ------------------------------------------------------------------------- */
 .scanlink-dashboard-grid,
 .scanlink-home-grid {
@@ -490,7 +511,7 @@ button.fi-btn[type="submit"]:not(.fi-outlined):not(.fi-color-gray):hover {
     min-width: 14rem;
 }
 
-/* Sidebar sign out — pinned to bottom, native nav item look */
+/* Sidebar sign out â€” pinned to bottom, native nav item look */
 .scanlink-sidebar-sign-out {
     flex-shrink: 0;
     margin-top: auto;
@@ -529,7 +550,7 @@ button.fi-btn[type="submit"]:not(.fi-outlined):not(.fi-color-gray):hover {
     padding: 0.75rem 0.375rem 0.875rem;
 }
 
-/* Collapse / expand control — hamburger in topbar (AdminLTE-style), not sidebar header */
+/* Collapse / expand control â€” hamburger in topbar (AdminLTE-style), not sidebar header */
 .fi-sidebar-header .fi-sidebar-collapse-btn,
 .fi-sidebar-header .fi-icon-btn.fi-sidebar-open-collapse-sidebar-btn,
 .fi-sidebar-header .fi-icon-btn.fi-sidebar-close-collapse-sidebar-btn {
@@ -538,37 +559,50 @@ button.fi-btn[type="submit"]:not(.fi-outlined):not(.fi-color-gray):hover {
 
 .fi-topbar {
     gap: 0.75rem;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    min-height: 4rem;
+    height: 4rem;
+    max-height: 4rem;
+    overflow: visible;
+    padding-inline: 1rem;
+    box-sizing: border-box;
 }
 
-/* Topbar layout — keep logo, search, and profile menu from overlapping */
-.fi-topbar nav,
-.fi-topbar > div {
+/* Do NOT force width:100% on topbar children â€” that stacks logo / search / avatar. */
+.fi-topbar > .fi-topbar-start,
+.fi-topbar > .fi-topbar-end {
     display: flex !important;
-    flex-wrap: nowrap;
-    align-items: center;
-    width: 100%;
-    column-gap: 0.75rem;
-}
-
-.fi-topbar-start {
-    display: flex !important;
-    align-items: center;
-    gap: 0.75rem;
-    flex: 0 0 auto;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    width: auto !important;
+    max-width: none;
     min-width: 0;
 }
 
-.fi-topbar-end {
-    display: flex !important;
-    align-items: center;
-    gap: 0.5rem;
+.fi-topbar-start {
+    gap: 0.75rem;
     flex: 0 0 auto;
+}
+
+.fi-topbar-end {
+    gap: 0.5rem;
+    flex: 1 1 auto;
+    justify-content: flex-end;
     margin-inline-start: auto !important;
 }
 
-.fi-topbar .fi-logo-ctn {
+.fi-topbar > .fi-topbar-open-sidebar-btn,
+.fi-topbar > .fi-topbar-close-sidebar-btn {
+    flex: 0 0 auto;
+}
+
+.fi-topbar .fi-logo-ctn,
+.fi-topbar .fi-logo {
     flex-shrink: 0;
-    margin-inline-end: 0.25rem;
 }
 
 .fi-topbar .fi-global-search-ctn,
@@ -592,17 +626,13 @@ button.fi-btn[type="submit"]:not(.fi-outlined):not(.fi-color-gray):hover {
 }
 
 .fi-topbar-collapse-sidebar-btn-ctn {
-    order: -2;
     display: flex !important;
+    align-items: center;
     margin-inline-end: 0.25rem;
+    flex: 0 0 auto;
 }
 
-.fi-topbar .fi-logo-ctn,
-.fi-topbar-start {
-    order: -1;
-}
-
-/* Collapse / expand control — clear icon on green topbar */
+/* Collapse / expand control â€” clear icon on green topbar */
 html:not(.dark) .fi-topbar-collapse-sidebar-btn-ctn .fi-icon-btn,
 html:not(.dark) .fi-topbar-collapse-sidebar-btn-ctn .fi-icon-btn svg {
     color: #ffffff !important;
@@ -612,7 +642,7 @@ html:not(.dark) .fi-topbar-collapse-sidebar-btn-ctn .fi-icon-btn:hover {
     background-color: rgb(255 255 255 / 0.15) !important;
 }
 
-/* Collapsed sidebar — compact icon rail (less padding) */
+/* Collapsed sidebar â€” compact icon rail (less padding) */
 .fi-body.fi-body-has-sidebar-collapsible-on-desktop .fi-sidebar:not(.fi-sidebar-open),
 .fi-body.fi-body-has-sidebar-fully-collapsible-on-desktop .fi-sidebar:not(.fi-sidebar-open) {
     width: var(--collapsed-sidebar-width) !important;
@@ -662,7 +692,7 @@ html:not(.dark) .fi-topbar-collapse-sidebar-btn-ctn .fi-icon-btn:hover {
 }
 
 /* ---------------------------------------------------------------------------
- * Modals — closed shells must never steal the first click (SPA / Alpine race)
+ * Modals â€” closed shells must never steal the first click (SPA / Alpine race)
  * ------------------------------------------------------------------------- */
 .fi-modal:not(.fi-modal-open) {
     pointer-events: none !important;
@@ -677,7 +707,7 @@ html:not(.dark) .fi-topbar-collapse-sidebar-btn-ctn .fi-icon-btn:hover {
 }
 
 /* ---------------------------------------------------------------------------
- * Portal Master Code List — legacy black type tabs + expiry legend
+ * Portal Master Code List â€” legacy black type tabs + expiry legend
  * ------------------------------------------------------------------------- */
 /* Hide Filament's default tab strip when legacy toolbar is present */
 .fi-main:has(.sl-mastercode-toolbar) .fi-tabs,
@@ -725,9 +755,9 @@ html:not(.dark) .fi-topbar-collapse-sidebar-btn-ctn .fi-icon-btn:hover {
 .sl-subnav-wrap {
     clear: both;
     overflow: hidden;
-    border-bottom: 1px solid #e5ebe5;
-    padding: 0 0 10px;
-    margin: 0 0 10px;
+    border-bottom: none;
+    padding: 0;
+    margin: 0 0 8px;
 }
 
 .sl-sub-navigation {
@@ -735,7 +765,7 @@ html:not(.dark) .fi-topbar-collapse-sidebar-btn-ctn .fi-icon-btn:hover {
     padding: 0;
     margin: 0;
     overflow: hidden;
-    float: left;
+    float: none;
     max-width: 100%;
 }
 
@@ -743,10 +773,11 @@ html:not(.dark) .fi-topbar-collapse-sidebar-btn-ctn .fi-icon-btn:hover {
     display: block;
     height: 30px;
     line-height: 30px;
-    padding: 0 4px 0 10px;
+    padding: 0 3px 0 8px;
     border-left: 1px solid #4c4c4c;
     float: left;
     position: relative;
+    white-space: nowrap;
     background: #45484d;
     background: linear-gradient(to bottom, #45484d 0%, #000000 100%);
 }
@@ -764,10 +795,20 @@ html:not(.dark) .fi-topbar-collapse-sidebar-btn-ctn .fi-icon-btn:hover {
     padding-right: 2px;
 }
 
-.sl-sub-navigation li a:hover,
+.sl-sub-navigation li a:hover {
+    color: #bababa;
+}
+
+/* Selected template tab — match Add a New Code green CTA */
+.sl-sub-navigation li.is-active,
+.sl-sub-navigation li:has(> a.active) {
+    background: linear-gradient(to bottom, #008901 0%, #007a01 100%);
+    border-left-color: #006201;
+}
+
 .sl-sub-navigation li a.active,
 .sl-sub-navigation li.is-active a {
-    color: #bababa;
+    color: #fff !important;
 }
 
 .sl-preview-icon-link {
@@ -807,30 +848,87 @@ html:not(.dark) .fi-topbar-collapse-sidebar-btn-ctn .fi-icon-btn:hover {
 }
 
 .sl-colorcode-define {
-    display: inline-block;
-    padding: 5px 0;
-    float: right;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
+    padding: 4px 0;
+    float: none;
     font-size: 12px;
     color: #333;
 }
 
 .sl-mainbox {
-    display: inline-block;
-    margin-left: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 0;
     vertical-align: middle;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font: inherit;
+    color: inherit;
+    line-height: 1.2;
+    cursor: default;
+    box-sizing: border-box;
+}
+
+.sl-mainbox--filterable {
+    cursor: pointer;
+}
+
+.sl-mainbox--filterable:hover {
+    border-color: #999;
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.sl-mainbox--filterable.is-active {
+    border-color: #006201;
+    background: rgba(0, 137, 1, 0.12);
+}
+
+.sl-mainbox:disabled {
+    cursor: default;
+    opacity: 1;
+}
+
+.sl-expiry-filter-clear {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 2px;
+    padding: 6px 12px;
+    border: 1px solid #006201;
+    border-radius: 6px;
+    background: #fff;
+    color: #006201;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.2;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.sl-expiry-filter-clear:hover {
+    background: #e8f8e8;
 }
 
 .sl-colorcodebox {
-    min-height: 20px;
-    width: 20px;
-    float: left;
-    margin-right: 5px;
+    min-height: 18px;
+    height: 18px;
+    width: 18px;
+    float: none;
+    margin-right: 0;
     border: 1px solid #ccc;
+    flex-shrink: 0;
+    box-sizing: border-box;
 }
 
 .sl-colorbox-text {
-    float: left;
-    padding-top: 3px;
+    float: none;
+    padding-top: 0;
+    white-space: nowrap;
 }
 
 .sl-colorcodebox.sl-red {
@@ -862,10 +960,23 @@ tr.sl-row-active {
 }
 
 /* ---------------------------------------------------------------------------
- * Portal profile create/edit — legacy two-column template editor
+ * Portal profile create/edit â€” legacy two-column template editor
  * ------------------------------------------------------------------------- */
 .fi-page:has(.sl-profile-editor) {
     --sl-editor-max: 1160px;
+}
+
+/* Soften Filament page chrome around the legacy editor */
+.fi-page:has(.sl-profile-editor) .fi-header-heading {
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 20px !important;
+    font-weight: bold !important;
+    color: #555755 !important;
+}
+
+.fi-page:has(.sl-profile-editor) .fi-page-main-ctn,
+.fi-page:has(.sl-profile-editor) .fi-page-content {
+    font-family: Arial, Helvetica, sans-serif !important;
 }
 
 .sl-profile-editor {
@@ -898,7 +1009,7 @@ tr.sl-row-active {
 
 .sl-legacy-preview-sidebar .iphone-preview-container {
     width: 320px;
-    height: 480px;
+    height: 882px;
     overflow: auto;
     background: #fff;
 }
@@ -914,20 +1025,29 @@ tr.sl-row-active {
     clear: both;
     margin: 10px auto 0;
     width: 87%;
-    overflow: hidden;
+    max-width: 400px;
+    overflow: visible;
+}
+
+.sl-qr-block .sl-qr-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
 }
 
 .sl-qr-block .sl-qr-image {
-    float: left;
+    flex: 0 0 175px;
     width: 175px;
     height: 175px;
     object-fit: contain;
+    object-position: top left;
     background: #fff;
-}
-
-.sl-qr-block .sl-qr-actions {
-    float: right;
+    display: block;
     margin: 0;
+    padding: 0;
+    border: 0;
 }
 
 .sl-qr-block .clear {
@@ -945,33 +1065,208 @@ tr.sl-row-active {
 
 .sl-qr-url-block {
     clear: both;
-    margin: 8px 0 16px;
+    margin: 12px 0 16px;
     font-size: 13px;
+    color: #333;
+    line-height: 1.4;
 }
 
 .qr-url-div {
     word-break: break-all;
-    background: #f7f7f7;
-    border: 1px solid #ddd;
-    padding: 6px 8px;
+    background: #fff;
+    border: 1px solid #cccccc;
+    border-radius: 7px;
+    padding: 7px 5px;
     margin-top: 4px;
+    font-size: 13px;
+    box-sizing: border-box;
 }
 
-.sl-legacy-preview-sidebar .form-builder-box {
-    clear: both;
-    margin: 10px 0 0;
-    padding: 5px 0 5px 0;
-    border-radius: 6px 6px 0 0;
-    border: 1px solid #ccc;
-    box-shadow: inset 0 0 10px rgba(0, 0, 0, .1);
-    background: #fff;
+.sl-legacy-preview-sidebar .form-builder-box,
+.sl-legacy-preview-sidebar .form-builder-box.sl-form-builder-panel {
+    clear: both !important;
+    margin: 12px 0 0 !important;
+    padding: 10px 12px !important;
+    border-radius: 6px 6px 0 0 !important;
+    border: 1px solid #cccccc !important;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, .1) !important;
+    background: #fff !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
 }
 
 .sl-legacy-preview-sidebar .form-builder-title {
-    font-size: 18px;
-    color: #009401;
-    line-height: 34px;
-    padding-left: 10px;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 6px 10px !important;
+    font-size: 18px !important;
+    color: #009401 !important;
+    line-height: 34px !important;
+    font-weight: normal !important;
+    padding: 0 !important;
+    margin: 0 0 6px !important;
+    border-bottom: 0 !important;
+}
+
+.sl-legacy-preview-sidebar .form-builder-title .activate-for-profile {
+    float: none !important;
+    margin-left: auto !important;
+    margin-right: 0 !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    white-space: nowrap !important;
+}
+
+.sl-legacy-preview-sidebar .existing-item {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+    padding: 0 !important;
+    margin: 0 0 10px !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+    height: auto !important;
+    min-height: 0 !important;
+}
+
+.sl-legacy-preview-sidebar .existing-item > span {
+    display: inline !important;
+    max-width: none !important;
+}
+
+.sl-legacy-preview-sidebar .existing-item label {
+    line-height: 1.35 !important;
+}
+
+.sl-legacy-preview-sidebar .existing-item--format {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    padding: 14px 16px !important;
+    margin: 4px 0 12px !important;
+    height: auto !important;
+    min-height: 0 !important;
+    background: #f3f4f6 !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 8px !important;
+}
+
+.sl-legacy-preview-sidebar .existing-item--format .existing-item__label {
+    font-weight: 700 !important;
+    color: #111827 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.sl-legacy-preview-sidebar .existing-item--format .existing-item__options {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.sl-legacy-preview-sidebar .existing-item--format .existing-item__option {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+}
+
+/* Form Builder format box — all placements (sidebar + survey left column) */
+.sl-form-builder-panel.form-builder-box .existing-item--format,
+.form-builder-box.sl-form-builder-panel .existing-item--format,
+.sl-survey-form-builder .existing-item--format {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    padding: 14px 16px !important;
+    margin: 6px 0 12px !important;
+    background: #f3f4f6 !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 8px !important;
+    height: auto !important;
+    min-height: 0 !important;
+    box-sizing: border-box !important;
+}
+
+.sl-form-builder-panel.form-builder-box .existing-item--format .existing-item__label,
+.sl-survey-form-builder .existing-item--format .existing-item__label {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-weight: 700 !important;
+}
+
+.sl-form-builder-panel.form-builder-box .existing-item--format .existing-item__options,
+.sl-survey-form-builder .existing-item--format .existing-item__options {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.sl-form-builder-panel.form-builder-box .existing-item--format .existing-item__option,
+.sl-survey-form-builder .existing-item--format .existing-item__option {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.sl-legacy-preview-sidebar .footer-rouded,
+.sl-legacy-preview-sidebar .sl-fb-expand-footer {
+    float: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 10px !important;
+    background-color: #cccccc !important;
+    border: 0 !important;
+    border-radius: 0 0 8px 8px !important;
+    text-align: right !important;
+    display: block !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 14px !important;
+    font-weight: normal !important;
+    color: #5f5f5f !important;
+    line-height: 25px !important;
+}
+
+.sl-legacy-preview-sidebar .sl-fb-expand-footer span.expand-reduce,
+.sl-legacy-preview-sidebar .footer-rouded span.expand-reduce {
+    cursor: pointer !important;
+    margin-right: 4px !important;
+    vertical-align: middle !important;
+}
+
+.sl-legacy-preview-sidebar .sl-fb-expand-footer img.expand-reduce,
+.sl-legacy-preview-sidebar .footer-rouded img.expand-reduce {
+    cursor: pointer !important;
+    width: 25px !important;
+    height: auto !important;
+    vertical-align: middle !important;
+}
+
+.sl-legacy-preview-sidebar #iframe_frm_builder {
+    display: block !important;
+    width: 100% !important;
+    min-height: 1114px !important;
+    border: 0 !important;
+    background: #fff !important;
 }
 
 .sl-open-form-builder {
@@ -985,48 +1280,687 @@ tr.sl-row-active {
     padding: 8px 12px;
 }
 
-.sl-legacy-preview-sidebar #iframe_frm_builder {
-    width: 100%;
-    max-width: 448px;
-    border: 0;
-    background: #fff;
+.sl-legacy-preview-sidebar .existing-item label[for="add_existing"] {
+    color: #555755 !important;
+    font-weight: normal !important;
+    cursor: pointer !important;
+    background: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
 }
 
-/* Filament sections → legacy SectionTitleBox look */
+/* Form Builder purchase success — legacy colorbox "Thank you for your order" */
+.sl-fb-order-success-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 10060 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 24px 12px !important;
+    background: rgba(0, 0, 0, 0.55) !important;
+    box-sizing: border-box !important;
+}
+
+.sl-fb-order-success-dialog {
+    width: min(520px, 92vw) !important;
+    min-height: 220px !important;
+    padding: 24px 20px 28px !important;
+    background: #fff !important;
+    border-radius: 6px !important;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35) !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+}
+
+.sl-fb-order-success-body {
+    margin: 0 !important;
+    padding-top: 36px !important;
+    color: #555755 !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 14px !important;
+    line-height: 1.45 !important;
+}
+
+.sl-fb-order-success-body .nearly-done-title {
+    color: #006201 !important;
+    font-size: 25px !important;
+    font-weight: normal !important;
+    line-height: 1.3 !important;
+}
+
+.sl-fb-order-success-ok,
+.sl-fb-order-success-dialog .green-btn {
+    display: inline-block !important;
+    margin-top: 8px !important;
+    min-width: 88px !important;
+    padding: 8px 22px !important;
+    border: 0 !important;
+    border-radius: 5px !important;
+    background: #008901 !important;
+    background-image: linear-gradient(to bottom, #008901 0%, #007a01 100%) !important;
+    color: #fff !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+    cursor: pointer !important;
+    line-height: 1.3 !important;
+}
+
+/* Legacy "Use an existing form" modal (colorbox replacement) */
+.sl-existing-form-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 12px;
+    background: rgba(0, 0, 0, 0.55);
+    box-sizing: border-box;
+}
+
+.sl-existing-form-dialog {
+    position: relative;
+    width: min(770px, 100%);
+    max-height: 90vh;
+    overflow: auto;
+    padding: 10px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+}
+
+.sl-existing-form-close {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    width: 28px;
+    height: 28px;
+    border: 1px solid #ccc;
+    border-radius: 50%;
+    background: #f5f5f5;
+    color: #333;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.sl-existing-form-progress,
+.sl-existing-form-status {
+    margin: 0 0 12px;
+    padding: 8px 10px;
+    color: #555;
+    font-size: 13px;
+}
+
+.sl-existing-form-progress img {
+    vertical-align: middle;
+    margin-right: 6px;
+}
+
+.sl-existing-form-tablist {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    border-bottom: 1px solid #d0d0d0;
+    margin: 8px 0 0;
+}
+
+.sl-existing-form-tab {
+    border: 0;
+    border-radius: 4px 4px 0 0;
+    padding: 8px 12px;
+    background: #888;
+    color: #fff !important;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.sl-existing-form-tab.is-active {
+    background: #008901;
+}
+
+.sl-existing-form-tabpanel {
+    padding: 12px 4px 8px;
+    min-height: 160px;
+}
+
+.sl-existing-form-empty {
+    margin: 16px 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.sl-existing-form-select {
+    border: 0;
+    border-radius: 4px;
+    padding: 6px 14px;
+    background: linear-gradient(to bottom, #008901 0%, #007a01 100%);
+    color: #fff !important;
+    font-weight: bold;
+    font-size: 12px;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.sl-existing-form-actions {
+    display: flex !important;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    float: right !important;
+    width: auto !important;
+}
+
+.sl-existing-form-link {
+    border: 0;
+    background: transparent;
+    color: #008901;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+}
+
+.sl-existing-form-link--danger {
+    color: #a00;
+}
+
+.sl-existing-form-back {
+    border: 0;
+    background: transparent;
+    color: #008901;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0;
+    margin: 8px 0;
+}
+
+.sl-existing-form-preview h2 {
+    margin: 8px 0 16px;
+    font-size: 18px;
+    color: #333;
+}
+
+.sl-existing-form-preview-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+    color: #555;
+    font-size: 14px;
+}
+
+.sl-legacy-preview-sidebar #iframe_container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 8px 0 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+.sl-legacy-preview-sidebar #iframe_frm_builder {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    border: 0 !important;
+    background: #fff !important;
+    overflow-x: hidden !important;
+}
+
+/* Filament sections → legacy SectionTitleBox look (comfortable padding) */
 .fi-page:has(.sl-profile-editor) .fi-section,
 .fi-page:has(.sl-profile-editor) .fi-sc-section {
-    margin: 0 0 10px !important;
-    padding: 5px 10px !important;
-    border-radius: 6px !important;
-    border: 1px solid #e5e5e5 !important;
-    box-shadow: inset 0 0 10px rgba(0, 0, 0, .1) !important;
+    margin: 0 0 14px !important;
+    padding: 14px 16px 16px !important;
+    border-radius: 8px !important;
+    border: 1px solid #d9d9d9 !important;
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, .06) !important;
     background: #fff !important;
+    overflow: visible !important;
 }
 
 .fi-page:has(.sl-profile-editor) .fi-section-header-heading,
 .fi-page:has(.sl-profile-editor) .fi-sc-section-header-heading {
     font-size: 18px !important;
     color: #009401 !important;
-    line-height: 34px !important;
-    font-weight: 600 !important;
+    line-height: 1.35 !important;
+    font-weight: 700 !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    position: relative !important;
+    overflow: visible !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex-wrap: wrap !important;
+    margin: 0 0 4px !important;
 }
 
-.fi-page:has(.sl-profile-editor) .fi-fo-field-wrp-label,
-.fi-page:has(.sl-profile-editor) label {
-    color: #555755;
+/* Legacy orange ? help icon + Video Tutorial hover tooltip */
+.fi-page:has(.sl-profile-editor) .sl-help-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    line-height: 0;
+}
+
+.fi-page:has(.sl-profile-editor) .help-icon {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    vertical-align: text-bottom;
+}
+
+.fi-page:has(.sl-profile-editor) .help-div {
+    display: none;
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 10px);
+    transform: translateX(-50%);
+    z-index: 40;
+    color: #000;
+    border: 3px solid #f7760e;
+    padding: 8px 18px;
+    font-family: Verdana, Arial, sans-serif;
+    font-size: 15px;
+    background: #fff;
+    min-height: 38px;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-help-wrap:hover .help-div,
+.fi-page:has(.sl-profile-editor) .sl-help-wrap:focus-within .help-div {
+    display: block;
+}
+
+.fi-page:has(.sl-profile-editor) .help-div a,
+.fi-page:has(.sl-profile-editor) .help-div a.sl-help-video {
+    color: #000 !important;
+    text-decoration: none !important;
+    font-weight: normal;
+}
+
+.fi-page:has(.sl-profile-editor) .help-div .arrow-bg {
+    background: url('/images/tooltip-arrow.png') left bottom no-repeat;
+    position: absolute;
+    bottom: -27px;
+    left: 50%;
+    margin-left: -20px;
+    height: 28px;
+    width: 40px;
+    z-index: 3;
+    pointer-events: none;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-section-header,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-section-header-text-ctn {
+    overflow: visible !important;
+}
+
+/* Share icons â€” legacy glossy sprites */
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .shareNav {
+    width: 100%;
+    display: block;
+    text-align: left;
+    clear: both;
+    margin: 10px 0 8px;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .shareNav a {
+    width: 88px;
+    height: 88px;
+    text-indent: -99999px;
+    margin: 0 18px 0 0;
+    display: inline-block;
+    overflow: hidden;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .shareNav a.shareFB {
+    background: url('/images/facebook-icon.jpg') no-repeat top left;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .shareNav a.shareTWT {
+    background: url('/images/twitter-icon.jpg') no-repeat top left;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .shareNav a.shareEML {
+    background: url('/images/email-grn-icon.jpg') no-repeat top left;
+}
+
+/* Hide auto labels that duplicate section titles (e.g. Code Profile Name). */
+.fi-page:has(.sl-profile-editor) .fi-fo-field-wrp-label:has(+ * input[id$="code_profile_name"]),
+.fi-page:has(.sl-profile-editor) label.fi-fo-field-wrp-label:empty,
+.fi-page:has(.sl-profile-editor) .fi-fo-placeholder-label {
+    display: none !important;
+}
+
+/* ---------------------------------------------------------------------------
+ * Left form column â€” pin-perfect legacy .form-view / .text-fi (NOT form builder,
+ * NOT select/dropboxes)
+ * ------------------------------------------------------------------------- */
+.fi-page:has(.sl-profile-editor) .sl-add-form-left {
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 12px !important;
+    color: #555755 !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-field-wrp-label,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-field-wrp-label span,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left label.fi-fo-field-wrp-label,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fieldset-label,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-checkbox-list-option-label,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-radio-list-option-label {
+    display: block !important;
+    font-weight: normal !important;
+    color: #727171 !important;
+    font-family: Verdana, Arial, sans-serif !important;
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+    margin: 0 0 6px !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-field-wrp-hint,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-field-wrp-helper-text,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .hint-info,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .set-activation-period {
+    font-size: 10px !important;
+    color: #c85000 !important;
+    font-weight: normal !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+}
+
+/* Strip Filament input wrapper chrome â€” apply legacy inset field look */
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-input-wrp:not(:has(select)):not(:has(.fi-select-input)) {
+    background: #fff !important;
+    border: 1px solid #e5e5e5 !important;
+    border-radius: 6px !important;
+    box-shadow: inset 3px 3px 5px 0 rgba(0, 0, 0, .1) !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+    --tw-ring-color: transparent !important;
+    outline: 0 !important;
+    min-height: 36px !important;
+    max-width: 456px !important;
+    width: 100% !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-input-wrp:not(:has(select)):not(:has(.fi-select-input)):focus-within {
+    border-color: #e5e5e5 !important;
+    box-shadow: inset 3px 3px 5px 0 rgba(0, 0, 0, .1) !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-input:not(select):not(.fi-select-input),
+.fi-page:has(.sl-profile-editor) .sl-add-form-left input.fi-input:not([type='checkbox']):not([type='radio']):not([type='file']),
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-textarea,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left textarea.fi-textarea {
+    border: 0 !important;
+    border-radius: 6px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: 0 !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 14px !important;
+    color: #555755 !important;
+    padding: 7px 12px !important;
+    min-height: 36px !important;
+    line-height: 22px !important;
+    width: 100% !important;
+    max-width: 456px !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-textarea,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left textarea.fi-textarea {
+    min-height: 64px !important;
+    height: auto !important;
+    resize: none !important;
+    line-height: 1.4 !important;
+    padding: 10px 12px !important;
+}
+
+/* Half-width CONTACT / TELEPHONE / weblink pairs */
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-grid:has(> .fi-grid-col) > .fi-grid-col {
+    min-width: 0;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-field-wrp[style*='--cols-lg: calc(6'] .fi-input-wrp,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .sm\:fi-grid-col-span-6 .fi-input-wrp,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left [class*='col-span-6'] .fi-input-wrp,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-grid-col[style*='span 6'] .fi-input-wrp {
+    max-width: 206px !important;
+}
+
+/* Flatten Filament repeater / file upload cards to legacy list feel */
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-repeater-item,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-repeater-item,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-file-upload,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-rich-editor {
+    border: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 6px 0 !important;
+    margin: 0 0 12px !important;
+    border-radius: 0 !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-repeater-header,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-repeater-item-header {
+    background: transparent !important;
+    border: 0 !important;
+    padding: 0 0 8px !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-btn:not(.fi-color-danger):not([type='submit']),
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-ac-btn-action:not(.fi-color-danger):not([type='submit']) {
+    background: #fff !important;
+    background-image: linear-gradient(to bottom, #ffffff 0%, #e2e2e2 100%) !important;
+    border: 1px solid #cfcfcf !important;
+    border-radius: 6px !important;
+    color: #555755 !important;
+    font-size: 13px !important;
+    font-weight: bold !important;
+    text-transform: none !important;
+    box-shadow: none !important;
+    min-height: 36px !important;
+    padding: 8px 14px !important;
+    line-height: 1.25 !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-btn.fi-color-danger,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-icon-btn.fi-color-danger {
+    color: #b00000 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+/* Legacy full-width Save CTA at bottom of left form */
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-form-actions,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-form-actions .fi-ac {
+    display: block !important;
+    width: 100% !important;
+    max-width: 456px !important;
+    margin: 12px 0 20px !important;
+    padding: 0 !important;
+    justify-content: stretch !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-form-actions .fi-btn,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-form-actions button[type='submit'],
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-btn[type='submit'],
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-btn.fi-color-primary {
+    display: block !important;
+    width: 98% !important;
+    max-width: 456px !important;
+    margin: 5px 0 !important;
+    padding: 10px 0 12px !important;
+    height: auto !important;
+    min-height: 44px !important;
+    line-height: 1.2 !important;
+    text-align: center !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 20px !important;
+    font-weight: bold !important;
+    color: #fff !important;
+    text-transform: none !important;
+    border: 0 !important;
+    border-radius: 6px !important;
+    background: #008901 !important;
+    background-image: linear-gradient(to bottom, #008901 0%, #007a01 100%) !important;
+    box-shadow: none !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-form-actions .fi-btn *,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-btn[type='submit'] * {
+    color: #fff !important;
+}
+
+/* Compact radios / checkboxes spacing (keep native controls; no Uniform dropboxes) */
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-checkbox,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-radio {
+    margin: 4px 0 !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-field-wrp {
+    margin-bottom: 12px !important;
+    gap: 0.35rem !important;
+}
+
+/* Soften section header chrome (no Filament divider bars) */
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-section-header,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-sc-section-header {
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 0 8px !important;
+    margin: 0 0 4px !important;
+    box-shadow: none !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-section-content,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-sc-section-content {
+    padding: 4px 0 0 !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-section-content-ctn,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-sc-section-content-ctn {
+    gap: 0.65rem !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-grid {
+    row-gap: 0.75rem !important;
+    column-gap: 0.75rem !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-section-content .fi-fo-field-wrp:last-child,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-sc-section-content .fi-fo-field-wrp:last-child {
+    margin-bottom: 4px !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-section-content .fi-btn,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-section-content .fi-ac {
+    margin-top: 6px !important;
+    margin-bottom: 2px !important;
+}
+
+/* File upload / dropzone breathing room */
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-file-upload,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .filepond--root,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left [class*='file-upload'] {
+    margin-top: 4px !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .filepond--panel-root,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-file-upload-input-ctn {
+    min-height: 72px !important;
+    padding: 12px !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-rich-editor,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .ck-editor,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .ck.ck-editor {
+    margin-top: 6px !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .ck-editor__editable,
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .ck-content {
+    min-height: 120px !important;
+    padding: 10px 12px !important;
+}
+
+/* QR download column — match legacy green/gray btn pair (same size/spacing). */
+.sl-qr-block .sl-qr-actions {
+    flex: 0 0 180px;
+    width: 180px;
+    margin: 0;
+    padding: 0;
+    float: none;
+}
+
+.sl-legacy-preview-sidebar .sl-qr-download-select {
+    display: block;
+    width: 100%;
+    height: 32px;
+    margin: 0 0 10px;
+    padding: 4px 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fff;
+    font-size: 13px;
+    font-family: Arial, Helvetica, sans-serif;
+    box-sizing: border-box;
+    appearance: auto;
+}
+
+.button-section .gray-btn,
+.sl-legacy-preview-sidebar .gray-btn,
+.sl-legacy-preview-sidebar .green-btn,
+.sl-legacy-preview-sidebar .sl-qr-download-btn {
+    display: block;
+    width: 100%;
+    height: 42px;
+    line-height: 40px;
+    padding: 0 12px;
+    margin: 0 0 10px;
+    border-radius: 6px;
+    box-sizing: border-box;
+    text-align: center;
+    text-decoration: none !important;
+    text-transform: uppercase;
+    font-weight: bold;
+    font-size: 12px;
+    font-family: Arial, Helvetica, sans-serif;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+.sl-legacy-preview-sidebar .green-btn,
+.sl-legacy-preview-sidebar .sl-qr-download-btn {
+    background: #008901;
+    background: linear-gradient(to bottom, #008901 0%, #007a01 100%);
+    color: #fff !important;
+    border: 1px solid #006201;
 }
 
 .button-section .gray-btn,
 .sl-legacy-preview-sidebar .gray-btn {
-    display: inline-block;
-    background: #6b6b6b;
-    color: #fff !important;
-    text-decoration: none !important;
-    padding: 8px 14px;
-    border-radius: 6px;
-    font-weight: bold;
-    font-size: 12px;
-    margin-top: 8px;
+    background: #ffffff;
+    background: linear-gradient(to bottom, #ffffff 0%, #e2e2e2 100%);
+    color: #484747 !important;
+    border: 1px solid #cfcfcf;
+}
+
+.sl-legacy-preview-sidebar .sl-qr-actions .green-btn:last-child,
+.sl-legacy-preview-sidebar .sl-qr-actions .gray-btn:last-child,
+.sl-legacy-preview-sidebar .sl-qr-actions .sl-qr-download-btn:last-child {
+    margin-bottom: 0;
 }
 
 @media (max-width: 1100px) {
@@ -1043,7 +1977,7 @@ tr.sl-row-active {
     }
 }
 
-/* Hidden until opened — never block sidebar/table clicks while closed */
+/* Hidden until opened â€” never block sidebar/table clicks while closed */
 .sl-preview-overlay {
     position: fixed;
     inset: 0;
@@ -1104,12 +2038,92 @@ tr.sl-row-active {
     margin: 0 auto;
 }
 
+/* â”€â”€ ScanLink themed alert dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.sl-alert-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+.sl-alert-dialog {
+    width: 100%;
+    max-width: 420px;
+    background: #fff;
+    border: 1px solid #2a2a2a;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+}
+.sl-alert-dialog__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #333;
+    color: #fff;
+    padding: 10px 14px;
+    border-bottom: 3px solid #008901;
+}
+.sl-alert-dialog__brand {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.sl-alert-dialog__close {
+    border: 0;
+    background: transparent;
+    color: #ccc;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 2px;
+}
+.sl-alert-dialog__close:hover {
+    color: #fff;
+}
+.sl-alert-dialog__body {
+    padding: 28px 24px 18px;
+    font-size: 15px;
+    line-height: 1.5;
+    color: #333;
+    text-align: center;
+    font-weight: 500;
+}
+.sl-alert-dialog__foot {
+    display: flex;
+    justify-content: center;
+    padding: 0 24px 22px;
+}
+.sl-alert-dialog__ok {
+    display: inline-block;
+    min-width: 110px;
+    background: linear-gradient(to bottom, #008901 0%, #007a01 100%);
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    border: 1px solid #006201;
+    border-radius: 6px;
+    padding: 10px 28px;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+.sl-alert-dialog__ok:hover {
+    background: linear-gradient(to bottom, #00a001 0%, #008901 100%);
+}
+
 @media (max-width: 1100px) {
-    .sl-colorcode-define {
-        float: none;
-        clear: both;
-        display: block;
-        padding-top: 10px;
+    .sl-mastercode-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .sl-action-bar {
+        justify-content: flex-start;
     }
 
     .sl-sub-navigation {
@@ -1117,15 +2131,93 @@ tr.sl-row-active {
     }
 }
 
+.sl-mastercode-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+    margin: 0 0 0.75rem;
+    padding: 0.35rem 0 0.65rem;
+    border-bottom: 1px solid #e5ebe5;
+}
+
 .sl-action-bar {
-    clear: both;
+    clear: none;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: flex-end;
     gap: 0.5rem;
-    margin: 0 0 1rem;
-    padding: 0.35rem 0 0.75rem;
+    margin: 0;
+    padding: 0;
+    margin-left: auto;
+}
+
+/* Admin Global Settings â€” legacy single-table form */
+.fi-page:has(.sl-gs) .fi-header-heading:empty {
+    display: none !important;
+}
+
+.fi-page:has(.sl-gs) .fi-header:not(:has(.fi-header-heading:not(:empty))) {
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+.fi-page:has(.sl-fslog) .fi-header:not(:has(.sl-mastercode-heading)):not(:has(.fi-header-heading:not(:empty))),
+.fi-page:has(.sl-vlog) .fi-header:not(:has(.sl-mastercode-heading)):not(:has(.fi-header-heading:not(:empty))),
+.fi-page:has(.sl-sa) .fi-header:not(:has(.sl-mastercode-heading)):not(:has(.fi-header-heading:not(:empty))),
+.fi-page:has(.sl-ol) .fi-header:not(:has(.sl-mastercode-heading)):not(:has(.fi-header-heading:not(:empty))) {
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.fi-page:has(.sl-fslog) .fi-header-heading:empty,
+.fi-page:has(.sl-vlog) .fi-header-heading:empty,
+.fi-page:has(.sl-sa) .fi-header-heading:empty,
+.fi-page:has(.sl-ol) .fi-header-heading:empty {
+    display: none !important;
+}
+
+.fi-page:has(.sl-fslog) .fi-page-content,
+.fi-page:has(.sl-fslog) .fi-page-main-ctn,
+.fi-page:has(.sl-vlog) .fi-page-content,
+.fi-page:has(.sl-vlog) .fi-page-main-ctn,
+.fi-page:has(.sl-sa) .fi-page-content,
+.fi-page:has(.sl-sa) .fi-page-main-ctn,
+.fi-page:has(.sl-ol) .fi-page-content,
+.fi-page:has(.sl-ol) .fi-page-main-ctn {
+    max-width: none !important;
+    width: 100% !important;
+}
+
+.fi-page:has(.sl-fslog) .sl-mastercode-toolbar,
+.fi-page:has(.sl-vlog) .sl-mastercode-toolbar,
+.fi-page:has(.sl-sa) .sl-mastercode-toolbar,
+.fi-page:has(.sl-ol) .sl-mastercode-toolbar {
+    margin-bottom: 1rem;
+}
+
+/* Compact Filament page header under the legacy toolbar (no duplicate CTA row). */
+.fi-page:has(.sl-mastercode-toolbar) > .fi-header,
+.fi-page:has(.sl-mastercode-toolbar) .fi-header:has(.sl-mastercode-heading) {
+    margin-top: 0 !important;
+    margin-bottom: 0.5rem !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    min-height: 0 !important;
+    gap: 0.35rem !important;
+}
+
+.fi-page:has(.sl-mastercode-toolbar) .fi-header-heading {
+    font-size: 1.15rem !important;
+    line-height: 1.3 !important;
+}
+
+.fi-page:has(.sl-mastercode-toolbar) .fi-header-actions:empty,
+.fi-page:has(.sl-mastercode-toolbar) .fi-ac:empty {
+    display: none !important;
 }
 
 .sl-analytics-btn {
@@ -1164,7 +2256,7 @@ tr.sl-row-active {
     color: #fff !important;
 }
 
-/* Header action buttons — match legacy green CTAs */
+/* Header action buttons â€” match legacy green CTAs */
 .fi-resource-profiles .fi-header-actions .fi-btn,
 .fi-page:has(.sl-mastercode-toolbar) .fi-header-actions .fi-ac-btn-action {
     background: linear-gradient(to bottom, #008901 0%, #007a01 100%) !important;
@@ -1174,6 +2266,36 @@ tr.sl-row-active {
     font-weight: 700 !important;
     text-transform: uppercase;
     font-size: 13px !important;
+}
+
+/* Master Code List row tools — compact, vertically centered */
+.fi-page:has(.sl-mastercode-toolbar) .fi-ta-actions,
+.fi-resource-profiles .fi-ta-actions {
+    display: inline-flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 2px !important;
+    min-height: 28px !important;
+    padding: 0 !important;
+    vertical-align: middle !important;
+}
+
+.fi-page:has(.sl-mastercode-toolbar) .fi-ta-actions .fi-ac-icon-btn-action,
+.fi-page:has(.sl-mastercode-toolbar) .fi-ta-actions .fi-icon-btn,
+.fi-resource-profiles .fi-ta-actions .fi-icon-btn {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    color: #333 !important;
+}
+
+.fi-page:has(.sl-mastercode-toolbar) .fi-ta-actions .fi-icon-btn svg,
+.fi-resource-profiles .fi-ta-actions .fi-icon-btn svg {
+    width: 18px !important;
+    height: 18px !important;
 }
 
 .fi-resource-profiles .fi-ta-actions .fi-icon-btn {
@@ -1210,6 +2332,13 @@ tr.sl-row-active {
     align-items: start !important;
 }
 
+/* VOC / Exhibit / Misc CKEditor toolbars/dropdowns must not be clipped */
+.sl-profile-editor--voc,
+.sl-profile-editor--exhibit,
+.sl-profile-editor--misc {
+    overflow: visible !important;
+}
+
 .sl-profile-editor .add-form-left,
 .sl-profile-editor .sl-add-form-left {
     grid-area: form !important;
@@ -1228,9 +2357,11 @@ tr.sl-row-active {
     max-width: 450px !important;
     margin: 12px 0 0 !important;
     display: block !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
 }
 
-/* Kill Filament's top-level 2-col section masonry — stack SectionTitleBox cards */
+/* Kill Filament's top-level 2-col section masonry â€” stack SectionTitleBox cards */
 .sl-add-form-left > form > .fi-sc.fi-grid,
 .sl-add-form-left > .fi-sc.fi-grid,
 .sl-add-form-left .fi-sc:not(.fi-section-content):not(.fi-sc-section) > .fi-sc.fi-grid,
@@ -1262,7 +2393,7 @@ tr.sl-row-active {
 
 .sl-legacy-preview-sidebar .iphone-preview-container {
     width: 320px !important;
-    height: 480px !important;
+    height: 882px !important;
     overflow: auto !important;
     background: #fff !important;
     -ms-overflow-style: none;
@@ -1275,11 +2406,11 @@ tr.sl-row-active {
 
 .fi-page:has(.sl-profile-editor) .fi-section,
 .fi-page:has(.sl-profile-editor) .fi-sc-section {
-    margin: 0 0 10px !important;
-    padding: 5px 10px !important;
-    border-radius: 6px !important;
-    border: 1px solid #e5e5e5 !important;
-    box-shadow: inset 0 0 10px rgba(0, 0, 0, .1) !important;
+    margin: 0 0 14px !important;
+    padding: 14px 16px 16px !important;
+    border-radius: 8px !important;
+    border: 1px solid #d9d9d9 !important;
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, .06) !important;
     background: #fff !important;
     width: 100% !important;
     max-width: 100% !important;
@@ -1289,17 +2420,16 @@ tr.sl-row-active {
 .fi-page:has(.sl-profile-editor) .fi-sc-section-header-heading {
     font-size: 18px !important;
     color: #009401 !important;
-    line-height: 34px !important;
-    font-weight: 600 !important;
+    line-height: 1.35 !important;
+    font-weight: 700 !important;
+    font-family: Arial, Helvetica, sans-serif !important;
 }
 
-/* Inputs closer to legacy .text-fi look */
-.fi-page:has(.sl-profile-editor) .fi-input,
-.fi-page:has(.sl-profile-editor) .fi-textarea,
-.fi-page:has(.sl-profile-editor) select.fi-select-input {
-    border: 1px solid #ccc !important;
-    border-radius: 3px !important;
-    background: #fff !important;
+/* Inputs â€” superseded by .sl-add-form-left legacy .text-fi block above.
+ * Keep a light fallback for any field outside left column (rare). */
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-input:not(select):not(.fi-select-input),
+.fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-textarea {
+    background: transparent !important;
 }
 
 @media (max-width: 1100px) {
@@ -1394,7 +2524,7 @@ tr.sl-row-active {
     padding: 0 0.15rem;
 }
 
-/* Filament puts the ring on .fi-input-wrp — do NOT also border the inner input
+/* Filament puts the ring on .fi-input-wrp â€” do NOT also border the inner input
    (that creates the broken-corner / double-border look). */
 .sl-edit-account .fi-input-wrp {
     background-color: #ffffff !important;
@@ -1429,7 +2559,7 @@ tr.sl-row-active {
     outline: none !important;
 }
 
-/* Manage User — tighter header, no empty toolbar gap */
+/* Manage User â€” tighter header, no empty toolbar gap */
 .sl-edit-account__users .fi-ta-header {
     gap: 0.5rem !important;
     padding-bottom: 0.5rem !important;
@@ -1471,13 +2601,13 @@ tr.sl-row-active {
     }
 }
 
-/* Manage User — legacy edit.png tool icon */
+/* Manage User â€” legacy edit.png tool icon */
 .sl-manage-user-edit-icon {
     display: inline-block;
     vertical-align: middle;
 }
 
-/* Edit User modal — match legacy colorbox layout */
+/* Edit User modal â€” match legacy colorbox layout */
 .sl-edit-user-modal .fi-modal-header-heading {
     font-size: 0.95rem !important;
     font-weight: 700 !important;
@@ -1637,7 +2767,7 @@ tr.sl-row-active {
     padding: 1rem !important;
 }
 
-/* Portal Contact us — page content only (do not reshape .fi-main / SPA chrome) */
+/* Portal Contact us â€” page content only (do not reshape .fi-main / SPA chrome) */
 .fi-page:has(.sl-portal-contact) > .fi-header,
 .fi-page:has(.sl-portal-contact) .fi-header:not(:has(.fi-btn)) {
     display: none !important;
@@ -1890,7 +3020,186 @@ tr.sl-row-active {
     }
 }
 
-/* Code Balance */
+/* ===== URL Link (code) editor â€” match legacy code/index.php ===== */
+.sl-profile-editor--code .sl-add-form-left .sl-code-url-form .fi-section-header,
+.sl-profile-editor--code .sl-add-form-left .sl-code-url-form .fi-sc-section-header {
+    display: none !important;
+}
+
+.sl-profile-editor--code .SectionTitleCode {
+    color: #000;
+    font-size: 18px;
+    line-height: 34px;
+    font-weight: 700;
+    margin: 0 0 8px;
+}
+
+.sl-profile-editor--code .codelabel {
+    position: relative;
+    display: inline-block;
+    padding-right: 22px;
+    line-height: 22px;
+    min-height: 22px;
+    cursor: help;
+}
+
+.sl-profile-editor--code .codelabel::after {
+    content: '?';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #4caf50;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+}
+
+.sl-profile-editor--code .sl-code-dc-fields {
+    margin: 4px 0 10px !important;
+    max-width: 380px;
+}
+
+.sl-profile-editor--code .sl-code-dc-fields .fi-fo-field-wrp {
+    margin-bottom: 2px !important;
+}
+
+.sl-profile-editor--code .sl-code-dc-compulsory {
+    margin-top: 2px !important;
+}
+
+.sl-profile-editor--code .sl-code-colour-type-row {
+    align-items: start !important;
+    margin-top: 8px !important;
+}
+
+.sl-profile-editor--code .sl-code-type-radios .fi-fo-radio,
+.sl-profile-editor--code .sl-code-type-radios .fi-radio-list {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+}
+
+.sl-profile-editor--code .sl-add-form-left .fi-form-actions {
+    max-width: 150px !important;
+    margin: 16px auto !important;
+    text-align: center !important;
+}
+
+.sl-profile-editor--code .sl-add-form-left .fi-form-actions .fi-btn,
+.sl-profile-editor--code .sl-add-form-left .fi-form-actions button[type='submit'] {
+    width: 150px !important;
+    max-width: 150px !important;
+    margin: 0 auto !important;
+    font-size: 16px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.02em;
+}
+
+.sl-profile-editor--code .add-form-right-code,
+.sl-profile-editor--code .sl-add-form-right {
+    margin-top: 0 !important;
+}
+
+.sl-profile-editor--code .sl-add-form-left input.codeTextApplication,
+.sl-profile-editor--code .sl-add-form-left .codeTextApplication {
+    max-width: 220px !important;
+}
+
+/* ===== Survey editor â€” match legacy survey/index.php ===== */
+.sl-profile-editor--survey {
+    grid-template-columns: 460px 450px !important;
+}
+
+.sl-profile-editor--survey .sl-add-form-left,
+.sl-profile-editor--survey .sl-add-form-left--survey {
+    width: 460px !important;
+    max-width: 460px !important;
+}
+
+.sl-profile-editor--survey .sl-add-form-left .fi-form-actions {
+    max-width: 150px !important;
+    margin: 16px auto !important;
+    text-align: center !important;
+}
+
+.sl-profile-editor--survey .sl-add-form-left .fi-form-actions .fi-btn,
+.sl-profile-editor--survey .sl-add-form-left .fi-form-actions button[type='submit'] {
+    width: 150px !important;
+    max-width: 150px !important;
+    margin: 0 auto !important;
+    font-size: 16px !important;
+    text-transform: uppercase !important;
+}
+
+.sl-profile-editor--survey .sl-survey-form-builder {
+    width: 100%;
+    max-width: 458px;
+    margin-top: 8px;
+    border-radius: 6px 6px 0 0;
+    margin-bottom: 0;
+}
+
+/* Legacy survey: the "Expand Window" bar is a footer attached to the builder
+   (footer-rouded, ~440px). Width-match it to the builder and sit it flush so it
+   reads as one card instead of a loose full-width banner. */
+.sl-profile-editor--survey .sl-fb-expand-footer {
+    width: 458px;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 0 0 14px;
+    border-top: 0;
+    border-radius: 0 0 8px 8px;
+    background-color: #cccccc;
+    padding: 10px;
+    text-align: right;
+}
+
+.sl-profile-editor--survey .sl-survey-save-wrap {
+    width: 458px;
+    max-width: 100%;
+    margin: 0 0 24px;
+    list-style: none;
+    padding: 0;
+    text-align: center;
+}
+
+/* .form-view li floats left (legacy global), which strands SAVE in empty space.
+   Undo the float so the button centers cleanly under the builder card. */
+.sl-profile-editor--survey .sl-survey-save-wrap li {
+    float: none;
+    padding: 0;
+    list-style: none;
+    text-align: center;
+}
+
+.sl-profile-editor--survey .sl-survey-save-btn {
+    display: inline-block;
+    width: 150px;
+    padding: 8px 0 10px;
+    border: 0;
+    border-radius: 5px;
+    background: #008901;
+    background-image: linear-gradient(to bottom, #008901 0%, #007a01 100%);
+    color: #fff !important;
+    font-size: 16px;
+    font-weight: bold;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+/* Hide Filament "system" theme option (monitor icon) â€” light/dark only. */
+.fi-theme-switcher .fi-theme-switcher-btn[aria-label="System"],
+.fi-theme-switcher .fi-theme-switcher-btn:nth-child(3) {
+    display: none !important;
+}
+
+/* ── Code Balance (legacy /profile/codeBalance listing-table) ───── */
 .fi-page:has(.sl-cb) .fi-page-main,
 .fi-page:has(.sl-cb) .fi-main,
 .fi-page:has(.sl-cb) .fi-page-content { max-width: none !important; }
@@ -1927,8 +3236,26 @@ tr.sl-row-active {
 .sl-cb table.listing-table tr.sl-row-expired > td { background-color: #F5BFB8 !important; }
 .sl-cb table.listing-table tr.sl-row-expiring > td { background-color: #FBC085 !important; }
 .sl-cb table.listing-table tr.sl-row-active > td { background-color: #c9ffc9 !important; }
-.sl-cb__templates { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; width: 100%; row-gap: 10px; }
-.sl-cb__templates a { display: inline-block; color: #008601 !important; font-weight: 700; font-size: 13px; line-height: 1.4; text-decoration: none !important; white-space: nowrap; position: relative; z-index: 1; padding: 0 2px; }
+.sl-cb__templates {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 22px;
+    width: 100%;
+    row-gap: 10px;
+}
+.sl-cb__templates a {
+    display: inline-block;
+    color: #008601 !important;
+    font-weight: 700;
+    font-size: 13px;
+    line-height: 1.4;
+    text-decoration: none !important;
+    white-space: nowrap;
+    position: relative;
+    z-index: 1;
+    padding: 0 2px;
+}
 .sl-cb__templates a:hover { text-decoration: underline !important; }
 .sl-cb__empty { text-align: center !important; padding: 24px 12px !important; color: #666; background: #fff !important; }
 .sl-cb__pager { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 14px; font-size: 13px; }
@@ -1938,8 +3265,7 @@ tr.sl-row-active {
 .sl-cb__footnote { margin-top: 18px; font-size: 13px; color: #333; line-height: 1.45; }
 .sl-cb__footnote a { color: #008601; font-weight: 700; margin-left: 6px; }
 @media (max-width: 900px) {
-    .sl-cb__header-right { align-items: flex-start; width: 100%; }
-    .sl-cb__legend, .sl-cb__actions { justify-content: flex-start; }
+  .sl-cb__header-right { align-items: flex-start; width: 100%; }
+  .sl-cb__legend, .sl-cb__actions { justify-content: flex-start; }
 }
-
 
