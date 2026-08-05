@@ -3269,3 +3269,526 @@ tr.sl-row-active {
   .sl-cb__legend, .sl-cb__actions { justify-content: flex-start; }
 }
 
+/* ===========================================================================
+ * DARK MODE ONLY — portal / shared ScanLink surfaces
+ * Light-mode rules above are untouched. Tokens match dashboard tiles:
+ *   surface: rgb(17 24 39) | nested: rgb(31 41 55) | border: rgb(255 255 255 / 0.1)
+ *   text: rgb(243 244 246) | muted: rgb(156 163 175)
+ * =========================================================================== */
+
+/* --- Edit Account / Manage User --- */
+.dark .sl-edit-account .fi-section,
+.dark .sl-edit-account .fi-sc-section {
+    background: rgb(17 24 39) !important;
+    border-color: rgb(255 255 255 / 0.1) !important;
+    box-shadow: none !important;
+}
+
+.dark .sl-edit-account .fi-section-header-heading,
+.dark .sl-edit-account .fi-sc-section-header-heading,
+.dark .sl-edit-account__users .fi-ta-header-heading {
+    color: rgb(134 239 172) !important;
+}
+
+.dark .sl-edit-account .fi-input-wrp {
+    background-color: rgb(31 41 55) !important;
+    border-color: rgb(75 85 99) !important;
+}
+
+.dark .sl-edit-account .fi-input-wrp:focus-within {
+    border-color: rgb(74 222 128) !important;
+}
+
+.dark .sl-edit-account .fi-input,
+.dark .sl-edit-account .fi-textarea,
+.dark .sl-edit-account input[type='text'],
+.dark .sl-edit-account input[type='email'],
+.dark .sl-edit-account input[type='password'],
+.dark .sl-edit-account input[type='number'],
+.dark .sl-edit-account .fi-fo-field-wrp-label,
+.dark .sl-edit-account .fi-fo-field-wrp-label span,
+.dark .sl-edit-account label {
+    color: rgb(243 244 246) !important;
+}
+
+.dark .sl-edit-account .fi-input::placeholder,
+.dark .sl-edit-account .fi-textarea::placeholder,
+.dark .sl-edit-account input::placeholder {
+    color: rgb(156 163 175) !important;
+}
+
+.dark .sl-edit-account__users .fi-ta-ctn {
+    background: rgb(17 24 39) !important;
+    border-color: rgb(255 255 255 / 0.1) !important;
+}
+
+.dark .sl-edit-account__users .fi-ta-table th {
+    background: rgb(31 41 55) !important;
+    color: rgb(243 244 246) !important;
+}
+
+.dark .sl-edit-account__users .fi-ta-table th,
+.dark .sl-edit-account__users .fi-ta-table td {
+    border-color: rgb(55 65 81) !important;
+    color: rgb(229 231 235) !important;
+}
+
+.dark .sl-edit-user-modal .fi-modal-header-heading {
+    color: rgb(243 244 246) !important;
+}
+
+.dark .sl-edit-user-modal .fi-input-wrp {
+    background-color: rgb(31 41 55) !important;
+    border-color: rgb(75 85 99) !important;
+}
+
+/* --- Profile create/edit sections + left form --- */
+.dark .fi-page:has(.sl-profile-editor) .fi-section,
+.dark .fi-page:has(.sl-profile-editor) .fi-sc-section {
+    background: rgb(17 24 39) !important;
+    border-color: rgb(255 255 255 / 0.1) !important;
+    box-shadow: none !important;
+}
+
+.dark .fi-page:has(.sl-profile-editor) .fi-section-header-heading,
+.dark .fi-page:has(.sl-profile-editor) .fi-sc-section-header-heading {
+    color: rgb(134 239 172) !important;
+}
+
+.dark .fi-page:has(.sl-profile-editor) .sl-add-form-left {
+    color: rgb(209 213 219) !important;
+}
+
+.dark .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-field-wrp-label,
+.dark .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fo-field-wrp-label span,
+.dark .fi-page:has(.sl-profile-editor) .sl-add-form-left label.fi-fo-field-wrp-label,
+.dark .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-fieldset-label {
+    color: rgb(209 213 219) !important;
+}
+
+.dark .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-input-wrp:not(:has(select)):not(:has(.fi-select-input)) {
+    background: rgb(31 41 55) !important;
+    border-color: rgb(75 85 99) !important;
+    box-shadow: none !important;
+}
+
+.dark .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-input:not(select):not(.fi-select-input),
+.dark .fi-page:has(.sl-profile-editor) .sl-add-form-left input.fi-input:not([type='checkbox']):not([type='radio']):not([type='file']),
+.dark .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-textarea,
+.dark .fi-page:has(.sl-profile-editor) .sl-add-form-left textarea.fi-textarea {
+    color: rgb(243 244 246) !important;
+}
+
+.dark .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-btn:not(.fi-color-danger):not([type='submit']),
+.dark .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-ac-btn-action:not(.fi-color-danger):not([type='submit']) {
+    background: rgb(55 65 81) !important;
+    background-image: none !important;
+    border-color: rgb(75 85 99) !important;
+    color: rgb(243 244 246) !important;
+}
+
+.dark .fi-page:has(.sl-profile-editor) .fi-header-heading {
+    color: rgb(243 244 246) !important;
+}
+
+.dark .fi-page:has(.sl-profile-editor) .fi-page-main-ctn,
+.dark .fi-page:has(.sl-profile-editor) .fi-page-content {
+    color: rgb(209 213 219) !important;
+}
+
+/* --- Form Builder outer chrome --- */
+.dark .sl-legacy-preview-sidebar .form-builder-box,
+.dark .sl-legacy-preview-sidebar .form-builder-box.sl-form-builder-panel,
+.dark .sl-form-builder-panel,
+.dark .form-builder-box.sl-form-builder-panel {
+    background: rgb(17 24 39) !important;
+    border-color: rgb(255 255 255 / 0.1) !important;
+    box-shadow: none !important;
+    color: rgb(209 213 219) !important;
+}
+
+.dark .sl-legacy-preview-sidebar .form-builder-title,
+.dark .sl-form-builder-panel .form-builder-title {
+    color: rgb(134 239 172) !important;
+    border-color: rgb(55 65 81) !important;
+}
+
+.dark .sl-form-builder-panel .existing-item,
+.dark .sl-form-builder-panel .existing-item label,
+.dark .sl-form-builder-panel .activate-for-profile,
+.dark .sl-form-builder-panel .activate-for-profile label {
+    color: rgb(209 213 219) !important;
+}
+
+.dark .sl-form-builder-panel .existing-item--format {
+    background: rgb(31 41 55) !important;
+    border-color: rgb(55 65 81) !important;
+}
+
+.dark .sl-form-builder-panel .existing-item__label,
+.dark .sl-legacy-preview-sidebar .existing-item--format .existing-item__label {
+    color: rgb(243 244 246) !important;
+}
+
+.dark .sl-form-builder-panel .sl-fb-iframe-placeholder,
+.dark .sl-form-builder-panel .sl-fb-locked-placeholder {
+    background: rgb(31 41 55) !important;
+    border-color: rgb(75 85 99) !important;
+    color: rgb(156 163 175) !important;
+}
+
+.dark .sl-form-builder-panel .sl-form-builder-purchase-note {
+    background: rgb(66 32 6) !important;
+    border-color: rgb(146 64 14) !important;
+    color: rgb(253 230 138) !important;
+}
+
+.dark .sl-form-builder-panel .sl-form-builder-lock-copy {
+    color: rgb(156 163 175) !important;
+}
+
+.dark .sl-fb-expand-footer,
+.dark .sl-fb-expand-footer.footer-rouded,
+.dark .sl-legacy-preview-sidebar .footer-rouded,
+.dark .sl-legacy-preview-sidebar .sl-fb-expand-footer {
+    background-color: rgb(55 65 81) !important;
+    color: rgb(229 231 235) !important;
+}
+
+.dark .sl-fb-order-success-dialog {
+    background: rgb(17 24 39) !important;
+    color: rgb(229 231 235) !important;
+}
+
+.dark .sl-fb-order-success-body {
+    color: rgb(209 213 219) !important;
+}
+
+.dark .sl-existing-form-dialog {
+    background: rgb(17 24 39) !important;
+    color: rgb(229 231 235) !important;
+}
+
+/* Preview sidebar surfaces (keep iPhone device chrome as-is) */
+.dark .sl-legacy-preview-sidebar .code_preview_qr,
+.dark .sl-legacy-preview-sidebar--code .code_preview_qr {
+    background: rgb(17 24 39) !important;
+    border-color: rgb(55 65 81) !important;
+}
+
+.dark .sl-legacy-preview-sidebar--code .sl-code-preview-empty {
+    color: rgb(156 163 175) !important;
+}
+
+.dark .sl-legacy-preview-sidebar--code .sl-qr-download-select {
+    background: rgb(31 41 55) !important;
+    border-color: rgb(75 85 99) !important;
+    color: rgb(243 244 246) !important;
+}
+
+/* --- Code Balance --- */
+.dark .sl-cb {
+    color: rgb(229 231 235) !important;
+}
+
+.dark .sl-cb__title {
+    color: rgb(243 244 246) !important;
+}
+
+.dark .sl-cb__balance-num,
+.dark .sl-cb__search input,
+.dark .sl-cb__table-wrap,
+.dark .sl-cb table.listing-table.sl-cb__table,
+.dark .sl-cb__empty,
+.dark .sl-cb__pager select {
+    background: rgb(17 24 39) !important;
+    border-color: rgb(55 65 81) !important;
+    color: rgb(229 231 235) !important;
+}
+
+.dark .sl-cb__pager-arrow,
+.dark .sl-cb__footnote {
+    color: rgb(209 213 219) !important;
+}
+
+.dark .sl-cb table.listing-table.sl-cb__table th {
+    background: rgb(31 41 55) !important;
+    color: rgb(243 244 246) !important;
+}
+
+.dark .sl-cb table.listing-table.sl-cb__table td {
+    border-color: rgb(55 65 81) !important;
+    color: rgb(209 213 219) !important;
+}
+
+/* --- Custom portal page panels (blade inline styles overridden only in dark) --- */
+.dark .sl-vlog,
+.dark .sl-ol,
+.dark .sl-fslog,
+.dark .sl-ca,
+.dark .sl-sa,
+.dark .sl-fsview {
+    color: rgb(229 231 235) !important;
+}
+
+.dark .sl-vlog__panel,
+.dark .sl-ol__panel,
+.dark .sl-fslog__panel,
+.dark .sl-ca__panel,
+.dark .sl-sa__panel,
+.dark .sl-fsview,
+.dark .sl-card,
+.dark .fb-card,
+.dark .sl-fbp__card {
+    background: rgb(17 24 39) !important;
+    border-color: rgb(255 255 255 / 0.1) !important;
+    color: rgb(229 231 235) !important;
+    box-shadow: none !important;
+}
+
+.dark .sl-vlog__title,
+.dark .sl-ol__crumb,
+.dark .sl-fslog__title,
+.dark .sl-ca__title,
+.dark .sl-sa__title {
+    color: rgb(243 244 246) !important;
+}
+
+.dark .sl-vlog table,
+.dark .sl-vlog table.listing-table,
+.dark .sl-fslog table,
+.dark .sl-fslog table.listing-table,
+.dark .sl-ca table,
+.dark .sl-ol table {
+    background: rgb(17 24 39) !important;
+    color: rgb(229 231 235) !important;
+}
+
+.dark .sl-vlog table th,
+.dark .sl-fslog table th,
+.dark .sl-ca table th,
+.dark .sl-ol table th {
+    background: rgb(31 41 55) !important;
+    color: rgb(243 244 246) !important;
+    border-color: rgb(55 65 81) !important;
+}
+
+.dark .sl-vlog table td,
+.dark .sl-fslog table td,
+.dark .sl-ca table td,
+.dark .sl-ol table td {
+    border-color: rgb(55 65 81) !important;
+    color: rgb(209 213 219) !important;
+}
+
+.dark .sl-vlog input,
+.dark .sl-vlog select,
+.dark .sl-fslog input,
+.dark .sl-fslog select,
+.dark .sl-ca input,
+.dark .sl-ca select,
+.dark .sl-ol input,
+.dark .sl-ol select,
+.dark .sl-sa input,
+.dark .sl-sa select {
+    background: rgb(31 41 55) !important;
+    border-color: rgb(75 85 99) !important;
+    color: rgb(243 244 246) !important;
+}
+
+.dark .sl-ol__btn--ghost {
+    background: rgb(31 41 55) !important;
+    border-color: rgb(75 85 99) !important;
+    color: rgb(243 244 246) !important;
+}
+
+.dark .sl-sa__box-count,
+.dark .sl-sa .ui-widget-content {
+    background: rgb(31 41 55) !important;
+    border-color: rgb(55 65 81) !important;
+    color: rgb(229 231 235) !important;
+}
+
+.dark .sl-sa .ddchart-x-axis-label {
+    color: rgb(209 213 219) !important;
+}
+
+.dark .sl-ca__modal,
+.dark .sl-help-video-window {
+    background: rgb(17 24 39) !important;
+    color: rgb(229 231 235) !important;
+}
+
+/* Participant list */
+.dark .sl-plist,
+.dark .sl-plist__table-wrap {
+    background: rgb(17 24 39) !important;
+    color: rgb(229 231 235) !important;
+}
+
+.dark .sl-plist__input,
+.dark .sl-plist input[type='text'],
+.dark .sl-plist input[type='email'],
+.dark .sl-plist select,
+.dark .sl-plist textarea {
+    background: rgb(31 41 55) !important;
+    border-color: rgb(75 85 99) !important;
+    color: rgb(243 244 246) !important;
+}
+
+.dark .sl-plist table th {
+    background: rgb(31 41 55) !important;
+    color: rgb(243 244 246) !important;
+}
+
+.dark .sl-plist table td {
+    background: rgb(17 24 39) !important;
+    border-color: rgb(55 65 81) !important;
+    color: rgb(209 213 219) !important;
+}
+
+/* Purchase / register / FB embed helpers */
+.dark .sl-fbp,
+.dark .sl-fbp__card,
+.dark .content-register,
+.dark .sl-reg,
+.dark .sl-reg .content-register,
+.dark .sl-reg-modal {
+    background: rgb(17 24 39) !important;
+    color: rgb(229 231 235) !important;
+    border-color: rgb(255 255 255 / 0.1) !important;
+}
+
+.dark .sl-reg input,
+.dark .sl-reg select,
+.dark .sl-reg textarea,
+.dark .sl-reg .text-fi,
+.dark .sl-reg .reg-reseller-code,
+.dark .fb-input,
+.dark .fb-textarea,
+.dark .fb-canvas {
+    background: rgb(31 41 55) !important;
+    border-color: rgb(75 85 99) !important;
+    color: rgb(243 244 246) !important;
+    box-shadow: none !important;
+}
+
+.dark .sl-reg .sl-reg-field > label:not(.error),
+.dark .sl-reg .sl-reg-reseller-label,
+.dark .sl-reg h3.page-title {
+    color: rgb(209 213 219) !important;
+}
+
+.dark .sl-reg h3.page-title {
+    color: rgb(134 239 172) !important;
+}
+
+.dark .sl-reg-error-banner {
+    background: rgb(69 10 10) !important;
+    border-color: rgb(153 27 27) !important;
+    color: rgb(254 202 202) !important;
+}
+
+.dark .fb-preview-phone {
+    background: rgb(17 24 39) !important;
+}
+
+.dark .sl-fbp__card {
+    background: rgb(17 24 39) !important;
+    border-color: rgb(255 255 255 / 0.1) !important;
+    box-shadow: none !important;
+}
+
+.dark .sl-fbp__title {
+    color: rgb(243 244 246) !important;
+}
+
+.dark .sl-fbp__subtitle,
+.dark .sl-fbp__hint {
+    color: rgb(156 163 175) !important;
+}
+
+.dark .sl-fbp__section {
+    color: rgb(134 239 172) !important;
+    border-color: rgb(55 65 81) !important;
+}
+
+.dark .sl-fbp__label {
+    color: rgb(209 213 219) !important;
+}
+
+.dark .sl-fbp__control {
+    background: rgb(31 41 55) !important;
+    border-color: rgb(75 85 99) !important;
+    color: rgb(243 244 246) !important;
+}
+
+.dark .sl-fbp__control::placeholder {
+    color: rgb(156 163 175) !important;
+}
+
+/* Mastercode toolbar + tabs readability */
+.dark .sl-mastercode-toolbar,
+.dark .sl-mastercode-toolbar a,
+.dark .sl-mastercode-toolbar span {
+    color: rgb(209 213 219) !important;
+}
+
+.dark .fi-panel-portal .fi-tabs-item,
+.dark .fi-panel-portal .fi-tabs-item-label {
+    color: rgb(209 213 219) !important;
+}
+
+.dark .fi-panel-portal .fi-wi-stats-overview-stat,
+.dark .fi-panel-portal .fi-section-content-ctn {
+    color: rgb(229 231 235);
+}
+
+/* ===========================================================================
+ * ADMIN DARK MODE — custom admin views that hardcode light colours. Standard
+ * Filament resources are already theme-aware; only these two custom areas break.
+ * =========================================================================== */
+
+/* --- Global Settings page (.sl-gs) — was a full white card island in dark --- */
+html.dark .sl-gs { color: rgb(229 231 235); }
+html.dark .sl-gs__title { color: rgb(251 146 60); }
+html.dark .sl-gs__title-icon { border-left-color: rgb(156 163 175); }
+html.dark .sl-gs__box {
+    background: rgb(17 24 39);
+    border-color: rgb(255 255 255 / 0.1);
+}
+html.dark .sl-gs__required-bar {
+    background: rgb(31 41 55);
+    color: rgb(229 231 235);
+}
+html.dark .sl-gs__label { color: rgb(209 213 219); }
+html.dark .sl-gs__field input,
+html.dark .sl-gs__field select,
+html.dark .sl-gs__field textarea {
+    background: rgb(31 41 55);
+    border-color: rgb(75 85 99);
+    color: rgb(243 244 246);
+}
+html.dark .sl-gs__btn {
+    background: rgb(55 65 81);
+    background-image: none;
+    border-color: rgb(75 85 99);
+    color: rgb(243 244 246);
+}
+
+/* --- Reseller Code History header + owner card (inside dark fi-section) --- */
+html.dark .sl-rch-avatar {
+    background: rgb(0 140 0 / 0.18) !important;
+    color: rgb(74 222 128) !important;
+}
+html.dark .sl-rch-name { color: rgb(243 244 246) !important; }
+html.dark .sl-rch-muted { color: rgb(156 163 175) !important; }
+html.dark .sl-rch-pill--active {
+    background: rgb(20 83 45 / 0.5) !important;
+    color: rgb(134 239 172) !important;
+}
+html.dark .sl-rch-pill--inactive {
+    background: rgb(127 29 29 / 0.5) !important;
+    color: rgb(252 165 165) !important;
+}
+

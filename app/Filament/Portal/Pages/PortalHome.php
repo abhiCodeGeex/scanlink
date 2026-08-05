@@ -10,6 +10,10 @@ use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
 
+/**
+ * Legacy parity with scanlink-laravel PortalDashboard: do not show a standalone
+ * "signed in" home screen — send users to Edit user profile instead.
+ */
 class PortalHome extends Page
 {
     use InteractsWithClientMembership;
@@ -22,9 +26,17 @@ class PortalHome extends Page
 
     protected static ?string $slug = 'home';
 
+    /** Hide from sidebar — Home is not a real destination (matches Laravel). */
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?int $navigationSort = -20;
 
     protected string $view = 'filament.portal.pages.home';
+
+    public function mount(): void
+    {
+        $this->redirect(EditAccount::getUrl(panel: 'portal'), navigate: false);
+    }
 
     public static function canAccess(): bool
     {
@@ -48,12 +60,6 @@ class PortalHome extends Page
 
     public function getHeading(): string|Htmlable
     {
-        $member = $this->currentClientUser();
-        $name = trim(implode(' ', array_filter([
-            $member?->first_name,
-            $member?->last_name,
-        ])));
-
-        return $name !== '' ? "Welcome, {$name}" : 'Welcome';
+        return '';
     }
 }

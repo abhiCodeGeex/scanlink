@@ -162,7 +162,7 @@ class CodeBalance extends Page
 
     public function exitPage(): void
     {
-        $this->redirect(PortalHome::getUrl(panel: 'portal'), navigate: false);
+        $this->redirect(EditAccount::getUrl(panel: 'portal'), navigate: false);
     }
 
     public function activateUrl(int $profileId, string $typeSlag): string

@@ -12,7 +12,7 @@ Full admin panel (clients, orders, products, settings, etc.).
 |---------|-----|
 | Landing / Home (login) | `/` |
 | Register | `/portal/register` |
-| Portal home (after login) | `/portal/home` |
+| Portal after login | `/portal/account` (Edit user profile) |
 | Edit profile | `/portal/account` |
 | Login | form on `/` → `POST /portal-login` |
 | Logout | portal sidebar Sign out → back to `/` |

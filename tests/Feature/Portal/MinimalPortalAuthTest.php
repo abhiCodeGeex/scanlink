@@ -45,7 +45,7 @@ class MinimalPortalAuthTest extends TestCase
         $this->post('/portal-login', [
             'email' => 'portal-user@example.com',
             'password' => 'Portal@12345',
-        ])->assertRedirect('/portal/home');
+        ])->assertRedirect('/portal/account');
 
         $this->assertAuthenticatedAs($user);
 
@@ -65,7 +65,7 @@ class MinimalPortalAuthTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->get('/portal/home')
+            ->get('/portal/account')
             ->assertForbidden();
     }
 }

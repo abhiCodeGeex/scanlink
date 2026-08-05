@@ -74,7 +74,8 @@ class ClientPortalPanelProvider extends PanelProvider
             ->spa()
             ->login(Login::class)
             ->registration(Register::class)
-            ->homeUrl(fn (): string => PortalHome::getUrl())
+            ->homeUrl(fn (): string => EditAccount::getUrl())
+            // ->homeUrl(fn (): string => PortalHome::getUrl())
             ->colors([
                 'primary' => Color::hex('#008C00'),
             ])
@@ -117,7 +118,8 @@ class ClientPortalPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=1">',
+                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=61">'
+                    .'<link rel="stylesheet" href="'.asset('css/filament/portal-dark.css').'?v=3">',
             )
             ->widgets([])
             ->middleware([
