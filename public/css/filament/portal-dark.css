@@ -681,6 +681,15 @@ html.dark .fi-ta-row:not(.sl-row-active):not(.sl-row-expired):not(.sl-row-expiri
     color: rgb(209 213 219) !important;
 }
 
+/* Brand logo: the sidebar header already shows the white-pill logo, so the duplicate
+   copy in the topbar reads as a second glaring white box on the dark chrome. Hide the
+   redundant topbar logo in dark mode (light mode is left untouched). */
+html.dark .fi-panel-portal .fi-topbar .fi-logo-ctn,
+html.dark .fi-panel-portal .fi-topbar a.fi-logo,
+html.dark .fi-panel-portal .fi-topbar img.fi-logo {
+    display: none !important;
+}
+
 /* ===========================================================================
  * DARK MODE COMPLETION PASS — cover every remaining light-mode surface so no
  * portal page is left glaring white. Scoped to html.dark .fi-panel-portal.
