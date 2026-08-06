@@ -11,7 +11,7 @@ class Participant extends Model
 
     protected $primaryKey = 'participant_id';
 
-    public $incrementing = false;
+    public $incrementing = true;
 
     public $timestamps = false;
 
@@ -24,7 +24,6 @@ class Participant extends Model
     {
         return [
             'due_date' => 'date',
-            'participated_date' => 'date',
             'is_participated' => 'boolean',
         ];
     }

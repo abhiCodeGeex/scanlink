@@ -67,7 +67,7 @@ class ClientSubdivisionService
                 'password' => $newClientData['password'],
                 'url' => $this->resolveAvailableUrl($newClientData['url']),
                 'approve' => true,
-                'is_password_change' => true,
+                'is_password_change' => false,
             ]);
 
             $newPrimaryUser = $newClient->users()->create([
@@ -78,7 +78,7 @@ class ClientSubdivisionService
                 'video_upload' => true,
                 'checklist_option' => $checklistOption,
                 'customqr_option' => $customqrOption,
-                'is_password_change' => true,
+                'is_password_change' => false,
                 'expire_at' => now()->addYear(),
             ]);
 

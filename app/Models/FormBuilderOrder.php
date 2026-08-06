@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Schema;
 
 class FormBuilderOrder extends Model
 {
@@ -55,6 +56,28 @@ class FormBuilderOrder extends Model
     public function fullName(): string
     {
         return trim("{$this->first_name} {$this->last_name}");
+    }
+
+    /**
+     * Legacy form_builder_orders has no total_amount column — the total was always
+     * derived from quantity x unit price. Fall back to that when it is absent/empty.
+     */
+    public function totalAmount(): float
+    {
+        if (static::hasTotalAmountColumn()) {
+            $stored = (float) ($this->getAttribute('total_amount') ?? 0);
+
+            if ($stored > 0) {
+                return round($stored, 2);
+            }
+        }
+
+        return round((float) $this->no_of_codes * (float) $this->per_code_amount, 2);
+    }
+
+    public static function hasTotalAmountColumn(): bool
+    {
+        return once(fn (): bool => Schema::hasColumn((new static)->getTable(), 'total_amount'));
     }
 
     public function profileId(): ?int
