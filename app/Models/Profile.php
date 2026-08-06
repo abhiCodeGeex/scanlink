@@ -13,17 +13,24 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
-    'client_id', 'user_id', 'type_id', 'name', 'code_profile_name', 'identification',
+    'client_id', 'user_id', 'type_id', 'name', 'position', 'code_profile_name', 'identification',
     'serial_no', 'address', 'description', 'notes', 'name_company', 'telephone',
+    'mobile', 'email', 'name2', 'description2',
     'gps_coordinates', 'shorturl', 'url', 'protect', 'password', 'code_type', 'color_code', 'show_header',
+    'show_name', 'show_description', 'show_address', 'show_telephone', 'show_mobile', 'show_email', 'show_url',
     'buttonbackcolor', 'buttonfontcolor', 'enable_data_collection', 'set_up_compulsory',
     'data_collection_mobile', 'data_collection_email', 'data_collection_name',
     'data_collection_surname', 'data_collection_content', 'data_collection_btn_text',
     'data_collection_btn_color', 'display_share_link', 'application', 'activate_bridge_graphic',
-    'deleted', 'update_or_not', 'code_purchase_id', 'reseller_client_id', 'form_id', 'form_title',
+    'deleted', 'update_or_not', 'code_purchase_id', 'form_id', 'form_title',
     'form_active', 'form_is_enable', 'form_submission_format', 'form_email_tag',
     'pop_up_formbuilder', 'free_code', 'is_reseller_code', 'enable_form_analytics',
     'expired_at', 'activation_start_date', 'activation_end_date',
+    'voc_first_name', 'voc_last_name', 'voc_address', 'voc_town', 'voc_state', 'voc_phone', 'voc_dob',
+    'voc_known_allergies', 'voc_blood_type', 'voc_next_of_kin', 'voc_contact_phone',
+    'voc_employer', 'voc_emp_address', 'voc_emp_town', 'voc_emp_state', 'voc_emp_phone',
+    'voc_email_text', 'voc_email_url', 'voc_email_sign_line1', 'voc_email_sign_line2',
+    'voc_title_bar_enable', 'voc_title_bar_text', 'voc_title_bar_colour', 'tiles_order',
 ])]
 class Profile extends Model
 {
@@ -95,6 +102,31 @@ class Profile extends Model
                 ) {
                     $profile->attributes[$column] = $default;
                 }
+            }
+        });
+
+        // Legacy parity: archiving a profile (deleted -> true) clears its Galatech
+        // analytics item (legacy delete calls item/clearItem?key=analytic_key). Fire
+        // only on the false->true transition; never on restore/other updates. A remote
+        // failure must not break the archive action.
+        static::updated(function (Profile $profile): void {
+            if (! $profile->wasChanged('deleted') || ! $profile->deleted) {
+                return;
+            }
+
+            $key = (string) $profile->analytic_key;
+
+            if ($key === '') {
+                return;
+            }
+
+            try {
+                app(\App\Services\AnalyticsApiService::class)->clearItem($key);
+            } catch (\Throwable $exception) {
+                \Illuminate\Support\Facades\Log::warning('Failed to clear analytics on archive', [
+                    'profile_id' => $profile->getKey(),
+                    'message' => $exception->getMessage(),
+                ]);
             }
         });
     }
@@ -172,6 +204,14 @@ class Profile extends Model
         return [
             'protect' => \App\Casts\LegacyZeroOne::class,
             'show_header' => \App\Casts\LegacyZeroOne::class.':true',
+            'show_name' => \App\Casts\LegacyZeroOne::class.':true',
+            'show_description' => \App\Casts\LegacyZeroOne::class.':true',
+            'show_address' => \App\Casts\LegacyZeroOne::class.':true',
+            'show_telephone' => \App\Casts\LegacyZeroOne::class.':true',
+            'show_mobile' => \App\Casts\LegacyZeroOne::class.':true',
+            'show_email' => \App\Casts\LegacyZeroOne::class.':true',
+            'show_url' => \App\Casts\LegacyZeroOne::class.':true',
+            'voc_title_bar_enable' => \App\Casts\LegacyZeroOne::class.':true',
             'enable_data_collection' => \App\Casts\LegacyZeroOne::class.':true',
             'set_up_compulsory' => \App\Casts\LegacyZeroOne::class,
             'data_collection_name' => \App\Casts\LegacyZeroOne::class,
@@ -195,6 +235,7 @@ class Profile extends Model
             'expired_at' => 'datetime',
             'activation_start_date' => 'date',
             'activation_end_date' => 'date',
+            'voc_dob' => 'date',
         ];
     }
 
@@ -223,19 +264,43 @@ class Profile extends Model
         return $this->hasMany(Logo::class);
     }
 
+    public function logosExtra(): HasMany
+    {
+        return $this->hasMany(LogoExtra::class);
+    }
+
     public function pictures(): HasMany
     {
         return $this->hasMany(Picture::class);
     }
 
+    public function picturesExtra(): HasMany
+    {
+        return $this->hasMany(PictureExtra::class);
+    }
+
     public function documents(): HasMany
     {
-        return $this->hasMany(Document::class);
+        // Legacy parity: documents display in their saved drag-order (sort_order),
+        // falling back to insertion order for rows never reordered.
+        return $this->hasMany(Document::class)
+            ->orderBy('sort_order')
+            ->orderBy('id');
     }
 
     public function videos(): HasMany
     {
         return $this->hasMany(Video::class);
+    }
+
+    public function videosPrimary(): HasMany
+    {
+        return $this->hasMany(Video::class)->where('is_extra', false);
+    }
+
+    public function videosExtra(): HasMany
+    {
+        return $this->hasMany(Video::class)->where('is_extra', true);
     }
 
     public function weblinks(): HasMany
@@ -263,11 +328,6 @@ class Profile extends Model
         return $this->hasMany(FormBuilderAnswer::class);
     }
 
-    public function visitors(): HasMany
-    {
-        return $this->hasMany(VisitorContact::class);
-    }
-
     public function participants(): HasMany
     {
         return $this->hasMany(Participant::class);
@@ -283,6 +343,11 @@ class Profile extends Model
         return $this->hasMany(VocRecipient::class);
     }
 
+    public function vocUsers(): HasMany
+    {
+        return $this->hasMany(VocUser::class);
+    }
+
     public function qrImage(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(QrImage::class, 'profile_id');
@@ -294,7 +359,8 @@ class Profile extends Model
     }
 
     /**
-     * Unused paid code slots shown in Code Balance.
+     * Unused paid code slots (Code Balance / draft claim).
+     * Live column is enum('0','1') — boolean false does not match.
      */
     public function scopeOpenSlot(Builder $query): Builder
     {
@@ -302,11 +368,61 @@ class Profile extends Model
     }
 
     /**
-     * Activated / claimed code slots (legacy update_or_not = 1).
+     * Activated / claimed profiles.
      */
     public function scopeClaimedSlot(Builder $query): Builder
     {
         return $query->where('update_or_not', '1');
+    }
+
+    /**
+     * Codes that participate in expiry / renewal handling.
+     *
+     * Legacy (paging.php / profileexpiry.php): free codes are ignored for expiry &
+     * renewal reminders UNLESS they have been flagged renewal_required. Equivalent to
+     * (free_code = 0 OR (free_code = 1 AND renewal_required = 1)).
+     */
+    public function scopeExpiryManaged(Builder $query): Builder
+    {
+        return $query->where(function (Builder $inner): void {
+            $inner->where('free_code', 0)
+                ->orWhere('renewal_required', 1);
+        });
+    }
+
+    /**
+     * Filter by Master Code List row colour buckets (expired / expiring / active).
+     * Mirrors expiryStatusClass() so legend clicks match painted rows.
+     */
+    public function scopeWhereExpiryStatus(Builder $query, string $status): Builder
+    {
+        $now = now();
+        $within30 = now()->copy()->addDays(30);
+
+        return match ($status) {
+            'expired' => $query
+                ->expiryManaged()
+                ->whereNotNull('expired_at')
+                ->where('expired_at', '<', $now),
+            'expiring' => $query
+                ->expiryManaged()
+                ->whereNotNull('expired_at')
+                ->where('expired_at', '>=', $now)
+                ->where('expired_at', '<=', $within30),
+            'active' => $query->where(function (Builder $q) use ($within30): void {
+                $q->whereNull('expired_at')
+                    ->orWhere(function (Builder $free): void {
+                        // Free codes not flagged for renewal stay "Active" regardless of date.
+                        $free->where('free_code', 1)
+                            ->where(function (Builder $renewal): void {
+                                $renewal->where('renewal_required', 0)
+                                    ->orWhereNull('renewal_required');
+                            });
+                    })
+                    ->orWhere('expired_at', '>', $within30);
+            }),
+            default => $query,
+        };
     }
 
     public function scopeLegacyVisible(Builder $query): Builder
@@ -316,7 +432,7 @@ class Profile extends Model
                 $q->whereBetween('type_id', [1, 8])
                     ->orWhere(function (Builder $inner): void {
                         $inner->whereHas('equipmentType', fn (Builder $t) => $t->where('slag', 'code'))
-                            ->where('update_or_not', true);
+                            ->where('update_or_not', '1');
                     });
             });
     }
@@ -386,11 +502,42 @@ class Profile extends Model
     }
 
     /**
+     * Legacy mastercode Select checkbox / renew eligibility:
+     * free codes are ignored unless renewal_required=1.
+     */
+    public function isExpiryManaged(): bool
+    {
+        if (! (bool) $this->free_code) {
+            return true;
+        }
+
+        return (bool) ($this->getAttribute('renewal_required') ?? false);
+    }
+
+    /**
+     * Legacy paging.php: free + not renewal_required → "N/A"; otherwise show date.
+     */
+    public function expiryDateLabel(): string
+    {
+        if (! $this->isExpiryManaged()) {
+            return 'N/A';
+        }
+
+        return $this->expired_at?->format('d/m/Y') ?? '—';
+    }
+
+    /**
      * Legacy mastercode row colour class (red / orange / green).
      */
     public function expiryStatusClass(): string
     {
-        if ((bool) $this->free_code || $this->expired_at === null) {
+        if ($this->expired_at === null) {
+            return 'sl-row-active';
+        }
+
+        // Legacy: a free code only counts as active/ignored while it is NOT flagged
+        // for renewal. A free code with renewal_required is coloured like any other.
+        if ((bool) $this->free_code && ! (bool) ($this->getAttribute('renewal_required') ?? false)) {
             return 'sl-row-active';
         }
 
@@ -408,5 +555,132 @@ class Profile extends Model
     public function typeSlug(): ?string
     {
         return $this->equipmentType?->slag;
+    }
+
+    /**
+     * Legacy parity: the Form/Survey/Checklist ("survey") and VOC types have Form Builder
+     * inherent/free — legacy has no auto_save purchase bridge for them, so the form can be
+     * enabled without the $5 activation. Every other type must purchase (form_active).
+     */
+    public function formBuilderEntitled(): bool
+    {
+        return (bool) $this->form_active
+            || in_array($this->typeSlug(), ['survey', 'voc'], true);
+    }
+
+    /**
+     * Legacy parity: exhibit/voc mobile pages render their content tiles in the
+     * user-saved order (profiles.tiles_order). Returns the ordered list of tile ids,
+     * falling back to the legacy default when unset/invalid.
+     *
+     * @return array<int, int>
+     */
+    public function mobileTileOrder(): array
+    {
+        $labels = self::mobileTileLabels($this->typeSlug());
+        $default = array_keys($labels);
+
+        $raw = trim((string) $this->getAttribute('tiles_order'));
+
+        if ($raw === '') {
+            return $default;
+        }
+
+        // Keep only ids known for this type, in the saved order.
+        $ids = array_values(array_filter(
+            array_map('intval', explode(',', $raw)),
+            fn (int $n): bool => isset($labels[$n]),
+        ));
+
+        return $ids !== [] ? $ids : $default;
+    }
+
+    /**
+     * Legacy parity: the draggable content tiles for exhibit/voc mobile pages, in
+     * their default display order. id => human label. Single source for both the
+     * scan-page renderer (mobileTileOrder) and the editor "Display Order" control.
+     *
+     * @return array<int, string>
+     */
+    public static function mobileTileLabels(string $slug): array
+    {
+        return match ($slug) {
+            'exhibit' => [
+                1 => 'Logo', 2 => 'Videos', 3 => 'Words', 4 => 'Pictures',
+                5 => 'Documents', 6 => 'Web Links', 11 => 'Share',
+                17 => 'Logo #2', 14 => 'Videos #2', 15 => 'Words #2', 16 => 'Pictures #2',
+            ],
+            'voc' => [
+                1 => 'Logo', 2 => 'Title Bar', 3 => 'Profile Picture',
+                4 => 'Profile Information', 5 => 'Documents',
+            ],
+            default => [],
+        };
+    }
+
+    /**
+     * Build the reorderable editor items for tiles_order: seeded from a saved order
+     * (comma-separated ids), pruned to the type's known tiles, with any missing tiles
+     * appended in default order. Empty for types without draggable tiles.
+     *
+     * @return list<array{id: int, label: string}>
+     */
+    public static function tileOrderFormItems(?string $slug, ?string $savedOrder): array
+    {
+        $labels = self::mobileTileLabels((string) $slug);
+
+        if ($labels === []) {
+            return [];
+        }
+
+        $order = array_values(array_filter(
+            array_map('intval', explode(',', (string) $savedOrder)),
+            fn (int $n): bool => isset($labels[$n]),
+        ));
+
+        foreach (array_keys($labels) as $id) {
+            if (! in_array($id, $order, true)) {
+                $order[] = $id;
+            }
+        }
+
+        return array_map(fn (int $id): array => ['id' => $id, 'label' => $labels[$id]], $order);
+    }
+
+    /**
+     * Map editor "Display Order" repeater state back to the tiles_order string.
+     * Returns null when there is nothing orderable (so callers don't overwrite).
+     */
+    public static function tileOrderToString(mixed $items): ?string
+    {
+        if (! is_array($items)) {
+            return null;
+        }
+
+        $ids = array_values(array_filter(
+            array_map(fn ($row): int => (int) (is_array($row) ? ($row['id'] ?? 0) : 0), $items),
+            fn (int $n): bool => $n > 0,
+        ));
+
+        return $ids !== [] ? implode(',', $ids) : null;
+    }
+
+    /**
+     * Legacy mobile/index.php: the public page blanks its content when scanned outside the
+     * activation window. The window is only enforced when BOTH dates are set; a single date
+     * (or none) leaves the code always active.
+     */
+    public function isWithinActivationWindow(): bool
+    {
+        $start = $this->activation_start_date;
+        $end = $this->activation_end_date;
+
+        if ($start === null || $end === null) {
+            return true;
+        }
+
+        $today = now()->startOfDay();
+
+        return $today->betweenIncluded($start->copy()->startOfDay(), $end->copy()->startOfDay());
     }
 }

@@ -113,12 +113,14 @@
                 >
                     @if ($type->slag !== 'code')
                         {{-- Gating (this repo only): only the "URL Link" template tab is
-                             clickable; every other template menu is disabled (non-navigable). --}}
-                        <span
+                             clickable. Other tabs keep their normal label styling (full text
+                             visibility) but are non-navigable — no href, no wire:click, and
+                             pointer events blocked. Text is NOT dimmed/hidden. --}}
+                        <a
                             class="{{ $activeTab === $type->slag ? 'active' : '' }} sl-tab-disabled"
                             aria-disabled="true"
-                            style="cursor:not-allowed;opacity:.55;pointer-events:none;"
-                        >{{ $labelFor($type) }}</span>
+                            style="cursor:not-allowed;pointer-events:none;"
+                        >{{ $labelFor($type) }}</a>
                     @elseif (! empty($editorMode) || ! empty($readonlyNav))
                         {{-- Legacy innermenu / analytics pages: tab clicks are plain navigations, no Livewire $set --}}
                         <a
