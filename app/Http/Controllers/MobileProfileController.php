@@ -745,21 +745,25 @@ class MobileProfileController extends Controller
         $lat = (string) $request->query('latitude', '');
         $lng = (string) $request->query('longitude', '');
 
+        // Resolve country/region/city from the visitor IP at scan time so every scan saves
+        // geolocation directly — the client-side recordScanGeo() ping is unreliable on
+        // mobile (it never fires unless the browser reports GPS), which left country blank.
+        // Cached per-IP for 7 days, private/reserved IPs skip the lookup, 3s timeout.
+        $geo = app(\App\Services\IpGeolocationService::class)->locate((string) ($request->ip() ?? ''));
+
         try {
-            // Geo (country/region/city) is filled asynchronously by recordScanGeo() once the
-            // browser reports its position; it also does the IP lookup off the page-load path.
             $row = AnaItemAnalytics::query()->create([
                 'event_id' => 'LARAVEL-'.(string) $profile->id.'-'.Str::uuid(),
                 'id_item' => (string) $profile->id,
-                'country_code' => null,
-                'country_name' => null,
-                'region_name' => null,
-                'city_name' => null,
-                'zipcode' => null,
-                'latitude' => $lat !== '' ? $lat : null,
-                'longitude' => $lng !== '' ? $lng : null,
+                'country_code' => $geo['country_code'] ?? null,
+                'country_name' => $geo['country_name'] ?? null,
+                'region_name' => $geo['region_name'] ?? null,
+                'city_name' => $geo['city_name'] ?? null,
+                'zipcode' => $geo['zipcode'] ?? null,
+                'latitude' => $lat !== '' ? $lat : ($geo['latitude'] ?? null),
+                'longitude' => $lng !== '' ? $lng : ($geo['longitude'] ?? null),
                 'ip_add' => (string) ($request->ip() ?? ''),
-                'timezone' => null,
+                'timezone' => $geo['timezone'] ?? null,
                 'id_browser' => (string) $browserId,
                 'browser_version' => $browserVersion,
                 'id_platform' => $platformId,
