@@ -103,6 +103,7 @@ class ClientPortalPanelProvider extends PanelProvider
                     ->collapsible(),
             ])
             ->navigationItems($howToItems)
+            ->discoverResources(in: app_path('Filament/Portal/Resources'), for: 'App\\Filament\\Portal\\Resources')
             ->discoverPages(in: app_path('Filament/Portal/Pages'), for: 'App\\Filament\\Portal\\Pages')
             ->pages([
                 PortalHome::class,
