@@ -811,11 +811,23 @@ class MobileProfileController extends Controller
             return response('OK');
         }
 
-        $geo = app(\App\Services\IpGeolocationService::class)->locate((string) ($request->ip() ?? ''));
-
         $lat = trim((string) ($validated['lat'] ?? ''));
         $lng = trim((string) ($validated['lng'] ?? ''));
         $hasGps = $lat !== '' && $lng !== '';
+
+        $geoService = app(\App\Services\IpGeolocationService::class);
+        // IP geo is only the approximate fallback (ISP / mobile-carrier gateway). When the
+        // browser reports real GPS coordinates, reverse-geocode them for the visitor's
+        // ACTUAL country/state/city and prefer those; use the IP value only to fill gaps.
+        $geo = $geoService->locate((string) ($request->ip() ?? ''));
+        if ($hasGps) {
+            $gps = $geoService->reverseLocate($lat, $lng);
+            foreach ($geo as $geoKey => $geoVal) {
+                if (filled($gps[$geoKey] ?? null)) {
+                    $geo[$geoKey] = $gps[$geoKey];
+                }
+            }
+        }
 
         $update = ['scan_type' => $hasGps ? 'gps' : ($row->scan_type ?: 'ip')];
 
