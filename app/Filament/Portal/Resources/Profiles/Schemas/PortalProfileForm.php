@@ -20,6 +20,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Actions;
+use Filament\Schemas\Components\Flex;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
@@ -703,7 +704,7 @@ class PortalProfileForm
 
                 // Legacy code/index.php — single "Code no {id}" form (Application, URL, DC, colour, QR/DM).
                 Section::make()
-                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box sl-code-url-form'])
+                    ->extraAttributes(['class' => 'SectionTitleBoxCode sl-section-box sl-code-url-form'])
                     ->schema(fn (): array => self::legacyCodeUrlFields())
                     ->visible(fn (Get $get): bool => self::slug($get('type_id')) === 'code'),
 
@@ -842,30 +843,49 @@ class PortalProfileForm
                 ->formatStateUsing(fn ($state): string => ($state === true || $state === 1 || $state === '1') ? '1' : '0')
                 ->dehydrateStateUsing(fn ($state): bool => $state === '1' || $state === 1 || $state === true)
                 ->columnSpanFull(),
-            // Legacy shows these controls always (not gated behind Yes).
+            // Legacy parity (create + edit share this schema):
+            //   [ ] Set as compulsory          ← own row
+            //   [ ] Mobile [ ] Email [ ] Name [ ] Surname  ← one inline row
+            // Checkbox::inline() puts the input in the label (labelPrefix) so it
+            // renders as a real checkbox+text pair — without it Filament shows the
+            // label as a standalone field heading and the box sits in a broken content col.
             Checkbox::make('set_up_compulsory')
                 ->label('Set as compulsory')
-                ->extraAttributes(['class' => 'sl-code-dc-compulsory'])
-                ->columnSpanFull(),
-            Grid::make(4)
-                ->schema([
-                    Checkbox::make('data_collection_mobile')->label('Mobile'),
-                    Checkbox::make('data_collection_email')->label('Email'),
-                    Checkbox::make('data_collection_name')->label('Name'),
-                    Checkbox::make('data_collection_surname')->label('Surname'),
-                ])
+                ->inline()
+                ->extraFieldWrapperAttributes(['class' => 'sl-code-dc-compulsory']),
+            Flex::make([
+                Checkbox::make('data_collection_mobile')
+                    ->label('Mobile')
+                    ->inline()
+                    ->grow(false),
+                Checkbox::make('data_collection_email')
+                    ->label('Email')
+                    ->inline()
+                    ->grow(false),
+                Checkbox::make('data_collection_name')
+                    ->label('Name')
+                    ->inline()
+                    ->grow(false),
+                Checkbox::make('data_collection_surname')
+                    ->label('Surname')
+                    ->inline()
+                    ->grow(false),
+            ])
+                ->from('default')
                 ->extraAttributes(['class' => 'sl-code-dc-fields']),
             Textarea::make('description')
                 ->label('pop up message:')
                 ->placeholder('Enter pop up message:')
                 ->rows(2)
                 ->maxLength(150)
+                ->extraAttributes(['class' => 'sl-code-popup-message'])
                 ->columnSpanFull(),
-            Grid::make(2)
+            Grid::make(['default' => 2])
                 ->schema([
                     ColorPicker::make('color_code')
                         ->label('Colour Selector')
                         ->default('#000000')
+                        ->extraAttributes(['class' => 'sl-code-colour-picker'])
                         ->formatStateUsing(function ($state): string {
                             $value = trim((string) ($state ?: '000000'));
 

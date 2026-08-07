@@ -146,6 +146,8 @@
     <script>
         (function () {
             var baseImg = null;   // cached original QR bitmap (recolour from this each time)
+            var lastHex = null;
+            var reapplyTimer = null;
 
             function qrEl() {
                 return document.querySelector('.sl-code-preview-block .sl-qr-image, .code_preview_qr .sl-qr-image');
@@ -158,22 +160,38 @@
                 return { r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16) };
             }
 
+            function normalizeHex(v) {
+                v = String(v || '').trim();
+                if (!v) { return null; }
+                if (v.charAt(0) !== '#') { v = '#' + v; }
+                return /^#[0-9a-fA-F]{6}$/.test(v) ? v : null;
+            }
+
             function ensureBase(cb) {
                 var img = qrEl();
                 if (!img) { return; }
                 var src = img.getAttribute('data-qr-base') || img.src;
-                if (!img.getAttribute('data-qr-base')) { img.setAttribute('data-qr-base', src); }
+                // Prefer the server PNG as the base; ignore previous canvas data-URLs.
+                if (src && src.indexOf('data:') === 0 && img.getAttribute('data-qr-base')) {
+                    src = img.getAttribute('data-qr-base');
+                }
+                if (!img.getAttribute('data-qr-base') && src && src.indexOf('data:') !== 0) {
+                    img.setAttribute('data-qr-base', src);
+                }
                 if (baseImg && baseImg.__src === src) { cb(baseImg); return; }
                 var im = new Image();
+                im.crossOrigin = 'anonymous';
                 im.onload = function () { baseImg = im; baseImg.__src = src; cb(im); };
                 im.onerror = function () {};
                 im.src = src;
             }
 
             function recolour(hex) {
-                var rgb = hexToRgb(hex);
+                var normalized = normalizeHex(hex);
+                var rgb = hexToRgb(normalized);
                 var img = qrEl();
                 if (!rgb || !img) { return; }
+                lastHex = normalized;
                 ensureBase(function (base) {
                     var w = base.naturalWidth || base.width, h = base.naturalHeight || base.height;
                     if (!w || !h) { return; }
@@ -196,29 +214,99 @@
             }
 
             function colourInput() {
+                var root = document.querySelector('.sl-code-colour-picker') || document.querySelector('.sl-add-form-left');
+                if (root) {
+                    var byClass = root.querySelector('.fi-fo-color-picker input.fi-input, .fi-fo-color-picker input, input.fi-input');
+                    if (byClass && root.classList.contains('sl-code-colour-picker')) { return byClass; }
+                    if (root.classList.contains('sl-code-colour-picker')) {
+                        var direct = root.querySelector('input:not([type="hidden"])');
+                        if (direct) { return direct; }
+                    }
+                }
+                var picker = document.querySelector('.sl-code-colour-picker input:not([type="hidden"]), .fi-fo-color-picker input.fi-input');
+                if (picker) { return picker; }
                 var el = document.querySelector('[wire\\:model="data.color_code"], [wire\\:model\\.live="data.color_code"], [wire\\:model\\.lazy="data.color_code"]');
                 if (el) { return el; }
                 var labels = document.querySelectorAll('.sl-add-form-left .fi-fo-field-wrp-label, .sl-add-form-left label');
                 for (var i = 0; i < labels.length; i++) {
                     if (/colour selector/i.test(labels[i].textContent || '')) {
-                        var wrap = labels[i].closest('.fi-fo-field-wrp');
-                        if (wrap) { var inp = wrap.querySelector('input[type="text"], input:not([type="hidden"])'); if (inp) { return inp; } }
+                        var wrap = labels[i].closest('.fi-fo-field-wrp') || labels[i].closest('.fi-fo-color-picker');
+                        if (wrap) {
+                            var inp = wrap.querySelector('input[type="text"], input.fi-input, input:not([type="hidden"])');
+                            if (inp) { return inp; }
+                        }
                     }
                 }
                 return null;
             }
 
+            function readColour() {
+                var ci = colourInput();
+                if (ci && ci.value) { return normalizeHex(ci.value); }
+                return lastHex;
+            }
+
+            function scheduleReapply() {
+                clearTimeout(reapplyTimer);
+                reapplyTimer = setTimeout(function () {
+                    if (lastHex) { recolour(lastHex); }
+                }, 40);
+            }
+
+            function onColourValue(v) {
+                var hex = normalizeHex(v);
+                if (hex) { recolour(hex); }
+            }
+
             function onChange(e) {
                 var t = e.target;
-                if (!t || t.tagName !== 'INPUT') { return; }
-                var ci = colourInput();
-                if (!ci || t !== ci) { return; }
-                var v = t.value;
-                if (/^#?[0-9a-fA-F]{6}$/.test(v)) { recolour(v.charAt(0) === '#' ? v : '#' + v); }
+                if (!t) { return; }
+                // Native / Alpine text input for hex.
+                if (t.tagName === 'INPUT') {
+                    var ci = colourInput();
+                    if (ci && t === ci) {
+                        onColourValue(t.value);
+                        return;
+                    }
+                    // Also accept any input inside the colour picker wrapper.
+                    if (t.closest && t.closest('.sl-code-colour-picker, .fi-fo-color-picker')) {
+                        onColourValue(t.value);
+                        return;
+                    }
+                }
+                // Filament hex-color-picker web component.
+                if (t.tagName && /color-picker$/i.test(t.tagName) && t.color) {
+                    onColourValue(t.color);
+                }
+            }
+
+            function onColorChanged(e) {
+                var detail = e.detail;
+                var v = (detail && (detail.value || detail.color)) || (e.target && e.target.color) || null;
+                if (v) { onColourValue(v); }
+                else { onColourValue(readColour()); }
             }
 
             document.addEventListener('input', onChange, true);
             document.addEventListener('change', onChange, true);
+            document.addEventListener('color-changed', onColorChanged, true);
+            document.addEventListener('mouseup', function (e) {
+                if (e.target && e.target.closest && e.target.closest('hex-color-picker, .sl-code-colour-picker, .fi-fo-color-picker')) {
+                    setTimeout(function () { onColourValue(readColour()); }, 0);
+                }
+            }, true);
+
+            // Re-apply after Livewire morphs the QR <img> back to the server PNG.
+            document.addEventListener('livewire:init', function () {
+                Livewire.hook('morph.updated', function () { scheduleReapply(); });
+                Livewire.hook('commit', function ({ succeed }) {
+                    succeed(function () { scheduleReapply(); });
+                });
+            });
+            document.addEventListener('livewire:navigated', function () {
+                baseImg = null;
+                scheduleReapply();
+            });
         })();
     </script>
 @endif
