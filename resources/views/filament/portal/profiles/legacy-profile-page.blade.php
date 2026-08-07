@@ -1,7 +1,118 @@
 <x-filament-panels::page>
     {{-- Legacy ScanLink create/edit: form left (500px), iPhone + Form Builder right (450px) --}}
-    <link rel="stylesheet" href="{{ asset('styles/style.css') }}?v=legacy-profile-21">
-    <link rel="stylesheet" href="{{ asset('css/filament/scanlink-theme.css') }}?v=legacy-profile-21">
+    <link rel="stylesheet" href="{{ asset('styles/style.css') }}?v=legacy-profile-23">
+    <link rel="stylesheet" href="{{ asset('css/filament/scanlink-theme.css') }}?v=legacy-profile-23">
+
+    @if (! empty($previewData['isUrlLinkCode'] ?? null) || request('type') === 'code')
+    {{-- URL Link (code) editor design — inline so the SPA re-applies it on every load
+         (external CSS is cached/kept across SPA navigations). 2-column card layout. --}}
+    <style>
+        .sl-profile-editor.sl-profile-editor--code {
+            width: 100% !important;
+            max-width: 1060px !important;
+            margin: 8px auto 0 !important;
+            overflow: visible !important;
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) 320px !important;
+            grid-template-areas: "form preview" !important;
+            column-gap: 32px !important;
+            align-items: start !important;
+        }
+        .sl-profile-editor.sl-profile-editor--code .sl-add-form-left,
+        .sl-profile-editor.sl-profile-editor--code .sl-add-form-right {
+            width: auto !important;
+            max-width: none !important;
+            margin: 0 !important;
+            background: #fff !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 12px !important;
+            padding: 24px !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .06) !important;
+            box-sizing: border-box !important;
+            overflow: visible !important;
+        }
+        .sl-profile-editor.sl-profile-editor--code .sl-add-form-left { grid-area: form !important; }
+        .sl-profile-editor.sl-profile-editor--code .sl-add-form-right {
+            grid-area: preview !important;
+            width: 320px !important;
+            max-width: 320px !important;
+        }
+        /* Form fields fill the card; sections are seamless inside the card. */
+        .sl-profile-editor--code .sl-add-form-left .fi-input-wrp,
+        .sl-profile-editor--code .sl-add-form-left .fi-fo-field-wrp { max-width: 100% !important; }
+        .sl-profile-editor--code .sl-add-form-left .fi-section,
+        .sl-profile-editor--code .sl-add-form-left .fi-sc-section { padding: 0 !important; border: 0 !important; box-shadow: none !important; background: transparent !important; }
+        .sl-profile-editor--code .sl-add-form-left .fi-section-content { gap: 14px !important; }
+        .sl-profile-editor--code .SectionTitleCode { font-size: 16px !important; margin: 0 0 4px !important; color: #111827 !important; }
+        /* Labels a touch smaller/greyer for a cleaner form rhythm. */
+        .sl-profile-editor--code .sl-add-form-left .fi-fo-field-wrp-label,
+        .sl-profile-editor--code .codelabel { font-size: 12.5px !important; font-weight: 600 !important; color: #4b5563 !important; }
+        .sl-profile-editor--code .sl-add-form-left textarea { min-height: 60px !important; }
+
+        /* Data-collection checkboxes → one tidy inline group (no tall stack). */
+        .sl-profile-editor--code .sl-code-dc-fields {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 6px 26px !important;
+            margin: 2px 0 0 !important;
+            max-width: none !important;
+        }
+        .sl-profile-editor--code .sl-code-dc-fields .fi-fo-field-wrp,
+        .sl-profile-editor--code .sl-code-dc-fields > * { width: auto !important; margin: 0 !important; }
+        .sl-profile-editor--code .sl-code-dc-compulsory { margin: 2px 0 0 !important; }
+        /* Yes/No + QR/DM radios sit inline and compact. */
+        .sl-profile-editor--code .fi-fo-radio .fi-fo-radio-options,
+        .sl-profile-editor--code .sl-code-type-radios .fi-fo-radio-options {
+            display: flex !important; flex-direction: row !important; gap: 22px !important; flex-wrap: wrap !important;
+        }
+        /* Colour + Code Type on one row. */
+        .sl-profile-editor--code .sl-code-colour-type-row {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            gap: 26px !important;
+            align-items: start !important;
+            margin-top: 2px !important;
+        }
+
+        /* QR card content centred. */
+        .sl-profile-editor--code .sl-add-form-right .sl-qr-block,
+        .sl-profile-editor--code .sl-add-form-right .code_preview_qr,
+        .sl-profile-editor--code .sl-add-form-right .code_review { text-align: center !important; }
+        .sl-profile-editor--code .sl-add-form-right .sl-qr-image { max-width: 100% !important; height: auto !important; }
+
+        /* Small, CENTERED Save — override the general full-width editor button rule. */
+        .fi-page:has(.sl-profile-editor--code) .sl-add-form-left .fi-form-actions,
+        .sl-profile-editor--code .sl-add-form-left .fi-form-actions,
+        .sl-profile-editor--code .fi-form-actions {
+            display: flex !important;
+            justify-content: center !important;
+            max-width: none !important;
+            width: 100% !important;
+            margin: 22px 0 2px !important;
+        }
+        .fi-page:has(.sl-profile-editor--code) .sl-add-form-left .fi-form-actions .fi-btn,
+        .fi-page:has(.sl-profile-editor--code) .sl-add-form-left .fi-form-actions button[type="submit"],
+        .fi-page:has(.sl-profile-editor--code) .sl-add-form-left .fi-form-actions .fi-ac,
+        .sl-profile-editor--code .fi-form-actions .fi-btn,
+        .sl-profile-editor--code .fi-form-actions button[type="submit"] {
+            display: inline-flex !important;
+            width: auto !important;
+            min-width: 150px !important;
+            max-width: 210px !important;
+            margin: 0 !important;
+            padding: 10px 34px !important;
+            font-size: 14px !important;
+            flex: 0 0 auto !important;
+        }
+        @media (max-width: 959px) {
+            .sl-profile-editor.sl-profile-editor--code {
+                grid-template-columns: minmax(0, 1fr) !important;
+                grid-template-areas: "form" "preview" !important;
+            }
+            .sl-profile-editor.sl-profile-editor--code .sl-add-form-right { width: auto !important; max-width: none !important; }
+        }
+    </style>
+    @endif
 
     @php
         $previewData = $this->legacyPreviewData();

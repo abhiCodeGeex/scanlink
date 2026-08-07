@@ -3085,18 +3085,21 @@ tr.sl-row-active {
     gap: 8px !important;
 }
 
+/* Compact Save — a real button, not a full-width banner. */
 .sl-profile-editor--code .sl-add-form-left .fi-form-actions {
-    max-width: 150px !important;
-    margin: 16px auto !important;
-    text-align: center !important;
+    max-width: none !important;
+    margin: 14px 0 4px !important;
+    text-align: left !important;
 }
 
 .sl-profile-editor--code .sl-add-form-left .fi-form-actions .fi-btn,
 .sl-profile-editor--code .sl-add-form-left .fi-form-actions button[type='submit'] {
-    width: 150px !important;
-    max-width: 150px !important;
-    margin: 0 auto !important;
-    font-size: 16px !important;
+    width: auto !important;
+    min-width: 128px !important;
+    max-width: 180px !important;
+    margin: 0 !important;
+    padding: 9px 26px !important;
+    font-size: 14px !important;
     text-transform: uppercase !important;
     letter-spacing: 0.02em;
 }
@@ -3106,9 +3109,32 @@ tr.sl-row-active {
     margin-top: 0 !important;
 }
 
+/* ---- Tighten the code form: full width use, justified padding, no dead space ---- */
+.sl-profile-editor--code .sl-add-form-left .fi-section,
+.sl-profile-editor--code .sl-add-form-left .fi-sc-section {
+    padding: 16px 18px !important;
+}
+
+.sl-profile-editor--code .sl-add-form-left .fi-section-content,
+.sl-profile-editor--code .sl-add-form-left .fi-sc-section-content {
+    gap: 10px !important;
+}
+
+.sl-profile-editor--code .sl-add-form-left .fi-fo-field-wrp {
+    margin-bottom: 10px !important;
+}
+
+/* Inputs use the full column width (was a stray 220px cap that left half the row empty). */
 .sl-profile-editor--code .sl-add-form-left input.codeTextApplication,
-.sl-profile-editor--code .sl-add-form-left .codeTextApplication {
-    max-width: 220px !important;
+.sl-profile-editor--code .sl-add-form-left .codeTextApplication,
+.sl-profile-editor--code .sl-add-form-left .fi-input-wrp {
+    max-width: 100% !important;
+}
+
+/* Colour + code-type on one tidy row instead of two tall stacked blocks. */
+.sl-profile-editor--code .sl-code-colour-type-row {
+    margin-top: 4px !important;
+    gap: 18px !important;
 }
 
 /* ===== Survey editor â€” match legacy survey/index.php ===== */
@@ -3792,3 +3818,179 @@ html.dark .sl-rch-pill--inactive {
     color: rgb(252 165 165) !important;
 }
 
+
+/* ============================================================================
+ * URL Link (code) editor — professional 2-column CARD layout
+ * Form card (left ~68%) + QR/Download card (right ~30%), 24px padding, gap.
+ * Double-class specificity beats the base .sl-profile-editor grid rules.
+ * ========================================================================== */
+.sl-profile-editor.sl-profile-editor--code {
+    width: 100% !important;
+    max-width: 1060px !important;
+    overflow: visible !important;
+}
+
+/* Both columns are white cards with equal 24px padding. */
+.sl-profile-editor.sl-profile-editor--code .sl-add-form-left,
+.sl-profile-editor.sl-profile-editor--code .sl-add-form-right {
+    background: #fff !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 12px !important;
+    padding: 24px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+}
+
+@media (min-width: 960px) {
+    .sl-profile-editor.sl-profile-editor--code {
+        grid-template-columns: minmax(0, 1fr) 320px !important;
+        grid-template-areas: "form preview" !important;
+        column-gap: 32px !important;
+        align-items: start !important;
+    }
+    .sl-profile-editor.sl-profile-editor--code .sl-add-form-left {
+        width: auto !important;
+        max-width: none !important;
+    }
+    .sl-profile-editor.sl-profile-editor--code .sl-add-form-right {
+        width: 320px !important;
+        max-width: 320px !important;
+    }
+}
+
+/* Form fields fill the card. */
+.sl-profile-editor.sl-profile-editor--code .sl-add-form-left .fi-input-wrp,
+.sl-profile-editor.sl-profile-editor--code .sl-add-form-left .fi-fo-field-wrp {
+    max-width: 100% !important;
+}
+
+/* QR card: centre the preview + controls, tidy spacing. */
+.sl-profile-editor.sl-profile-editor--code .sl-add-form-right .sl-qr-block,
+.sl-profile-editor.sl-profile-editor--code .sl-add-form-right .code_preview_qr {
+    text-align: center !important;
+}
+.sl-profile-editor.sl-profile-editor--code .sl-add-form-right .sl-qr-image {
+    max-width: 100% !important;
+    height: auto !important;
+}
+
+/* ============================================================================
+   DARK-MODE COMPATIBILITY LAYER (ScanLink legacy-styled content)
+   ----------------------------------------------------------------------------
+   The legacy portal/admin pages were authored light-only (their own page <style>
+   blocks hardcode white backgrounds + dark text). When Filament renders a panel
+   in dark mode (admin theme switcher, or the OS prefers-color-scheme in the
+   portal), that content must stay readable. These rules:
+     - use `html.dark` (higher specificity) + !important to win over the
+       page-scoped <style> blocks that come later in the source order;
+     - are scoped to `.fi-main` so they never touch Filament's own dark-aware
+       chrome (topbar/sidebar/components);
+     - set container backgrounds + a base light text colour so children inherit
+       readable text, while brand-green / explicitly-coloured elements keep their
+       own colour (buttons, badges, dots, links).
+   ============================================================================ */
+html.dark {
+    --sl-dk-surface: #1f2937;   /* gray-800 */
+    --sl-dk-surface-2: #111827; /* gray-900 */
+    --sl-dk-text: #e5e7eb;      /* gray-200 */
+    --sl-dk-muted: #9ca3af;     /* gray-400 */
+    --sl-dk-border: #374151;    /* gray-700 */
+}
+
+/* Panels / cards / sections / boxes -> dark surface + light text */
+html.dark .fi-main .legacy-purchase-page,
+html.dark .fi-main .contentpart,
+html.dark .fi-main .my-qr-codes,
+html.dark .fi-main .sl-sa__panel,
+html.dark .fi-main .sl-plist__section,
+html.dark .fi-main .sl-portal-contact__box,
+html.dark .fi-main .sl-portal-contact__box-section,
+html.dark .fi-main .sl-edit-account__form,
+html.dark .fi-main .sl-existing-form-tabpanel,
+html.dark .fi-main .sl-os__row,
+html.dark .fi-main .subscription-ordersummary,
+html.dark .fi-main .SectionTitleBox-orderSummary,
+html.dark .fi-main .sl-fbp__field,
+html.dark .fi-main .sl-fbp__control,
+html.dark .fi-main .content-register {
+    background-color: var(--sl-dk-surface) !important;
+    color: var(--sl-dk-text) !important;
+    border-color: var(--sl-dk-border) !important;
+}
+
+/* Base light text for the legacy content roots (children inherit; coloured
+   elements keep their own colour). Overrides hardcoded color:#333 etc. */
+html.dark .fi-main .sl-sa,
+html.dark .fi-main .legacy-purchase-page,
+html.dark .fi-main .contentpart,
+html.dark .fi-main .my-qr-codes,
+html.dark .fi-main .sl-plist,
+html.dark .fi-main .sl-vlog,
+html.dark .fi-main .sl-fslog,
+html.dark .fi-main .sl-ca,
+html.dark .fi-main .sl-ol,
+html.dark .fi-main .sl-fbp,
+html.dark .fi-main .sl-edit-account__form,
+html.dark .fi-main .sl-portal-contact__box {
+    color: var(--sl-dk-text) !important;
+}
+
+/* Legacy listing tables */
+html.dark .fi-main .listing-table,
+html.dark .fi-main table.listing-table {
+    background-color: var(--sl-dk-surface) !important;
+    color: var(--sl-dk-text) !important;
+    border-color: var(--sl-dk-border) !important;
+}
+html.dark .fi-main .listing-table th,
+html.dark .fi-main .listing-table td {
+    color: var(--sl-dk-text) !important;
+    border-color: var(--sl-dk-border) !important;
+    background-color: transparent !important;
+}
+html.dark .fi-main .listing-table thead th {
+    background-color: var(--sl-dk-surface-2) !important;
+}
+html.dark .fi-main .listing-table tbody tr:nth-child(even) td {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* Form controls inside legacy content */
+html.dark .fi-main .sl-sa input,
+html.dark .fi-main .sl-sa select,
+html.dark .fi-main .sl-sa textarea,
+html.dark .fi-main .legacy-purchase-page input,
+html.dark .fi-main .legacy-purchase-page select,
+html.dark .fi-main .legacy-purchase-page textarea,
+html.dark .fi-main .sl-reg-field,
+html.dark .fi-main .sl-plist__input,
+html.dark .fi-main .sl-portal-contact__input,
+html.dark .fi-main .sl-existing-form-select,
+html.dark .fi-main .sl-qr-download-select {
+    background-color: var(--sl-dk-surface-2) !important;
+    color: var(--sl-dk-text) !important;
+    border-color: var(--sl-dk-border) !important;
+}
+html.dark .fi-main .sl-sa input::placeholder,
+html.dark .fi-main .legacy-purchase-page input::placeholder,
+html.dark .fi-main .sl-reg-field::placeholder {
+    color: var(--sl-dk-muted) !important;
+}
+
+/* Muted / helper text stays muted but readable */
+html.dark .fi-main .sl-ca__hint,
+html.dark .fi-main .sl-rch-muted,
+html.dark .fi-main .sl-os__desc,
+html.dark .fi-main .sl-sa__empty,
+html.dark .fi-main .sl-vlog__empty,
+html.dark .fi-main .sl-fslog__empty {
+    color: var(--sl-dk-muted) !important;
+}
+
+/* Map detail popups already render on Leaflet/Google's white bubble — force dark
+   text there so they stay readable regardless of theme. */
+html.dark .sl-sa__popup,
+html.dark .sl-sa__popup-row,
+html.dark .sl-sa__popup-row span { color: #222 !important; }

@@ -139,3 +139,86 @@
 </div>
 
 @include('filament.portal.profiles.legacy-form-builder-assets')
+
+@if ($isUrlLinkCode)
+    {{-- Live QR colour preview: recolour the QR the instant the Colour Selector changes,
+         client-side (canvas), so the user sees it without saving / reloading. --}}
+    <script>
+        (function () {
+            var baseImg = null;   // cached original QR bitmap (recolour from this each time)
+
+            function qrEl() {
+                return document.querySelector('.sl-code-preview-block .sl-qr-image, .code_preview_qr .sl-qr-image');
+            }
+
+            function hexToRgb(h) {
+                h = String(h || '').trim().replace('#', '');
+                if (h.length === 3) { h = h.split('').map(function (c) { return c + c; }).join(''); }
+                if (!/^[0-9a-fA-F]{6}$/.test(h)) { return null; }
+                return { r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16) };
+            }
+
+            function ensureBase(cb) {
+                var img = qrEl();
+                if (!img) { return; }
+                var src = img.getAttribute('data-qr-base') || img.src;
+                if (!img.getAttribute('data-qr-base')) { img.setAttribute('data-qr-base', src); }
+                if (baseImg && baseImg.__src === src) { cb(baseImg); return; }
+                var im = new Image();
+                im.onload = function () { baseImg = im; baseImg.__src = src; cb(im); };
+                im.onerror = function () {};
+                im.src = src;
+            }
+
+            function recolour(hex) {
+                var rgb = hexToRgb(hex);
+                var img = qrEl();
+                if (!rgb || !img) { return; }
+                ensureBase(function (base) {
+                    var w = base.naturalWidth || base.width, h = base.naturalHeight || base.height;
+                    if (!w || !h) { return; }
+                    var c = document.createElement('canvas');
+                    c.width = w; c.height = h;
+                    var ctx = c.getContext('2d');
+                    ctx.drawImage(base, 0, 0);
+                    try {
+                        var d = ctx.getImageData(0, 0, w, h), p = d.data;
+                        for (var i = 0; i < p.length; i += 4) {
+                            // Any pixel noticeably darker than white is a QR module → paint it.
+                            if (p[i + 3] > 10 && ((255 - p[i]) + (255 - p[i + 1]) + (255 - p[i + 2])) > 60) {
+                                p[i] = rgb.r; p[i + 1] = rgb.g; p[i + 2] = rgb.b;
+                            }
+                        }
+                        ctx.putImageData(d, 0, 0);
+                        img.src = c.toDataURL('image/png');
+                    } catch (e) { /* tainted canvas — ignore */ }
+                });
+            }
+
+            function colourInput() {
+                var el = document.querySelector('[wire\\:model="data.color_code"], [wire\\:model\\.live="data.color_code"], [wire\\:model\\.lazy="data.color_code"]');
+                if (el) { return el; }
+                var labels = document.querySelectorAll('.sl-add-form-left .fi-fo-field-wrp-label, .sl-add-form-left label');
+                for (var i = 0; i < labels.length; i++) {
+                    if (/colour selector/i.test(labels[i].textContent || '')) {
+                        var wrap = labels[i].closest('.fi-fo-field-wrp');
+                        if (wrap) { var inp = wrap.querySelector('input[type="text"], input:not([type="hidden"])'); if (inp) { return inp; } }
+                    }
+                }
+                return null;
+            }
+
+            function onChange(e) {
+                var t = e.target;
+                if (!t || t.tagName !== 'INPUT') { return; }
+                var ci = colourInput();
+                if (!ci || t !== ci) { return; }
+                var v = t.value;
+                if (/^#?[0-9a-fA-F]{6}$/.test(v)) { recolour(v.charAt(0) === '#' ? v : '#' + v); }
+            }
+
+            document.addEventListener('input', onChange, true);
+            document.addEventListener('change', onChange, true);
+        })();
+    </script>
+@endif

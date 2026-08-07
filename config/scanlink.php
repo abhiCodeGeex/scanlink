@@ -31,6 +31,10 @@ return [
     */
     'analytics_api_url' => env('SCANLINK_ANALYTICS_API_URL', 'https://www.scanlink.com.au/api/web/api.php/'),
 
+    // Google Maps JS API key for the scan-analytics location map (legacy used Google Maps).
+    // Leave empty to fall back to the OpenStreetMap/Leaflet map.
+    'google_maps_api_key' => env('GOOGLE_MAPS_API_KEY', ''),
+
     /*
     |--------------------------------------------------------------------------
     | Notification addresses / support details (legacy hardcoded values)

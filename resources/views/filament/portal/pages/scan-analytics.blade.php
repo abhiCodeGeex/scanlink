@@ -10,15 +10,49 @@
             }
             window.__slSaMapBootBound = true;
 
+            var GKEY = @json((string) config('scanlink.google_maps_api_key'));
+
+            /* ---- shared helpers ---- */
+            function renderEmpty(el, message) {
+                el.innerHTML = '<div class="sl-sa__map-note">' + message + '</div>';
+            }
+            function slEsc(s) {
+                return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+                });
+            }
+            function slPopupHtml(p) {
+                var rows = ['<div class="sl-sa__popup-title">' + slEsc(p.label || ('Scan #' + p.id)) + '</div>'];
+                function line(k, v) {
+                    if (v !== undefined && v !== null && String(v) !== '') {
+                        rows.push('<div class="sl-sa__popup-row"><span>' + k + ':</span> ' + slEsc(v) + '</div>');
+                    }
+                }
+                line('Time', p.time);
+                line('Coordinates', p.coords);
+                line('IP', p.ip);
+                line('Device', p.device);
+                line('Platform', p.platform);
+                line('Browser', p.browser);
+                line('Scan type', p.scan_label);
+                return '<div class="sl-sa__popup">' + rows.join('') + '</div>';
+            }
+            /* Green (GPS) / grey (non-GPS) teardrop pins — match the legacy markers. */
+            function pinSvg(fill) {
+                var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="27" height="41" viewBox="0 0 27 41">'
+                    + '<path fill="' + fill + '" stroke="#ffffff" stroke-width="1.5" d="M13.5 1C6.9 1 1.5 6.4 1.5 13c0 9 12 27 12 27s12-18 12-27C25.5 6.4 20.1 1 13.5 1z"/>'
+                    + '<circle cx="13.5" cy="13" r="4.4" fill="#ffffff"/></svg>';
+                return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+            }
+            var PIN_GPS = pinSvg('#008901');
+            var PIN_IP = pinSvg('#8a8f98');
+
+            /* ---- Leaflet (fallback when no Google Maps key) ---- */
             var leafletCssHref = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
             var leafletJsSrc = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
             var leafletLoading = null;
-
             function ensureLeaflet(cb) {
-                if (typeof L !== 'undefined') {
-                    cb();
-                    return;
-                }
+                if (typeof L !== 'undefined') { cb(); return; }
                 if (! leafletLoading) {
                     leafletLoading = new Promise(function (resolve, reject) {
                         if (! document.querySelector('link[data-sl-sa-leaflet]')) {
@@ -38,9 +72,113 @@
                 }
                 leafletLoading.then(cb).catch(function () { /* ignore */ });
             }
+            function leafletPin(type) {
+                return L.icon({
+                    iconUrl: (type === 'gps' ? PIN_GPS : PIN_IP),
+                    iconSize: [27, 41],
+                    iconAnchor: [13, 40],
+                    popupAnchor: [0, -34]
+                });
+            }
+            function bootLeaflet(el, points, focusId) {
+                if (typeof L === 'undefined') { return; }
+                if (el._slMap) { el._slMap.remove(); el._slMap = null; }
+                el.innerHTML = '';
+                var map = L.map(el).setView([points[0].lat, points[0].lng], 4);
+                el._slMap = map;
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 18,
+                    attribution: '&copy; OpenStreetMap'
+                }).addTo(map);
+                var bounds = [];
+                var focusLatLng = null;
+                points.forEach(function (p) {
+                    var marker = L.marker([p.lat, p.lng], { icon: leafletPin(String(p.scan_type).toLowerCase()) }).addTo(map);
+                    marker.bindPopup(slPopupHtml(p));
+                    marker.on('click', function () {
+                        // Legacy drill (scanalytics_map_country): always zoom IN on the clicked scan.
+                        var z = Math.min((map.getZoom() || 6) + 3, 18);
+                        map.flyTo([p.lat, p.lng], z, { duration: 0.5 });
+                    });
+                    bounds.push([p.lat, p.lng]);
+                    if (focusId && Number(p.id) === focusId) {
+                        focusLatLng = [p.lat, p.lng];
+                        marker.openPopup();
+                    }
+                });
+                if (focusLatLng) { map.setView(focusLatLng, 14); }
+                else if (bounds.length > 1) { map.fitBounds(bounds, { padding: [30, 30] }); }
+                else { map.setView(bounds[0], 10); }
+                setTimeout(function () { map.invalidateSize(); }, 150);
+                setTimeout(function () { map.invalidateSize(); }, 400);
+            }
 
-            function renderEmpty(el, message) {
-                el.innerHTML = '<div class="sl-sa__map-note">' + message + '</div>';
+            /* ---- Google Maps (exact legacy design; needs GOOGLE_MAPS_API_KEY) ---- */
+            var gmapsLoading = null;
+            function ensureGoogle(cb, onFail) {
+                if (window.google && window.google.maps) { cb(); return; }
+                if (! gmapsLoading) {
+                    gmapsLoading = new Promise(function (resolve, reject) {
+                        var script = document.createElement('script');
+                        script.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(GKEY);
+                        script.async = true;
+                        script.defer = true;
+                        script.onload = function () { (window.google && window.google.maps) ? resolve() : reject(new Error('gmaps missing')); };
+                        script.onerror = function () { reject(new Error('gmaps failed')); };
+                        document.head.appendChild(script);
+                    });
+                }
+                gmapsLoading.then(cb).catch(function () { if (onFail) { onFail(); } });
+            }
+            function bootGoogle(el, points, focusId) {
+                el.innerHTML = '';
+                var map = new google.maps.Map(el, {
+                    zoom: 4,
+                    center: { lat: points[0].lat, lng: points[0].lng },
+                    mapTypeId: google.maps.MapTypeId.ROADMAP
+                });
+                el._slGMap = map;
+                var infowindow = new google.maps.InfoWindow();
+                var bounds = new google.maps.LatLngBounds();
+                var focusData = null;
+                points.forEach(function (p) {
+                    var isGps = String(p.scan_type).toLowerCase() === 'gps';
+                    var position = { lat: p.lat, lng: p.lng };
+                    var marker = new google.maps.Marker({
+                        position: position,
+                        map: map,
+                        icon: {
+                            url: (isGps ? PIN_GPS : PIN_IP),
+                            scaledSize: new google.maps.Size(27, 41),
+                            anchor: new google.maps.Point(13, 40)
+                        }
+                    });
+                    bounds.extend(position);
+                    marker.addListener('click', function () {
+                        // Legacy drill (scanalytics_map_country): always zoom IN on the clicked scan.
+                        map.panTo(position);
+                        map.setZoom(Math.min((map.getZoom() || 6) + 3, 18));
+                        infowindow.setContent(slPopupHtml(p));
+                        infowindow.open(map, marker);
+                    });
+                    if (focusId && Number(p.id) === focusId) {
+                        focusData = { pos: position, marker: marker, p: p };
+                    }
+                });
+                if (focusData) {
+                    map.setCenter(focusData.pos);
+                    map.setZoom(15);
+                    google.maps.event.addListenerOnce(map, 'idle', function () {
+                        infowindow.setContent(slPopupHtml(focusData.p));
+                        infowindow.open(map, focusData.marker);
+                    });
+                } else if (points.length > 1) {
+                    map.fitBounds(bounds);
+                } else {
+                    map.setCenter({ lat: points[0].lat, lng: points[0].lng });
+                    map.setZoom(11);
+                }
+                setTimeout(function () { google.maps.event.trigger(map, 'resize'); }, 200);
             }
 
             function bootMap(detail) {
@@ -48,65 +186,24 @@
                 function tryBoot() {
                     var el = document.getElementById('sl-sa-map');
                     if (! el) {
-                        if (attempts++ < 20) {
-                            setTimeout(tryBoot, 50);
-                        }
+                        if (attempts++ < 20) { setTimeout(tryBoot, 50); }
                         return;
                     }
-                    ensureLeaflet(function () {
-                        if (typeof L === 'undefined') {
-                            return;
-                        }
-                        if (el._slMap) {
-                            el._slMap.remove();
-                            el._slMap = null;
-                        }
-                        el.innerHTML = '';
-
-                        var points = (detail && detail.points) ? detail.points : [];
-                        if (! points.length) {
-                            renderEmpty(el, 'No map coordinates recorded for this profile.');
-                            return;
-                        }
-
-                        var focusId = parseInt((detail && detail.focus) || 0, 10) || 0;
-                        var map = L.map(el).setView([points[0].lat, points[0].lng], 4);
-                        el._slMap = map;
-                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                            maxZoom: 18,
-                            attribution: '&copy; OpenStreetMap'
-                        }).addTo(map);
-
-                        var bounds = [];
-                        var focusLatLng = null;
-                        points.forEach(function (p) {
-                            var color = (String(p.scan_type).toLowerCase() === 'gps') ? '#008901' : '#c0392b';
-                            var marker = L.circleMarker([p.lat, p.lng], {
-                                radius: 8,
-                                color: '#fff',
-                                weight: 2,
-                                fillColor: color,
-                                fillOpacity: 0.95
-                            }).addTo(map);
-                            marker.bindPopup(p.label || ('Scan #' + p.id));
-                            bounds.push([p.lat, p.lng]);
-                            if (focusId && Number(p.id) === focusId) {
-                                focusLatLng = [p.lat, p.lng];
-                                marker.openPopup();
-                            }
-                        });
-
-                        if (focusLatLng) {
-                            map.setView(focusLatLng, 10);
-                        } else if (bounds.length > 1) {
-                            map.fitBounds(bounds, { padding: [30, 30] });
-                        } else {
-                            map.setView(bounds[0], 8);
-                        }
-
-                        setTimeout(function () { map.invalidateSize(); }, 150);
-                        setTimeout(function () { map.invalidateSize(); }, 400);
-                    });
+                    var points = (detail && detail.points) ? detail.points : [];
+                    if (! points.length) {
+                        renderEmpty(el, 'No map coordinates recorded for this profile.');
+                        return;
+                    }
+                    var focusId = parseInt((detail && detail.focus) || 0, 10) || 0;
+                    if (el._slMap) { el._slMap.remove(); el._slMap = null; }
+                    if (GKEY) {
+                        ensureGoogle(
+                            function () { bootGoogle(el, points, focusId); },
+                            function () { ensureLeaflet(function () { bootLeaflet(el, points, focusId); }); }
+                        );
+                    } else {
+                        ensureLeaflet(function () { bootLeaflet(el, points, focusId); });
+                    }
                 }
                 tryBoot();
             }
@@ -343,7 +440,21 @@
             vertical-align: middle;
         }
         .sl-sa__dot--gps { background: #008901; }
-        .sl-sa__dot--ip { background: #c0392b; }
+        .sl-sa__dot--ip { background: #8a8f98; }
+        /* Map marker detail popup (legacy info-window parity). */
+        .sl-sa__popup { font-size: 12px; color: #222; min-width: 190px; line-height: 1.5; }
+        .sl-sa__popup-title { font-weight: 700; margin-bottom: 6px; color: #185FA5; font-size: 13px; }
+        .sl-sa__popup-row { margin: 2px 0; }
+        .sl-sa__popup-row span { font-weight: 700; color: #444; }
+        .sl-sa__pager {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            margin-top: 14px;
+        }
+        .sl-sa__pager-info { font-size: 13px; color: #333; }
+        .sl-sa__pager .sl-sa__btn[disabled] { opacity: 0.5; cursor: not-allowed; }
         .sl-sa__sort select {
             margin-left: 6px;
             padding: 4px 8px;
@@ -655,7 +766,7 @@
                             <span><span class="sl-sa__dot sl-sa__dot--ip"></span> Non GPS Location</span>
                             <span><span class="sl-sa__dot sl-sa__dot--gps"></span> Scan GPS Location</span>
                         </div>
-                        <button type="button" class="sl-sa__btn" wire:click="showCharts">Back</button>
+                        <button type="button" class="sl-sa__btn" wire:click="backFromMap">Back</button>
                     </div>
                     {{-- wire:ignore keeps Leaflet's DOM intact; map is booted via sl-sa-boot-map. --}}
                     <div
@@ -704,7 +815,7 @@
                             <tbody>
                                 @forelse ($locationRows as $index => $row)
                                     <tr wire:key="sa-loc-{{ $row->id }}">
-                                        <td>{{ $index + 1 }}</td>
+                                        <td>{{ ($locationPage - 1) * $locationPerPage + $index + 1 }}</td>
                                         <td>{{ $row->created_at?->format('d/m/Y H:i') }}</td>
                                         <td>{{ $row->ip_add }}</td>
                                         <td>{{ $row->location_label }}</td>
@@ -731,6 +842,13 @@
                             </tbody>
                         </table>
                     </div>
+                    @if ($this->locationLastPage() > 1)
+                        <div class="sl-sa__pager">
+                            <button type="button" class="sl-sa__btn" wire:click="setLocationPage({{ $locationPage - 1 }})" @disabled($locationPage <= 1)>Prev</button>
+                            <span class="sl-sa__pager-info">Page {{ $locationPage }} of {{ $this->locationLastPage() }} &middot; {{ number_format($locationTotal) }} scans</span>
+                            <button type="button" class="sl-sa__btn" wire:click="setLocationPage({{ $locationPage + 1 }})" @disabled($locationPage >= $this->locationLastPage())>Next</button>
+                        </div>
+                    @endif
                 @endif
             @endif
         </div>
