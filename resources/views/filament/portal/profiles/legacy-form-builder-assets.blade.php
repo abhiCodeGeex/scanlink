@@ -107,14 +107,6 @@
         line-height: 1.4;
         text-align: center;
     }
-    .sl-legacy-preview-sidebar--code .code_review {
-        width: 100%;
-        margin: 12px 0 0;
-        text-align: left;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
     .sl-legacy-preview-sidebar--code .sl-qr-download-select {
         display: block;
         width: 100% !important;
@@ -122,11 +114,19 @@
         height: 38px;
         margin: 0;
         padding: 6px 10px;
-        border: 1px solid #ccc;
+        border: 1px solid #d1d5db;
         border-radius: 6px;
         background: #fff;
         font-size: 13px;
+        font-family: Arial, Helvetica, sans-serif;
+        color: #555755;
         box-sizing: border-box;
+        box-shadow: none;
+    }
+    .sl-legacy-preview-sidebar--code .sl-qr-download-select:focus {
+        border-color: #009401;
+        outline: 0;
+        box-shadow: 0 0 0 1px rgba(0, 148, 1, .25);
     }
     .sl-legacy-preview-sidebar--code .download_code_as,
     .sl-legacy-preview-sidebar--code .sl-qr-download-btn {
@@ -140,6 +140,28 @@
         line-height: 40px;
         text-align: center;
         box-sizing: border-box;
+        background: #008901 !important;
+        background-image: linear-gradient(to bottom, #008901 0%, #007a01 100%) !important;
+        color: #fff !important;
+        border: 1px solid #006201 !important;
+        border-radius: 6px !important;
+        box-shadow: none !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        font-family: Arial, Helvetica, sans-serif !important;
+        font-size: 12px !important;
+        cursor: pointer;
+    }
+    .sl-legacy-preview-sidebar--code .code_review {
+        width: 100%;
+        margin: 12px 0 0;
+        padding: 0 0 4px;
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        border: 0;
+        box-shadow: none;
     }
     .sl-legacy-preview-sidebar--code .sl-qr-download-btn:disabled,
     .sl-legacy-preview-sidebar--code .sl-qr-download-select:disabled {

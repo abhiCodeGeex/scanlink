@@ -43,6 +43,10 @@ return [
     'ip_geolocation_enabled' => (bool) env('SCANLINK_IP_GEOLOCATION_ENABLED', true),
     'ip_geolocation_url' => env('SCANLINK_IP_GEOLOCATION_URL', 'http://ip-api.com/json'),
 
+    // Google Maps JS API key for the scan-analytics location map (legacy used Google Maps).
+    // Leave empty to fall back to the OpenStreetMap/Leaflet map.
+    'google_maps_api_key' => env('GOOGLE_MAPS_API_KEY', ''),
+
     /*
     |--------------------------------------------------------------------------
     | Notification addresses / support details (legacy hardcoded values)

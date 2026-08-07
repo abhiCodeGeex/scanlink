@@ -326,15 +326,15 @@ class CreateProfile extends EditRecord
 
         $legacySaveOnly = $this->isUrlLinkCodeEditor();
 
-        $actions = [
-            $this->getSaveFormAction()->label(
-                $legacySaveOnly ? 'SAVE' : 'Save changes'
-            ),
-        ];
+        $actions = [];
 
         if (! $legacySaveOnly) {
             $actions[] = $this->getCancelFormAction();
         }
+
+        $actions[] = $this->getSaveFormAction()->label(
+            $legacySaveOnly ? 'SAVE' : 'Save changes'
+        );
 
         return $actions;
     }

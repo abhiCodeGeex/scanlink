@@ -5,6 +5,7 @@ namespace App\Filament\Portal\Resources\Profiles\Schemas;
 use App\Enums\ProfileCodeType;
 use App\Filament\Resources\Profiles\Schemas\ProfileFormSchema;
 use App\Models\EquipmentType;
+use App\Services\YouTubeService;
 use App\Support\LegacySectionHelp;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Checkbox;
@@ -20,6 +21,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Actions;
+use Filament\Schemas\Components\Flex;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
@@ -63,10 +65,11 @@ class PortalProfileForm
                     ->visible(fn (string $operation): bool => $operation === 'create' && blank(request()->query('type'))),
 
                 Section::make('Code Profile Name')
-                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box'])
+                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box sl-code-profile-name-section'])
                     ->schema([
                         TextInput::make('code_profile_name')
                             ->hiddenLabel()
+                            ->placeholder('Enter code profile name')
                             ->maxLength(255)
                             // Legacy: "Code Profile Name" is the one required field on the
                             // standard code editor (jQuery validate `txt_code_profile_name`),
@@ -87,6 +90,8 @@ class PortalProfileForm
                             ->columnSpanFull(),
                         DatePicker::make('activation_start_date')
                             ->label('Start Date')
+                            ->native(false)
+                            ->displayFormat('d-m-Y')
                             // Legacy: if one activation date is set, the other is required.
                             ->required(fn (Get $get): bool => filled($get('activation_end_date')))
                             ->beforeOrEqual('activation_end_date')
@@ -97,6 +102,8 @@ class PortalProfileForm
                             ]),
                         DatePicker::make('activation_end_date')
                             ->label('End Date')
+                            ->native(false)
+                            ->displayFormat('d-m-Y')
                             ->required(fn (Get $get): bool => filled($get('activation_start_date')))
                             ->afterOrEqual('activation_start_date')
                             ->maxDate(fn (?Model $record): ?string => self::activationMaxDate($record))
@@ -106,7 +113,8 @@ class PortalProfileForm
                         Actions::make([
                             Action::make('clear_activation_dates')
                                 ->label('Clear')
-                                ->color('warning')
+                                ->color('gray')
+                                ->extraAttributes(['class' => 'sl-clear-activation-btn'])
                                 ->action(function (Set $set): void {
                                     $set('activation_start_date', null);
                                     $set('activation_end_date', null);
@@ -247,6 +255,7 @@ class PortalProfileForm
                                 ? 'Upload Company Logo: (File type JPEG, PNG, GIF) (Max file size 10 MB)'
                                 : 'Upload Company Logo: (File type JPG, JPEG, PNG, GIF) (Max file size 10 MB)')
                             ->image()
+                            ->imagePreviewHeight('120')
                             ->directory('profiles/logos')
                             ->disk('public')
                             ->maxSize(10240),
@@ -255,18 +264,7 @@ class PortalProfileForm
 
                 Section::make(LegacySectionHelp::heading('Videos'))
                     ->extraAttributes(['class' => 'SectionTitleBox sl-section-box'])
-                    ->schema([
-                        Repeater::make('video_titles')
-                            ->label('Upload a Video:')
-                            ->schema([
-                                TextInput::make('title')->label('Video title'),
-                                TextInput::make('video_name')
-                                    ->label('YouTube URL or video ID'),
-                            ])
-                            ->defaultItems(0)
-                            ->addActionLabel('Upload Video')
-                            ->columnSpanFull(),
-                    ])
+                    ->schema(fn (): array => self::videoFields('video_titles'))
                     ->visible(fn (Get $get): bool => ! in_array(self::slug($get('type_id')), ['code', 'survey', 'voc'], true)),
 
                 // Live Words / Profile Information — type-specific fields + contacts where legacy has them.
@@ -314,10 +312,13 @@ class PortalProfileForm
                         Repeater::make('pictures')
                             ->relationship()
                             ->hiddenLabel()
+                            ->extraAttributes(['class' => 'sl-pictures-repeater'])
                             ->schema([
                                 FileUpload::make('picture_name')
                                     ->label('Upload a picture: (File type JPEG, PNG, GIF) (Max file size 10 MB)')
                                     ->image()
+                                    ->panelLayout('compact')
+                                    ->imagePreviewHeight('72')
                                     ->directory('profiles/pictures')
                                     ->disk('public')
                                     ->maxSize(10240)
@@ -325,7 +326,9 @@ class PortalProfileForm
                             ])
                             // Legacy voc allows multiple profile pictures (gallery).
                             ->defaultItems(0)
-                            ->addActionLabel('Upload a picture')
+                            ->addActionLabel(fn (Repeater $component): string => count($component->getRawState() ?? []) > 0
+                                ? 'Add more'
+                                : 'Upload picture')
                             ->mutateRelationshipDataBeforeCreateUsing(fn (array $data, Get $get): array => self::stampMediaOwner($data, $get))
                             ->mutateRelationshipDataBeforeSaveUsing(fn (array $data, Get $get): array => self::stampMediaOwner($data, $get))
                             ->columnSpanFull(),
@@ -351,7 +354,9 @@ class PortalProfileForm
                                     ->label('Document Name')
                                     ->maxLength(200),
                                 DatePicker::make('expiry_date')
-                                    ->label('Expiry Date'),
+                                    ->label('Expiry Date')
+                                    ->native(false)
+                                    ->displayFormat('d-m-Y'),
                                 FileUpload::make('file_name')
                                     ->label('Upload a Document: (File type DOC, DOCX, PDF, GIF, JPEG, PNG) (Max file size 10 MB)')
                                     ->directory('profiles/voc-documents')
@@ -377,10 +382,14 @@ class PortalProfileForm
                     ->schema([
                         Repeater::make('pictures_general')
                             ->relationship('pictures')
+                            ->hiddenLabel()
+                            ->extraAttributes(['class' => 'sl-pictures-repeater'])
                             ->schema([
                                 FileUpload::make('picture_name')
                                     ->label('Upload a picture: (File type JPG, JPEG, PNG, GIF) (Max file size 10 MB)')
                                     ->image()
+                                    ->panelLayout('compact')
+                                    ->imagePreviewHeight('72')
                                     ->directory('profiles/pictures')
                                     ->disk('public')
                                     ->maxSize(10240)
@@ -399,7 +408,9 @@ class PortalProfileForm
                                     }),
                             ])
                             ->defaultItems(0)
-                            ->addActionLabel('Upload a picture')
+                            ->addActionLabel(fn (Repeater $component): string => count($component->getRawState() ?? []) > 0
+                                ? 'Add more'
+                                : 'Upload picture')
                             ->mutateRelationshipDataBeforeCreateUsing(fn (array $data, Get $get): array => self::stampMediaOwner($data, $get))
                             ->mutateRelationshipDataBeforeSaveUsing(fn (array $data, Get $get): array => self::stampMediaOwner($data, $get))
                             ->columnSpanFull(),
@@ -408,123 +419,12 @@ class PortalProfileForm
 
                 Section::make(LegacySectionHelp::heading('Documents'))
                     ->extraAttributes(['class' => 'SectionTitleBox sl-section-box'])
-                    ->schema([
-                        Repeater::make('documents')
-                            ->relationship()
-                            ->schema([
-                                FileUpload::make('doc_name')
-                                    ->label('Upload a Document: (File type DOC, DOCX, PDF, JPG, GIF, JPEG) (Max file size 10 MB)')
-                                    ->directory('profiles/documents')
-                                    ->disk('public')
-                                    ->maxSize(10240)
-                                    ->required(),
-                                TextInput::make('name')
-                                    ->label('Title')
-                                    ->maxLength(255),
-                                Radio::make('txt_align')
-                                    ->label('Text Alignment')
-                                    ->options([
-                                        'left' => 'Left',
-                                        'center' => 'Center',
-                                        'right' => 'Right',
-                                    ])
-                                    ->default('left')
-                                    ->inline()
-                                    // Legacy people Documents are upload + name only (no styling).
-                                    ->visible(fn (Get $get): bool => self::slug($get('../../type_id') ?? $get('type_id')) !== 'people'),
-                                ColorPicker::make('btn_color')
-                                    ->label('Button Color')
-                                    ->default('#007A01')
-                                    ->visible(fn (Get $get): bool => self::slug($get('../../type_id') ?? $get('type_id')) !== 'people')
-                                    ->formatStateUsing(function ($state): string {
-                                        $value = trim((string) ($state ?: '007A01'));
-
-                                        return str_starts_with($value, '#') ? $value : '#'.$value;
-                                    })
-                                    ->dehydrateStateUsing(fn ($state): string => ltrim((string) ($state ?: '007A01'), '#')),
-                            ])
-                            ->defaultItems(0)
-                            ->addActionLabel('Upload a Document')
-                            // Legacy parity: documents are drag-sortable and the mobile page
-                            // renders them in that saved order (persisted to `sort_order`).
-                            ->reorderable()
-                            ->orderColumn('sort_order')
-                            ->mutateRelationshipDataBeforeCreateUsing(fn (array $data, Get $get): array => self::stampMediaOwner($data, $get))
-                            ->mutateRelationshipDataBeforeSaveUsing(fn (array $data, Get $get): array => self::stampMediaOwner($data, $get))
-                            ->columnSpanFull(),
-                    ])
+                    ->schema(fn (Get $get): array => self::documentFields($get))
                     ->visible(fn (Get $get): bool => ! in_array(self::slug($get('type_id')), ['survey', 'code', 'voc'], true)),
 
                 Section::make(LegacySectionHelp::heading('Web Link'))
                     ->extraAttributes(['class' => 'SectionTitleBox sl-section-box'])
-                    ->schema([
-                        Repeater::make('weblinks')
-                            ->relationship()
-                            ->schema([
-                                Checkbox::make('link_button')
-                                    ->label('Add Button')
-                                    ->default(false)
-                                    ->live(debounce: 400)
-                                    ->afterStateUpdated(function ($state, $livewire): void {
-                                        if (method_exists($livewire, 'pushPhonePreviewDraft')) {
-                                            $livewire->pushPhonePreviewDraft();
-                                        }
-                                    }),
-                                TextInput::make('link_button_text')
-                                    ->label('Button Text:')
-                                    ->live(debounce: 400)
-                                    ->afterStateUpdated(function ($state, $livewire): void {
-                                        if (method_exists($livewire, 'pushPhonePreviewDraft')) {
-                                            $livewire->pushPhonePreviewDraft();
-                                        }
-                                    }),
-                                TextInput::make('link_button_url')
-                                    ->label('Button Link URL: (Start with http://)')
-                                    ->url()
-                                    ->live(debounce: 400)
-                                    ->afterStateUpdated(function ($state, $livewire): void {
-                                        if (method_exists($livewire, 'pushPhonePreviewDraft')) {
-                                            $livewire->pushPhonePreviewDraft();
-                                        }
-                                    }),
-                                Radio::make('link_button_align')
-                                    ->label('Button Text Alignment:')
-                                    ->options([
-                                        'left' => 'Left',
-                                        'center' => 'Center',
-                                        'right' => 'Right',
-                                    ])
-                                    ->default('left')
-                                    ->inline()
-                                    ->live()
-                                    ->afterStateUpdated(function ($state, $livewire): void {
-                                        if (method_exists($livewire, 'pushPhonePreviewDraft')) {
-                                            $livewire->pushPhonePreviewDraft();
-                                        }
-                                    })
-                                    ->columnSpanFull(),
-                                ColorPicker::make('link_button_color')
-                                    ->label('Button color:')
-                                    ->default('#007A01')
-                                    ->live(onBlur: true)
-                                    ->afterStateUpdated(function ($state, $livewire): void {
-                                        if (method_exists($livewire, 'pushPhonePreviewDraft')) {
-                                            $livewire->pushPhonePreviewDraft();
-                                        }
-                                    })
-                                    ->formatStateUsing(function ($state): string {
-                                        $value = trim((string) ($state ?: '007A01'));
-
-                                        return str_starts_with($value, '#') ? $value : '#'.$value;
-                                    })
-                                    ->dehydrateStateUsing(fn ($state): string => ltrim((string) ($state ?: '007A01'), '#')),
-                            ])
-                            ->columns(2)
-                            // Legacy skips blank web-link rows; don't seed a forced empty row.
-                            ->defaultItems(0)
-                            ->addActionLabel('AND ANOTHER WEB LINK')
-                            ->columnSpanFull(),
-                    ])
+                    ->schema(fn (): array => self::webLinkFields())
                     // Legacy people/index.php has no Web Link section.
                     ->visible(fn (Get $get): bool => ! in_array(self::slug($get('type_id')), ['survey', 'code', 'voc', 'people'], true)),
 
@@ -551,6 +451,7 @@ class PortalProfileForm
                         FileUpload::make('logo_extra_upload')
                             ->label('Upload Company Logo: (File type JPG, JPEG, PNG, GIF) (Max file size 10 MB)')
                             ->image()
+                            ->imagePreviewHeight('120')
                             ->directory('profiles/logos')
                             ->disk('public')
                             ->maxSize(10240),
@@ -564,18 +465,7 @@ class PortalProfileForm
 
                 Section::make(LegacySectionHelp::heading('Videos #2'))
                     ->extraAttributes(['class' => 'SectionTitleBox sl-section-box'])
-                    ->schema([
-                        Repeater::make('video_extra_titles')
-                            ->label('Upload a Video:')
-                            ->schema([
-                                TextInput::make('title')->label('Video title'),
-                                TextInput::make('video_name')
-                                    ->label('YouTube URL or video ID'),
-                            ])
-                            ->defaultItems(0)
-                            ->addActionLabel('Upload Video')
-                            ->columnSpanFull(),
-                    ])
+                    ->schema(fn (): array => self::videoFields('video_extra_titles'))
                     ->visible(fn (Get $get): bool => self::slug($get('type_id')) === 'exhibit'),
 
                 Section::make(LegacySectionHelp::heading('Words #2'))
@@ -598,10 +488,14 @@ class PortalProfileForm
                     ->schema([
                         Repeater::make('picturesExtra')
                             ->relationship()
+                            ->hiddenLabel()
+                            ->extraAttributes(['class' => 'sl-pictures-repeater'])
                             ->schema([
                                 FileUpload::make('picture_name')
                                     ->label('Upload a picture: (File type JPG, JPEG, PNG, GIF) (Max file size 10 MB)')
                                     ->image()
+                                    ->panelLayout('compact')
+                                    ->imagePreviewHeight('72')
                                     ->directory('profiles/pictures')
                                     ->disk('public')
                                     ->maxSize(10240)
@@ -611,7 +505,9 @@ class PortalProfileForm
                                     ->maxLength(500),
                             ])
                             ->defaultItems(0)
-                            ->addActionLabel('Upload a picture')
+                            ->addActionLabel(fn (Repeater $component): string => count($component->getRawState() ?? []) > 0
+                                ? 'Add more'
+                                : 'Upload picture')
                             ->mutateRelationshipDataBeforeCreateUsing(fn (array $data, Get $get): array => self::stampMediaOwner($data, $get))
                             ->mutateRelationshipDataBeforeSaveUsing(fn (array $data, Get $get): array => self::stampMediaOwner($data, $get))
                             ->columnSpanFull(),
@@ -702,8 +598,9 @@ class PortalProfileForm
                     ->dehydrated(),
 
                 // Legacy code/index.php — single "Code no {id}" form (Application, URL, DC, colour, QR/DM).
+                // Use SectionTitleBoxCode (no border/inset shadow) — SectionTitleBox draws the dark inner ring.
                 Section::make()
-                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box sl-code-url-form'])
+                    ->extraAttributes(['class' => 'SectionTitleBoxCode sl-section-box sl-code-url-form'])
                     ->schema(fn (): array => self::legacyCodeUrlFields())
                     ->visible(fn (Get $get): bool => self::slug($get('type_id')) === 'code'),
 
@@ -842,30 +739,49 @@ class PortalProfileForm
                 ->formatStateUsing(fn ($state): string => ($state === true || $state === 1 || $state === '1') ? '1' : '0')
                 ->dehydrateStateUsing(fn ($state): bool => $state === '1' || $state === 1 || $state === true)
                 ->columnSpanFull(),
-            // Legacy shows these controls always (not gated behind Yes).
+            // Legacy parity (create + edit share this schema):
+            //   [ ] Set as compulsory          ← own row
+            //   [ ] Mobile [ ] Email [ ] Name [ ] Surname  ← one inline row
+            // Checkbox::inline() puts the input in the label (labelPrefix) so it
+            // renders as a real checkbox+text pair — without it Filament shows the
+            // label as a standalone field heading and the box sits in a broken content col.
             Checkbox::make('set_up_compulsory')
                 ->label('Set as compulsory')
-                ->extraAttributes(['class' => 'sl-code-dc-compulsory'])
-                ->columnSpanFull(),
-            Grid::make(4)
-                ->schema([
-                    Checkbox::make('data_collection_mobile')->label('Mobile'),
-                    Checkbox::make('data_collection_email')->label('Email'),
-                    Checkbox::make('data_collection_name')->label('Name'),
-                    Checkbox::make('data_collection_surname')->label('Surname'),
-                ])
+                ->inline()
+                ->extraFieldWrapperAttributes(['class' => 'sl-code-dc-compulsory']),
+            Flex::make([
+                Checkbox::make('data_collection_mobile')
+                    ->label('Mobile')
+                    ->inline()
+                    ->grow(false),
+                Checkbox::make('data_collection_email')
+                    ->label('Email')
+                    ->inline()
+                    ->grow(false),
+                Checkbox::make('data_collection_name')
+                    ->label('Name')
+                    ->inline()
+                    ->grow(false),
+                Checkbox::make('data_collection_surname')
+                    ->label('Surname')
+                    ->inline()
+                    ->grow(false),
+            ])
+                ->from('default')
                 ->extraAttributes(['class' => 'sl-code-dc-fields']),
             Textarea::make('description')
                 ->label('pop up message:')
                 ->placeholder('Enter pop up message:')
                 ->rows(2)
                 ->maxLength(150)
+                ->extraAttributes(['class' => 'sl-code-popup-message'])
                 ->columnSpanFull(),
-            Grid::make(2)
+            Grid::make(['default' => 2])
                 ->schema([
                     ColorPicker::make('color_code')
                         ->label('Colour Selector')
                         ->default('#000000')
+                        ->extraAttributes(['class' => 'sl-code-colour-picker'])
                         ->formatStateUsing(function ($state): string {
                             $value = trim((string) ($state ?: '000000'));
 
@@ -887,6 +803,8 @@ class PortalProfileForm
     }
 
     /**
+     * Contacts: modal add/edit + list UI. Same relationship / save path as before.
+     *
      * @return array<int, mixed>
      */
     private static function contactsFields(Get $get): array
@@ -897,18 +815,714 @@ class PortalProfileForm
             return [];
         }
 
+        $contactForm = [
+            TextInput::make('name_company')
+                ->label('Contact')
+                ->placeholder('Name or company')
+                ->required()
+                ->maxLength(255)
+                ->autocomplete(false),
+            TextInput::make('telephone')
+                ->label('Telephone')
+                ->placeholder('Phone number')
+                ->tel()
+                ->maxLength(50)
+                ->autocomplete(false),
+        ];
+
         return [
+            Placeholder::make('contacts_section_label')
+                ->hiddenLabel()
+                ->content(new HtmlString(
+                    '<div class="sl-contacts-title">Contacts</div>'
+                    .'<div class="sl-contacts-subtitle">Add people or companies associated with this code.</div>'
+                ))
+                ->columnSpanFull(),
             Repeater::make('contacts')
                 ->relationship()
-                ->label('')
+                ->hiddenLabel()
                 ->schema([
-                    TextInput::make('name_company')->label('CONTACT:'),
-                    TextInput::make('telephone')->label('TELEPHONE:'),
+                    // Values are managed via modal actions; hidden inputs keep relationship sync.
+                    Hidden::make('name_company'),
+                    Hidden::make('telephone'),
                 ])
-                ->columns(2)
-                // Legacy skips blank contact rows; don't seed a forced empty row.
                 ->defaultItems(0)
-                ->addActionLabel('And another')
+                ->reorderable(false)
+                ->cloneable(false)
+                ->itemLabel(function (array $state): string {
+                    $name = trim((string) ($state['name_company'] ?? ''));
+                    $phone = trim((string) ($state['telephone'] ?? ''));
+
+                    if ($name !== '' && $phone !== '') {
+                        return $name.' · '.$phone;
+                    }
+
+                    return $name !== '' ? $name : ($phone !== '' ? $phone : 'Contact');
+                })
+                ->extraAttributes(['class' => 'sl-contacts-repeater'])
+                ->addAction(function (Action $action) use ($contactForm): Action {
+                    return $action
+                        ->label(function (Repeater $component): string {
+                            $count = count($component->getRawState() ?? []);
+
+                            return $count > 0 ? 'Add more' : 'Add contact';
+                        })
+                        ->icon('heroicon-m-plus')
+                        ->color('primary')
+                        ->button()
+                        ->modalHeading(fn (Repeater $component): string => count($component->getRawState() ?? []) > 0
+                            ? 'Add another contact'
+                            : 'Add contact')
+                        ->modalDescription('Enter the contact name and telephone number.')
+                        ->modalSubmitActionLabel('Save contact')
+                        ->modalCancelActionLabel('Cancel')
+                        ->modalWidth('md')
+                        ->form($contactForm)
+                        ->action(function (array $data, Repeater $component): void {
+                            $newUuid = $component->generateUuid();
+                            $items = $component->getRawState() ?? [];
+
+                            if ($newUuid) {
+                                $items[$newUuid] = $data;
+                            } else {
+                                $items[] = $data;
+                                $newUuid = (string) array_key_last($items);
+                            }
+
+                            $component->rawState($items);
+                            $component->getChildSchema($newUuid)->fill($data);
+                            $component->callAfterStateUpdated();
+                            $component->partiallyRender();
+                        });
+                })
+                ->extraItemActions([
+                    Action::make('editContact')
+                        ->label('Edit')
+                        ->tooltip('Edit contact')
+                        ->icon('heroicon-m-pencil-square')
+                        ->color('primary')
+                        ->iconButton()
+                        ->modalHeading('Edit contact')
+                        ->modalDescription('Update the contact details.')
+                        ->modalSubmitActionLabel('Save changes')
+                        ->modalCancelActionLabel('Cancel')
+                        ->modalWidth('md')
+                        ->fillForm(function (array $arguments, Repeater $component): array {
+                            $item = $component->getRawState()[$arguments['item'] ?? ''] ?? [];
+
+                            return [
+                                'name_company' => (string) ($item['name_company'] ?? ''),
+                                'telephone' => (string) ($item['telephone'] ?? ''),
+                            ];
+                        })
+                        ->form($contactForm)
+                        ->action(function (array $data, array $arguments, Repeater $component): void {
+                            $itemKey = $arguments['item'] ?? null;
+                            if ($itemKey === null) {
+                                return;
+                            }
+
+                            $items = $component->getRawState() ?? [];
+                            $items[$itemKey] = array_merge($items[$itemKey] ?? [], $data);
+                            $component->rawState($items);
+                            $component->getChildSchema($itemKey)->fill($data);
+                            $component->callAfterStateUpdated();
+                            $component->partiallyRender();
+                        }),
+                ])
+                ->deleteAction(function (Action $action): Action {
+                    return $action
+                        ->label('Delete')
+                        ->tooltip('Delete contact')
+                        ->icon('heroicon-m-trash')
+                        ->color('danger')
+                        ->iconButton()
+                        ->requiresConfirmation()
+                        ->modalHeading('Delete contact?')
+                        ->modalDescription('This contact will be removed when you save the profile.')
+                        ->modalSubmitActionLabel('Delete');
+                })
+                ->columnSpanFull(),
+        ];
+    }
+
+    /**
+     * Videos: modal add/edit + list UI. Title in the list opens YouTube in a new tab.
+     * Keeps the same form keys (`video_titles` / `video_extra_titles`) synced via ProfileMediaService.
+     *
+     * @return array<int, mixed>
+     */
+    private static function videoFields(string $statePath): array
+    {
+        $normalizeVideo = function (array $data): array {
+            $data['title'] = (string) ($data['title'] ?? '');
+            $data['video_name'] = trim((string) ($data['video_name'] ?? ''));
+
+            return $data;
+        };
+
+        $videoForm = [
+            TextInput::make('title')
+                ->label('Video title')
+                ->placeholder('e.g. Product demo')
+                ->maxLength(255)
+                ->autocomplete(false),
+            TextInput::make('video_name')
+                ->label('YouTube URL or video ID')
+                ->placeholder('https://www.youtube.com/watch?v=… or video ID')
+                ->required()
+                ->maxLength(255)
+                ->autocomplete(false),
+        ];
+
+        return [
+            Repeater::make($statePath)
+                ->hiddenLabel()
+                ->schema([
+                    Hidden::make('title'),
+                    Hidden::make('video_name'),
+                ])
+                ->defaultItems(0)
+                ->reorderable(false)
+                ->cloneable(false)
+                ->itemLabel(function (array $state): HtmlString {
+                    $title = trim((string) ($state['title'] ?? ''));
+                    if ($title === '') {
+                        $title = 'Video';
+                    }
+
+                    $url = self::youtubeWatchUrl($state['video_name'] ?? null);
+                    if (filled($url)) {
+                        return new HtmlString(
+                            '<a class="sl-video-title-link" href="'.e($url).'" target="_blank" rel="noopener noreferrer" '
+                            .'onclick="event.stopPropagation()">'.e($title).'</a>'
+                        );
+                    }
+
+                    return new HtmlString('<span class="sl-video-title-text">'.e($title).'</span>');
+                })
+                ->extraAttributes(['class' => 'sl-contacts-repeater sl-videos-repeater'])
+                ->addAction(function (Action $action) use ($videoForm, $normalizeVideo): Action {
+                    return $action
+                        ->label(function (Repeater $component): string {
+                            $count = count($component->getRawState() ?? []);
+
+                            return $count > 0 ? 'Add more' : 'Upload Video';
+                        })
+                        ->icon('heroicon-m-plus')
+                        ->color('primary')
+                        ->button()
+                        ->modalHeading(fn (Repeater $component): string => count($component->getRawState() ?? []) > 0
+                            ? 'Add another video'
+                            : 'Upload a Video')
+                        ->modalDescription('Add a YouTube URL or video ID and the title shown on the mobile page.')
+                        ->modalSubmitActionLabel('Save video')
+                        ->modalCancelActionLabel('Cancel')
+                        ->modalWidth('md')
+                        ->form($videoForm)
+                        ->action(function (array $data, Repeater $component) use ($normalizeVideo): void {
+                            $data = $normalizeVideo($data);
+                            $newUuid = $component->generateUuid();
+                            $items = $component->getRawState() ?? [];
+
+                            if ($newUuid) {
+                                $items[$newUuid] = $data;
+                            } else {
+                                $items[] = $data;
+                                $newUuid = (string) array_key_last($items);
+                            }
+
+                            $component->rawState($items);
+                            $component->getChildSchema($newUuid)->fill($data);
+                            $component->callAfterStateUpdated();
+                            $component->partiallyRender();
+                        });
+                })
+                ->extraItemActions([
+                    Action::make('editVideo_'.$statePath)
+                        ->label('Edit')
+                        ->tooltip('Edit video')
+                        ->icon('heroicon-m-pencil-square')
+                        ->color('primary')
+                        ->iconButton()
+                        ->modalHeading('Edit video')
+                        ->modalDescription('Update the video title or YouTube URL / ID.')
+                        ->modalSubmitActionLabel('Save changes')
+                        ->modalCancelActionLabel('Cancel')
+                        ->modalWidth('md')
+                        ->fillForm(function (array $arguments, Repeater $component): array {
+                            $item = $component->getRawState()[$arguments['item'] ?? ''] ?? [];
+
+                            return [
+                                'title' => (string) ($item['title'] ?? ''),
+                                'video_name' => (string) ($item['video_name'] ?? ''),
+                            ];
+                        })
+                        ->form($videoForm)
+                        ->action(function (array $data, array $arguments, Repeater $component) use ($normalizeVideo): void {
+                            $itemKey = $arguments['item'] ?? null;
+                            if ($itemKey === null) {
+                                return;
+                            }
+
+                            $data = $normalizeVideo($data);
+                            $items = $component->getRawState() ?? [];
+                            $items[$itemKey] = array_merge($items[$itemKey] ?? [], $data);
+                            $component->rawState($items);
+                            $component->getChildSchema($itemKey)->fill($data);
+                            $component->callAfterStateUpdated();
+                            $component->partiallyRender();
+                        }),
+                ])
+                ->deleteAction(function (Action $action): Action {
+                    return $action
+                        ->label('Delete')
+                        ->tooltip('Delete video')
+                        ->icon('heroicon-m-trash')
+                        ->color('danger')
+                        ->iconButton()
+                        ->requiresConfirmation()
+                        ->modalHeading('Delete video?')
+                        ->modalDescription('This video will be removed when you save the profile.')
+                        ->modalSubmitActionLabel('Delete');
+                })
+                ->columnSpanFull(),
+        ];
+    }
+
+    private static function youtubeWatchUrl(mixed $videoName): ?string
+    {
+        $input = trim((string) ($videoName ?? ''));
+        if ($input === '') {
+            return null;
+        }
+
+        $youtube = app(YouTubeService::class);
+
+        if (str_starts_with($input, 'http://') || str_starts_with($input, 'https://')) {
+            $id = $youtube->parseVideoId($input);
+
+            return $id ? $youtube->watchUrl($id) : $input;
+        }
+
+        $id = $youtube->parseVideoId($input) ?? $input;
+
+        return $youtube->watchUrl($id);
+    }
+
+    /**
+     * Documents: modal add/edit + list UI. Title in the list opens the file in a new tab.
+     * Same relationship / save path as before (including sort_order + media owner stamps).
+     *
+     * @return array<int, mixed>
+     */
+    private static function documentFields(Get $get): array
+    {
+        $typeSlag = self::slug($get('type_id')) ?? request()->query('type');
+        $showStyleFields = $typeSlag !== 'people';
+
+        $normalizeDocument = function (array $data) use ($showStyleFields): array {
+            $data['name'] = (string) ($data['name'] ?? '');
+            $data['doc_name'] = is_array($data['doc_name'] ?? null)
+                ? (string) (array_values($data['doc_name'])[0] ?? '')
+                : (string) ($data['doc_name'] ?? '');
+
+            if ($showStyleFields) {
+                $data['txt_align'] = (string) ($data['txt_align'] ?: 'left');
+                $data['btn_color'] = ltrim((string) ($data['btn_color'] ?: '007A01'), '#');
+            } else {
+                $data['txt_align'] = (string) ($data['txt_align'] ?: 'left');
+                $data['btn_color'] = ltrim((string) ($data['btn_color'] ?: ''), '#');
+            }
+
+            return $data;
+        };
+
+        $documentForm = [
+            FileUpload::make('doc_name')
+                ->label('Upload a Document: (File type DOC, DOCX, PDF, JPG, GIF, JPEG) (Max file size 10 MB)')
+                ->directory('profiles/documents')
+                ->disk('public')
+                ->acceptedFileTypes([
+                    'application/pdf',
+                    'application/msword',
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'image/jpeg',
+                    'image/gif',
+                    'image/png',
+                ])
+                ->maxSize(10240)
+                ->required()
+                ->downloadable()
+                ->openable(),
+            TextInput::make('name')
+                ->label('Title')
+                ->placeholder('Document title')
+                ->maxLength(255)
+                ->autocomplete(false),
+            Radio::make('txt_align')
+                ->label('Text Alignment')
+                ->options([
+                    'left' => 'Left',
+                    'center' => 'Center',
+                    'right' => 'Right',
+                ])
+                ->default('left')
+                ->inline()
+                ->visible($showStyleFields),
+            ColorPicker::make('btn_color')
+                ->label('Button Color')
+                ->default('#007A01')
+                ->visible($showStyleFields)
+                ->formatStateUsing(function ($state): string {
+                    $value = trim((string) ($state ?: '007A01'));
+
+                    return str_starts_with($value, '#') ? $value : '#'.$value;
+                })
+                ->dehydrateStateUsing(fn ($state): string => ltrim((string) ($state ?: '007A01'), '#')),
+        ];
+
+        return [
+            Repeater::make('documents')
+                ->relationship()
+                ->hiddenLabel()
+                ->schema([
+                    Hidden::make('doc_name'),
+                    Hidden::make('name'),
+                    Hidden::make('txt_align'),
+                    Hidden::make('btn_color'),
+                    Hidden::make('sort_order'),
+                ])
+                ->defaultItems(0)
+                ->reorderable()
+                ->orderColumn('sort_order')
+                ->cloneable(false)
+                ->itemLabel(function (array $state): HtmlString {
+                    $title = trim((string) ($state['name'] ?? ''));
+                    if ($title === '') {
+                        $title = 'Document';
+                    }
+
+                    $url = self::documentPublicUrl($state['doc_name'] ?? null);
+                    if (filled($url)) {
+                        return new HtmlString(
+                            '<a class="sl-doc-title-link" href="'.e($url).'" target="_blank" rel="noopener noreferrer" '
+                            .'onclick="event.stopPropagation()">'.e($title).'</a>'
+                        );
+                    }
+
+                    return new HtmlString('<span class="sl-doc-title-text">'.e($title).'</span>');
+                })
+                ->extraAttributes(['class' => 'sl-contacts-repeater sl-documents-repeater'])
+                ->mutateRelationshipDataBeforeCreateUsing(fn (array $data, Get $get): array => self::stampMediaOwner($data, $get))
+                ->mutateRelationshipDataBeforeSaveUsing(fn (array $data, Get $get): array => self::stampMediaOwner($data, $get))
+                ->addAction(function (Action $action) use ($documentForm, $normalizeDocument): Action {
+                    return $action
+                        ->label(function (Repeater $component): string {
+                            $count = count($component->getRawState() ?? []);
+
+                            return $count > 0 ? 'Add more' : 'Upload a Document';
+                        })
+                        ->icon('heroicon-m-plus')
+                        ->color('primary')
+                        ->button()
+                        ->modalHeading(fn (Repeater $component): string => count($component->getRawState() ?? []) > 0
+                            ? 'Add another document'
+                            : 'Upload a Document')
+                        ->modalDescription('Upload a file and set the title shown on the mobile page.')
+                        ->modalSubmitActionLabel('Save document')
+                        ->modalCancelActionLabel('Cancel')
+                        ->modalWidth('lg')
+                        ->form($documentForm)
+                        ->action(function (array $data, Repeater $component) use ($normalizeDocument): void {
+                            $data = $normalizeDocument($data);
+                            $newUuid = $component->generateUuid();
+                            $items = $component->getRawState() ?? [];
+
+                            if ($newUuid) {
+                                $items[$newUuid] = $data;
+                            } else {
+                                $items[] = $data;
+                                $newUuid = (string) array_key_last($items);
+                            }
+
+                            $component->rawState($items);
+                            $component->getChildSchema($newUuid)->fill($data);
+                            $component->callAfterStateUpdated();
+                            $component->partiallyRender();
+                        });
+                })
+                ->extraItemActions([
+                    Action::make('editDocument')
+                        ->label('Edit')
+                        ->tooltip('Edit document')
+                        ->icon('heroicon-m-pencil-square')
+                        ->color('primary')
+                        ->iconButton()
+                        ->modalHeading('Edit document')
+                        ->modalDescription('Update the file, title, or button styling.')
+                        ->modalSubmitActionLabel('Save changes')
+                        ->modalCancelActionLabel('Cancel')
+                        ->modalWidth('lg')
+                        ->fillForm(function (array $arguments, Repeater $component): array {
+                            $item = $component->getRawState()[$arguments['item'] ?? ''] ?? [];
+                            $color = ltrim((string) ($item['btn_color'] ?? '007A01'), '#');
+
+                            return [
+                                'doc_name' => $item['doc_name'] ?? null,
+                                'name' => (string) ($item['name'] ?? ''),
+                                'txt_align' => (string) ($item['txt_align'] ?: 'left'),
+                                'btn_color' => $color !== '' ? '#'.$color : '#007A01',
+                            ];
+                        })
+                        ->form($documentForm)
+                        ->action(function (array $data, array $arguments, Repeater $component) use ($normalizeDocument): void {
+                            $itemKey = $arguments['item'] ?? null;
+                            if ($itemKey === null) {
+                                return;
+                            }
+
+                            $data = $normalizeDocument($data);
+                            $items = $component->getRawState() ?? [];
+                            $items[$itemKey] = array_merge($items[$itemKey] ?? [], $data);
+                            $component->rawState($items);
+                            $component->getChildSchema($itemKey)->fill($data);
+                            $component->callAfterStateUpdated();
+                            $component->partiallyRender();
+                        }),
+                ])
+                ->deleteAction(function (Action $action): Action {
+                    return $action
+                        ->label('Delete')
+                        ->tooltip('Delete document')
+                        ->icon('heroicon-m-trash')
+                        ->color('danger')
+                        ->iconButton()
+                        ->requiresConfirmation()
+                        ->modalHeading('Delete document?')
+                        ->modalDescription('This document will be removed when you save the profile.')
+                        ->modalSubmitActionLabel('Delete');
+                })
+                ->columnSpanFull(),
+        ];
+    }
+
+    private static function documentPublicUrl(mixed $path): ?string
+    {
+        if (blank($path)) {
+            return null;
+        }
+
+        if (is_array($path)) {
+            $path = array_values($path)[0] ?? null;
+        }
+
+        $path = trim((string) $path);
+        if ($path === '') {
+            return null;
+        }
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+
+        $diskPath = ltrim(str_replace(['storage/', 'public/'], '', $path), '/');
+
+        return $diskPath !== '' ? asset('storage/'.$diskPath) : null;
+    }
+
+    /**
+     * Web links: modal add/edit + list UI. Same relationship / save path as before.
+     *
+     * @return array<int, mixed>
+     */
+    private static function webLinkFields(): array
+    {
+        $refreshPreview = function ($livewire): void {
+            if (method_exists($livewire, 'pushPhonePreviewDraft')) {
+                $livewire->pushPhonePreviewDraft();
+            }
+        };
+
+        $normalizeWeblink = function (array $data): array {
+            $data['link_button'] = in_array($data['link_button'] ?? false, [true, 1, '1'], true);
+            $data['link_button_text'] = (string) ($data['link_button_text'] ?? '');
+            $data['link_button_url'] = (string) ($data['link_button_url'] ?? '');
+            $data['link_button_align'] = (string) ($data['link_button_align'] ?: 'left');
+            $data['link_button_color'] = ltrim((string) ($data['link_button_color'] ?: '007A01'), '#');
+
+            return $data;
+        };
+
+        $weblinkForm = [
+            Checkbox::make('link_button')
+                ->label('Add Button')
+                ->default(true),
+            TextInput::make('link_button_text')
+                ->label('Button Text')
+                ->placeholder('e.g. Click me')
+                ->maxLength(255)
+                ->autocomplete(false),
+            TextInput::make('link_button_url')
+                ->label('Button Link URL')
+                ->helperText('Start with http:// or https://')
+                ->placeholder('https://')
+                ->url()
+                ->maxLength(255)
+                ->autocomplete(false),
+            Radio::make('link_button_align')
+                ->label('Button Text Alignment')
+                ->options([
+                    'left' => 'Left',
+                    'center' => 'Center',
+                    'right' => 'Right',
+                ])
+                ->default('left')
+                ->inline(),
+            ColorPicker::make('link_button_color')
+                ->label('Button color')
+                ->default('#007A01')
+                ->formatStateUsing(function ($state): string {
+                    $value = trim((string) ($state ?: '007A01'));
+
+                    return str_starts_with($value, '#') ? $value : '#'.$value;
+                })
+                ->dehydrateStateUsing(fn ($state): string => ltrim((string) ($state ?: '007A01'), '#')),
+        ];
+
+        return [
+            Repeater::make('weblinks')
+                ->relationship()
+                ->hiddenLabel()
+                ->schema([
+                    // Values are managed via modal actions; hidden inputs keep relationship sync.
+                    Hidden::make('link_button'),
+                    Hidden::make('link_button_text'),
+                    Hidden::make('link_button_url'),
+                    Hidden::make('link_button_align'),
+                    Hidden::make('link_button_color'),
+                ])
+                ->defaultItems(0)
+                ->reorderable(false)
+                ->cloneable(false)
+                ->itemLabel(function (array $state): string {
+                    $text = trim((string) ($state['link_button_text'] ?? ''));
+                    $url = trim((string) ($state['link_button_url'] ?? ''));
+                    $enabled = in_array($state['link_button'] ?? false, [true, 1, '1'], true);
+
+                    if ($text !== '' && $url !== '') {
+                        return ($enabled ? '' : '(off) ').$text.' · '.$url;
+                    }
+
+                    if ($text !== '') {
+                        return ($enabled ? '' : '(off) ').$text;
+                    }
+
+                    if ($url !== '') {
+                        return ($enabled ? '' : '(off) ').$url;
+                    }
+
+                    return 'Web link';
+                })
+                ->extraAttributes(['class' => 'sl-contacts-repeater sl-weblinks-repeater'])
+                ->addAction(function (Action $action) use ($weblinkForm, $normalizeWeblink, $refreshPreview): Action {
+                    return $action
+                        ->label(function (Repeater $component): string {
+                            $count = count($component->getRawState() ?? []);
+
+                            return $count > 0 ? 'Add another link' : 'Add web link';
+                        })
+                        ->icon('heroicon-m-plus')
+                        ->color('primary')
+                        ->button()
+                        ->modalHeading(fn (Repeater $component): string => count($component->getRawState() ?? []) > 0
+                            ? 'Add another web link'
+                            : 'Add web link')
+                        ->modalDescription('Configure the button text, URL, alignment, and colour.')
+                        ->modalSubmitActionLabel('Save link')
+                        ->modalCancelActionLabel('Cancel')
+                        ->modalWidth('lg')
+                        ->form($weblinkForm)
+                        ->action(function (array $data, Repeater $component) use ($normalizeWeblink, $refreshPreview): void {
+                            $data = $normalizeWeblink($data);
+                            $newUuid = $component->generateUuid();
+                            $items = $component->getRawState() ?? [];
+
+                            if ($newUuid) {
+                                $items[$newUuid] = $data;
+                            } else {
+                                $items[] = $data;
+                                $newUuid = (string) array_key_last($items);
+                            }
+
+                            $component->rawState($items);
+                            $component->getChildSchema($newUuid)->fill($data);
+                            $component->callAfterStateUpdated();
+                            $component->partiallyRender();
+                            $refreshPreview($component->getLivewire());
+                        });
+                })
+                ->extraItemActions([
+                    Action::make('editWeblink')
+                        ->label('Edit')
+                        ->tooltip('Edit web link')
+                        ->icon('heroicon-m-pencil-square')
+                        ->color('primary')
+                        ->iconButton()
+                        ->modalHeading('Edit web link')
+                        ->modalDescription('Update the button details.')
+                        ->modalSubmitActionLabel('Save changes')
+                        ->modalCancelActionLabel('Cancel')
+                        ->modalWidth('lg')
+                        ->fillForm(function (array $arguments, Repeater $component): array {
+                            $item = $component->getRawState()[$arguments['item'] ?? ''] ?? [];
+                            $color = ltrim((string) ($item['link_button_color'] ?? '007A01'), '#');
+
+                            return [
+                                'link_button' => in_array($item['link_button'] ?? false, [true, 1, '1'], true),
+                                'link_button_text' => (string) ($item['link_button_text'] ?? ''),
+                                'link_button_url' => (string) ($item['link_button_url'] ?? ''),
+                                'link_button_align' => (string) ($item['link_button_align'] ?: 'left'),
+                                'link_button_color' => '#'.$color,
+                            ];
+                        })
+                        ->form($weblinkForm)
+                        ->action(function (array $data, array $arguments, Repeater $component) use ($normalizeWeblink, $refreshPreview): void {
+                            $itemKey = $arguments['item'] ?? null;
+                            if ($itemKey === null) {
+                                return;
+                            }
+
+                            $data = $normalizeWeblink($data);
+                            $items = $component->getRawState() ?? [];
+                            $items[$itemKey] = array_merge($items[$itemKey] ?? [], $data);
+                            $component->rawState($items);
+                            $component->getChildSchema($itemKey)->fill($data);
+                            $component->callAfterStateUpdated();
+                            $component->partiallyRender();
+                            $refreshPreview($component->getLivewire());
+                        }),
+                ])
+                ->deleteAction(function (Action $action) use ($refreshPreview): Action {
+                    return $action
+                        ->label('Delete')
+                        ->tooltip('Delete web link')
+                        ->icon('heroicon-m-trash')
+                        ->color('danger')
+                        ->iconButton()
+                        ->requiresConfirmation()
+                        ->modalHeading('Delete web link?')
+                        ->modalDescription('This web link will be removed when you save the profile.')
+                        ->modalSubmitActionLabel('Delete')
+                        ->action(function (array $arguments, Repeater $component) use ($refreshPreview): void {
+                            $items = $component->getRawState() ?? [];
+                            unset($items[$arguments['item'] ?? '']);
+                            $component->rawState($items);
+                            $component->callAfterStateUpdated();
+                            $component->partiallyRender();
+                            $refreshPreview($component->getLivewire());
+                        });
+                })
                 ->columnSpanFull(),
         ];
     }

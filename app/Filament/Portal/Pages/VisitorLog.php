@@ -12,7 +12,9 @@ use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Contracts\View\View;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
 
 class VisitorLog extends Page
 {
@@ -41,8 +43,13 @@ class VisitorLog extends Page
      */
     public bool $profileExpired = false;
 
-    /** @var Collection<int, CollectedContact> */
-    public Collection $visitors;
+    public string $fromDate = '';
+
+    public string $toDate = '';
+
+    public int $page = 1;
+
+    public int $perPage = 20;
 
     public static function getNavigationGroup(): ?string
     {
@@ -79,17 +86,120 @@ class VisitorLog extends Page
 
     public function mount(): void
     {
-        $this->visitors = collect();
+        $this->fromDate = (string) request()->query('from_date', '');
+        $this->toDate = (string) request()->query('to_date', '');
 
         $requestedProfile = request()->integer('profile');
 
         if ($requestedProfile > 0) {
-            $this->loadVisitors($requestedProfile);
+            $this->loadProfile($requestedProfile);
         }
     }
 
+    public function applyDateRange(string $from = '', string $to = ''): void
+    {
+        $this->fromDate = trim($from);
+        $this->toDate = trim($to);
+        $this->page = 1;
+    }
+
+    public function clearDates(): void
+    {
+        $this->fromDate = '';
+        $this->toDate = '';
+        $this->page = 1;
+    }
+
     /**
-     * Legacy exported the visitor log as .xls — produce a real .xlsx.
+     * @return Builder<CollectedContact>
+     */
+    protected function filteredQuery(): Builder
+    {
+        $query = CollectedContact::query()
+            ->where('id_profile', (int) $this->selectedProfileId)
+            // Legacy getContactsById has no ORDER BY → natural insertion (oldest-first) order.
+            ->orderBy('id');
+
+        $from = $this->parseFilterDate($this->fromDate, startOfDay: true);
+        $to = $this->parseFilterDate($this->toDate, startOfDay: false);
+
+        // Use whereDate so filter is calendar-day based and timezone-safe.
+        if ($from) {
+            $query->whereDate('created_at', '>=', $from->toDateString());
+        }
+
+        if ($to) {
+            $query->whereDate('created_at', '<=', $to->toDateString());
+        }
+
+        return $query;
+    }
+
+    protected function parseFilterDate(string $value, bool $startOfDay): ?Carbon
+    {
+        $value = trim($value);
+
+        if ($value === '') {
+            return null;
+        }
+
+        // Strict dd/mm/yyyy only (Flatpickr outputs this). Avoid Carbon::parse()
+        // which can misread day/month order and silently break the filter.
+        if (! preg_match('/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/', $value, $m)) {
+            return null;
+        }
+
+        $day = (int) $m[1];
+        $month = (int) $m[2];
+        $year = (int) $m[3];
+
+        if (! checkdate($month, $day, $year)) {
+            return null;
+        }
+
+        $date = Carbon::create($year, $month, $day, 0, 0, 0);
+
+        return $startOfDay ? $date->startOfDay() : $date->endOfDay();
+    }
+
+    public function goToPage(int $page): void
+    {
+        $this->page = max(1, min($page, $this->totalPages()));
+    }
+
+    public function nextPage(): void
+    {
+        $this->goToPage($this->page + 1);
+    }
+
+    public function previousPage(): void
+    {
+        $this->goToPage($this->page - 1);
+    }
+
+    public function totalPages(): int
+    {
+        if (! $this->selectedProfileId || $this->profileExpired) {
+            return 1;
+        }
+
+        return max(1, (int) ceil($this->filteredQuery()->count() / $this->perPage));
+    }
+
+    /**
+     * @return LengthAwarePaginator<int, CollectedContact>|null
+     */
+    public function paginatedVisitors(): ?LengthAwarePaginator
+    {
+        if (! $this->selectedProfileId || $this->profileExpired) {
+            return null;
+        }
+
+        return $this->filteredQuery()->paginate($this->perPage, ['*'], 'page', $this->page);
+    }
+
+    /**
+     * Legacy exported the visitor log as .xls — produce a real .xlsx (respects date filter).
      */
     public function exportXlsx(): \Symfony\Component\HttpFoundation\BinaryFileResponse
     {
@@ -98,7 +208,7 @@ class VisitorLog extends Page
         $writer->openToFile($tmp);
         $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['ID', 'Date', 'Name', 'Surname', 'Mobile', 'Email']));
 
-        foreach ($this->visitors as $contact) {
+        foreach ($this->filteredQuery()->get() as $contact) {
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
                 (string) $this->selectedProfileId,
                 $contact->created_at?->format('d/m/Y H:i') ?? '',
@@ -121,7 +231,7 @@ class VisitorLog extends Page
         return ProfileResource::getUrl('index');
     }
 
-    protected function loadVisitors(int $profileId): void
+    protected function loadProfile(int $profileId): void
     {
         $client = $this->requireClient();
 
@@ -137,17 +247,5 @@ class VisitorLog extends Page
 
         // Legacy blocks the visitor log for expired profiles.
         $this->profileExpired = $profile->isExpired();
-
-        if ($this->profileExpired) {
-            $this->visitors = collect();
-
-            return;
-        }
-
-        // Legacy getContactsById has no ORDER BY → natural insertion (oldest-first) order.
-        $this->visitors = CollectedContact::query()
-            ->where('id_profile', $profileId)
-            ->orderBy('id')
-            ->get();
     }
 }

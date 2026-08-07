@@ -22,6 +22,9 @@ class ScanAnalytics extends Page
 {
     use InteractsWithClientMembership;
 
+    /** Safety cap on markers plotted at once (legacy plotted all; this avoids browser stalls on huge datasets). */
+    private const MAP_POINT_LIMIT = 5000;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBar;
 
     protected static ?string $navigationLabel = 'Scanalytics';
@@ -58,6 +61,18 @@ class ScanAnalytics extends Page
     public string $locationSort = 'created_at';
 
     public ?int $focusRowId = null;
+
+    public int $locationPage = 1;
+
+    public int $locationPerPage = 50;
+
+    public int $locationTotal = 0;
+
+    /** Where the map's Back button should return to: 'charts' or 'locations'. */
+    public string $mapReturnTo = 'charts';
+
+    /** Set when drilling into a single scan (legacy scanalytics_map_country / ?scan=ID). */
+    public ?int $drillScanId = null;
 
     /** @var Collection<int, object> */
     public Collection $locationRows;
@@ -112,6 +127,12 @@ class ScanAnalytics extends Page
         $this->locationSort = in_array($sort, ['city_name', 'created_at'], true) ? $sort : 'created_at';
         $this->focusRowId = request()->integer('row') ?: null;
 
+        // Legacy scanalytics_map_country: ?scan=ID drills the map to a single scan.
+        $this->drillScanId = request()->integer('scan') ?: null;
+        if ($this->drillScanId) {
+            $this->focusRowId = $this->drillScanId;
+        }
+
         $requestedProfile = request()->integer('profile');
 
         if ($requestedProfile > 0) {
@@ -133,8 +154,16 @@ class ScanAnalytics extends Page
     {
         $this->viewMode = 'map';
         $this->focusRowId = $rowId;
+        // Legacy parity: "Show on map" (from the list) returns to the list; the
+        // "Location Map" button (no row) returns to charts.
+        $this->mapReturnTo = $rowId ? 'locations' : 'charts';
         $this->rebuildMapPoints();
         $this->dispatchMapBoot();
+    }
+
+    public function backFromMap(): void
+    {
+        $this->mapReturnTo === 'locations' ? $this->showLocations() : $this->showCharts();
     }
 
     public function showLocations(): void
@@ -147,12 +176,33 @@ class ScanAnalytics extends Page
     public function setLocationSort(string $sort): void
     {
         $this->locationSort = in_array($sort, ['city_name', 'created_at'], true) ? $sort : 'created_at';
+        $this->locationPage = 1;
         $this->reloadLocationRows();
+    }
+
+    public function setLocationPage(int $page): void
+    {
+        $this->locationPage = max(1, min($page, $this->locationLastPage()));
+        $this->reloadLocationRows();
+    }
+
+    public function locationLastPage(): int
+    {
+        return max(1, (int) ceil($this->locationTotal / max(1, $this->locationPerPage)));
     }
 
     public function returnToListUrl(): string
     {
         return ProfileResource::getUrl('index');
+    }
+
+    /**
+     * Legacy parity: "Back" from a drilled single-scan map (scanalytics_map_country)
+     * returns to the full map overview (scanalytics_map) for the profile.
+     */
+    public function mapOverviewUrl(): string
+    {
+        return static::getUrl().'?profile='.(int) $this->selectedProfileId.'&view=map';
     }
 
     public function countryChartUrl(): string
@@ -411,6 +461,22 @@ class ScanAnalytics extends Page
             return;
         }
 
+        // Legacy parity: analytics (map/list/charts) are blocked on expired profiles.
+        if ($profile->isExpired()) {
+            $this->selectedProfileId = $profileId;
+            $this->profileName = filled(trim((string) $profile->code_profile_name))
+                ? (string) $profile->code_profile_name
+                : (string) ($profile->name ?? '');
+            $this->typeName = (string) ($profile->equipmentType?->name ?: 'Scanalytics');
+            $this->analyticsCount = 0;
+            $this->formSubmissionCount = 0;
+            $this->locationRows = collect();
+            $this->mapPoints = [];
+            $this->loadError = 'You can not perform this action on expired profile.';
+
+            return;
+        }
+
         $this->loadError = null;
         $this->selectedProfileId = $profileId;
         $this->profileName = filled(trim((string) $profile->code_profile_name))
@@ -448,9 +514,15 @@ class ScanAnalytics extends Page
 
         if ($profileId <= 0 || ! Schema::hasTable('ana_item_analytics')) {
             $this->locationRows = collect();
+            $this->locationTotal = 0;
 
             return;
         }
+
+        // Legacy parity: the list shows every scan, paginated (old app: 50/page).
+        $this->locationTotal = $this->analyticsQuery($profileId)->count();
+        $lastPage = max(1, (int) ceil($this->locationTotal / max(1, $this->locationPerPage)));
+        $this->locationPage = max(1, min($this->locationPage, $lastPage));
 
         $query = $this->analyticsQuery($profileId);
 
@@ -463,7 +535,7 @@ class ScanAnalytics extends Page
         $platforms = $this->platformNames();
         $devices = $this->deviceNames();
 
-        $this->locationRows = $query->limit(500)->get()->map(function (AnaItemAnalytics $row) use ($platforms, $devices) {
+        $this->locationRows = $query->forPage($this->locationPage, $this->locationPerPage)->get()->map(function (AnaItemAnalytics $row) use ($platforms, $devices) {
             return (object) [
                 'id' => $row->id,
                 'created_at' => $row->created_at,
@@ -494,14 +566,24 @@ class ScanAnalytics extends Page
             return;
         }
 
-        $rows = $this->analyticsQuery($profileId)
+        $query = $this->analyticsQuery($profileId)
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
             ->where('latitude', '!=', '')
-            ->where('longitude', '!=', '')
+            ->where('longitude', '!=', '');
+
+        // Legacy map_country drills to the one clicked scan (query by its id).
+        if ($this->drillScanId) {
+            $query->where('id', $this->drillScanId);
+        }
+
+        $rows = $query
             ->orderByDesc('id')
-            ->limit(500)
+            ->limit(self::MAP_POINT_LIMIT)
             ->get();
+
+        $platforms = $this->platformNames();
+        $devices = $this->deviceNames();
 
         foreach ($rows as $row) {
             $lat = (float) $row->latitude;
@@ -511,16 +593,26 @@ class ScanAnalytics extends Page
                 continue;
             }
 
+            $label = trim(implode(', ', array_filter([
+                (string) $row->city_name,
+                (string) $row->region_name,
+                (string) $row->country_name,
+            ]))) ?: ('Scan #'.$row->id);
+
             $this->mapPoints[] = [
                 'id' => (int) $row->id,
                 'lat' => $lat,
                 'lng' => $lng,
                 'scan_type' => strtolower((string) ($row->scan_type ?? 'ip')),
-                'label' => trim(implode(', ', array_filter([
-                    (string) $row->city_name,
-                    (string) $row->region_name,
-                    (string) $row->country_name,
-                ]))) ?: ('Scan #'.$row->id),
+                'label' => $label,
+                // Legacy parity: the marker info window shows the full scan detail.
+                'time' => $row->created_at?->format('d/m/Y H:i:s') ?? '',
+                'coords' => (string) $row->latitude.', '.(string) $row->longitude,
+                'ip' => (string) $row->ip_add,
+                'device' => $this->resolvePlatformLabel($row->id_platform, $platforms),
+                'platform' => $this->resolveDeviceLabel($row->id_device, $devices),
+                'browser' => trim($this->browserLabel((string) $row->id_browser).' '.(string) ($row->browser_version ?? '')),
+                'scan_label' => strtolower((string) ($row->scan_type ?? '')) === 'gps' ? 'GPS' : 'IP',
             ];
         }
     }

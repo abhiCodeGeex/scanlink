@@ -280,6 +280,11 @@ trait HasLegacyProfileEditorLayout
             return;
         }
 
+        // Colour Selector preview is handled client-side on the code editor QR.
+        if ($name === 'data.color_code') {
+            return;
+        }
+
         // Nested Livewire "updated*" hooks already ran; debounce the iframe reload.
         $this->js(<<<'JS'
             clearTimeout(window.__slPhonePreviewTimer);

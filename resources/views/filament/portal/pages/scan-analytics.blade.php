@@ -10,15 +10,63 @@
             }
             window.__slSaMapBootBound = true;
 
+            var GKEY = @json((string) config('scanlink.google_maps_api_key'));
+
+            /* ---- shared helpers ---- */
+            function renderEmpty(el, message) {
+                el.innerHTML = '<div class="sl-sa__map-note">' + message + '</div>';
+            }
+            function slEsc(s) {
+                return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+                });
+            }
+            function slPopupHtml(p) {
+                var rows = ['<div class="sl-sa__popup-title">' + slEsc(p.label || ('Scan #' + p.id)) + '</div>'];
+                function line(k, v) {
+                    if (v !== undefined && v !== null && String(v) !== '') {
+                        rows.push('<div class="sl-sa__popup-row"><span>' + k + ':</span> ' + slEsc(v) + '</div>');
+                    }
+                }
+                line('Time', p.time);
+                line('Coordinates', p.coords);
+                line('IP', p.ip);
+                line('Device', p.device);
+                line('Platform', p.platform);
+                line('Browser', p.browser);
+                line('Scan type', p.scan_label);
+                return '<div class="sl-sa__popup">' + rows.join('') + '</div>';
+            }
+            /* Green (GPS) / grey (non-GPS) teardrop pins — match the legacy markers. */
+            function pinSvg(fill) {
+                var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="27" height="41" viewBox="0 0 27 41">'
+                    + '<path fill="' + fill + '" stroke="#ffffff" stroke-width="1.5" d="M13.5 1C6.9 1 1.5 6.4 1.5 13c0 9 12 27 12 27s12-18 12-27C25.5 6.4 20.1 1 13.5 1z"/>'
+                    + '<circle cx="13.5" cy="13" r="4.4" fill="#ffffff"/></svg>';
+                return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+            }
+            var PIN_GPS = pinSvg('#008901');
+            var PIN_IP = pinSvg('#8a8f98');
+
+            /* Legacy drill: overview marker click redirects to the per-scan view
+               (?view=map&scan=ID) — the SPA equivalent of scanalytics_map_country. */
+            function slIsDrilled() {
+                try { return !!(new URL(window.location.href).searchParams.get('scan')); } catch (e) { return false; }
+            }
+            function slDrillTo(id) {
+                try {
+                    var u = new URL(window.location.href);
+                    u.searchParams.set('view', 'map');
+                    u.searchParams.set('scan', id);
+                    window.location.href = u.toString();
+                } catch (e) {}
+            }
+
+            /* ---- Leaflet (fallback when no Google Maps key) ---- */
             var leafletCssHref = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
             var leafletJsSrc = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
             var leafletLoading = null;
-
             function ensureLeaflet(cb) {
-                if (typeof L !== 'undefined') {
-                    cb();
-                    return;
-                }
+                if (typeof L !== 'undefined') { cb(); return; }
                 if (! leafletLoading) {
                     leafletLoading = new Promise(function (resolve, reject) {
                         if (! document.querySelector('link[data-sl-sa-leaflet]')) {
@@ -38,9 +86,114 @@
                 }
                 leafletLoading.then(cb).catch(function () { /* ignore */ });
             }
+            function leafletPin(type) {
+                return L.icon({
+                    iconUrl: (type === 'gps' ? PIN_GPS : PIN_IP),
+                    iconSize: [27, 41],
+                    iconAnchor: [13, 40],
+                    popupAnchor: [0, -34]
+                });
+            }
+            function bootLeaflet(el, points, focusId) {
+                if (typeof L === 'undefined') { return; }
+                if (el._slMap) { el._slMap.remove(); el._slMap = null; }
+                el.innerHTML = '';
+                var map = L.map(el).setView([points[0].lat, points[0].lng], 4);
+                el._slMap = map;
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 18,
+                    attribution: '&copy; OpenStreetMap'
+                }).addTo(map);
+                var bounds = [];
+                var focusLatLng = null;
+                points.forEach(function (p) {
+                    var marker = L.marker([p.lat, p.lng], { icon: leafletPin(String(p.scan_type).toLowerCase()) }).addTo(map);
+                    marker.bindPopup(slPopupHtml(p));
+                    if (! slIsDrilled()) {
+                        // Overview: click a marker to drill into that scan (URL redirect).
+                        marker.on('click', function () { slDrillTo(p.id); });
+                    }
+                    bounds.push([p.lat, p.lng]);
+                    if (focusId && Number(p.id) === focusId) {
+                        focusLatLng = [p.lat, p.lng];
+                        marker.openPopup();
+                    }
+                });
+                if (focusLatLng) { map.setView(focusLatLng, 14); }
+                else if (bounds.length > 1) { map.fitBounds(bounds, { padding: [30, 30] }); }
+                else { map.setView(bounds[0], 10); }
+                setTimeout(function () { map.invalidateSize(); }, 150);
+                setTimeout(function () { map.invalidateSize(); }, 400);
+            }
 
-            function renderEmpty(el, message) {
-                el.innerHTML = '<div class="sl-sa__map-note">' + message + '</div>';
+            /* ---- Google Maps (exact legacy design; needs GOOGLE_MAPS_API_KEY) ---- */
+            var gmapsLoading = null;
+            function ensureGoogle(cb, onFail) {
+                if (window.google && window.google.maps) { cb(); return; }
+                if (! gmapsLoading) {
+                    gmapsLoading = new Promise(function (resolve, reject) {
+                        var script = document.createElement('script');
+                        script.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(GKEY);
+                        script.async = true;
+                        script.defer = true;
+                        script.onload = function () { (window.google && window.google.maps) ? resolve() : reject(new Error('gmaps missing')); };
+                        script.onerror = function () { reject(new Error('gmaps failed')); };
+                        document.head.appendChild(script);
+                    });
+                }
+                gmapsLoading.then(cb).catch(function () { if (onFail) { onFail(); } });
+            }
+            function bootGoogle(el, points, focusId) {
+                el.innerHTML = '';
+                var map = new google.maps.Map(el, {
+                    zoom: 4,
+                    center: { lat: points[0].lat, lng: points[0].lng },
+                    mapTypeId: google.maps.MapTypeId.ROADMAP
+                });
+                el._slGMap = map;
+                var infowindow = new google.maps.InfoWindow();
+                var bounds = new google.maps.LatLngBounds();
+                var focusData = null;
+                points.forEach(function (p) {
+                    var isGps = String(p.scan_type).toLowerCase() === 'gps';
+                    var position = { lat: p.lat, lng: p.lng };
+                    var marker = new google.maps.Marker({
+                        position: position,
+                        map: map,
+                        icon: {
+                            url: (isGps ? PIN_GPS : PIN_IP),
+                            scaledSize: new google.maps.Size(27, 41),
+                            anchor: new google.maps.Point(13, 40)
+                        }
+                    });
+                    bounds.extend(position);
+                    marker.addListener('click', function () {
+                        if (slIsDrilled()) {
+                            infowindow.setContent(slPopupHtml(p));
+                            infowindow.open(map, marker);
+                        } else {
+                            // Overview: click a marker to drill into that scan (URL redirect).
+                            slDrillTo(p.id);
+                        }
+                    });
+                    if (focusId && Number(p.id) === focusId) {
+                        focusData = { pos: position, marker: marker, p: p };
+                    }
+                });
+                if (focusData) {
+                    map.setCenter(focusData.pos);
+                    map.setZoom(15);
+                    google.maps.event.addListenerOnce(map, 'idle', function () {
+                        infowindow.setContent(slPopupHtml(focusData.p));
+                        infowindow.open(map, focusData.marker);
+                    });
+                } else if (points.length > 1) {
+                    map.fitBounds(bounds);
+                } else {
+                    map.setCenter({ lat: points[0].lat, lng: points[0].lng });
+                    map.setZoom(11);
+                }
+                setTimeout(function () { google.maps.event.trigger(map, 'resize'); }, 200);
             }
 
             function bootMap(detail) {
@@ -48,65 +201,24 @@
                 function tryBoot() {
                     var el = document.getElementById('sl-sa-map');
                     if (! el) {
-                        if (attempts++ < 20) {
-                            setTimeout(tryBoot, 50);
-                        }
+                        if (attempts++ < 20) { setTimeout(tryBoot, 50); }
                         return;
                     }
-                    ensureLeaflet(function () {
-                        if (typeof L === 'undefined') {
-                            return;
-                        }
-                        if (el._slMap) {
-                            el._slMap.remove();
-                            el._slMap = null;
-                        }
-                        el.innerHTML = '';
-
-                        var points = (detail && detail.points) ? detail.points : [];
-                        if (! points.length) {
-                            renderEmpty(el, 'No map coordinates recorded for this profile.');
-                            return;
-                        }
-
-                        var focusId = parseInt((detail && detail.focus) || 0, 10) || 0;
-                        var map = L.map(el).setView([points[0].lat, points[0].lng], 4);
-                        el._slMap = map;
-                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                            maxZoom: 18,
-                            attribution: '&copy; OpenStreetMap'
-                        }).addTo(map);
-
-                        var bounds = [];
-                        var focusLatLng = null;
-                        points.forEach(function (p) {
-                            var color = (String(p.scan_type).toLowerCase() === 'gps') ? '#008901' : '#c0392b';
-                            var marker = L.circleMarker([p.lat, p.lng], {
-                                radius: 8,
-                                color: '#fff',
-                                weight: 2,
-                                fillColor: color,
-                                fillOpacity: 0.95
-                            }).addTo(map);
-                            marker.bindPopup(p.label || ('Scan #' + p.id));
-                            bounds.push([p.lat, p.lng]);
-                            if (focusId && Number(p.id) === focusId) {
-                                focusLatLng = [p.lat, p.lng];
-                                marker.openPopup();
-                            }
-                        });
-
-                        if (focusLatLng) {
-                            map.setView(focusLatLng, 10);
-                        } else if (bounds.length > 1) {
-                            map.fitBounds(bounds, { padding: [30, 30] });
-                        } else {
-                            map.setView(bounds[0], 8);
-                        }
-
-                        setTimeout(function () { map.invalidateSize(); }, 150);
-                        setTimeout(function () { map.invalidateSize(); }, 400);
-                    });
+                    var points = (detail && detail.points) ? detail.points : [];
+                    if (! points.length) {
+                        renderEmpty(el, 'No map coordinates recorded for this profile.');
+                        return;
+                    }
+                    var focusId = parseInt((detail && detail.focus) || 0, 10) || 0;
+                    if (el._slMap) { el._slMap.remove(); el._slMap = null; }
+                    if (GKEY) {
+                        ensureGoogle(
+                            function () { bootGoogle(el, points, focusId); },
+                            function () { ensureLeaflet(function () { bootLeaflet(el, points, focusId); }); }
+                        );
+                    } else {
+                        ensureLeaflet(function () { bootLeaflet(el, points, focusId); });
+                    }
                 }
                 tryBoot();
             }
@@ -167,24 +279,149 @@
         .sl-sa .scananalytic-buttons .link-button,
         .sl-sa .scananalytic-buttons a.link-button,
         .sl-sa .scananalytic-buttons button.link-button {
-            display: inline-block !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
             background: #008901 !important;
             color: #fff !important;
-            font-weight: bold;
-            font-size: 12px;
+            font-weight: 700;
+            font-size: 11px;
             text-transform: uppercase;
+            letter-spacing: 0.02em;
             text-decoration: none !important;
             border: 1px solid #006201 !important;
-            border-radius: 5px !important;
-            padding: 8px 12px !important;
+            border-radius: 4px !important;
+            padding: 6px 10px !important;
+            min-height: 30px !important;
             cursor: pointer;
             line-height: 1.2;
+            white-space: nowrap;
+            box-sizing: border-box;
         }
-        /* Buttons sit in a horizontal row (not stacked). */
-        .sl-sa .scananalytic-buttons {
+        .sl-sa__btn:hover,
+        .sl-sa .scananalytic-buttons .link-button:hover,
+        .sl-sa .scananalytic-buttons input:hover,
+        .sl-sa__chrome-actions .link-button:hover,
+        .sl-sa__chrome-actions .sl-sa__btn:hover:not(.sl-sa__btn--ghost) {
+            background: #00a001 !important;
+        }
+        .sl-sa__btn.is-active,
+        .sl-sa__chrome-actions .link-button.is-active,
+        .sl-sa__chrome-actions button.link-button.is-active {
+            background: #006201 !important;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, .15);
+        }
+
+        /* Compact page chrome: title on its own row, then one aligned toolbar */
+        .sl-sa__chrome {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 0 0 14px;
+            padding: 0 0 12px;
+            border-bottom: 1px solid #e5ebe5;
+        }
+        .sl-sa__chrome-title {
+            margin: 0;
+            padding: 0;
+            font-size: 15px;
+            font-weight: 700;
+            color: #1f2937;
+            line-height: 1.35;
+        }
+        .sl-sa__chrome-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px 16px;
+            width: 100%;
+        }
+        .sl-sa__chrome-controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            flex: 0 1 auto;
+        }
+        .sl-sa__chrome-actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 6px;
+            flex: 1 1 auto;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            min-width: min(100%, 280px);
+        }
+        @media (min-width: 1100px) {
+            .sl-sa__chrome-bar {
+                flex-wrap: nowrap;
+            }
+            .sl-sa__chrome-actions {
+                flex-wrap: nowrap;
+                flex: 0 1 auto;
+                min-width: 0;
+            }
+        }
+        .sl-sa__chrome-actions li {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+        .sl-sa__chrome-actions .link-button,
+        .sl-sa__chrome-actions .sl-sa__btn,
+        .sl-sa__chrome-actions a.link-button,
+        .sl-sa__chrome-actions button.link-button {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        .sl-sa__btn--ghost {
+            background: #fff !important;
+            color: #008901 !important;
+            border-color: #008901 !important;
+        }
+        .sl-sa__btn--ghost:hover {
+            background: #f0faf0 !important;
+            color: #006201 !important;
+        }
+        .sl-sa__sort {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin: 0;
+            font-size: 12px;
+            font-weight: 600;
+            color: #555;
+            white-space: nowrap;
+        }
+        .sl-sa__sort select {
+            height: 30px;
+            min-width: 130px;
+            padding: 4px 8px;
+            border: 1px solid #cfd5cf;
+            border-radius: 4px;
+            background: #fff;
+            font-size: 12px;
+            color: #333;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        .sl-sa__toolbar {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
+            align-items: center;
+            justify-content: space-between;
+            margin: 0 0 12px;
+        }
+        /* Keep legacy list class usable, but chrome owns the layout */
+        .sl-sa .scananalytic-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
             margin: 0;
             padding: 0;
             justify-content: flex-end;
@@ -194,18 +431,6 @@
             float: none;
             margin: 0;
             padding: 0;
-        }
-        .sl-sa__btn:hover,
-        .sl-sa .scananalytic-buttons .link-button:hover,
-        .sl-sa .scananalytic-buttons input:hover { background: #00a001 !important; }
-        .sl-sa__btn.is-active { background: #006201; }
-        .sl-sa__toolbar {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: center;
-            justify-content: space-between;
-            margin: 8px 0 14px;
         }
         .sl-sa__hint {
             text-align: center;
@@ -343,13 +568,21 @@
             vertical-align: middle;
         }
         .sl-sa__dot--gps { background: #008901; }
-        .sl-sa__dot--ip { background: #c0392b; }
-        .sl-sa__sort select {
-            margin-left: 6px;
-            padding: 4px 8px;
-            border: 1px solid #ccc;
-            border-radius: 3px;
+        .sl-sa__dot--ip { background: #8a8f98; }
+        /* Map marker detail popup (legacy info-window parity). */
+        .sl-sa__popup { font-size: 12px; color: #222; min-width: 190px; line-height: 1.5; }
+        .sl-sa__popup-title { font-weight: 700; margin-bottom: 6px; color: #185FA5; font-size: 13px; }
+        .sl-sa__popup-row { margin: 2px 0; }
+        .sl-sa__popup-row span { font-weight: 700; color: #444; }
+        .sl-sa__pager {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            margin-top: 14px;
         }
+        .sl-sa__pager-info { font-size: 13px; color: #333; }
+        .sl-sa__pager .sl-sa__btn[disabled] { opacity: 0.5; cursor: not-allowed; }
         .sl-sa__link {
             color: #008901;
             font-weight: bold;
@@ -467,6 +700,22 @@
             background: #008901 !important;
             border-color: #006201 !important;
         }
+        .sl-sa__btn.sl-sa__btn--ghost,
+        .sl-sa a.sl-sa__btn.sl-sa__btn--ghost {
+            background: #fff !important;
+            color: #008901 !important;
+            border-color: #008901 !important;
+        }
+        .sl-sa__btn.sl-sa__btn--ghost:hover,
+        .sl-sa a.sl-sa__btn.sl-sa__btn--ghost:hover {
+            background: #f0faf0 !important;
+            color: #006201 !important;
+        }
+        .sl-sa .scananalytic-buttons .link-button.is-active,
+        .sl-sa .scananalytic-buttons button.link-button.is-active {
+            background: #006201 !important;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, .15);
+        }
         .sl-sa__box-count {
             border: 3px solid #A2A2A2;
             background: #fff;
@@ -525,20 +774,67 @@
             @elseif (! $selectedProfileId)
                 <div class="sl-sa__empty">Select a profile from Master Code List to view Scanalytics.</div>
             @else
-                {{-- Parent header (Profile + buttons) is shown for map/locations + charts-no-data.
+                {{-- Compact chrome: title row + one toolbar (controls left, all actions right).
                      Charts-with-data uses the iframe's own legacy header/buttons. --}}
                 @if (! ($viewMode === 'charts' && $analyticsCount > 0))
-                    <div style="float:left;" id="divToPrint">
-                        <h3 style="margin:0px;">Profile {{ $selectedProfileId }}.@if (filled($profileName)) {{ ucwords($profileName) }}@endif</h3>
+                    <div class="sl-sa__chrome">
+                        <h3 class="sl-sa__chrome-title">
+                            Profile {{ $selectedProfileId }}.@if (filled($profileName)) {{ ucwords($profileName) }}@endif
+                        </h3>
+
+                        <div class="sl-sa__chrome-bar">
+                            <div class="sl-sa__chrome-controls">
+                                @if ($viewMode === 'locations')
+                                    <button type="button" class="sl-sa__btn sl-sa__btn--ghost" wire:click="showCharts">Back</button>
+                                    <label class="sl-sa__sort">
+                                        Sort By
+                                        <select wire:change="setLocationSort($event.target.value)">
+                                            <option value="created_at" @selected($locationSort === 'created_at')>Scan Order</option>
+                                            <option value="city_name" @selected($locationSort === 'city_name')>Location</option>
+                                        </select>
+                                    </label>
+                                @elseif ($viewMode === 'map')
+                                    <div class="sl-sa__map-legend">
+                                        <span><span class="sl-sa__dot sl-sa__dot--ip"></span> Non GPS Location</span>
+                                        <span><span class="sl-sa__dot sl-sa__dot--gps"></span> Scan GPS Location</span>
+                                    </div>
+                                    @if ($drillScanId)
+                                        <a class="sl-sa__btn sl-sa__btn--ghost" href="{{ $this->mapOverviewUrl() }}">Back</a>
+                                    @else
+                                        <button type="button" class="sl-sa__btn sl-sa__btn--ghost" wire:click="backFromMap">Back</button>
+                                    @endif
+                                @endif
+                            </div>
+
+                            <ul class="sl-sa__chrome-actions scananalytic-buttons">
+                                <li>
+                                    <button
+                                        type="button"
+                                        class="link-button @if ($viewMode === 'map') is-active @endif"
+                                        wire:click="showMap"
+                                    >Location Map</button>
+                                </li>
+                                <li>
+                                    <button
+                                        type="button"
+                                        class="link-button @if ($viewMode === 'locations') is-active @endif"
+                                        wire:click="showLocations"
+                                    >Location List</button>
+                                </li>
+                                @if ($viewMode === 'locations')
+                                    <li>
+                                        <button type="button" class="sl-sa__btn" wire:click="exportXlsx">Export Analytics</button>
+                                    </li>
+                                    <li>
+                                        <button type="button" class="sl-sa__btn" wire:click="downloadPdf">Download PDF</button>
+                                    </li>
+                                @endif
+                                <li>
+                                    <a class="link-button" href="{{ $this->returnToListUrl() }}">Return to list</a>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
-                    <div class="btn-inline" style="float:right;">
-                        <ul class="scananalytic-buttons">
-                            <li><button type="button" class="link-button" wire:click="showMap">Location Map</button></li>
-                            <li><button type="button" class="link-button" wire:click="showLocations">Location List</button></li>
-                            <li><a class="link-button" href="{{ $this->returnToListUrl() }}">Return to list</a></li>
-                        </ul>
-                    </div>
-                    <div class="clear" style="clear:both;"></div>
                 @endif
 
                 @if ($viewMode === 'charts')
@@ -650,13 +946,6 @@
                     @endif
 
                 @elseif ($viewMode === 'map')
-                    <div class="sl-sa__toolbar">
-                        <div class="sl-sa__map-legend">
-                            <span><span class="sl-sa__dot sl-sa__dot--ip"></span> Non GPS Location</span>
-                            <span><span class="sl-sa__dot sl-sa__dot--gps"></span> Scan GPS Location</span>
-                        </div>
-                        <button type="button" class="sl-sa__btn" wire:click="showCharts">Back</button>
-                    </div>
                     {{-- wire:ignore keeps Leaflet's DOM intact; map is booted via sl-sa-boot-map. --}}
                     <div
                         id="sl-sa-map"
@@ -671,18 +960,6 @@
                     </script>
 
                 @else
-                    <div class="sl-sa__toolbar">
-                        <button type="button" class="sl-sa__btn" wire:click="showCharts">Back</button>
-                        <label class="sl-sa__sort">
-                            Sort By
-                            <select wire:change="setLocationSort($event.target.value)">
-                                <option value="created_at" @selected($locationSort === 'created_at')>Scan Order</option>
-                                <option value="city_name" @selected($locationSort === 'city_name')>Location</option>
-                            </select>
-                        </label>
-                        <button type="button" class="sl-sa__btn" wire:click="exportXlsx">Export Analytics</button>
-                        <button type="button" class="sl-sa__btn" wire:click="downloadPdf">Download PDF</button>
-                    </div>
                     <div class="sl-sa__table-wrap">
                         <table class="listing-table" width="100%" cellspacing="0" cellpadding="0">
                             <thead>
@@ -704,7 +981,7 @@
                             <tbody>
                                 @forelse ($locationRows as $index => $row)
                                     <tr wire:key="sa-loc-{{ $row->id }}">
-                                        <td>{{ $index + 1 }}</td>
+                                        <td>{{ ($locationPage - 1) * $locationPerPage + $index + 1 }}</td>
                                         <td>{{ $row->created_at?->format('d/m/Y H:i') }}</td>
                                         <td>{{ $row->ip_add }}</td>
                                         <td>{{ $row->location_label }}</td>
@@ -731,6 +1008,13 @@
                             </tbody>
                         </table>
                     </div>
+                    @if ($this->locationLastPage() > 1)
+                        <div class="sl-sa__pager">
+                            <button type="button" class="sl-sa__btn" wire:click="setLocationPage({{ $locationPage - 1 }})" @disabled($locationPage <= 1)>Prev</button>
+                            <span class="sl-sa__pager-info">Page {{ $locationPage }} of {{ $this->locationLastPage() }} &middot; {{ number_format($locationTotal) }} scans</span>
+                            <button type="button" class="sl-sa__btn" wire:click="setLocationPage({{ $locationPage + 1 }})" @disabled($locationPage >= $this->locationLastPage())>Next</button>
+                        </div>
+                    @endif
                 @endif
             @endif
         </div>

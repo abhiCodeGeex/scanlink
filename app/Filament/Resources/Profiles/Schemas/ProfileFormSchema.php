@@ -86,11 +86,13 @@ class ProfileFormSchema
                     FileUpload::make('logo_upload')
                         ->label('Upload Company logo')
                         ->image()
+                        ->imagePreviewHeight('120')
                         ->directory('profiles/logos')
                         ->disk('public'),
                     FileUpload::make('picture_uploads')
                         ->label('Upload pictures')
                         ->image()
+                        ->imagePreviewHeight('120')
                         ->multiple()
                         ->directory('profiles/pictures')
                         ->disk('public'),
