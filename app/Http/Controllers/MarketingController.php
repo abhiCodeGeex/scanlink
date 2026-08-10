@@ -42,6 +42,7 @@ class MarketingController extends Controller
             'howToLinks' => $this->howToLinks(),
             'isPortalUser' => $isPortalUser,
             'portalUserEmail' => $isPortalUser ? $user->email : null,
+            'register' => url('/portal/register'),
         ];
     }
 
@@ -117,6 +118,26 @@ class MarketingController extends Controller
     public function terms(): View
     {
         return view('marketing.terms', $this->marketingLayoutData());
+    }
+
+    public function packaging(): View
+    {
+        return view('marketing.packaging', $this->marketingLayoutData());
+    }
+
+    public function forYou(): View
+    {
+        return view('marketing.for-you', $this->marketingLayoutData());
+    }
+
+    public function workplace(): View
+    {
+        return view('marketing.workplace', $this->marketingLayoutData());
+    }
+
+    public function forms(): View
+    {
+        return view('marketing.forms', $this->marketingLayoutData());
     }
 
     public function submitContact(Request $request, ContactCaptchaService $captcha): RedirectResponse

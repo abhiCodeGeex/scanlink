@@ -24,6 +24,12 @@ Route::get('/faq', [MarketingController::class, 'faq'])->name('marketing.faq');
 Route::get('/privacy', [MarketingController::class, 'privacy'])->name('marketing.privacy');
 Route::get('/terms', [MarketingController::class, 'terms'])->name('marketing.terms');
 
+// Marketing solution / landing pages (parity with legacy marketing/workplace/formbuilderpage).
+Route::get('/solutions/packaging-signage', [MarketingController::class, 'packaging'])->name('marketing.packaging');
+Route::get('/solutions/for-you', [MarketingController::class, 'forYou'])->name('marketing.forYou');
+Route::get('/solutions/workplace', [MarketingController::class, 'workplace'])->name('marketing.workplace');
+Route::get('/solutions/forms', [MarketingController::class, 'forms'])->name('marketing.forms');
+
 // Legacy URL aliases (Kohana paths from scanlink.com.au).
 Route::redirect('/pricing/index', '/pricing', 301);
 Route::redirect('/faq/index', '/faq', 301);
