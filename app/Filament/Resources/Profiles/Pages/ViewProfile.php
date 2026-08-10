@@ -4,7 +4,6 @@ namespace App\Filament\Resources\Profiles\Pages;
 
 use App\Filament\Resources\Profiles\Pages\Concerns\HasProfileQrActions;
 use App\Filament\Resources\Profiles\ProfileResource;
-use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
 
 class ViewProfile extends ViewRecord
@@ -37,7 +36,6 @@ class ViewProfile extends ViewRecord
     {
         return [
             ...$this->profileQrHeaderActions(),
-            EditAction::make(),
         ];
     }
 }
