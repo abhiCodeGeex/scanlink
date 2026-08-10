@@ -9,8 +9,7 @@
 
     /** @var Profile $record */
     $member = InteractsWithClientMembership::portalMembership();
-    // Gating (this repo only): the Edit / edit-profile action is disabled; other row tools stay.
-    $canEdit = false;
+    $canEdit = InteractsWithClientMembership::memberCanEditCode($member);
     $canAnalytics = InteractsWithClientMembership::memberCanAccessAnalytics($member);
     $canSubmissions = InteractsWithClientMembership::memberCanAccessFormSubmissions($member);
     $canDownload = InteractsWithClientMembership::memberCanDownload($member);
