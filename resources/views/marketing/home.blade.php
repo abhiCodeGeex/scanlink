@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/marketing.css') }}?v=3">
+    <link rel="stylesheet" href="{{ asset('css/marketing.css') }}?v=7">
 </head>
 <body class="mkt">
 <a class="mkt__skip-link" href="#main">Skip to content</a>
@@ -211,7 +211,7 @@
             <div class="mkt__apps">
                 @foreach ($apps as $app)
                     <a class="mkt__app-card" href="{{ $pdfBase }}?filename={{ urlencode($app[0]) }}&filepath=images/brochure" target="_blank" rel="noopener">
-                        <span class="mkt__app-thumb"><img src="{{ asset('images/'.$app[1]) }}" alt="{{ $app[2] }} information sheet"></span>
+                        <span class="mkt__app-thumb"><img src="{{ asset('images/'.$app[1]) }}?v=2" alt="{{ $app[2] }} information sheet"></span>
                         <p>{{ $app[2] }}</p>
                     </a>
                 @endforeach

@@ -117,7 +117,15 @@ class EditProfile extends EditRecord
             $data['form_is_enable'] = false;
 
             if ((bool) $profile->form_is_enable) {
-                $profile->forceFill(['form_is_enable' => false])->saveQuietly();
+                // Persist just the corrected flag with a targeted column update. A full
+                // save here is unsafe: the model's `retrieved` hook nulls the sentinel
+                // date columns (voc_dob, activation_start_date, activation_end_date) in
+                // memory, and saveQuietly() skips the `saving` guard that restores the
+                // sentinel — so those NOT NULL columns would be written as NULL and the
+                // page would 500 on load.
+                $profile->newQuery()->whereKey($profile->getKey())->update(['form_is_enable' => 0]);
+                $profile->setAttribute('form_is_enable', false);
+                $profile->syncOriginalAttribute('form_is_enable');
             }
         }
 

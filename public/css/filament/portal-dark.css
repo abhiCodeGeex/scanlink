@@ -50,6 +50,27 @@ html.dark .fi-panel-portal .fi-topbar .fi-icon-btn.fi-topbar-database-notificati
     background-color: rgb(255 255 255 / 0.08) !important;
 }
 
+/* Notification tray (database notifications) — the modal is teleport="body", so it
+   renders outside .fi-panel-portal: neither the panel-scoped rules nor the
+   --sl-dark-* tokens reach it. Filament's dark modal supplies a dark surface but
+   leaves the titles/dates as faint low-contrast greys (and dims read entries).
+   Use literal colours so every entry stays legible regardless of read state. */
+html.dark .fi-no-database .fi-no-notification-read-ctn,
+html.dark .fi-no-database .fi-no-notification-unread-ctn,
+html.dark .fi-no-database .fi-no-notification-read-ctn .fi-no-notification {
+    opacity: 1 !important;
+}
+html.dark .fi-no-database .fi-no-notification-title {
+    color: rgb(243 244 246) !important;
+}
+html.dark .fi-no-database .fi-no-notification-body,
+html.dark .fi-no-database .fi-no-notification-text {
+    color: rgb(209 213 219) !important;
+}
+html.dark .fi-no-database .fi-no-notification-date {
+    color: rgb(156 163 175) !important;
+}
+
 html.dark .fi-panel-portal .fi-badge,
 html.dark .fi-panel-portal .fi-topbar .fi-badge {
     --bg: #008c00 !important;
@@ -468,6 +489,19 @@ html.dark .fi-panel-portal:has(.sl-profile-editor) .sl-add-form-left .fi-ac-btn-
     background-image: none !important;
     border-color: var(--sl-dark-border-strong) !important;
     color: var(--sl-dark-text) !important;
+}
+
+/* The .sl-add-form-left / -right column wrappers are hardcoded white (#fff) for the
+   light theme (inline in legacy-profile-page for the code editor, style.css for the
+   others). In dark mode that left a white frame around the dark form section and a
+   white box behind the centered SAVE button. Match the wrappers to the dark surface
+   so they blend with the themed inner cards. */
+html.dark .fi-panel-portal:has(.sl-profile-editor) .sl-add-form-left,
+html.dark .fi-panel-portal:has(.sl-profile-editor) .sl-add-form-right {
+    background: var(--sl-dark-surface) !important;
+    background-color: var(--sl-dark-surface) !important;
+    border-color: var(--sl-dark-border) !important;
+    box-shadow: none !important;
 }
 
 /* Edit account cards */
