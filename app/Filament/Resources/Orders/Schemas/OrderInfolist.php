@@ -76,7 +76,7 @@ class OrderInfolist
                             ->state(fn (Order $record): string => sprintf('$%s AUD', number_format(PhysicalOrderPricing::summarize($record)['subtotal'], 2))),
                         TextEntry::make('postage')
                             ->label('Postage & Handling')
-                            ->state('$2.95 AUD'),
+                            ->state(fn (Order $record): string => sprintf('$%s AUD', number_format(PhysicalOrderPricing::summarize($record)['postage'], 2))),
                         TextEntry::make('grand_total')
                             ->label('Grand Total')
                             ->state(fn (Order $record): string => sprintf('$%s AUD', number_format(PhysicalOrderPricing::summarize($record)['grand_total'], 2))),

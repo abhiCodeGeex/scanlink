@@ -104,6 +104,19 @@ class VocDashboard extends Page
         return ProfileResource::getUrl('view', ['record' => $profile]);
     }
 
+    /**
+     * Legacy vocedit: VOC secondary users get a restricted self-service editor
+     * (Profile Information + Documents only) for the voc profiles linked to them.
+     */
+    public function profileEditUrl(Profile $profile): ?string
+    {
+        if (! $this->isVocUser || $profile->typeSlug() !== 'voc') {
+            return null;
+        }
+
+        return EditVocProfile::getUrl(['profile' => $profile->id]);
+    }
+
     protected function loadVocUserProfiles(User $user): void
     {
         $vocUsers = VocUser::query()

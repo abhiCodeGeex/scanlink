@@ -141,9 +141,17 @@ class ClientPortalPanelProvider extends PanelProvider
                 fn (): string => view('filament.hooks.form-validation-scroll')->render(),
             )
             ->renderHook(
+                PanelsRenderHook::BODY_END,
+                fn (): string => view('filament.hooks.themed-dialog')->render(),
+            )
+            ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=72">'
-                    .'<link rel="stylesheet" href="'.asset('css/filament/portal-dark.css').'?v=4">',
+                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=77">'
+                    .'<link rel="stylesheet" href="'.asset('css/filament/portal-dark.css').'?v=13">',
+            )
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                fn (): string => view('filament.hooks.force-light-auth')->render(),
             )
             ->widgets([])
             ->middleware([

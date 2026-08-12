@@ -10,7 +10,7 @@
         display: block;
         width: 100% !important;
         max-width: 100%;
-        min-height: 1114px;
+        min-height: 300px;
         border: 0;
         background: #fff;
         overflow: hidden;
@@ -195,10 +195,81 @@
         }
 
         /**
-         * Legacy expand/reduce parity (formbuilder/index.php):
-         * Expand  → iframe = ol.scrollHeight + .top-part height; grow #div_drop_area if needed
-         * Reduce  → restore #iframe_current_height / #div_drop_area_current_height
-         * Label + arrow image swap Expand↔Reduce.
+         * Size the collapsed iframe to its actual content so there is no large empty
+         * white area (the legacy iframe was locked to 1114px). It still GROWS as the
+         * user drops elements in — so nothing clips — and shrinks for short forms.
+         * Skipped while the user has manually expanded the window.
+         */
+        function fbFitToContent(iframe) {
+            iframe = iframe || document.getElementById('iframe_frm_builder');
+            if (! iframe) {
+                return;
+            }
+            var doc = fbInnerDoc(iframe);
+            if (! doc || ! doc.body) {
+                return;
+            }
+
+            // Measure the ACTUAL content bottom, not body.scrollHeight: the form-builder
+            // body stretches to the iframe's current height, so scrollHeight reports the
+            // (possibly tall) iframe rather than the content — which left white space and
+            // stopped "Reduce" from shrinking. The drop area is the last content block, so
+            // its bottom edge (the iframe never scrolls) is the true content height.
+            var contentH = 0;
+            var anchors = [doc.getElementById('div_drop_area'), doc.querySelector('.from-box')];
+            for (var i = 0; i < anchors.length; i++) {
+                if (! anchors[i]) {
+                    continue;
+                }
+                var bottom = anchors[i].getBoundingClientRect().bottom;
+                if (bottom > contentH) {
+                    contentH = bottom;
+                }
+            }
+            if (contentH < 80) {
+                contentH = doc.body.scrollHeight || 0;
+            }
+            if (contentH < 80) {
+                return;
+            }
+
+            var fitH = Math.max(Math.ceil(contentH) + 8, 300);
+            if (Math.abs((iframe.offsetHeight || 0) - fitH) > 4) {
+                iframe.style.height = fitH + 'px';
+                iframe.setAttribute('height', String(fitH));
+                var iframeHInput = doc.getElementById('iframe_current_height');
+                if (iframeHInput) {
+                    iframeHInput.value = String(fitH);
+                }
+            }
+        }
+
+        // Keep the iframe fitted as the user adds/removes elements inside it.
+        function fbObserveContent(iframe) {
+            var doc = fbInnerDoc(iframe);
+            if (! doc || ! doc.body || iframe.__slFitObserved || typeof MutationObserver === 'undefined') {
+                return;
+            }
+            iframe.__slFitObserved = true;
+            var scheduled = false;
+            var obs = new MutationObserver(function () {
+                if (scheduled) {
+                    return;
+                }
+                scheduled = true;
+                setTimeout(function () {
+                    scheduled = false;
+                    fbFitToContent(iframe);
+                }, 80);
+            });
+            obs.observe(doc.body, { childList: true, subtree: true });
+        }
+
+        /**
+         * Expand/Reduce Window. Default: the drop area is capped (compact) and scrolls
+         * for very long forms. "Expand" adds .sl-fb-expanded to lift the cap and reveal
+         * the whole form; "Reduce" removes it. The iframe auto-fits to whichever height,
+         * so there is never dead empty space.
          */
         function toggleFormBuilderWindow() {
             var iframe = document.getElementById('iframe_frm_builder');
@@ -209,67 +280,34 @@
             }
 
             var innerDoc = fbInnerDoc(iframe);
-            var topPart = innerDoc ? innerDoc.querySelector('.top-part') : null;
             var drop = innerDoc
-                ? (innerDoc.getElementById('div_drop_area') || innerDoc.querySelector('.ui-droppable'))
+                ? (innerDoc.getElementById('div_drop_area') || innerDoc.querySelector('.ui-widget-content'))
                 : null;
-            var ol = innerDoc ? innerDoc.querySelector('.ui-widget-content ol') : null;
-            var iframeHInput = innerDoc ? innerDoc.getElementById('iframe_current_height') : null;
-            var dropHInput = innerDoc ? innerDoc.getElementById('div_drop_area_current_height') : null;
+            if (! drop) {
+                return;
+            }
 
             var expanding = label.textContent.trim().toLowerCase().indexOf('expand') === 0;
 
             if (expanding) {
-                // Cache collapsed sizes if iframe JS has not written the hidden fields yet.
-                if (iframeHInput && ! fbPx(iframeHInput.value)) {
-                    iframeHInput.value = String(iframe.offsetHeight || 1114);
-                }
-                if (dropHInput && drop && ! fbPx(dropHInput.value)) {
-                    dropHInput.value = (drop.style.height || (drop.offsetHeight + 'px'));
-                }
-
-                var topH = topPart ? topPart.offsetHeight : 0;
-                var olScroll = ol ? Math.max(ol.scrollHeight || 0, ol.offsetHeight || 0) : 0;
-                var dropScroll = drop ? Math.max(drop.scrollHeight || 0, drop.offsetHeight || 0) : 0;
-                var expandedIframeH = Math.max(olScroll + topH, iframe.offsetHeight || 1114, 1114);
-
-                iframe.style.height = expandedIframeH + 'px';
-                iframe.setAttribute('height', String(expandedIframeH));
-
-                if (drop) {
-                    var storedDrop = fbPx(dropHInput && dropHInput.value);
-                    if (! storedDrop || storedDrop < dropScroll) {
-                        drop.style.height = dropScroll + 'px';
-                    }
-                }
-
+                drop.classList.add('sl-fb-expanded');
                 label.textContent = 'Reduce Window';
                 if (img) {
                     img.src = @json(asset('images/reduce_window.png'));
                     img.alt = 'Reduce Window';
                 }
             } else {
-                var restoreIframe = fbPx(iframeHInput && iframeHInput.value)
-                    || fbPx(iframe.getAttribute('data-fb-collapsed-h'))
-                    || 1114;
-                iframe.style.height = restoreIframe + 'px';
-                iframe.setAttribute('height', String(restoreIframe));
-
-                if (drop) {
-                    var restoreDrop = (dropHInput && dropHInput.value)
-                        || drop.getAttribute('data-fb-collapsed-h')
-                        || '411px';
-                    drop.style.height = String(restoreDrop).indexOf('px') >= 0
-                        ? String(restoreDrop)
-                        : (fbPx(restoreDrop) + 'px');
-                }
-
+                drop.classList.remove('sl-fb-expanded');
                 label.textContent = 'Expand Window';
                 if (img) {
                     img.src = @json(asset('images/expand_window.png'));
                     img.alt = 'Expand Window';
                 }
             }
+
+            // Re-fit the iframe to the new drop-area height.
+            fbFitToContent(iframe);
+            setTimeout(function () { fbFitToContent(iframe); }, 60);
         }
 
         // Bind the delegated click listener exactly once, even if this partial is
@@ -314,6 +352,15 @@
                 if (img) {
                     img.src = @json(asset('images/expand_window.png'));
                 }
+
+                // Fit the iframe to its content (removes the large empty area) and keep
+                // it fitted as elements are dropped in. Retry a few times because the
+                // legacy jQuery inside the iframe lays out slightly after 'load'.
+                fbFitToContent(t);
+                setTimeout(function () { fbFitToContent(t); }, 150);
+                setTimeout(function () { fbFitToContent(t); }, 500);
+                setTimeout(function () { fbFitToContent(t); }, 1200);
+                fbObserveContent(t);
             }, true);
         }
 
@@ -328,7 +375,7 @@
             var host = document.getElementById('sl-participant-list-host');
             var url = host && host.getAttribute('data-participants-url');
             if (! url) {
-                alert('Participant list is not available for this code yet. Save the profile first.');
+                window.slAlert('Participant list is not available for this code yet. Save the profile first.');
                 return;
             }
 
@@ -339,17 +386,19 @@
             overlay.setAttribute('role', 'dialog');
             overlay.setAttribute('aria-modal', 'true');
             overlay.setAttribute('aria-label', 'Add/Edit Participant List');
-            overlay.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px 16px;';
+            overlay.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(15,23,42,.48);display:flex;align-items:center;justify-content:center;padding:24px 16px;backdrop-filter:blur(2px);';
 
             var dialog = document.createElement('div');
             dialog.className = 'sl-participant-dialog';
-            dialog.style.cssText = 'position:relative;width:min(920px,96vw);height:min(82vh,640px);background:' + (document.documentElement.classList.contains('dark') ? 'rgb(17,24,39)' : '#fff') + ';color:' + (document.documentElement.classList.contains('dark') ? 'rgb(243,244,246)' : 'inherit') + ';border-radius:6px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.35);display:flex;flex-direction:column;';
+            dialog.style.cssText = 'position:relative;width:min(920px,96vw);height:min(86vh,700px);background:' + (document.documentElement.classList.contains('dark') ? 'rgb(17,24,39)' : '#fff') + ';color:' + (document.documentElement.classList.contains('dark') ? 'rgb(243,244,246)' : 'inherit') + ';border-radius:14px;overflow:hidden;box-shadow:0 24px 64px rgba(15,23,42,.28);display:flex;flex-direction:column;border:1px solid rgba(15,23,42,.08);';
 
             var closeBtn = document.createElement('button');
             closeBtn.type = 'button';
             closeBtn.textContent = '×';
             closeBtn.setAttribute('aria-label', 'Close');
-            closeBtn.style.cssText = 'position:absolute;top:12px;right:14px;z-index:3;border:0;background:#222;color:#fff;width:28px;height:28px;border-radius:14px;font-size:18px;line-height:26px;cursor:pointer;padding:0;';
+            closeBtn.style.cssText = 'position:absolute;top:14px;right:14px;z-index:3;border:1px solid #e5e7eb;background:#fff;color:#374151;width:32px;height:32px;border-radius:999px;font-size:20px;line-height:28px;cursor:pointer;padding:0;box-shadow:0 1px 2px rgba(0,0,0,.06);';
+            closeBtn.addEventListener('mouseenter', function () { closeBtn.style.background = '#f3f4f6'; });
+            closeBtn.addEventListener('mouseleave', function () { closeBtn.style.background = '#fff'; });
             closeBtn.addEventListener('click', closeParticipantModal);
 
             var frame = document.createElement('iframe');
@@ -358,8 +407,8 @@
             frame.style.cssText = 'display:block;width:100%;height:100%;border:0;background:' + (document.documentElement.classList.contains('dark') ? 'rgb(17,24,39)' : '#fff') + ';flex:1 1 auto;min-height:0;';
 
             function fitParticipantDialog(contentHeight) {
-                var maxH = Math.min(window.innerHeight * 0.82, 720);
-                var next = Math.max(420, Math.min(maxH, (contentHeight || 0) + 2));
+                var maxH = Math.min(window.innerHeight * 0.9, 760);
+                var next = Math.max(460, Math.min(maxH, (contentHeight || 0) + 2));
                 dialog.style.height = next + 'px';
             }
 
@@ -523,7 +572,7 @@
             if (meta.error) {
                 e.preventDefault();
                 e.stopImmediatePropagation();
-                alert(meta.error);
+                window.slAlert(meta.error);
                 return;
             }
 

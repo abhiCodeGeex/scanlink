@@ -9,6 +9,7 @@ use App\Models\ClientUser;
 use App\Models\FormBuilderOrder;
 use App\Models\FormBuilderOrderDetail;
 use App\Models\Profile;
+use App\Support\PricingSettings;
 use App\Support\SystemNotifier;
 use DomainException;
 use Illuminate\Support\Facades\DB;
@@ -29,7 +30,9 @@ class FormBuilderPurchaseService
         array $billing,
         array $checkout = [],
     ): FormBuilderOrder {
-        $order = DB::transaction(function () use ($profile, $client, $billing, $checkout): FormBuilderOrder {
+        $price = PricingSettings::formBuilder();
+
+        $order = DB::transaction(function () use ($profile, $client, $billing, $checkout, $price): FormBuilderOrder {
             /** @var Profile $lockedProfile */
             $lockedProfile = Profile::query()
                 ->where('client_id', $client->id)
@@ -57,7 +60,7 @@ class FormBuilderPurchaseService
                 'phone' => trim((string) $billing['phone']),
                 'postal_code' => trim((string) $billing['postal_code']),
                 'no_of_codes' => 1,
-                'per_code_amount' => self::PRICE,
+                'per_code_amount' => $price,
                 'status' => CodeOrderStatus::New,
                 'enable' => false,
                 'exipry_date' => now()->addDays(365),
@@ -66,7 +69,7 @@ class FormBuilderPurchaseService
 
             // Legacy live table stores no total_amount; total is quantity x unit price.
             if (FormBuilderOrder::hasTotalAmountColumn()) {
-                $payload['total_amount'] = self::PRICE;
+                $payload['total_amount'] = $price;
             }
 
             $order = FormBuilderOrder::query()->create($payload);

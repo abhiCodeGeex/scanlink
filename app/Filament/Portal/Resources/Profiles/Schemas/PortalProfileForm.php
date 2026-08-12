@@ -129,34 +129,7 @@ class PortalProfileForm
                 Section::make(LegacySectionHelp::heading('Additional User Access Login'))
                     ->extraAttributes(['class' => 'SectionTitleBox sl-section-box'])
                     ->schema([
-                        Repeater::make('vocUsers')
-                            ->relationship()
-                            ->hiddenLabel()
-                            ->schema([
-                                TextInput::make('email')
-                                    ->label('Email:')
-                                    ->email()
-                                    ->maxLength(255),
-                                TextInput::make('password')
-                                    ->label('Password:')
-                                    ->password()
-                                    ->revealable()
-                                    // Legacy voc: additional-login password must be at least 6 chars (when set).
-                                    ->minLength(6)
-                                    ->maxLength(255)
-                                    ->dehydrated(fn (?string $state): bool => filled($state))
-                                    ->dehydrateStateUsing(fn (?string $state): string => (string) ($state ?? '')),
-                            ])
-                            ->columns(2)
-                            // Legacy voc skips blank additional-login rows; don't seed a forced empty row.
-                            ->defaultItems(0)
-                            ->addActionLabel('Add Another')
-                            ->mutateRelationshipDataBeforeCreateUsing(function (array $data): array {
-                                $data['voc_user_id'] = self::nextLegacyId('voc_users', 'voc_user_id');
-
-                                return $data;
-                            })
-                            ->columnSpanFull(),
+                        self::vocUsersField(),
                     ])
                     ->visible(fn (Get $get): bool => self::slug($get('type_id')) === 'voc'),
 
@@ -164,25 +137,7 @@ class PortalProfileForm
                 Section::make(LegacySectionHelp::heading('Email Notification Settings'))
                     ->extraAttributes(['class' => 'SectionTitleBox sl-section-box'])
                     ->schema([
-                        Repeater::make('vocRecipients')
-                            ->relationship()
-                            ->label('Recipients Email:')
-                            ->schema([
-                                TextInput::make('email')
-                                    ->label('Recipients Email:')
-                                    ->email()
-                                    ->maxLength(255)
-                                    ->required(),
-                            ])
-                            // Legacy voc recipients are optional (blanks skipped) — no forced required row.
-                            ->defaultItems(0)
-                            ->addActionLabel('Add Another')
-                            ->mutateRelationshipDataBeforeCreateUsing(function (array $data): array {
-                                $data['voc_recipient_id'] = self::nextLegacyId('voc_recipients', 'voc_recipient_id');
-
-                                return $data;
-                            })
-                            ->columnSpanFull(),
+                        self::vocRecipientsField(),
                         TextInput::make('voc_email_url')
                             ->label('Email Text hyperlink URL:')
                             ->helperText('The default URL is http://www.myskills.gov.au')
@@ -200,62 +155,63 @@ class PortalProfileForm
                                 'data-ck-toolbar' => 'custom',
                             ])
                             ->columnSpanFull(),
-                        // Legacy voc has a second signature line (voc_email_sign_line2). Rich text
-                        // (CKEditor) supersedes the legacy per-line bold/italic/underline flags.
-                        Textarea::make('voc_email_sign_line2')
-                            ->label('Email Signature (line 2):')
-                            ->rows(3)
-                            ->extraInputAttributes([
-                                'class' => 'sl-ckeditor',
-                                'data-ck-toolbar' => 'custom',
-                            ])
-                            ->columnSpanFull(),
+                        // Legacy keeps a second signature line but hides it (display:none); the
+                        // CKEditor rich-text line 1 supersedes it. Kept hidden for data round-trip.
+                        Hidden::make('voc_email_sign_line2')
+                            ->dehydrated(),
+                        // Legacy "Remember to save… + Preview" — renders the actual notification
+                        // email (30-day renewal reminder / expiry notice) from the SAVED profile.
                         Placeholder::make('voc_email_preview_hint')
                             ->hiddenLabel()
-                            ->content(new HtmlString(
-                                '<div class="voc-email-preview-hint" style="color:#666;font-size:12px;margin-top:4px;">'
-                                .'Remember to save this profile before previewing email notifications'
-                                .'</div>'
-                            ))
+                            ->content(function ($record): HtmlString {
+                                $canPreview = $record && $record->exists;
+                                $reminderUrl = $canPreview
+                                    ? route('portal.voc.email-preview', ['profile' => $record->getKey(), 'kind' => 'reminder'])
+                                    : null;
+                                $expiredUrl = $canPreview
+                                    ? route('portal.voc.email-preview', ['profile' => $record->getKey(), 'kind' => 'expired'])
+                                    : null;
+
+                                $links = $canPreview
+                                    ? '<div class="voc-email-preview-links" style="margin-top:6px;display:flex;gap:16px;flex-wrap:wrap;">'
+                                        .'<a href="'.$reminderUrl.'" target="_blank" rel="noopener" class="voc-email-preview-link" style="color:#008C00;font-weight:600;">Preview 30-day renewal reminder</a>'
+                                        .'<a href="'.$expiredUrl.'" target="_blank" rel="noopener" class="voc-email-preview-link" style="color:#008C00;font-weight:600;">Preview expiry notification</a>'
+                                        .'</div>'
+                                    : '';
+
+                                return new HtmlString(
+                                    '<div class="voc-email-preview-hint" style="color:#666;font-size:12px;margin-top:4px;display:flex;align-items:center;gap:6px;">'
+                                    .'<span style="color:#e08600;font-size:15px;">&#9888;</span>'
+                                    .'<span>Remember to save this profile before previewing email notifications</span>'
+                                    .'</div>'.$links
+                                );
+                            })
                             ->columnSpanFull(),
                     ])
                     ->visible(fn (Get $get): bool => self::slug($get('type_id')) === 'voc'),
 
-                // Legacy exhibit/voc tile drag-reordering (tiles_order): the scan page renders
-                // content tiles in this order. Reorder-only (no add/remove).
-                Section::make(LegacySectionHelp::heading('Display Order'))
-                    ->description('Drag to set the order these sections appear on the scanned mobile page.')
-                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box'])
-                    ->schema([
-                        Repeater::make('tile_order')
-                            ->hiddenLabel()
-                            ->dehydrated()
-                            ->schema([
-                                Hidden::make('id'),
-                                Hidden::make('label'),
-                                Placeholder::make('tile_label')
-                                    ->hiddenLabel()
-                                    ->content(fn (Get $get): string => (string) $get('label')),
-                            ])
-                            ->itemLabel(fn (array $state): ?string => $state['label'] ?? null)
-                            ->reorderable()
-                            ->reorderableWithButtons()
-                            ->addable(false)
-                            ->deletable(false)
-                            ->columns(1)
-                            ->default(fn (Get $get): array => \App\Models\Profile::tileOrderFormItems(self::slug($get('type_id')), null)),
-                    ])
+                // Exhibit/voc tile ordering (legacy parity): the content sections below are
+                // drag-reorderable by the handle in each section header. The order is mirrored
+                // into this hidden field (comma-separated tile ids) and saved to `tiles_order`,
+                // which the scanned mobile page renders in. See legacy-tile-reorder.blade.php.
+                Hidden::make('tiles_order')
+                    ->extraAttributes(['class' => 'sl-tiles-order-field'])
+                    ->dehydrated()
                     ->visible(fn (Get $get): bool => in_array(self::slug($get('type_id')), ['exhibit', 'voc'], true)),
 
                 Section::make(LegacySectionHelp::heading('Logo'))
-                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box'])
+                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box sl-logo-section sl-sortable-tile', 'data-tile-id' => 1])
                     ->schema([
                         FileUpload::make('logo_upload')
                             ->label(fn (Get $get): string => self::slug($get('type_id')) === 'voc'
                                 ? 'Upload Company Logo: (File type JPEG, PNG, GIF) (Max file size 10 MB)'
                                 : 'Upload Company Logo: (File type JPG, JPEG, PNG, GIF) (Max file size 10 MB)')
                             ->image()
-                            ->imagePreviewHeight('120')
+                            ->previewable(true)
+                            ->panelLayout('compact')
+                            ->imagePreviewHeight('76')
+                            ->removeUploadedFileButtonPosition('right top')
+                            ->extraAttributes(['class' => 'sl-logo-upload'])
                             ->directory('profiles/logos')
                             ->disk('public')
                             ->maxSize(10240),
@@ -263,13 +219,13 @@ class PortalProfileForm
                     ->visible(fn (Get $get): bool => self::slug($get('type_id')) !== 'code'),
 
                 Section::make(LegacySectionHelp::heading('Videos'))
-                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box'])
+                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box sl-sortable-tile', 'data-tile-id' => 2])
                     ->schema(fn (): array => self::videoFields('video_titles'))
                     ->visible(fn (Get $get): bool => ! in_array(self::slug($get('type_id')), ['code', 'survey', 'voc'], true)),
 
                 // Live Words / Profile Information — type-specific fields + contacts where legacy has them.
                 Section::make(LegacySectionHelp::heading('Words'))
-                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box'])
+                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box sl-sortable-tile', 'data-tile-id' => 3])
                     ->schema(fn (Get $get): array => [
                         ...ProfileFormSchema::typeFields(
                             filled($get('type_id')) ? (int) $get('type_id') : null
@@ -281,7 +237,7 @@ class PortalProfileForm
 
                 // Legacy voc order: Title Bar before Profile Picture / Profile Information.
                 Section::make(LegacySectionHelp::heading('Title Bar'))
-                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box'])
+                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box sl-sortable-tile', 'data-tile-id' => 2])
                     ->schema([
                         Checkbox::make('voc_title_bar_enable')
                             ->label('Enable')
@@ -307,7 +263,7 @@ class PortalProfileForm
                     ->visible(fn (Get $get): bool => self::slug($get('type_id')) === 'voc'),
 
                 Section::make(LegacySectionHelp::heading('Profile Picture'))
-                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box'])
+                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box sl-sortable-tile', 'data-tile-id' => 3])
                     ->schema([
                         Repeater::make('pictures')
                             ->relationship()
@@ -329,6 +285,7 @@ class PortalProfileForm
                             ->addActionLabel(fn (Repeater $component): string => count($component->getRawState() ?? []) > 0
                                 ? 'Add more'
                                 : 'Upload picture')
+                            ->addAction(fn (Action $action): Action => $action->color('primary')->icon('heroicon-m-plus'))
                             ->mutateRelationshipDataBeforeCreateUsing(fn (array $data, Get $get): array => self::stampMediaOwner($data, $get))
                             ->mutateRelationshipDataBeforeSaveUsing(fn (array $data, Get $get): array => self::stampMediaOwner($data, $get))
                             ->columnSpanFull(),
@@ -336,7 +293,7 @@ class PortalProfileForm
                     ->visible(fn (Get $get): bool => self::slug($get('type_id')) === 'voc'),
 
                 Section::make(LegacySectionHelp::heading('Profile Information'))
-                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box'])
+                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box sl-sortable-tile', 'data-tile-id' => 4])
                     ->schema(fn (Get $get): array => ProfileFormSchema::typeFields(
                         filled($get('type_id')) ? (int) $get('type_id') : null
                     ))
@@ -344,41 +301,14 @@ class PortalProfileForm
                     ->visible(fn (Get $get): bool => self::slug($get('type_id')) === 'voc'),
 
                 Section::make(LegacySectionHelp::heading('Document Upload'))
-                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box'])
+                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box sl-sortable-tile', 'data-tile-id' => 5])
                     ->schema([
-                        Repeater::make('vocDocuments')
-                            ->relationship()
-                            ->hiddenLabel()
-                            ->schema([
-                                TextInput::make('name')
-                                    ->label('Document Name')
-                                    ->maxLength(200),
-                                DatePicker::make('expiry_date')
-                                    ->label('Expiry Date')
-                                    ->native(false)
-                                    ->displayFormat('d-m-Y'),
-                                FileUpload::make('file_name')
-                                    ->label('Upload a Document: (File type DOC, DOCX, PDF, GIF, JPEG, PNG) (Max file size 10 MB)')
-                                    ->directory('profiles/voc-documents')
-                                    ->disk('public')
-                                    ->maxSize(10240)
-                                    ->columnSpanFull(),
-                            ])
-                            ->columns(2)
-                            // Legacy voc skips blank document rows; don't seed a forced empty row.
-                            ->defaultItems(0)
-                            ->addActionLabel('Add Another')
-                            ->mutateRelationshipDataBeforeCreateUsing(function (array $data): array {
-                                $data['voc_document_id'] = self::nextLegacyId('voc_documents', 'voc_document_id');
-
-                                return $data;
-                            })
-                            ->columnSpanFull(),
+                        self::vocDocumentsField(),
                     ])
                     ->visible(fn (Get $get): bool => self::slug($get('type_id')) === 'voc'),
 
                 Section::make(LegacySectionHelp::heading('Pictures'))
-                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box'])
+                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box sl-sortable-tile', 'data-tile-id' => 4])
                     ->schema([
                         Repeater::make('pictures_general')
                             ->relationship('pictures')
@@ -411,6 +341,7 @@ class PortalProfileForm
                             ->addActionLabel(fn (Repeater $component): string => count($component->getRawState() ?? []) > 0
                                 ? 'Add more'
                                 : 'Upload picture')
+                            ->addAction(fn (Action $action): Action => $action->color('primary')->icon('heroicon-m-plus'))
                             ->mutateRelationshipDataBeforeCreateUsing(fn (array $data, Get $get): array => self::stampMediaOwner($data, $get))
                             ->mutateRelationshipDataBeforeSaveUsing(fn (array $data, Get $get): array => self::stampMediaOwner($data, $get))
                             ->columnSpanFull(),
@@ -418,19 +349,19 @@ class PortalProfileForm
                     ->visible(fn (Get $get): bool => ! in_array(self::slug($get('type_id')), ['survey', 'code', 'voc'], true)),
 
                 Section::make(LegacySectionHelp::heading('Documents'))
-                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box'])
+                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box sl-sortable-tile', 'data-tile-id' => 5])
                     ->schema(fn (Get $get): array => self::documentFields($get))
                     ->visible(fn (Get $get): bool => ! in_array(self::slug($get('type_id')), ['survey', 'code', 'voc'], true)),
 
                 Section::make(LegacySectionHelp::heading('Web Link'))
-                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box'])
+                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box sl-sortable-tile', 'data-tile-id' => 6])
                     ->schema(fn (): array => self::webLinkFields())
                     // Legacy people/index.php has no Web Link section.
                     ->visible(fn (Get $get): bool => ! in_array(self::slug($get('type_id')), ['survey', 'code', 'voc', 'people'], true)),
 
                 // Legacy exhibit tile order: Share sits before Logo #2 / Words #2 / Data Collection.
                 Section::make(LegacySectionHelp::heading('Share'))
-                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box'])
+                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box sl-sortable-tile', 'data-tile-id' => 11])
                     ->schema([
                         Checkbox::make('display_share_link')->label('Display share links'),
                         Placeholder::make('share_icons')
@@ -446,12 +377,16 @@ class PortalProfileForm
                     ->visible(fn (Get $get): bool => self::slug($get('type_id')) === 'exhibit'),
 
                 Section::make(LegacySectionHelp::heading('Logo #2'))
-                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box'])
+                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box sl-logo-section sl-sortable-tile', 'data-tile-id' => 17])
                     ->schema([
                         FileUpload::make('logo_extra_upload')
                             ->label('Upload Company Logo: (File type JPG, JPEG, PNG, GIF) (Max file size 10 MB)')
                             ->image()
-                            ->imagePreviewHeight('120')
+                            ->previewable(true)
+                            ->panelLayout('compact')
+                            ->imagePreviewHeight('76')
+                            ->removeUploadedFileButtonPosition('right top')
+                            ->extraAttributes(['class' => 'sl-logo-upload'])
                             ->directory('profiles/logos')
                             ->disk('public')
                             ->maxSize(10240),
@@ -464,12 +399,12 @@ class PortalProfileForm
                     ->visible(fn (Get $get): bool => self::slug($get('type_id')) === 'exhibit'),
 
                 Section::make(LegacySectionHelp::heading('Videos #2'))
-                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box'])
+                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box sl-sortable-tile', 'data-tile-id' => 14])
                     ->schema(fn (): array => self::videoFields('video_extra_titles'))
                     ->visible(fn (Get $get): bool => self::slug($get('type_id')) === 'exhibit'),
 
                 Section::make(LegacySectionHelp::heading('Words #2'))
-                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box'])
+                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box sl-sortable-tile', 'data-tile-id' => 15])
                     ->schema([
                         TextInput::make('name2')->hiddenLabel()->maxLength(255),
                         Textarea::make('description2')
@@ -484,7 +419,7 @@ class PortalProfileForm
                     ->visible(fn (Get $get): bool => self::slug($get('type_id')) === 'exhibit'),
 
                 Section::make(LegacySectionHelp::heading('Pictures #2'))
-                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box'])
+                    ->extraAttributes(['class' => 'SectionTitleBox sl-section-box sl-sortable-tile', 'data-tile-id' => 16])
                     ->schema([
                         Repeater::make('picturesExtra')
                             ->relationship()
@@ -508,6 +443,7 @@ class PortalProfileForm
                             ->addActionLabel(fn (Repeater $component): string => count($component->getRawState() ?? []) > 0
                                 ? 'Add more'
                                 : 'Upload picture')
+                            ->addAction(fn (Action $action): Action => $action->color('primary')->icon('heroicon-m-plus'))
                             ->mutateRelationshipDataBeforeCreateUsing(fn (array $data, Get $get): array => self::stampMediaOwner($data, $get))
                             ->mutateRelationshipDataBeforeSaveUsing(fn (array $data, Get $get): array => self::stampMediaOwner($data, $get))
                             ->columnSpanFull(),
@@ -635,7 +571,7 @@ class PortalProfileForm
                     // Legacy people/index.php has no Header section.
                     ->visible(fn (Get $get): bool => ! in_array(self::slug($get('type_id')), ['code', 'survey', 'voc', 'people'], true)),
 
-                // Live: Yes/No radios + always-visible Password field.
+                // Live: Yes/No radios; password only when protect = Yes.
                 Section::make(LegacySectionHelp::heading('User Access Security'))
                     ->extraAttributes(['class' => 'SectionTitleBox sl-section-box'])
                     ->schema([
@@ -653,10 +589,16 @@ class PortalProfileForm
                         TextInput::make('password')
                             ->label('Password:')
                             ->maxLength(255)
-                            // Legacy plant/location: password field stays visible even when protect = No.
-                            // Legacy people has the protect radio but NO password input — hide it for people.
-                            ->visible(fn (Get $get): bool => self::slug($get('type_id')) !== 'people')
-                            ->dehydrated(fn (?string $state): bool => filled($state))
+                            // Legacy people has the protect radio but NO password input.
+                            ->visible(fn (Get $get): bool => self::slug($get('type_id')) !== 'people'
+                                && ($get('protect') === '1' || $get('protect') === 1 || $get('protect') === true))
+                            ->required(fn (Get $get): bool => self::slug($get('type_id')) !== 'people'
+                                && ($get('protect') === '1' || $get('protect') === 1 || $get('protect') === true))
+                            // Push phone-preview draft when password is entered/blurred.
+                            ->live(onBlur: true)
+                            // Always persist when protect=Yes (do not skip empty / hidden dehydration).
+                            ->dehydrated(fn (Get $get): bool => self::slug($get('type_id')) !== 'people'
+                                && ($get('protect') === '1' || $get('protect') === 1 || $get('protect') === true))
                             ->dehydrateStateUsing(fn (?string $state): string => (string) ($state ?? '')),
                     ])
                     ->visible(fn (Get $get): bool => ! in_array(self::slug($get('type_id')), ['code', 'survey'], true)),
@@ -944,6 +886,373 @@ class PortalProfileForm
                 })
                 ->columnSpanFull(),
         ];
+    }
+
+    /**
+     * Additional User Access Login (voc_users): plant-style modal add/edit + list with
+     * per-row Edit/Delete. Email + password per login; password persisted only when set.
+     */
+    private static function vocUsersField(): Repeater
+    {
+        // Add: password required. Edit: password optional — the stored password is not
+        // loaded back into the form (VocUser hides it), so "leave blank to keep" lets the
+        // email be edited without forcing a password re-entry. The hidden field's
+        // dehydrate-if-filled rule keeps the existing password when this is left blank.
+        $addForm = [
+            TextInput::make('email')
+                ->label('Email')
+                ->email()
+                ->required()
+                ->maxLength(255)
+                ->autocomplete(false),
+            TextInput::make('password')
+                ->label('Password')
+                ->password()
+                ->revealable()
+                ->required()
+                ->minLength(6)
+                ->maxLength(255)
+                ->autocomplete('new-password'),
+        ];
+
+        // Edit: password validation-free (leaving it blank keeps the current one). Any
+        // min-length / required rule here would fail the modal submit when the field is
+        // blank and silently keep the dialog open. Blank is handled in the edit action.
+        $editForm = [
+            TextInput::make('email')
+                ->label('Email')
+                ->email()
+                ->required()
+                ->maxLength(255)
+                ->autocomplete(false),
+            TextInput::make('password')
+                ->label('Password')
+                ->password()
+                ->revealable()
+                ->maxLength(255)
+                ->autocomplete('new-password')
+                ->helperText('Leave blank to keep the current password.'),
+        ];
+
+        return Repeater::make('vocUsers')
+            ->relationship()
+            ->hiddenLabel()
+            ->schema([
+                Hidden::make('email'),
+                Hidden::make('password')
+                    ->dehydrated(fn (?string $state): bool => filled($state))
+                    ->dehydrateStateUsing(fn (?string $state): string => (string) ($state ?? '')),
+            ])
+            ->defaultItems(0)
+            ->reorderable(false)
+            ->cloneable(false)
+            ->itemLabel(fn (array $state): string => trim((string) ($state['email'] ?? '')) ?: 'User')
+            ->extraAttributes(['class' => 'sl-contacts-repeater sl-green-add-repeater'])
+            ->mutateRelationshipDataBeforeCreateUsing(function (array $data): array {
+                $data['voc_user_id'] = self::nextLegacyId('voc_users', 'voc_user_id');
+
+                return $data;
+            })
+            ->addAction(fn (Action $action): Action => $action
+                ->label(fn (Repeater $component): string => count($component->getRawState() ?? []) > 0 ? 'Add Another' : 'Add')
+                ->icon('heroicon-m-plus')
+                ->color('primary')
+                ->button()
+                ->modalHeading(fn (Repeater $component): string => count($component->getRawState() ?? []) > 0 ? 'Add another user' : 'Add user')
+                ->modalDescription('Enter the login email and password for this additional user.')
+                ->modalSubmitActionLabel('Save user')
+                ->modalCancelActionLabel('Cancel')
+                ->modalWidth('md')
+                ->form($addForm)
+                ->action(fn (array $data, Repeater $component) => self::appendRepeaterItem($component, $data)))
+            ->extraItemActions([
+                Action::make('editVocUser')
+                    ->label('Edit')
+                    ->tooltip('Edit user')
+                    ->icon('heroicon-m-pencil-square')
+                    ->color('primary')
+                    ->iconButton()
+                    ->modalHeading('Edit user')
+                    ->modalDescription('Update the login email and password.')
+                    ->modalSubmitActionLabel('Save changes')
+                    ->modalCancelActionLabel('Cancel')
+                    ->modalWidth('md')
+                    ->fillForm(function (array $arguments, Repeater $component): array {
+                        $item = $component->getRawState()[$arguments['item'] ?? ''] ?? [];
+
+                        return [
+                            'email' => (string) ($item['email'] ?? ''),
+                            'password' => '',
+                        ];
+                    })
+                    ->form($editForm)
+                    ->action(function (array $data, array $arguments, Repeater $component): void {
+                        // Blank password on edit = keep the existing one.
+                        if (blank($data['password'] ?? null)) {
+                            unset($data['password']);
+                        }
+
+                        self::updateRepeaterItem($component, $arguments, $data);
+                    }),
+            ])
+            ->deleteAction(fn (Action $action): Action => $action
+                ->label('Delete')
+                ->tooltip('Delete user')
+                ->icon('heroicon-m-trash')
+                ->color('danger')
+                ->iconButton()
+                ->requiresConfirmation()
+                ->modalHeading('Delete user?')
+                ->modalDescription('This login will be removed when you save the profile.')
+                ->modalSubmitActionLabel('Delete'))
+            ->columnSpanFull();
+    }
+
+    /**
+     * Email Notification recipients (voc_recipients): plant-style modal add/edit + list.
+     */
+    private static function vocRecipientsField(): Repeater
+    {
+        $recipientForm = [
+            TextInput::make('email')
+                ->label('Recipient Email')
+                ->email()
+                ->required()
+                ->maxLength(255)
+                ->autocomplete(false),
+        ];
+
+        return Repeater::make('vocRecipients')
+            ->relationship()
+            ->hiddenLabel()
+            ->schema([
+                Hidden::make('email'),
+            ])
+            ->defaultItems(0)
+            ->reorderable(false)
+            ->cloneable(false)
+            ->itemLabel(fn (array $state): string => trim((string) ($state['email'] ?? '')) ?: 'Recipient')
+            ->extraAttributes(['class' => 'sl-contacts-repeater sl-green-add-repeater'])
+            ->mutateRelationshipDataBeforeCreateUsing(function (array $data): array {
+                $data['voc_recipient_id'] = self::nextLegacyId('voc_recipients', 'voc_recipient_id');
+
+                return $data;
+            })
+            ->addAction(fn (Action $action): Action => $action
+                ->label(fn (Repeater $component): string => count($component->getRawState() ?? []) > 0 ? 'Add Another' : 'Add')
+                ->icon('heroicon-m-plus')
+                ->color('primary')
+                ->button()
+                ->modalHeading(fn (Repeater $component): string => count($component->getRawState() ?? []) > 0 ? 'Add another recipient' : 'Add recipient')
+                ->modalDescription('Enter the email address to notify about document expiry.')
+                ->modalSubmitActionLabel('Save recipient')
+                ->modalCancelActionLabel('Cancel')
+                ->modalWidth('md')
+                ->form($recipientForm)
+                ->action(fn (array $data, Repeater $component) => self::appendRepeaterItem($component, $data)))
+            ->extraItemActions([
+                Action::make('editVocRecipient')
+                    ->label('Edit')
+                    ->tooltip('Edit recipient')
+                    ->icon('heroicon-m-pencil-square')
+                    ->color('primary')
+                    ->iconButton()
+                    ->modalHeading('Edit recipient')
+                    ->modalDescription('Update the recipient email address.')
+                    ->modalSubmitActionLabel('Save changes')
+                    ->modalCancelActionLabel('Cancel')
+                    ->modalWidth('md')
+                    ->fillForm(function (array $arguments, Repeater $component): array {
+                        $item = $component->getRawState()[$arguments['item'] ?? ''] ?? [];
+
+                        return ['email' => (string) ($item['email'] ?? '')];
+                    })
+                    ->form($recipientForm)
+                    ->action(fn (array $data, array $arguments, Repeater $component) => self::updateRepeaterItem($component, $arguments, $data)),
+            ])
+            ->deleteAction(fn (Action $action): Action => $action
+                ->label('Delete')
+                ->tooltip('Delete recipient')
+                ->icon('heroicon-m-trash')
+                ->color('danger')
+                ->iconButton()
+                ->requiresConfirmation()
+                ->modalHeading('Delete recipient?')
+                ->modalDescription('This recipient will be removed when you save the profile.')
+                ->modalSubmitActionLabel('Delete'))
+            ->columnSpanFull();
+    }
+
+    /**
+     * Document Upload (voc_documents): plant-style modal add/edit + list. The list title
+     * links to the uploaded file and shows the expiry date.
+     */
+    private static function vocDocumentsField(): Repeater
+    {
+        $documentForm = [
+            TextInput::make('name')
+                ->label('Document Name')
+                ->maxLength(200)
+                ->autocomplete(false),
+            DatePicker::make('expiry_date')
+                ->label('Expiry Date')
+                ->native(false)
+                ->displayFormat('d-m-Y'),
+            FileUpload::make('file_name')
+                ->label('Upload a Document: (File type DOC, DOCX, PDF, GIF, JPEG, PNG) (Max file size 10 MB)')
+                ->directory('profiles/voc-documents')
+                ->disk('public')
+                ->maxSize(10240)
+                ->required()
+                ->downloadable()
+                ->openable()
+                ->columnSpanFull(),
+        ];
+
+        return Repeater::make('vocDocuments')
+            ->relationship()
+            ->hiddenLabel()
+            ->schema([
+                Hidden::make('name'),
+                Hidden::make('expiry_date'),
+                Hidden::make('file_name'),
+            ])
+            ->defaultItems(0)
+            ->reorderable(false)
+            ->cloneable(false)
+            ->itemLabel(function (array $state): HtmlString {
+                $name = trim((string) ($state['name'] ?? '')) ?: 'Document';
+                $expLabel = self::vocExpiryLabel($state['expiry_date'] ?? null);
+                $url = self::documentPublicUrl($state['file_name'] ?? null);
+
+                if (filled($url)) {
+                    return new HtmlString(
+                        '<a class="sl-doc-title-link" href="'.e($url).'" target="_blank" rel="noopener noreferrer" '
+                        .'onclick="event.stopPropagation()">'.e($name).'</a>'.e($expLabel)
+                    );
+                }
+
+                return new HtmlString('<span class="sl-doc-title-text">'.e($name).'</span>'.e($expLabel));
+            })
+            ->extraAttributes(['class' => 'sl-contacts-repeater sl-documents-repeater sl-green-add-repeater'])
+            ->mutateRelationshipDataBeforeCreateUsing(function (array $data): array {
+                $data['voc_document_id'] = self::nextLegacyId('voc_documents', 'voc_document_id');
+
+                return $data;
+            })
+            ->addAction(fn (Action $action): Action => $action
+                ->label(fn (Repeater $component): string => count($component->getRawState() ?? []) > 0 ? 'Add Another' : 'Add')
+                ->icon('heroicon-m-plus')
+                ->color('primary')
+                ->button()
+                ->modalHeading(fn (Repeater $component): string => count($component->getRawState() ?? []) > 0 ? 'Add another document' : 'Upload a Document')
+                ->modalDescription('Upload a file, set its name and optional expiry date.')
+                ->modalSubmitActionLabel('Save document')
+                ->modalCancelActionLabel('Cancel')
+                ->modalWidth('lg')
+                ->form($documentForm)
+                ->action(fn (array $data, Repeater $component) => self::appendRepeaterItem($component, $data)))
+            ->extraItemActions([
+                Action::make('editVocDocument')
+                    ->label('Edit')
+                    ->tooltip('Edit document')
+                    ->icon('heroicon-m-pencil-square')
+                    ->color('primary')
+                    ->iconButton()
+                    ->modalHeading('Edit document')
+                    ->modalDescription('Update the file, name, or expiry date.')
+                    ->modalSubmitActionLabel('Save changes')
+                    ->modalCancelActionLabel('Cancel')
+                    ->modalWidth('lg')
+                    ->fillForm(function (array $arguments, Repeater $component): array {
+                        $item = $component->getRawState()[$arguments['item'] ?? ''] ?? [];
+                        $exp = $item['expiry_date'] ?? null;
+
+                        if ($exp !== null && in_array((string) $exp, ['1970-01-01', '0000-00-00'], true)) {
+                            $exp = null;
+                        }
+
+                        return [
+                            'name' => (string) ($item['name'] ?? ''),
+                            'expiry_date' => $exp,
+                            'file_name' => $item['file_name'] ?? null,
+                        ];
+                    })
+                    ->form($documentForm)
+                    ->action(fn (array $data, array $arguments, Repeater $component) => self::updateRepeaterItem($component, $arguments, $data)),
+            ])
+            ->deleteAction(fn (Action $action): Action => $action
+                ->label('Delete')
+                ->tooltip('Delete document')
+                ->icon('heroicon-m-trash')
+                ->color('danger')
+                ->iconButton()
+                ->requiresConfirmation()
+                ->modalHeading('Delete document?')
+                ->modalDescription('This document will be removed when you save the profile.')
+                ->modalSubmitActionLabel('Delete'))
+            ->columnSpanFull();
+    }
+
+    /** Human "(Expires dd/mm/yyyy)" suffix for a voc document expiry value (skips sentinels). */
+    private static function vocExpiryLabel(mixed $expiry): string
+    {
+        if ($expiry === null || in_array((string) $expiry, ['', '1970-01-01', '0000-00-00'], true)) {
+            return '';
+        }
+
+        try {
+            return ' (Expires '.\Illuminate\Support\Carbon::parse($expiry)->format('d/m/Y').')';
+        } catch (\Throwable $e) {
+            return '';
+        }
+    }
+
+    /**
+     * Shared modal "add" handler: append a new item to the repeater's raw state.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private static function appendRepeaterItem(Repeater $component, array $data): void
+    {
+        $newUuid = $component->generateUuid();
+        $items = $component->getRawState() ?? [];
+
+        if ($newUuid) {
+            $items[$newUuid] = $data;
+        } else {
+            $items[] = $data;
+            $newUuid = (string) array_key_last($items);
+        }
+
+        $component->rawState($items);
+        $component->getChildSchema($newUuid)->fill($data);
+        $component->callAfterStateUpdated();
+        // Re-render only this repeater (fast). The modal still closes via Filament's
+        // close-modal dispatch; a full form re-render here is slow (CKEditors re-init).
+        $component->partiallyRender();
+    }
+
+    /**
+     * Shared modal "edit" handler: merge changes into the addressed repeater item.
+     *
+     * @param  array<string, mixed>  $arguments
+     * @param  array<string, mixed>  $data
+     */
+    private static function updateRepeaterItem(Repeater $component, array $arguments, array $data): void
+    {
+        $itemKey = $arguments['item'] ?? null;
+
+        if ($itemKey === null) {
+            return;
+        }
+
+        $items = $component->getRawState() ?? [];
+        $items[$itemKey] = array_merge($items[$itemKey] ?? [], $data);
+        $component->rawState($items);
+        $component->getChildSchema($itemKey)->fill($data);
+        $component->callAfterStateUpdated();
+        $component->partiallyRender();
     }
 
     /**

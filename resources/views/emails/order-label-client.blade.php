@@ -17,8 +17,12 @@
 			<td style="height:30px;" height="30" align="right" >${{ $amountSmall }} AUD </td>
 		</tr>
 		<tr>
-			<td style="border-bottom:1px solid #fff;height:30px;" height="30">{{ $qtyLarge }} ScanLink Label/s 100x75mm</td>
-			<td style="border-bottom:1px solid #fff;height:30px;" height="30" align="right" >${{ $amountLarge }} AUD </td>
+			<td style="height:30px;" height="30">{{ $qtyLarge }} ScanLink Label/s 100x75mm</td>
+			<td style="height:30px;" height="30" align="right" >${{ $amountLarge }} AUD </td>
+		</tr>
+		<tr>
+			<td style="border-bottom:1px solid #fff;height:30px;" height="30">Postage &amp; Handling</td>
+			<td style="border-bottom:1px solid #fff;height:30px;" height="30" align="right" >${{ $postage }} AUD </td>
 		</tr>
 	</tbody>
 	<tfoot>

@@ -13,7 +13,7 @@
             padding: 0 !important;
             background: #fff !important;
             overflow-x: hidden !important;
-            overflow-y: hidden !important;
+            overflow-y: visible !important;
             width: 100% !important;
             max-width: 100% !important;
             height: auto !important;

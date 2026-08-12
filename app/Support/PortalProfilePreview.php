@@ -28,6 +28,9 @@ class PortalProfilePreview
         'show_address', 'show_telephone', 'show_mobile', 'show_email', 'show_url',
         'display_share_link', 'form_is_enable', 'form_active', 'form_submission_format',
         'enable_form_analytics', 'enable_data_collection',
+        // User Access Security — must overlay so phone preview shows the login gate
+        // before Save (and after Save the DB values apply the same way).
+        'protect', 'password',
         'voc_first_name', 'voc_last_name', 'voc_address', 'voc_town', 'voc_state',
         'voc_phone', 'voc_dob', 'voc_known_allergies', 'voc_blood_type',
         'voc_next_of_kin', 'voc_contact_phone', 'voc_employer', 'voc_emp_address',

@@ -115,16 +115,20 @@
         }
         window.__scanlinkNavFeedbackInit = true;
 
-        const loader = document.getElementById('nav-feedback-loader');
-        if (!loader) return;
+        // IMPORTANT: never cache the element references. Livewire's wire:navigate (SPA)
+        // replaces <body>, so the BODY_END loader/overlay nodes are re-created on every
+        // navigation. Cached refs would point at detached nodes → "no loader after nav".
+        // Query them fresh on each use so we always drive the live DOM element.
+        const getBar = () => document.getElementById('nav-feedback-loader');
+        const getOverlay = () => document.getElementById('nav-feedback-overlay');
+
+        if (!getBar()) return;
 
         // Only reveal the bar once a request is slow enough to notice, so quick
         // interactions don't flicker; a hard cap clears it if a response is lost.
         const BAR_DELAY = 110;    // slim top bar — quick feedback
         const BOX_DELAY = 320;    // centred "Please wait" card — for slower waits
         const MAX_VISIBLE = 15000;
-
-        const overlay = document.getElementById('nav-feedback-overlay');
 
         let navActive = false;
         let requestCount = 0;
@@ -135,13 +139,17 @@
         let maxTimer = null;
 
         const setBar = (on) => {
-            loader.setAttribute('data-active', on ? 'true' : 'false');
+            const bar = getBar();
+            if (bar) {
+                bar.setAttribute('data-active', on ? 'true' : 'false');
+            }
             document.body.classList.toggle('nav-busy', on);
         };
 
         const setBox = (on) => {
-            if (overlay) {
-                overlay.setAttribute('data-active', on ? 'true' : 'false');
+            const ov = getOverlay();
+            if (ov) {
+                ov.setAttribute('data-active', on ? 'true' : 'false');
             }
         };
 
@@ -370,19 +378,36 @@
                     return;
                 }
 
+                // Only a commit that invokes a method (a real action: button, save,
+                // pagination, tab, filter apply, table/page action) shows the loader.
+                // wire:model.live property syncs carry no `calls` — skip them so a
+                // single keypress never flashes the loader.
+                const calls = commit && commit.calls;
+                if (!Array.isArray(calls) || calls.length === 0) {
+                    return;
+                }
+
+                // Guard against a commit whose succeed/fail never fires (e.g. the
+                // component is torn down mid-request): decrement at most once.
+                let settled = false;
+                const settle = () => {
+                    if (settled) {
+                        return;
+                    }
+                    settled = true;
+                    requestCount = Math.max(0, requestCount - 1);
+                    apply();
+                };
+
                 requestCount++;
                 apply();
 
                 succeed(() => {
-                    requestCount = Math.max(0, requestCount - 1);
-                    apply();
+                    settle();
                     queueMicrotask(saveListPageState);
                 });
 
-                fail(() => {
-                    requestCount = Math.max(0, requestCount - 1);
-                    apply();
-                });
+                fail(settle);
             });
         };
 

@@ -105,51 +105,22 @@ class EditProfile extends EditRecord
             $data['url'] = 'http://';
         }
 
-        // Legacy tiles_order: seed the exhibit/voc "Display Order" control.
-        $slag = $profile->equipmentType?->slag;
-        if (in_array($slag, ['exhibit', 'voc'], true)) {
-            $data['tile_order'] = \App\Models\Profile::tileOrderFormItems($slag, $profile->tiles_order);
-        }
-
         // Dirty legacy rows can have form_is_enable=1 without form_active. Never surface
         // Enable as ON until the profile is entitled (purchase or survey/voc free).
         if (! $profile->formBuilderEntitled()) {
             $data['form_is_enable'] = false;
 
             if ((bool) $profile->form_is_enable) {
-                $profile->forceFill(['form_is_enable' => false])->saveQuietly();
+                // Persist just the corrected flag with a targeted column update. A full
+                // save here is unsafe: the model's `retrieved` hook nulls the sentinel
+                // date columns (voc_dob, activation_start_date, activation_end_date) in
+                // memory, and saveQuietly() skips the `saving` guard that restores the
+                // sentinel — so those NOT NULL columns would be written as NULL and the
+                // page would 500 on load.
+                $profile->newQuery()->whereKey($profile->getKey())->update(['form_is_enable' => 0]);
+                $profile->setAttribute('form_is_enable', false);
+                $profile->syncOriginalAttribute('form_is_enable');
             }
-        }
-
-        return $data;
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
-    protected function mutateFormDataBeforeSave(array $data): array
-    {
-        return $this->applyTileOrder($data);
-    }
-
-    /**
-     * Map the "Display Order" repeater state (exhibit/voc) to the tiles_order column and
-     * drop the non-column form key so the model update doesn't choke on it.
-     *
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
-    protected function applyTileOrder(array $data): array
-    {
-        if (array_key_exists('tile_order', $data)) {
-            $ids = \App\Models\Profile::tileOrderToString($data['tile_order']);
-
-            if ($ids !== null) {
-                $data['tiles_order'] = $ids;
-            }
-
-            unset($data['tile_order']);
         }
 
         return $data;
@@ -189,6 +160,10 @@ class EditProfile extends EditRecord
         $this->syncFormBuilderSidebarSettings();
 
         if ($this->record?->exists) {
+            // Re-arm the password gate after save so preview/real URL show login again
+            // (same browser session may still hold a prior unlock).
+            session()->forget('scan_unlock_'.$this->record->id);
+
             \App\Support\PortalProfilePreview::clearDraft((int) $this->record->id);
             // Ensure weblink-only saves still remount the iframe.
             $this->record->touch();
@@ -206,9 +181,9 @@ class EditProfile extends EditRecord
             return [];
         }
 
-        $slag = $this->record?->equipmentType?->slag;
+        $slag = $this->activeEditorTypeSlag();
 
-        // Survey Save is rendered under Form Builder in legacy-profile-page.
+        // Survey Save is rendered under Form Builder in legacy-profile-page (no Cancel).
         if ($slag === 'survey') {
             return [];
         }
@@ -220,8 +195,7 @@ class EditProfile extends EditRecord
         }
 
         return [
-            $this->getCancelFormAction(),
-            $this->getSaveFormAction(),
+            $this->getSaveFormAction()->label('Save changes'),
         ];
     }
 }

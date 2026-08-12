@@ -73,6 +73,14 @@ trait HasLegacyFormBuilderSidebar
     /** Bumps the Form Builder iframe URL so it reloads after applying a form. */
     public int $formBuilderEmbedNonce = 0;
 
+    /**
+     * Existing forms applied to this profile, derived from question `applied_source`.
+     * Drives the "Use an existing form" checked state + removable chips.
+     *
+     * @var list<array{key: string, label: string}>
+     */
+    public array $appliedExistingForms = [];
+
     public function openExistingFormModal(): void
     {
         $profile = $this->sidebarProfile();
@@ -245,7 +253,9 @@ trait HasLegacyFormBuilderSidebar
             ->orderBy('question_order')
             ->get()
             ->map(fn (FormBuilderQuestion $q): array => [
-                'text' => (string) ($q->question_text ?? ''),
+                // Question text is rich HTML (e.g. "<strong>Location:</strong>"); show a
+                // clean plain-text label in the compact preview instead of raw markup.
+                'text' => trim(html_entity_decode(strip_tags((string) ($q->question_text ?? '')), ENT_QUOTES)),
                 'type' => $q->typeName(),
             ])
             ->values()
@@ -288,7 +298,25 @@ trait HasLegacyFormBuilderSidebar
         $auth = $member?->authUser;
 
         if (! $member || ! $auth || ! Hash::check($password, $auth->password)) {
-            $this->existingFormStatus = 'Invalid email or password.';
+            // Legacy welcome/login_from_other_user.
+            $this->existingFormStatus = 'Invalid Username or Password...!';
+            $this->showOtherAccountLibrary = false;
+            $this->otherAccountLibraryForms = [];
+
+            return;
+        }
+
+        // Legacy: reject a blocked client account, then a blocked sub-user.
+        if (! (bool) ($member->client?->approve)) {
+            $this->existingFormStatus = 'Oops! your account is blocked, please contact admin to un-block account.';
+            $this->showOtherAccountLibrary = false;
+            $this->otherAccountLibraryForms = [];
+
+            return;
+        }
+
+        if ($member->is_sub_user && ! (bool) $member->status) {
+            $this->existingFormStatus = 'Oops! your account is blocked.';
             $this->showOtherAccountLibrary = false;
             $this->otherAccountLibraryForms = [];
 
@@ -476,6 +504,87 @@ trait HasLegacyFormBuilderSidebar
             ])
             ->values()
             ->all();
+
+        $this->reloadAppliedExistingForms($profile);
+    }
+
+    /**
+     * Rebuild the applied-existing-form chips from the profile's live questions.
+     */
+    protected function reloadAppliedExistingForms(Profile $profile): void
+    {
+        if (! \Illuminate\Support\Facades\Schema::hasColumn('form_builder_question', 'applied_source')) {
+            $this->appliedExistingForms = [];
+
+            return;
+        }
+
+        $sources = FormBuilderQuestion::query()
+            ->where('profile_id', $profile->id)
+            ->whereNotNull('applied_source')
+            ->where('applied_source', '!=', '')
+            ->pluck('applied_source')
+            ->unique()
+            ->values();
+
+        $this->appliedExistingForms = $sources
+            ->map(fn (string $key): array => [
+                'key' => $key,
+                'label' => $this->appliedSourceLabel($key),
+            ])
+            ->all();
+    }
+
+    protected function appliedSourceLabel(string $key): string
+    {
+        [$type, $id] = array_pad(explode(':', $key, 2), 2, '');
+        $id = (int) $id;
+
+        if ($type === 'profile') {
+            return 'Profile #'.$id;
+        }
+
+        if ($type === 'library') {
+            $title = FormBuilderLibrary::query()
+                ->where('form_id', $id)
+                ->value('form_title');
+
+            return filled($title) ? (string) $title : 'Library form #'.$id;
+        }
+
+        return $key;
+    }
+
+    /**
+     * Remove every question copied from a given applied existing form (chip ×),
+     * updating both the Form Builder canvas and the mobile preview.
+     */
+    public function removeAppliedForm(string $key): void
+    {
+        $profile = $this->sidebarProfile();
+
+        if (! $profile?->exists) {
+            return;
+        }
+
+        if (! \Illuminate\Support\Facades\Schema::hasColumn('form_builder_question', 'applied_source')) {
+            return;
+        }
+
+        $removed = FormBuilderQuestion::query()
+            ->where('profile_id', $profile->id)
+            ->where('applied_source', $key)
+            ->update(['is_deleted' => true]);
+
+        // Reload canvas + chips and force the legacy Form Builder iframe + preview to refresh.
+        $this->reloadFormBuilderQuestions($profile->refresh());
+        $this->formBuilderEmbedNonce++;
+
+        Notification::make()
+            ->title('Form removed')
+            ->body($removed.' question(s) from '.$this->appliedSourceLabel($key).' were removed.')
+            ->success()
+            ->send();
     }
 
     public function openFormBuilderTool(int $typeId): void
@@ -792,7 +901,7 @@ trait HasLegacyFormBuilderSidebar
             if ($notifyEnable) {
                 Notification::make()
                     ->title('Purchase Form Builder activation first')
-                    ->body('The primary account user can activate Form Builder for $5 AUD.')
+                    ->body('The primary account user can activate Form Builder for $'.number_format(\App\Support\PricingSettings::formBuilder(), 2).' AUD.')
                     ->warning()
                     ->send();
             }

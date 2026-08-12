@@ -236,12 +236,6 @@ class CreateProfile extends EditRecord
         $data['form_active'] = false;
         $data['enable_form_analytics'] = false;
 
-        // Legacy tiles_order: seed the exhibit/voc "Display Order" control (default order on create).
-        $slag = $profile->equipmentType?->slag;
-        if (in_array($slag, ['exhibit', 'voc'], true)) {
-            $data['tile_order'] = \App\Models\Profile::tileOrderFormItems($slag, $profile->tiles_order);
-        }
-
         return $data;
     }
 
@@ -274,16 +268,6 @@ class CreateProfile extends EditRecord
     {
         $data['update_or_not'] = true;
 
-        if (array_key_exists('tile_order', $data)) {
-            $ids = \App\Models\Profile::tileOrderToString($data['tile_order']);
-
-            if ($ids !== null) {
-                $data['tiles_order'] = $ids;
-            }
-
-            unset($data['tile_order']);
-        }
-
         return $data;
     }
 
@@ -303,6 +287,7 @@ class CreateProfile extends EditRecord
         }
 
         if ($this->record?->exists) {
+            session()->forget('scan_unlock_'.$this->record->id);
             \App\Support\PortalProfilePreview::clearDraft((int) $this->record->id);
             $this->refreshPhonePreview();
         }
@@ -319,39 +304,17 @@ class CreateProfile extends EditRecord
      */
     protected function getFormActions(): array
     {
-        // Survey Save is rendered under Form Builder in legacy-profile-page.
-        if ($this->isSurveyEditor()) {
+        // Survey Save is rendered under Form Builder in legacy-profile-page (no Cancel).
+        if ($this->activeEditorTypeSlag() === 'survey') {
             return [];
         }
 
-        $legacySaveOnly = $this->isUrlLinkCodeEditor();
+        $legacySaveOnly = $this->activeEditorTypeSlag() === 'code';
 
-        $actions = [];
-
-        if (! $legacySaveOnly) {
-            $actions[] = $this->getCancelFormAction();
-        }
-
-        $actions[] = $this->getSaveFormAction()->label(
-            $legacySaveOnly ? 'SAVE' : 'Save changes'
-        );
-
-        return $actions;
-    }
-
-    private function isUrlLinkCodeEditor(): bool
-    {
-        $slag = request()->query('type')
-            ?: $this->record?->equipmentType?->slag;
-
-        return $slag === 'code';
-    }
-
-    private function isSurveyEditor(): bool
-    {
-        $slag = request()->query('type')
-            ?: $this->record?->equipmentType?->slag;
-
-        return $slag === 'survey';
+        return [
+            $this->getSaveFormAction()->label(
+                $legacySaveOnly ? 'SAVE' : 'Save changes'
+            ),
+        ];
     }
 }

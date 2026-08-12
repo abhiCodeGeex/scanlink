@@ -11,6 +11,7 @@ use App\Services\LabelOrderService;
 use App\Support\SystemNotifier;
 use App\Services\ProfileQrService;
 use App\Support\LegacyEquipmentTypeLabels;
+use App\Support\PricingSettings;
 use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -108,8 +109,8 @@ class OrderLabel extends Page
 
     public function mount(ProfileQrService $qr): void
     {
-        $this->priceSmall = (float) config('scanlink.label_price_small', 3);
-        $this->priceLarge = (float) config('scanlink.label_price_large', 5);
+        $this->priceSmall = PricingSettings::labelSmall();
+        $this->priceLarge = PricingSettings::labelLarge();
 
         $requestedProfile = request()->integer('profile');
 
@@ -257,10 +258,12 @@ class OrderLabel extends Page
     protected function dispatchOrderLabelEmails(Profile $profile, mixed $member): void
     {
         $client = $this->requireClient();
-        $priceSmall = (float) config('scanlink.label_price_small', 3);
-        $priceLarge = (float) config('scanlink.label_price_large', 5);
+        $priceSmall = PricingSettings::labelSmall();
+        $priceLarge = PricingSettings::labelLarge();
+        $postage = PricingSettings::labelPostage();
         $qtySmall = (int) ($this->qtySmall ?: 0);
         $qtyLarge = (int) ($this->qtyLarge ?: 0);
+        $itemsTotal = ($priceSmall * $qtySmall) + ($priceLarge * $qtyLarge);
 
         $data = [
             'profileId' => (int) $profile->id,
@@ -271,7 +274,8 @@ class OrderLabel extends Page
             'qtyLarge' => $qtyLarge,
             'amountSmall' => number_format($priceSmall * $qtySmall, 2),
             'amountLarge' => number_format($priceLarge * $qtyLarge, 2),
-            'total' => number_format(($priceSmall * $qtySmall) + ($priceLarge * $qtyLarge), 2),
+            'postage' => number_format($postage, 2),
+            'total' => number_format($itemsTotal + $postage, 2),
         ];
 
         $this->trySendMail($data['email'], new ScanlinkMail('ScanLink order confirmation', 'emails.order-label-client', $data));
@@ -336,8 +340,8 @@ class OrderLabel extends Page
         $totSmall = $qtySmall * $this->priceSmall;
         $totLarge = $qtyLarge * $this->priceLarge;
         $total = $totSmall + $totLarge;
-        // Legacy on-screen postage cell stays 0; postage applied later in checkout.
-        $postage = 0.0;
+        // Postage & Handling is admin-managed (Label & Form Pricing master).
+        $postage = PricingSettings::labelPostage();
 
         return [
             'qty_small' => $qtySmall,

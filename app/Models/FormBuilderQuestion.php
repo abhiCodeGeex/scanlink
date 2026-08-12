@@ -33,6 +33,7 @@ class FormBuilderQuestion extends Model
         'is_mandatory', 'is_deleted', 'is_logchecked', 'log_columntitle',
         'covid_bg_color', 'covid_text_color', 'visitor_name', 'visitor_phone',
         'date', 'time', 'venue_name', 'venue_address', 'location_description',
+        'applied_source',
     ];
 
     protected function casts(): array

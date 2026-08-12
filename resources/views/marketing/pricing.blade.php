@@ -1,140 +1,111 @@
-@extends('marketing.layout')
+@extends('marketing.mkt-page')
 
-@section('title', 'Pricing')
-@section('nav_pricing_active', 'active')
+@section('title', 'Pricing — ScanLink')
+@section('meta_description', 'Scalable, affordable QR code and content management pricing. Your first ScanLink code is free for a year.')
 
 @section('content')
-<section class="pricing-block clearfix">
-    <div class="scanlink-container">
-        <h2 class="greenHead">Your first ScanLink code is FREE!</h2>
-        <p>
-            ScanLink provides scalable and affordable access to mobile QR code and content management services for any size business.<br>
-            The ScanLink platform enables users to activate as few or as many mobile codes as required at anytime.<br>
-            Pricing for each code activation is calculated on a 12 month subscription basis which can be renewed indefinitely.<br>
-            Use the code calculator below to calculate for your code requirements. Remember your first ScanLink code is FREE and you can add new codes to your account at anytime.
-        </p>
+    <section class="mkt__page-hero">
+        <div class="mkt__container">
+            <span class="mkt__eyebrow">Pricing</span>
+            <h1>Your first ScanLink code is free</h1>
+            <p>Scalable, affordable access to QR code and content management for any size business. Activate as few or as many codes as you need &mdash; each is a 12-month subscription you can renew indefinitely.</p>
+        </div>
+    </section>
 
-        <div class="content-register coRound">
-            <div class="content-main-register">
-                <div class="content-dispaly-amount-register">
-                    <div class="code-amount"><sup>$</sup><span id="code_amount">0.00</span><br></div>
-                    <div class="code-permonth">Per Code / Month <br></div>
-                    <div class="code-total">Total Annual subscription <b>$<span id="subscription_amount">0.00</span></b></div>
+    <section class="mkt__section">
+        <div class="mkt__container">
+            <div class="mkt__calc">
+                <div class="mkt__calc-amount"><sup>$</sup><span id="code_amount">0.00</span></div>
+                <div class="mkt__calc-permonth">Per code / month</div>
+                <div class="mkt__calc-total">Total annual subscription <b>$<span id="subscription_amount">0.00</span></b></div>
+                <div class="mkt__calc-form">
+                    <label for="no_codes">Enter the number of codes required</label>
+                    <div class="mkt__calc-input">
+                        <input type="text" id="no_codes" name="no_codes" maxlength="4" inputmode="numeric" placeholder="e.g. 10" autocomplete="off">
+                        <button type="button" id="calculate" class="btn btn-on-dark">Calculate</button>
+                    </div>
+                    <span class="mkt__calc-error" id="calc_error" role="alert"></span>
                 </div>
-                <div class="content-label-register">
-                    <label for="no_codes">Enter a number of codes required:</label>
-                </div>
-                <div class="content-textbox-register">
-                    <input
-                        type="text"
-                        name="no_codes"
-                        id="no_codes"
-                        class="text-fi"
-                        maxlength="4"
-                        inputmode="numeric"
-                        value=""
-                    >
-                    <label class="error" id="no_codes_error" generated="true"></label>
-                </div>
-                <div class="content-button-register">
-                    <input
-                        type="button"
-                        name="calculate"
-                        id="calculate"
-                        class="text-fi"
-                        value="Calculate"
-                    >
+            </div>
+
+            <div class="mkt__section-head" style="margin-top:48px;">
+                <p style="color:var(--body);">Ready to get started? Register your ScanLink account in three easy steps &mdash; your first code is free for a year.</p>
+                @unless ($isPortalUser ?? false)
+                    <div class="mkt__hero-cta" style="justify-content:center;margin-top:16px;">
+                        <a class="btn btn-primary btn-lg" href="{{ $register }}">Register free</a>
+                    </div>
+                @endunless
+            </div>
+        </div>
+    </section>
+
+    <section class="mkt__section mkt__section--alt">
+        <div class="mkt__container">
+            <div class="mkt__grid-3">
+                <article class="mkt__feature">
+                    <div class="mkt__feature-icon"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#008c00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></div>
+                    <h3>Only pay for what you use</h3>
+                    <p>Access is an annual subscription per code, from just $4 per month. Add new codes to your account anytime.</p>
+                </article>
+                <article class="mkt__feature">
+                    <div class="mkt__feature-icon"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#008c00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></div>
+                    <h3>Industrial labels &amp; tags from $3</h3>
+                    <p>High-quality industrial labels and tags to deploy your mobile initiative &mdash; order any quantity from your account, including customised options.</p>
+                </article>
+                <article class="mkt__feature">
+                    <div class="mkt__feature-icon"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#008c00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m23 7-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>
+                    <h3>Mobile video production</h3>
+                    <p>Affordable mobile-optimised video and animation production to suit your budget. <a href="{{ route('marketing.mobileVideo') }}">Learn more</a> or <a href="{{ route('marketing.contact') }}">contact us</a> to discuss your requirements.</p>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <section class="mkt__section mkt__section--tight">
+        <div class="mkt__container">
+            <div class="mkt__cta-band">
+                <h2>Start your mobile initiative today</h2>
+                <p>Your first code is free for a year.</p>
+                <div class="mkt__hero-cta">
+                    <a class="btn btn-on-dark btn-lg" href="{{ $register }}">Register free</a>
+                    <a class="btn btn-outline-dark btn-lg" href="{{ route('marketing.contact') }}">Enquire</a>
                 </div>
             </div>
         </div>
-
-        <p class="marketing-info text-20 margin-B40">
-            Ready to get started? Register your ScanLink account in 3 easy steps
-            @unless ($isPortalUser ?? false)
-                <a href="{{ url('/portal/register') }}" class="regblue bGreen">REGISTER</a>
-            @endunless
-        </p>
-
-        <h2 class="greenHead">Workplace industrial labels and tags from just $3</h2>
-        <p class="margin-B40">
-            We provide high quality industrial labels and tag solutions to help deploy your mobile initiative in the workplace.<br>
-            Available to order in any quantity directly from your ScanLink account. We also provide customised labels and tags to suit individual requirements.
-        </p>
-
-        <h2 class="greenHead">Mobile video production</h2>
-        <p>
-            Our experienced creative and production team offers a wide-range of affordable mobile optimised video and animation production services. We can provide a range of production techniques and solutions to accommodate your budget.<br>
-            Contact us to discuss your requirements.
-        </p>
-        <p>
-            <a href="{{ route('marketing.contact') }}" class="regblue bGreen fright"><strong>Enquire</strong></a>
-        </p>
-    </div>
-</section>
+    </section>
 @endsection
 
 @push('scripts')
 <script>
-    function isNumberKey(evt) {
-        var charCode = (evt.which) ? evt.which : evt.keyCode;
-        if (charCode > 31 && (charCode < 48 || charCode > 57)) {
-            return false;
-        }
-        return true;
-    }
-
-    function calculatePricing() {
-        var qty = $('#no_codes').val();
-        $('#no_codes_error').text('');
-
-        if (qty === '') {
-            alert('Enter a number of code required.');
-            $('#no_codes').focus();
-            return false;
-        }
-        if (qty.length > 4) {
-            alert('Enter a number of code less than 4 character.');
-            $('#no_codes').focus();
-            return false;
-        }
-        if (parseInt(qty, 10) > 1000) {
-            alert('Enter a number of code less than 1000.');
-            $('#no_codes').focus();
-            return false;
-        }
-
-        $.ajax({
-            url: @json(route('marketing.pricing.calculate')),
-            type: 'POST',
-            dataType: 'json',
-            headers: { 'X-CSRF-TOKEN': @json(csrf_token()) },
-            data: {
-                no_codes: qty,
-                _token: @json(csrf_token())
-            }
-        }).done(function (data) {
-            var errors = data.errors || {};
-            var errorKeys = Object.keys(errors);
-            if (errorKeys.length > 0) {
-                for (var i = 0; i < errorKeys.length; i++) {
-                    alert(errors[errorKeys[i]]);
-                }
-                return;
-            }
-            $('#code_amount').html(data.amount);
-            $('#subscription_amount').html(data.totalsubscrption);
-        }).fail(function (_jqXHR, textStatus) {
-            alert('Request failed: ' + textStatus);
+    (function () {
+        var input = document.getElementById('no_codes');
+        var btn = document.getElementById('calculate');
+        var err = document.getElementById('calc_error');
+        var amount = document.getElementById('code_amount');
+        var sub = document.getElementById('subscription_amount');
+        if (!btn) { return; }
+        input.addEventListener('keypress', function (e) {
+            if (e.key && e.key.length === 1 && !/[0-9]/.test(e.key)) { e.preventDefault(); }
         });
-    }
-
-    $(document).ready(function () {
-        $('#no_codes').on('keypress', function (e) {
-            return isNumberKey(e);
-        });
-        $('#calculate').on('click', function () {
-            calculatePricing();
-        });
-    });
+        function calc() {
+            err.textContent = '';
+            var qty = (input.value || '').trim();
+            if (qty === '') { err.textContent = 'Enter a number of codes required.'; input.focus(); return; }
+            if (parseInt(qty, 10) > 1000) { err.textContent = 'Enter a number of codes less than 1000.'; input.focus(); return; }
+            fetch(@json(route('marketing.pricing.calculate')), {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': @json(csrf_token()), 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
+                body: 'no_codes=' + encodeURIComponent(qty)
+            }).then(function (r) { return r.json(); }).then(function (data) {
+                var errors = data.errors || {};
+                var keys = Object.keys(errors);
+                if (keys.length) { err.textContent = errors[keys[0]]; return; }
+                amount.textContent = data.amount;
+                sub.textContent = data.totalsubscrption;
+            }).catch(function () { err.textContent = 'Request failed. Please try again.'; });
+        }
+        btn.addEventListener('click', calc);
+        input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); calc(); } });
+    })();
 </script>
 @endpush

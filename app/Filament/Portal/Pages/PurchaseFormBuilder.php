@@ -155,6 +155,15 @@ class PurchaseFormBuilder extends Page
 
         $profile = $this->resolveProfile($this->profileId);
 
+        if (trim((string) ($profile->code_profile_name ?? '')) === '') {
+            Notification::make()
+                ->title('Please enter a Code Profile Name on this profile before purchasing Form Builder.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
         if ((bool) $profile->form_active) {
             Notification::make()->title('Form Builder is already activated for this profile.')->warning()->send();
             $this->redirect($this->profileEditUrl($profile), navigate: false);
@@ -168,7 +177,7 @@ class PurchaseFormBuilder extends Page
         session([
             self::SESSION_CHECKOUT => [
                 'profile_id' => (int) $profile->id,
-                'per_code_amount' => 5.00,
+                'per_code_amount' => \App\Support\PricingSettings::formBuilder(),
                 'quantity' => 1,
                 'return_url' => $this->profileEditUrl($profile),
                 'is_reseller_pricing_code' => $reseller ? '1' : '0',

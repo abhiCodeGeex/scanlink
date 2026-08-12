@@ -21,7 +21,7 @@
     @endphp
 
     <link rel="stylesheet" href="{{ asset('styles/style.css') }}?v=legacy-profile-39">
-    <link rel="stylesheet" href="{{ asset('css/filament/scanlink-theme.css') }}?v=legacy-profile-39">
+    <link rel="stylesheet" href="{{ asset('css/filament/scanlink-theme.css') }}?v=legacy-profile-44">
 
     @if ($isUrlLinkCode)
     {{-- URL Link (code) editor — create + edit must match. Inline so SPA re-applies. --}}
@@ -318,7 +318,7 @@
                     'formBuilderPanelClass' => 'sl-survey-form-builder',
                 ]))
                 <ul class="form-view clearfix sl-survey-save-wrap">
-                    <li style="text-align:center;">
+                    <li class="no-float" style="text-align:center; width:100%; float:none;">
                         <button
                             type="button"
                             class="green-btn sl-survey-save-btn"
@@ -507,6 +507,10 @@
         </script>
     @endif
 
+    @if ($isExhibit || $isVoc)
+        @include('filament.portal.profiles.legacy-tile-reorder')
+    @endif
+
     {{-- Legacy help-icon video tutorial popup --}}
     <div
         id="sl-help-video-modal"
@@ -645,6 +649,12 @@
                     var handler = function (event) {
                         var target = event.target;
                         if (! target || ! root.contains(target)) {
+                            return;
+                        }
+                        // While a modal action is open, the CKEditor commit-sync dispatches
+                        // synthetic input events; pushing preview drafts then cascades into
+                        // extra Livewire requests and makes the modal slow to close. Skip it.
+                        if (document.querySelector('.fi-modal-open')) {
                             return;
                         }
                         if (target.type === 'file') {

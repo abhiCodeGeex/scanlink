@@ -135,6 +135,14 @@
         .signature-wrap canvas { width: 100%; max-width: 320px; height: 120px; border: 1px dashed #ccc; border-radius: 6px; touch-action: none; }
         .mobile-footer { display: flex; justify-content: flex-end; padding: .25rem .15rem 0; }
         .mobile-footer img { max-height: 28px; width: auto; opacity: .85; }
+        /* Location Function (type 19): text + Locate me (GPS) + View map. */
+        .sl-loc-row { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+        .sl-loc-row .sl-loc-input { flex: 1 1 150px; min-width: 0; margin-top: 0; }
+        .sl-loc-btn { display: inline-flex; align-items: center; gap: .3rem; padding: .5rem .7rem; border: 1px solid #008C00; border-radius: 6px; background: #fff; color: #008C00; font: inherit; font-size: .82rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+        .sl-loc-btn:hover { background: #f0fbf0; }
+        .sl-loc-btn[disabled] { opacity: .55; cursor: default; }
+        .sl-loc-map { font-size: .82rem; color: #278b28; font-weight: 600; text-decoration: none; white-space: nowrap; }
+        .sl-loc-map:hover { text-decoration: underline; }
         @if ($portalPreview ?? false)
         html, body { height: auto; min-height: 0; overflow-x: hidden; }
         body.portal-preview { background: #fff; margin: 0; width: 100%; }
@@ -673,7 +681,14 @@
 
                             @case(19)
                                 <label>{{ $question->question_text ?: 'Location' }}@if($question->is_mandatory) *@endif</label>
-                                <input type="text" name="answers[{{ $qid }}]" placeholder="Location" {{ $required }}>
+                                <div class="sl-loc-row">
+                                    <input type="text" name="answers[{{ $qid }}]" id="sl-loc-{{ $qid }}" class="sl-loc-input" placeholder="Location" {{ $required }}>
+                                    <button type="button" class="sl-loc-btn" data-loc-target="sl-loc-{{ $qid }}">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4.5 8-11a8 8 0 1 0-16 0c0 6.5 8 11 8 11z"/><circle cx="12" cy="11" r="3"/></svg>
+                                        Locate me
+                                    </button>
+                                    <a href="https://maps.google.com" class="sl-loc-map" data-loc-src="sl-loc-{{ $qid }}" target="_blank" rel="noopener">View map</a>
+                                </div>
                                 @break
 
                             @case(22)
@@ -843,6 +858,38 @@
                             if (el.type === 'checkbox' || el.type === 'radio') { el.checked = false; } else { el.value = ''; }
                         });
                         wrap.insertBefore(clone, link);
+                    });
+                })();
+            </script>
+            <script>
+                // Location Function (type 19): "Locate me" fills GPS coords; "View map" opens Google Maps.
+                (function () {
+                    document.addEventListener('click', function (e) {
+                        var btn = e.target.closest('.sl-loc-btn');
+                        if (btn) {
+                            var input = document.getElementById(btn.getAttribute('data-loc-target'));
+                            if (!input || !navigator.geolocation) { return; }
+                            var restore = btn.innerHTML;
+                            btn.disabled = true;
+                            btn.textContent = 'Locating…';
+                            navigator.geolocation.getCurrentPosition(function (p) {
+                                input.value = p.coords.latitude.toFixed(6) + ', ' + p.coords.longitude.toFixed(6);
+                                btn.disabled = false;
+                                btn.innerHTML = restore;
+                            }, function () {
+                                btn.disabled = false;
+                                btn.innerHTML = restore;
+                            }, { enableHighAccuracy: true, timeout: 8000 });
+                            return;
+                        }
+                        var map = e.target.closest('.sl-loc-map');
+                        if (map) {
+                            var src = document.getElementById(map.getAttribute('data-loc-src'));
+                            var val = src ? src.value.trim() : '';
+                            map.href = val
+                                ? ('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(val))
+                                : 'https://www.google.com/maps';
+                        }
                     });
                 })();
             </script>

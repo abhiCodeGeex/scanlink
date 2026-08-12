@@ -7,6 +7,7 @@ use App\Filament\Portal\Concerns\RestrictsToPrimaryClientUser;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Models\Profile;
 use App\Services\FormBuilderPurchaseService;
+use App\Support\PricingSettings;
 use BackedEnum;
 use DomainException;
 use Filament\Notifications\Notification;
@@ -64,7 +65,7 @@ class FormBuilderOrderSummary extends Page
 
     public function totalAmount(): float
     {
-        return FormBuilderPurchaseService::PRICE;
+        return PricingSettings::formBuilder();
     }
 
     public function profile(): Profile

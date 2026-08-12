@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\UserType;
 use App\Mail\ContactUsMessage;
+use App\Mail\EnquiryMessage;
 use App\Models\CodePrising;
 use App\Models\Gallery;
 use App\Models\HowToTutorial;
@@ -42,6 +43,7 @@ class MarketingController extends Controller
             'howToLinks' => $this->howToLinks(),
             'isPortalUser' => $isPortalUser,
             'portalUserEmail' => $isPortalUser ? $user->email : null,
+            'register' => url('/portal/register'),
         ];
     }
 
@@ -117,6 +119,109 @@ class MarketingController extends Controller
     public function terms(): View
     {
         return view('marketing.terms', $this->marketingLayoutData());
+    }
+
+    public function packaging(): View
+    {
+        return view('marketing.packaging', $this->marketingLayoutData());
+    }
+
+    public function forYou(): View
+    {
+        return view('marketing.for-you', $this->marketingLayoutData());
+    }
+
+    public function workplace(): View
+    {
+        return view('marketing.workplace', $this->marketingLayoutData());
+    }
+
+    public function forms(): View
+    {
+        return view('marketing.forms', $this->marketingLayoutData());
+    }
+
+    public function mobileVideo(): View
+    {
+        return view('marketing.mobile-video', $this->marketingLayoutData());
+    }
+
+    public function enquiry(): View
+    {
+        return view('marketing.enquiry', $this->marketingLayoutData());
+    }
+
+    public function submitEnquiry(Request $request): RedirectResponse
+    {
+        $companyName = trim((string) $request->input('companyName', ''));
+        $contactName = trim((string) $request->input('contactName', ''));
+        $email = trim((string) $request->input('email', ''));
+
+        if ($companyName === '' || $contactName === '' || $email === '') {
+            return redirect()
+                ->route('marketing.enquiry')
+                ->withInput()
+                ->withErrors(['form' => 'Company name, contact name and email are required.']);
+        }
+
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return redirect()
+                ->route('marketing.enquiry')
+                ->withInput()
+                ->withErrors(['email' => 'Please enter a valid email address.']);
+        }
+
+        $interestLabels = [
+            'facilityAsset' => 'Facility Asset Management',
+            'plantEquipment' => 'Plant & Equipment Document Management',
+            'productProcedure' => 'Product & Procedure Management',
+            'communicationTraining' => 'Communication Training',
+            'videoProduction' => 'Video Production, or Re-Editing for Smartphone use',
+            'QRCodeVisual' => 'QR Code Visual Communication',
+            'allOfAbove' => 'All of the above',
+        ];
+
+        $interests = [];
+        foreach ($interestLabels as $field => $label) {
+            if ($request->boolean($field)) {
+                $interests[] = $label;
+            }
+        }
+
+        $enquiryEmail = Setting::valueFor('enquiry_email')
+            ?? Setting::valueFor('contact_email')
+            ?? 'admin@scanlink.com';
+
+        try {
+            Mail::to($enquiryEmail)->send(new EnquiryMessage(
+                companyName: $companyName,
+                contactName: $contactName,
+                email: $email,
+                tel: trim((string) $request->input('tel', '')),
+                address: trim((string) $request->input('address', '')),
+                industryType: trim((string) $request->input('industryType', '')),
+                companySize: trim((string) $request->input('companySize', '')),
+                briefDescription: trim((string) $request->input('briefDescription', '')),
+                interests: $interests,
+                comments: trim((string) $request->input('comments', '')),
+            ));
+        } catch (\Throwable $exception) {
+            Log::warning('Enquiry form mail failed', [
+                'email' => $email,
+                'message' => $exception->getMessage(),
+            ]);
+        }
+
+        SystemNotifier::toAdmins(
+            'New solutions enquiry',
+            trim($contactName).' ('.$email.') submitted a solutions enquiry via the website.',
+            'heroicon-o-inbox-arrow-down',
+            'info',
+        );
+
+        return redirect()
+            ->route('marketing.enquiry')
+            ->with('enquiry_submitted', true);
     }
 
     public function submitContact(Request $request, ContactCaptchaService $captcha): RedirectResponse

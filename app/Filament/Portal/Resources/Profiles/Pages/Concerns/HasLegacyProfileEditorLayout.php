@@ -58,8 +58,22 @@ trait HasLegacyProfileEditorLayout
             return;
         }
 
-        // Legacy auto_save_* persisted the profile before checkout with NO validation, so
-        // a blank required field (e.g. code profile name) must not block activation.
+        $profileName = trim((string) (
+            data_get($this->data ?? null, 'code_profile_name')
+            ?? $profile->code_profile_name
+            ?? ''
+        ));
+
+        if ($profileName === '') {
+            \Filament\Notifications\Notification::make()
+                ->title('Please enter a Code Profile Name before activating Form Builder.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        // Persist current editor state before checkout, but keep Code Profile Name required.
         if (method_exists($this, 'save')) {
             $this->bypassRequiredForCheckout = true;
 
@@ -71,6 +85,15 @@ trait HasLegacyProfileEditorLayout
         }
 
         $profile->refresh();
+
+        if (trim((string) ($profile->code_profile_name ?? '')) === '') {
+            \Filament\Notifications\Notification::make()
+                ->title('Please enter a Code Profile Name before activating Form Builder.')
+                ->danger()
+                ->send();
+
+            return;
+        }
 
         $this->redirect(
             PurchaseFormBuilder::getUrl(['profile' => $profile->id], panel: 'portal'),
@@ -161,7 +184,8 @@ trait HasLegacyProfileEditorLayout
             $record->loadMissing('equipmentType');
         }
 
-        $typeSlag = $record?->equipmentType?->slag;
+        // Prefer record type, fall back to ?type= on create so survey/code layout flags stay correct.
+        $typeSlag = $this->activeEditorTypeSlag();
         $isUrlLinkCode = $typeSlag === 'code';
         $isSurvey = $typeSlag === 'survey';
         $isExhibit = $typeSlag === 'exhibit';

@@ -25,7 +25,7 @@ class PhysicalOrderPricing
         $smallTotal = (float) $order->qty_small * (float) $order->price_small;
         $largeTotal = (float) $order->qty_large * (float) $order->price_large;
         $subtotal = $smallTotal + $largeTotal;
-        $postage = 2.95;
+        $postage = PricingSettings::labelPostage();
 
         return [
             'small_label' => $useNewLabels ? '50 X 40 mm label' : '45 X 60 mm label',

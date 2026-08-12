@@ -73,6 +73,7 @@ class FormBuilderPurchaseLifecycleTest extends TestCase
             'user_id' => $this->member->id,
             'type_id' => $type->id,
             'name' => 'Form Builder Purchase Profile',
+            'code_profile_name' => 'Form Builder Purchase Profile',
             'deleted' => false,
             'update_or_not' => true,
             'form_active' => false,
@@ -277,10 +278,8 @@ class FormBuilderPurchaseLifecycleTest extends TestCase
         ]);
     }
 
-    public function test_activate_form_builder_does_not_block_on_blank_code_profile_name(): void
+    public function test_activate_form_builder_requires_code_profile_name(): void
     {
-        // Legacy auto_save_* proceeded to activation with NO validation. Blanking the
-        // required Code Profile Name must NOT block "Activate Form Builder".
         Mail::fake();
         $this->actingAs($this->user);
 
@@ -296,7 +295,28 @@ class FormBuilderPurchaseLifecycleTest extends TestCase
             ->set('data.code_profile_name', '')
             ->call('startFormBuilderPurchase')
             ->assertHasNoErrors()
-            ->assertRedirect(PurchaseFormBuilder::getUrl(['profile' => $this->profile->id], panel: 'portal'));
+            ->assertNoRedirect();
+
+        $this->assertFalse((bool) $this->profile->fresh()->form_active);
+    }
+
+    public function test_purchase_form_builder_billing_requires_code_profile_name(): void
+    {
+        $this->actingAs($this->user);
+        $this->profile->forceFill(['code_profile_name' => ''])->save();
+
+        Livewire::test(PurchaseFormBuilder::class)
+            ->set('profileId', $this->profile->id)
+            ->set('firstName', 'Buyer')
+            ->set('lastName', 'Test')
+            ->set('companyName', 'Buyer Co')
+            ->set('billingAddress', '1 Test Street')
+            ->set('email', 'buyer@yopmail.com')
+            ->set('town', 'Sydney')
+            ->set('phone', '0400000000')
+            ->set('postalCode', '2000')
+            ->call('next')
+            ->assertNoRedirect();
     }
 
     public function test_sub_user_cannot_access_purchase_pages(): void

@@ -141,7 +141,7 @@
                     <div style="margin-top:1rem; display:flex; flex-direction:column; gap:.5rem;">
                         @if (! $formActive && $this->purchaseFormBuilderUrl())
                             <a href="{{ $this->purchaseFormBuilderUrl() }}" class="fb-btn fb-btn-primary" style="text-decoration:none; justify-content:center;">
-                                Activate Form Builder — $5 AUD
+                                Activate Form Builder — ${{ number_format(\App\Support\PricingSettings::formBuilder(), 2) }} AUD
                             </a>
                         @endif
                         <label style="display:flex; align-items:center; gap:.5rem; font-size:.875rem;">
@@ -438,7 +438,7 @@
                                             </div>
                                             <div class="fb-box-actions">
                                                 <button type="button" class="fb-btn fb-btn-secondary fb-btn-sm" wire:click="editQuestion({{ $question->question_id }})">Edit</button>
-                                                <button type="button" class="fb-btn fb-btn-danger fb-btn-sm" wire:click="deleteQuestion({{ $question->question_id }})" wire:confirm="Remove this question?">Delete</button>
+                                                <button type="button" class="fb-btn fb-btn-danger fb-btn-sm" x-on:click="window.slConfirm('Remove this question?').then(ok => ok && $wire.deleteQuestion({{ $question->question_id }}))">Delete</button>
                                             </div>
                                         </div>
                                     @endforeach

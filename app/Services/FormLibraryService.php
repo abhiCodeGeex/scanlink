@@ -74,7 +74,7 @@ class FormLibraryService
             return 0;
         }
 
-        return $this->cloneQuestionsOntoProfile($sourceQuestions, $targetProfile);
+        return $this->cloneQuestionsOntoProfile($sourceQuestions, $targetProfile, 'profile:'.$sourceProfileId);
     }
 
     public function applyLibraryFormToProfile(int $libraryFormId, Profile $targetProfile): int
@@ -94,14 +94,17 @@ class FormLibraryService
             return 0;
         }
 
-        return $this->cloneQuestionsOntoProfile($sourceQuestions, $targetProfile);
+        return $this->cloneQuestionsOntoProfile($sourceQuestions, $targetProfile, 'library:'.$libraryFormId);
     }
 
     /**
      * @param  Collection<int, FormBuilderQuestion>  $sourceQuestions
      */
-    protected function cloneQuestionsOntoProfile(Collection $sourceQuestions, Profile $targetProfile): int
+    protected function cloneQuestionsOntoProfile(Collection $sourceQuestions, Profile $targetProfile, ?string $source = null): int
     {
+        $stampSource = $source !== null
+            && \Illuminate\Support\Facades\Schema::hasColumn('form_builder_question', 'applied_source');
+
         $targetFormId = (int) ($targetProfile->form_id ?: 0);
 
         if ($targetFormId === 0) {
@@ -173,6 +176,10 @@ class FormLibraryService
 
             if (! $usesAutoQuestionId) {
                 $questionPayload['question_id'] = $nextQuestionId;
+            }
+
+            if ($stampSource) {
+                $questionPayload['applied_source'] = $source;
             }
 
             $newQuestion = FormBuilderQuestion::query()->create($questionPayload);

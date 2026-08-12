@@ -5,7 +5,6 @@ namespace App\Filament\Portal\Resources\Profiles\Pages;
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Filament\Resources\Profiles\Pages\Concerns\HasProfileQrActions;
-use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
 
 class ViewProfile extends ViewRecord
@@ -44,8 +43,6 @@ class ViewProfile extends ViewRecord
     {
         return [
             ...$this->profileQrHeaderActions(),
-            EditAction::make()
-                ->visible(fn (): bool => ProfileResource::canEdit($this->record)),
         ];
     }
 }

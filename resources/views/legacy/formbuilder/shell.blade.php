@@ -89,6 +89,28 @@
             transition: background 0.15s ease;
         }
         .from-box .green-btn:hover { background: #00a300; }
+
+        /* Drop area grows with its content but is capped, so it stays compact and
+           short forms never clip. "Expand Window" adds .sl-fb-expanded to lift the
+           cap and show the whole form; "Reduce Window" removes it. The parent iframe
+           auto-fits to whichever height, so there is no dead empty space. */
+        #div_drop_area.ui-widget-content,
+        .ui-widget-content#div_drop_area {
+            height: auto !important;
+            min-height: 150px !important;
+            max-height: 520px !important;
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+        }
+        #div_drop_area.ui-widget-content.sl-fb-expanded {
+            max-height: none !important;
+            overflow: visible !important;
+        }
+        #div_drop_area .ui-droppable,
+        #div_drop_area ol {
+            min-height: 120px;
+            height: auto !important;
+        }
     </style>
 </head>
 <body>

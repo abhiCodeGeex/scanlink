@@ -638,7 +638,7 @@
 				<h2>Recipients Email</h2>
 				<?php
 
-				$ui_widget_content_height = 411;
+				$ui_widget_content_height = 260;
 
 				$rec_cnt = 0;
 				foreach ($recipient_email_arr as $recipient_email) {

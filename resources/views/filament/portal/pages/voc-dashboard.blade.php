@@ -50,6 +50,10 @@
                                     </td>
                                     <td>{{ $profile->equipmentType?->name ?? 'Profile' }}</td>
                                     <td>
+                                        @if ($editUrl = $this->profileEditUrl($profile))
+                                            <a href="{{ $editUrl }}" class="sl-link">Edit</a>
+                                            <span class="sl-sep">|</span>
+                                        @endif
                                         @if ($viewUrl = $this->profileViewUrl($profile))
                                             <a href="{{ $viewUrl }}" class="sl-link">Portal view</a>
                                             <span class="sl-sep">|</span>

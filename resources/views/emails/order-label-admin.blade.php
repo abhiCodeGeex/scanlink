@@ -37,6 +37,10 @@
 	  <td>${{ $amountLarge }} AUD</td>
 	</tr>
 	<tr>
+	  <th align="left" >Postage &amp; Handling : </th>
+	  <td>${{ $postage }} AUD</td>
+	</tr>
+	<tr>
 	  <th align="left" >Total : </th>
 	  <td>${{ $total }} AUD</td>
 	</tr>

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Portal\FormBuilderUploadController;
 use App\Http\Controllers\Portal\LegacyFormBuilderController;
 use App\Http\Controllers\CaptchaController;
+use App\Http\Controllers\ExpressCodeController;
 use App\Http\Controllers\MarketingController;
 use App\Http\Controllers\MobileProfileController;
 use App\Http\Controllers\PayPalNotifyController;
@@ -20,9 +21,22 @@ Route::get('/captcha/default', CaptchaController::class)->name('marketing.captch
 Route::get('/how-to', [MarketingController::class, 'howTo'])->name('marketing.how-to');
 Route::get('/pricing', [MarketingController::class, 'pricing'])->name('marketing.pricing');
 Route::post('/pricing/calculate', [MarketingController::class, 'calculatePricing'])->name('marketing.pricing.calculate');
+
+// Express Code Generator (public home page) — parity with legacy qrhome.
+Route::post('/express-code/preview', [ExpressCodeController::class, 'preview'])->name('marketing.express.preview');
+Route::get('/express-code/download', [ExpressCodeController::class, 'download'])->name('marketing.express.download');
 Route::get('/faq', [MarketingController::class, 'faq'])->name('marketing.faq');
 Route::get('/privacy', [MarketingController::class, 'privacy'])->name('marketing.privacy');
 Route::get('/terms', [MarketingController::class, 'terms'])->name('marketing.terms');
+
+// Marketing solution / landing pages (parity with legacy marketing/workplace/formbuilderpage).
+Route::get('/solutions/packaging-signage', [MarketingController::class, 'packaging'])->name('marketing.packaging');
+Route::get('/solutions/for-you', [MarketingController::class, 'forYou'])->name('marketing.forYou');
+Route::get('/solutions/workplace', [MarketingController::class, 'workplace'])->name('marketing.workplace');
+Route::get('/solutions/forms', [MarketingController::class, 'forms'])->name('marketing.forms');
+Route::get('/mobile-video', [MarketingController::class, 'mobileVideo'])->name('marketing.mobileVideo');
+Route::get('/enquiry', [MarketingController::class, 'enquiry'])->name('marketing.enquiry');
+Route::post('/enquiry', [MarketingController::class, 'submitEnquiry'])->name('marketing.enquiry.submit');
 
 // Legacy URL aliases (Kohana paths from scanlink.com.au).
 Route::redirect('/pricing/index', '/pricing', 301);
@@ -92,6 +106,13 @@ Route::post('/{clientUrl}/{profileId}/checklist/{itemId}/uncheck', [MobileProfil
     ->name('scan.checklist.uncheck');
 
 Route::middleware(['web', 'auth'])->group(function (): void {
+    // VOC "Email Notification Settings" Preview — renders the document-expiry email
+    // (30-day renewal reminder / expiry notice) from the saved profile.
+    Route::get('/portal/profiles/{profile}/voc-email-preview/{kind}', [\App\Http\Controllers\VocEmailPreviewController::class, 'show'])
+        ->whereNumber('profile')
+        ->where('kind', 'reminder|expired')
+        ->name('portal.voc.email-preview');
+
     Route::get('/portal/graphengine/country', [\App\Http\Controllers\Portal\ScanalyticsGraphController::class, 'country'])
         ->name('portal.graphengine.country');
     Route::get('/portal/graphengine/device', [\App\Http\Controllers\Portal\ScanalyticsGraphController::class, 'device'])
