@@ -46,9 +46,20 @@ class AppServiceProvider extends ServiceProvider
             if (! is_dir($compiled)) {
                 @mkdir($compiled, 0777, true);
             }
-            $this->callAfterResolving('config', function ($config) use ($compiled): void {
-                $config->set('view.compiled', $compiled);
-            });
+
+            // A prior `docker exec` running artisan as root can leave this directory
+            // root-owned and unwritable for the php-fpm user. Blade's Filesystem::replace()
+            // then calls tempnam() on a non-writable dir, which warns and (in debug) 500s
+            // every request. Open the perms up, and only redirect compiled views here when
+            // this process can actually write to it — otherwise keep Laravel's default
+            // storage/framework/views path (which the container keeps writable).
+            @chmod($compiled, 0777);
+
+            if (is_dir($compiled) && is_writable($compiled)) {
+                $this->callAfterResolving('config', function ($config) use ($compiled): void {
+                    $config->set('view.compiled', $compiled);
+                });
+            }
         }
     }
 
@@ -70,7 +81,10 @@ class AppServiceProvider extends ServiceProvider
             string $file = '',
             int $line = 0,
         ) use (&$previous): bool {
-            if ($severity === E_WARNING && str_contains($message, 'touch(): Utime failed')) {
+            if ($severity === E_WARNING && (
+                str_contains($message, 'touch(): Utime failed')
+                || str_contains($message, 'tempnam(): file created in the system')
+            )) {
                 return true;
             }
 
