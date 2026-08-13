@@ -281,7 +281,13 @@ class ProfileFormSchema
                 TextInput::make('voc_town')->label('Town')->maxLength(50),
                 TextInput::make('voc_state')->label('State/Territory')->maxLength(50),
                 TextInput::make('voc_phone')->label('Telephone No.')->maxLength(30),
-                DatePicker::make('voc_dob')->label('Date of Birth'),
+                DatePicker::make('voc_dob')
+                    ->label('Date of Birth')
+                    ->native(false)
+                    ->displayFormat('d-m-Y')
+                    // Legacy datepicker yearRange 1915:current — no future / implausible DOBs.
+                    ->minDate('1915-01-01')
+                    ->maxDate(now()),
                 Textarea::make('voc_known_allergies')->label('Known Allergies/Medical Conditions')->rows(3)->columnSpanFull(),
                 TextInput::make('voc_blood_type')->label('Blood Type')->maxLength(5),
                 TextInput::make('voc_next_of_kin')->label('Next of Kin')->maxLength(50),

@@ -117,6 +117,71 @@ class VocDashboard extends Page
         return EditVocProfile::getUrl(['profile' => $profile->id]);
     }
 
+    /**
+     * Legacy dashboard "Export List" — a .xlsx of VOC documents due within 30 days
+     * (or already expired), columns Profile No. / Name / 30 Day Expiry / Expired.
+     */
+    public function exportDocuments(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        $rows = $this->expiringDocumentRows();
+
+        $tmp = tempnam(sys_get_temp_dir(), 'vocdoc_').'.xlsx';
+        $writer = new \OpenSpout\Writer\XLSX\Writer;
+        $writer->openToFile($tmp);
+        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Profile No.', 'Name', '30 Day Expiry', 'Expired']));
+
+        foreach ($rows as $row) {
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(array_map('strval', $row)));
+        }
+
+        $writer->close();
+
+        return response()->download($tmp, 'document_list.xlsx')->deleteFileAfterSend();
+    }
+
+    /**
+     * The rows for the expiry export: documents due within 30 days or already expired.
+     *
+     * @return array<int, array{0: string, 1: string, 2: string, 3: string}>
+     */
+    public function expiringDocumentRows(): array
+    {
+        $today = \Illuminate\Support\Carbon::today();
+        $cutoff = $today->copy()->addDays(30);
+
+        $rows = [];
+
+        foreach ($this->documents as $document) {
+            $raw = $document->getRawOriginal('expiry_date');
+
+            if (blank($raw) || in_array((string) $raw, ['1970-01-01', '0000-00-00'], true)) {
+                continue;
+            }
+
+            try {
+                $expiry = \Illuminate\Support\Carbon::parse($raw)->startOfDay();
+            } catch (\Throwable $e) {
+                continue;
+            }
+
+            // Legacy: DATEDIFF(expiry, today) <= 30 — expiring within 30 days or already expired.
+            if ($expiry->gt($cutoff)) {
+                continue;
+            }
+
+            $isExpired = $expiry->lte($today);
+
+            $rows[] = [
+                (string) $document->profile_id,
+                (string) ($document->name ?: 'Document'),
+                $isExpired ? '' : $expiry->format('d/m/Y'),
+                $isExpired ? $expiry->format('d/m/Y') : '',
+            ];
+        }
+
+        return $rows;
+    }
+
     protected function loadVocUserProfiles(User $user): void
     {
         $vocUsers = VocUser::query()

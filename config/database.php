@@ -57,7 +57,12 @@ return [
             'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
             'prefix' => '',
             'prefix_indexes' => true,
-            'strict' => true,
+            // Legacy ScanLink data (live import) carries '0000-00-00' dates and loose
+            // GROUP BY queries that MySQL's strict sql_mode (NO_ZERO_DATE, ONLY_FULL_GROUP_BY)
+            // rejects — any ALTER on an imported table 500s with error 1067, and runtime
+            // writes to legacy rows fail too. Default to non-strict for parity; override
+            // with DB_STRICT=true if a clean, fully-validated dataset is ever guaranteed.
+            'strict' => env('DB_STRICT', false),
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
@@ -77,7 +82,7 @@ return [
             'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
             'prefix' => '',
             'prefix_indexes' => true,
-            'strict' => true,
+            'strict' => env('DB_STRICT', false),
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),

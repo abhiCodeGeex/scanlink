@@ -72,7 +72,15 @@
 
         @if ($documents->isNotEmpty())
             <div class="sl-card sl-card-pad">
-                <h3 class="sl-heading">VOC documents</h3>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
+                    <h3 class="sl-heading" style="margin:0;">VOC documents</h3>
+                    <button
+                        type="button"
+                        wire:click="exportDocuments"
+                        wire:loading.attr="disabled"
+                        style="display:inline-block;padding:6px 14px;border-radius:5px;background:#008901;background-image:linear-gradient(to bottom,#008901 0%,#007a01 100%);color:#fff;font-weight:700;font-size:12px;border:1px solid #006201;cursor:pointer;white-space:nowrap;"
+                    >Export List (due ≤30 days)</button>
+                </div>
                 <ul class="sl-doc-list">
                     @foreach ($documents as $document)
                         <li wire:key="voc-doc-{{ $document->id }}">

@@ -245,6 +245,9 @@ class PortalProfileForm
                         Textarea::make('voc_title_bar_text')
                             ->label('Text:')
                             ->rows(4)
+                            // Legacy: title-bar text is required when "Enable" is ticked.
+                            ->required(fn (Get $get): bool => (bool) $get('voc_title_bar_enable'))
+                            ->validationMessages(['required' => 'Please enter title bar text.'])
                             ->extraInputAttributes([
                                 'class' => 'sl-ckeditor',
                                 'data-ck-toolbar' => 'custom1',
@@ -1029,6 +1032,9 @@ class PortalProfileForm
                 Hidden::make('email'),
             ])
             ->defaultItems(0)
+            // Legacy: at least one notification recipient is required.
+            ->minItems(1)
+            ->validationMessages(['min' => 'Enter at least one recipient email.'])
             ->reorderable(false)
             ->cloneable(false)
             ->itemLabel(fn (array $state): string => trim((string) ($state['email'] ?? '')) ?: 'Recipient')

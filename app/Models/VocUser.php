@@ -2,9 +2,12 @@
 
 namespace App\Models;
 
+use App\Observers\VocUserObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+#[ObservedBy([VocUserObserver::class])]
 class VocUser extends Model
 {
     protected $table = 'voc_users';

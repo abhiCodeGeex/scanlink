@@ -23,10 +23,13 @@ return new class extends Migration
         }
 
         // Existing assigned reseller codes stay usable until an admin deactivates them.
-        DB::table('clients')
-            ->whereNotNull('reseller_code')
-            ->where('reseller_code', '!=', '')
-            ->update(['reseller_code_active' => '1']);
+        if (Schema::hasColumn('clients', 'reseller_code')
+            && Schema::hasColumn('clients', 'reseller_code_active')) {
+            DB::table('clients')
+                ->whereNotNull('reseller_code')
+                ->where('reseller_code', '!=', '')
+                ->update(['reseller_code_active' => '1']);
+        }
     }
 
     public function down(): void

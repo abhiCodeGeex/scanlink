@@ -68,8 +68,6 @@
                     >
                         <option value="">Download As</option>
                         <option value="pdf">PDF</option>
-                        <option value="tiff">TIFF</option>
-                        <option value="eps">Eps(Vector)</option>
                         <option value="png">PNG</option>
                         <option value="jpg">JPG</option>
                     </select>
@@ -98,8 +96,6 @@
                         >
                             <option value="">Download As</option>
                             <option value="pdf">PDF</option>
-                            <option value="tiff">TIFF</option>
-                            <option value="eps">Eps(Vector)</option>
                             <option value="png">PNG</option>
                             <option value="jpg">JPG</option>
                         </select>

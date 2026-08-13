@@ -83,6 +83,13 @@ class ProfileVocUsersEditTest extends TestCase
             'password' => 'oldpassword',
         ]);
 
+        // Voc save now requires ≥1 notification recipient (legacy parity).
+        \App\Models\VocRecipient::query()->create([
+            'voc_recipient_id' => 1,
+            'profile_id' => $profile->id,
+            'email' => 'notify@yopmail.com',
+        ]);
+
         $this->actingAs($user);
 
         $component = Livewire::test(EditProfile::class, ['record' => $profile->getKey()]);
@@ -143,6 +150,12 @@ class ProfileVocUsersEditTest extends TestCase
             'profile_id' => $profile->id,
             'email' => 'old@yopmail.com',
             'password' => 'oldpassword',
+        ]);
+
+        \App\Models\VocRecipient::query()->create([
+            'voc_recipient_id' => 1,
+            'profile_id' => $profile->id,
+            'email' => 'notify@yopmail.com',
         ]);
 
         $this->actingAs($user);

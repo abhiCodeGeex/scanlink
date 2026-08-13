@@ -9,14 +9,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('client_users', function (Blueprint $table) {
-            $table->boolean('notice')->default(false)->after('expire_at');
+            if (! Schema::hasColumn('client_users', 'notice')) {
+                $table->boolean('notice')->default(false)->after('expire_at');
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('client_users', function (Blueprint $table) {
-            $table->dropColumn('notice');
+            if (Schema::hasColumn('client_users', 'notice')) {
+                $table->dropColumn('notice');
+            }
         });
     }
 };
