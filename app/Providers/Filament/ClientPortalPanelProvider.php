@@ -5,7 +5,12 @@ namespace App\Providers\Filament;
 use App\Filament\Portal\Auth\Login;
 use App\Filament\Portal\Auth\Register;
 use App\Filament\Portal\Pages\EditAccount;
-use App\Filament\Portal\Pages\PortalHome;
+use App\Filament\Portal\Pages\FormSubmissions;
+use App\Filament\Portal\Pages\FormSubmissionView;
+use App\Filament\Portal\Pages\PortalDashboard;
+use App\Filament\Portal\Resources\Profiles\ProfileResource;
+use App\Http\Middleware\EnsurePortalPasswordChanged;
+use App\Models\HowToTutorial;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -28,32 +33,19 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 class ClientPortalPanelProvider extends PanelProvider
 {
     /**
-     * Legacy How to submenu (application/views/template/menu.php).
+     * How to submenu — DB catalog with legacy defaults fallback.
      *
      * @return list<array{label: string, url: string}>
      */
     protected function howToTutorials(): array
     {
-        return [
-            ['label' => 'Create a ScanLink account', 'url' => 'https://www.youtube.com/embed/9aTjweHyAWw?rel=0'],
-            ['label' => 'Getting Started', 'url' => 'https://www.youtube.com/embed/o6NxTt0CmYI?rel=0'],
-            ['label' => 'Register a new code', 'url' => 'https://www.youtube.com/embed/GZ12nXTO7_w?rel=0'],
-            ['label' => 'Upload a logo', 'url' => 'https://www.youtube.com/embed/hGrBYsys2Oo?rel=0'],
-            ['label' => 'Upload a video', 'url' => 'https://www.youtube.com/embed/H33caspIlcc?rel=0'],
-            ['label' => 'Add text and phone numbers', 'url' => 'https://www.youtube.com/embed/CZx8xplEfoU?rel=0'],
-            ['label' => 'Upload pictures', 'url' => 'https://www.youtube.com/embed/GshHCp9F0wU?rel=0'],
-            ['label' => 'Upload documents', 'url' => 'https://www.youtube.com/embed/ujiEr65yg30?rel=0'],
-            ['label' => 'Add web link buttons', 'url' => 'https://www.youtube.com/embed/id0I8j8RTuY?rel=0'],
-            ['label' => 'Add social media and email share buttons', 'url' => 'https://www.youtube.com/embed/qOi6tSBsII4?rel=0'],
-            ['label' => 'Create pop up messages to collect data', 'url' => 'https://www.youtube.com/embed/C_vH14MFtXA?rel=0'],
-            ['label' => 'Select a code type - QR or Data matrix', 'url' => 'https://www.youtube.com/embed/jCeyQOfm7uc?rel=0'],
-            ['label' => 'Feature code profile number on mobile display', 'url' => 'https://www.youtube.com/embed/eJtzHbZoCPw?rel=0'],
-            ['label' => 'Password protect a code profile', 'url' => 'https://www.youtube.com/embed/KcXJnxuMVyc?rel=0'],
-            ['label' => 'Link a code to a URL', 'url' => 'https://www.youtube.com/embed/uEDTnBPUk28?rel=0'],
-            ['label' => 'Delete a code profile', 'url' => 'https://www.youtube.com/embed/Gu12cnKn16s?rel=0'],
-            ['label' => 'View and download scan activity', 'url' => 'https://www.youtube.com/embed/Y0bVkzDA5Rc?rel=0'],
-            ['label' => 'Create a form', 'url' => 'https://www.youtube.com/embed/cYQnzxkp528?rel=0'],
-        ];
+        return array_map(
+            fn (array $item): array => [
+                'label' => $item['title'],
+                'url' => $item['url'],
+            ],
+            HowToTutorial::catalog(),
+        );
     }
 
     public function panel(Panel $panel): Panel
@@ -74,8 +66,13 @@ class ClientPortalPanelProvider extends PanelProvider
             ->spa()
             ->login(Login::class)
             ->registration(Register::class)
+            ->passwordReset()
+            ->databaseNotifications()
+            ->databaseNotificationsPolling('30s')
+            ->profile(isSimple: false)
+            // Demo: land on Edit user profile (was Master Code List).
             ->homeUrl(fn (): string => EditAccount::getUrl())
-            // ->homeUrl(fn (): string => PortalHome::getUrl())
+            // ->homeUrl(fn (): string => ProfileResource::getUrl('index'))
             ->colors([
                 'primary' => Color::hex('#008C00'),
             ])
@@ -94,6 +91,7 @@ class ClientPortalPanelProvider extends PanelProvider
                 PanelsIconAlias::SIDEBAR_EXPAND_BUTTON_RTL => Heroicon::OutlinedBars3,
             ])
             ->collapsibleNavigationGroups()
+            // Live logged-in top nav: Contact us | Dashboard | My Account | How to
             ->navigationGroups([
                 NavigationGroup::make('My Account')
                     ->icon(Heroicon::OutlinedUserCircle)
@@ -102,25 +100,58 @@ class ClientPortalPanelProvider extends PanelProvider
                     ->icon(Heroicon::OutlinedQuestionMarkCircle)
                     ->collapsible(),
             ])
-            ->navigationItems($howToItems)
+            ->navigationItems([
+                NavigationItem::make('Dashboard')
+                    ->url(fn (): string => ProfileResource::getUrl('index'))
+                    ->icon(Heroicon::OutlinedHome)
+                    ->isActiveWhen(fn (): bool => request()->is('portal/profiles*'))
+                    ->sort(-30),
+                ...$howToItems,
+            ])
             ->discoverResources(in: app_path('Filament/Portal/Resources'), for: 'App\\Filament\\Portal\\Resources')
             ->discoverPages(in: app_path('Filament/Portal/Pages'), for: 'App\\Filament\\Portal\\Pages')
             ->pages([
-                PortalHome::class,
-                EditAccount::class,
+                PortalDashboard::class,
+                FormSubmissions::class,
+                FormSubmissionView::class,
             ])
+            ->discoverWidgets(in: app_path('Filament/Portal/Widgets'), for: 'App\\Filament\\Portal\\Widgets')
             ->renderHook(
                 PanelsRenderHook::SIDEBAR_FOOTER,
                 fn (): string => view('filament.hooks.sidebar-sign-out')->render(),
             )
             ->renderHook(
                 PanelsRenderHook::BODY_END,
+                fn (): string => view('filament.hooks.navigation-feedback')->render(),
+            )
+            ->renderHook(
+                PanelsRenderHook::BODY_END,
                 fn (): string => view('filament.hooks.sidebar-position')->render(),
             )
             ->renderHook(
+                PanelsRenderHook::BODY_END,
+                fn (): string => view('filament.hooks.modal-open-fix')->render(),
+            )
+            ->renderHook(
+                PanelsRenderHook::BODY_END,
+                fn (): string => view('filament.hooks.table-filters')->render(),
+            )
+            ->renderHook(
+                PanelsRenderHook::BODY_END,
+                fn (): string => view('filament.hooks.form-validation-scroll')->render(),
+            )
+            ->renderHook(
+                PanelsRenderHook::BODY_END,
+                fn (): string => view('filament.hooks.themed-dialog')->render(),
+            )
+            ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=64">'
-                    .'<link rel="stylesheet" href="'.asset('css/filament/portal-dark.css').'?v=6">',
+                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=77">'
+                    .'<link rel="stylesheet" href="'.asset('css/filament/portal-dark.css').'?v=13">',
+            )
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                fn (): string => view('filament.hooks.force-light-auth')->render(),
             )
             ->widgets([])
             ->middleware([
@@ -136,6 +167,7 @@ class ClientPortalPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                EnsurePortalPasswordChanged::class,
             ]);
     }
 }

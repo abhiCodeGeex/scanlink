@@ -30,6 +30,18 @@ return [
     |--------------------------------------------------------------------------
     */
     'analytics_api_url' => env('SCANLINK_ANALYTICS_API_URL', 'https://www.scanlink.com.au/api/web/api.php/'),
+    'analytics_api_fallback_urls' => array_values(array_filter([
+        env('SCANLINK_ANALYTICS_API_FALLBACK_URL'),
+        // Legacy endpoint kept as fallback for outage scenarios.
+        'http://api.galatech.com.au/web/api.php/',
+    ])),
+    // When remote analytics API is down, still assign a local key so profile setup
+    // never blocks and key-dependent screens can proceed.
+    'analytics_local_key_fallback' => (bool) env('SCANLINK_ANALYTICS_LOCAL_KEY_FALLBACK', true),
+
+    // Visitor IP -> country/region/city for scan analytics (legacy used ipgeolocation.io).
+    'ip_geolocation_enabled' => (bool) env('SCANLINK_IP_GEOLOCATION_ENABLED', true),
+    'ip_geolocation_url' => env('SCANLINK_IP_GEOLOCATION_URL', 'http://ip-api.com/json'),
 
     // Google Maps JS API key for the scan-analytics location map (legacy used Google Maps).
     // Leave empty to fall back to the OpenStreetMap/Leaflet map.
@@ -43,6 +55,15 @@ return [
     'admin_email' => env('SCANLINK_ADMIN_EMAIL', 'admin@scanlink.net.au'),
     'support_email' => env('SCANLINK_SUPPORT_EMAIL', 'support@scanlink.com.au'),
     'support_phone' => env('SCANLINK_SUPPORT_PHONE', '1300 566 696'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Testing: only deliver outbound mail to this domain (e.g. yopmail.com).
+    | Set SCANLINK_MAIL_RESTRICT_ENABLED=false to allow real recipients again.
+    |--------------------------------------------------------------------------
+    */
+    'mail_restrict_enabled' => (bool) env('SCANLINK_MAIL_RESTRICT_ENABLED', true),
+    'mail_restrict_domain' => env('SCANLINK_MAIL_RESTRICT_DOMAIN', 'yopmail.com'),
 
     /*
     |--------------------------------------------------------------------------

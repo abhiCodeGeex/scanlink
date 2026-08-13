@@ -241,8 +241,7 @@
                                                             class="delete"
                                                             href="#"
                                                             title="Delete Response"
-                                                            wire:click.prevent="deleteSession('{{ $session->session_id }}')"
-                                                            wire:confirm="Are you sure to delete this?"
+                                                            x-on:click.prevent="window.slConfirm('Are you sure to delete this?').then(ok => ok && $wire.deleteSession('{{ $session->session_id }}'))"
                                                         >Delete</a>
                                                     </td>
                                                 @endif

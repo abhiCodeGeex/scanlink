@@ -7,6 +7,7 @@ use App\Filament\Portal\Pages\CumulativeAnalytics;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Models\EquipmentType;
 use App\Models\Profile;
+use App\Services\ProfileDraftSlotService;
 use App\Support\LegacyEquipmentTypeLabels;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -75,12 +76,30 @@ class ListProfiles extends ListRecords
         return $query;
     }
 
+    /**
+     * Available (open, unused, non-expired) code slots the client can still activate.
+     * Same count used by the Add-Code guard and the low-balance warning.
+     */
+    public function codeBalance(): int
+    {
+        $client = $this->currentClient();
+
+        if (! $client) {
+            return 0;
+        }
+
+        return (int) app(ProfileDraftSlotService::class)->slotCounts((int) $client->id)['open'];
+    }
+
     public function getHeader(): ?View
     {
         return view('filament.portal.profiles.mastercode-toolbar', [
             'types' => $this->typeTabs(),
             'activeTab' => $this->activeTab,
             'addCodeUrl' => $this->addNewCodeUrl(),
+            'codeBalance' => $this->codeBalance(),
+            'codeBalanceUrl' => \App\Filament\Portal\Pages\CodeBalance::getUrl(panel: 'portal'),
+            'purchaseCodesUrl' => \App\Filament\Portal\Pages\PurchaseCodes::getUrl(panel: 'portal'),
             'canAddCode' => $this->canAddCode() && $this->hasSelectedTemplateTab(),
             'canRenewCodes' => true,
             'hasProfiles' => $this->getAllTableRecordsCount() > 0,

@@ -175,9 +175,9 @@ class PortalProfilesTable
                         ? null
                         : ProfileResource::getUrl('edit', ['record' => $record]))
                     ->action(fn (Profile $record) => self::blockIfExpired($record))
-                    // Gating (this repo only): the Edit / edit-profile action is disabled here;
-                    // all other row actions below remain available.
-                    ->visible(fn (): bool => false),
+                    ->visible(fn (): bool => InteractsWithClientMembership::memberCanEditCode(
+                        InteractsWithClientMembership::portalMembership(),
+                    )),
                 Action::make('scanAnalytics')
                     ->label('Scanalytics')
                     ->iconButton()

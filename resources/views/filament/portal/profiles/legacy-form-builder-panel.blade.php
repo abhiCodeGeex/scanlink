@@ -327,7 +327,7 @@
                         wire:click="startFormBuilderPurchase"
                         wire:loading.attr="disabled"
                     >
-                        Activate Form Builder — <span class="sl-fb-activate-price">$5 AUD</span>
+                        Activate Form Builder — <span class="sl-fb-activate-price">${{ number_format(\App\Support\PricingSettings::formBuilder(), 2) }} AUD</span>
                     </button>
                     <p class="sl-form-builder-lock-copy">
                         One-time activation for this code profile. After purchase you can enable the form and edit questions.
@@ -349,10 +349,29 @@
                 type="checkbox"
                 id="add_existing"
                 @disabled(! ($record?->exists && $canAccessFormBuilder))
+                @checked(! empty($this->appliedExistingForms))
                 wire:click.prevent="openExistingFormModal"
             >
             <label for="add_existing">Use an existing form</label>
         </div>
+
+        @if (! empty($this->appliedExistingForms))
+            <div class="sl-applied-forms" wire:key="applied-forms-{{ count($this->appliedExistingForms) }}">
+                @foreach ($this->appliedExistingForms as $applied)
+                    <span class="sl-applied-chip" wire:key="applied-{{ $applied['key'] }}">
+                        <span class="sl-applied-chip__label">{{ $applied['label'] }}</span>
+                        <button
+                            type="button"
+                            class="sl-applied-chip__remove"
+                            title="Remove this form's questions"
+                            aria-label="Remove {{ $applied['label'] }}"
+                            x-on:click="window.slConfirm(@js('Remove all questions copied from '.$applied['label'].'?')).then(ok => ok && $wire.removeAppliedForm(@js($applied['key'])))"
+                            wire:loading.attr="disabled"
+                        >&times;</button>
+                    </span>
+                @endforeach
+            </div>
+        @endif
 
         <div class="existing-item">
             @if ($analyticsLocked)

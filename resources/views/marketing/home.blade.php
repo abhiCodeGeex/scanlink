@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/marketing.css') }}?v=7">
+    <link rel="stylesheet" href="{{ asset('css/marketing.css') }}?v=9">
 </head>
 <body class="mkt">
 <a class="mkt__skip-link" href="#main">Skip to content</a>
@@ -178,10 +178,10 @@
                         <select name="download_option" id="download_option">
                             <option value="" selected>Download as&hellip;</option>
                             <option value="pdf">PDF</option>
-                            <option value="tiff">TIFF</option>
-                            <option value="eps">EPS (Vector)</option>
+                            <option value="png">PNG</option>
+                            <option value="jpg">JPG</option>
                         </select>
-                        <button type="button" class="btn btn-primary" onclick="alert('Express code download will be available after you register and create a code in the portal.');">Download</button>
+                        <button type="button" class="btn btn-primary" id="ecg_download">Download</button>
                     </div>
                 </div>
             </div>
@@ -275,6 +275,61 @@
         </div>
     </section>
 
+    {{-- ===================== Testimonials ===================== --}}
+    @if (!empty($testimonials) && count($testimonials))
+    <section class="mkt__section">
+        <div class="mkt__container">
+            <div class="mkt__section-head">
+                <span class="mkt__eyebrow">Testimonials</span>
+                <h2>What our clients say</h2>
+            </div>
+            <div class="mkt__testimonials">
+                @foreach ($testimonials as $t)
+                    @php
+                        $vid = trim((string) ($t->video ?? ''));
+                        $embed = $vid === '' ? null : (\Illuminate\Support\Str::startsWith($vid, ['http://', 'https://'])
+                            ? $vid
+                            : 'https://www.youtube.com/embed/'.$vid);
+                    @endphp
+                    <article class="mkt__testimonial">
+                        <div class="mkt__testimonial-icon"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#008c00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+                        <h3>{{ $t->title }}</h3>
+                        @if ($embed)
+                            <button type="button" class="btn btn-secondary" data-video="{{ $embed }}">Watch the video</button>
+                        @endif
+                    </article>
+                @endforeach
+            </div>
+        </div>
+    </section>
+    @endif
+
+    {{-- ===================== Client logos ===================== --}}
+    <section class="mkt__section mkt__section--alt">
+        <div class="mkt__container">
+            <div class="mkt__section-head">
+                <span class="mkt__eyebrow">Trusted by</span>
+                <h2>Organisations using ScanLink</h2>
+            </div>
+            @php
+                $clientLogos = [
+                    'iga.png', 'cellarbrations.png', 'dare-to-be-great.png', 'the-bottle.png', 'ergon-energy.png',
+                    'raine-and-horne.png', 'victoria-university.png', 'fm-fleetmark.png', 'first-nationl-real-estate.png',
+                    'scan-media.png', 'lj-hooker.png', 'super-coal-limited.png', 'bawbaw-shire-council.png',
+                    'melbourne-water.png', 'ray-white.png', 'st-john.png', 'adelaide-hills-council.png',
+                    'centra-wealth.png', 'ancare.png', 'mr-fothergills.png', 'angus-member.png', 'new-government.png',
+                    'queensland.png', 'kyneton-ridge-estate.png', 'red-roo.png', 'bloriz.png', 'kanga_logo.png',
+                    'Hellenic_Museum.jpg', 'BD_Newcastle.png', 'hilton.jpg',
+                ];
+            @endphp
+            <div class="mkt__logos">
+                @foreach ($clientLogos as $logo)
+                    <div class="mkt__logo"><img src="{{ asset('images/client_logo/'.$logo) }}" alt="" loading="lazy"></div>
+                @endforeach
+            </div>
+        </div>
+    </section>
+
     {{-- ===================== CTA band ===================== --}}
     <section class="mkt__section mkt__section--tight">
         <div class="mkt__container">
@@ -324,12 +379,14 @@
                     <li><a href="#main">What is ScanLink?</a></li>
                     <li><a href="{{ route('marketing.pricing') }}">Pricing</a></li>
                     <li><a href="{{ route('marketing.faq') }}">FAQ</a></li>
+                    <li><a href="{{ route('marketing.mobileVideo') }}">Mobile video</a></li>
                 </ul>
             </div>
             <div>
                 <h4>Support</h4>
                 <ul>
                     <li><a href="{{ route('marketing.contact') }}">Contact us</a></li>
+                    <li><a href="{{ route('marketing.enquiry') }}">Solutions enquiry</a></li>
                     <li><a href="{{ route('marketing.how-to') }}">How to</a></li>
                     <li><a href="{{ route('marketing.terms') }}">Terms &amp; Conditions</a></li>
                     <li><a href="{{ route('marketing.privacy') }}">Privacy Policy</a></li>
@@ -440,5 +497,91 @@
         }
     })();
 </script>
+
+{{-- ===================== Express Code Generator ===================== --}}
+<script>
+    (function () {
+        var urlInput = document.getElementById('txt_url');
+        var previewImg = document.getElementById('code_preview_img');
+        var previewFlag = document.getElementById('code_preview_flag');
+        var downloadSel = document.getElementById('download_option');
+        var downloadBtn = document.getElementById('ecg_download');
+        if (!urlInput || !previewImg || !downloadBtn) { return; }
+
+        var sampleSrc = previewImg.getAttribute('src');
+        var previewUrl = @json(route('marketing.express.preview'));
+        var downloadUrl = @json(route('marketing.express.download'));
+        var csrf = @json(csrf_token());
+        var request; // in-flight fetch (aborted on new input)
+
+        function codeType() {
+            var checked = document.querySelector('.type_of_code:checked');
+            return checked ? checked.value : '0';
+        }
+
+        function resetPreview() {
+            previewImg.setAttribute('src', sampleSrc);
+            if (previewFlag) { previewFlag.value = '0'; }
+        }
+
+        function refreshPreview() {
+            var url = (urlInput.value || '').trim();
+            var stripped = url.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
+            if (stripped.length <= 3) { resetPreview(); return; }
+
+            if (request && request.abort) { request.abort(); }
+            var controller = new AbortController();
+            request = controller;
+
+            var body = 'url=' + encodeURIComponent(url) + '&code_type=' + encodeURIComponent(codeType());
+            fetch(previewUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrf,
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'application/json'
+                },
+                body: body,
+                signal: controller.signal
+            }).then(function (r) { return r.json(); }).then(function (data) {
+                if (data && data.ok && data.image) {
+                    previewImg.setAttribute('src', data.image);
+                    if (previewFlag) { previewFlag.value = '1'; }
+                } else {
+                    resetPreview();
+                }
+            }).catch(function () { /* aborted or failed — keep current */ });
+        }
+
+        var debounce;
+        urlInput.addEventListener('keyup', function () {
+            clearTimeout(debounce);
+            debounce = setTimeout(refreshPreview, 350);
+        });
+        urlInput.addEventListener('change', refreshPreview);
+        document.querySelectorAll('.type_of_code').forEach(function (radio) {
+            radio.addEventListener('change', refreshPreview);
+        });
+
+        downloadBtn.addEventListener('click', function () {
+            if (!previewFlag || previewFlag.value === '0') {
+                window.slAlert('Please enter valid URL');
+                urlInput.focus();
+                return;
+            }
+            var fmt = downloadSel ? downloadSel.value : '';
+            if (fmt === '') {
+                window.slAlert('Please select download as');
+                if (downloadSel) { downloadSel.focus(); }
+                return;
+            }
+            var qs = 'url=' + encodeURIComponent((urlInput.value || '').trim())
+                + '&code_type=' + encodeURIComponent(codeType())
+                + '&download_as=' + encodeURIComponent(fmt);
+            window.location.href = downloadUrl + '?' + qs;
+        });
+    })();
+</script>
+@include('filament.hooks.themed-dialog')
 </body>
 </html>

@@ -71,6 +71,9 @@ class ScanAnalytics extends Page
     /** Where the map's Back button should return to: 'charts' or 'locations'. */
     public string $mapReturnTo = 'charts';
 
+    /** Set when drilling into a single scan (legacy scanalytics_map_country / ?scan=ID). */
+    public ?int $drillScanId = null;
+
     /** @var Collection<int, object> */
     public Collection $locationRows;
 
@@ -123,6 +126,12 @@ class ScanAnalytics extends Page
         $sort = (string) request()->query('sort', 'created_at');
         $this->locationSort = in_array($sort, ['city_name', 'created_at'], true) ? $sort : 'created_at';
         $this->focusRowId = request()->integer('row') ?: null;
+
+        // Legacy scanalytics_map_country: ?scan=ID drills the map to a single scan.
+        $this->drillScanId = request()->integer('scan') ?: null;
+        if ($this->drillScanId) {
+            $this->focusRowId = $this->drillScanId;
+        }
 
         $requestedProfile = request()->integer('profile');
 
@@ -185,6 +194,15 @@ class ScanAnalytics extends Page
     public function returnToListUrl(): string
     {
         return ProfileResource::getUrl('index');
+    }
+
+    /**
+     * Legacy parity: "Back" from a drilled single-scan map (scanalytics_map_country)
+     * returns to the full map overview (scanalytics_map) for the profile.
+     */
+    public function mapOverviewUrl(): string
+    {
+        return static::getUrl().'?profile='.(int) $this->selectedProfileId.'&view=map';
     }
 
     public function countryChartUrl(): string
@@ -548,11 +566,18 @@ class ScanAnalytics extends Page
             return;
         }
 
-        $rows = $this->analyticsQuery($profileId)
+        $query = $this->analyticsQuery($profileId)
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
             ->where('latitude', '!=', '')
-            ->where('longitude', '!=', '')
+            ->where('longitude', '!=', '');
+
+        // Legacy map_country drills to the one clicked scan (query by its id).
+        if ($this->drillScanId) {
+            $query->where('id', $this->drillScanId);
+        }
+
+        $rows = $query
             ->orderByDesc('id')
             ->limit(self::MAP_POINT_LIMIT)
             ->get();

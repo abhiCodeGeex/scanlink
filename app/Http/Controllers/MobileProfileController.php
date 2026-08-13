@@ -293,6 +293,7 @@ class MobileProfileController extends Controller
         }
 
         $files = $request->file('answers_file') ?? [];
+        $uploadedFilePaths = [];
 
         foreach ($files as $questionId => $file) {
             // "Add another" upload sends an array of files; SWMS sends a single file.
@@ -303,7 +304,9 @@ class MobileProfileController extends Controller
                 if ($singleFile instanceof UploadedFile
                     && $singleFile->isValid()
                     && $singleFile->getSize() <= 10240 * 1024) {
-                    $storedPaths[] = $singleFile->store('form-uploads/'.$profile->id, 'public');
+                    $stored = $singleFile->store('form-uploads/'.$profile->id, 'public');
+                    $storedPaths[] = $stored;
+                    $uploadedFilePaths[] = $stored;
                 }
             }
 
@@ -418,7 +421,7 @@ class MobileProfileController extends Controller
         }
 
         $this->markParticipatedParticipants($profile, $questions, $rawAnswers);
-        $this->notifyFormSubmissionRecipients($profile, $sessionId, $questions, $savedAnswers, $additionalRecipients);
+        $this->notifyFormSubmissionRecipients($profile, $sessionId, $questions, $savedAnswers, $additionalRecipients, $uploadedFilePaths);
 
         return redirect()
             ->route('scan.show', [$clientUrl, $profileId])
@@ -603,6 +606,7 @@ class MobileProfileController extends Controller
         Collection $questions,
         array $savedAnswers,
         array $additionalRecipients = [],
+        array $uploadedFilePaths = [],
     ): void {
         $formId = (int) ($profile->form_id ?: 0);
 
@@ -636,16 +640,15 @@ class MobileProfileController extends Controller
         $emailTag = trim((string) ($profile->form_email_tag ?? ''));
         $subject = $emailTag !== '' ? $emailTag : 'User response for profile No. '.$profile->id;
 
-        // Legacy builds an HTML email: each answer prefixed with its question label
-        // (falls back to "User Input" for label-less questions, matching legacy).
-        $rows = [];
-        foreach ($savedAnswers as $questionId => $answer) {
-            $question = $questions->get((int) $questionId);
-            $rows[] = [
-                'label' => strip_tags((string) ($question?->question_text ?: 'User Input')),
-                'answer' => (string) $answer,
-            ];
-        }
+        // Prefer option rows when resolving choice labels (avoids N+1 + raw ::: text).
+        $questions->each(function ($question): void {
+            if ($question instanceof FormBuilderQuestion) {
+                $question->loadMissing('options');
+            }
+        });
+
+        // Build readable rows (clean labels, structured ::: answers) for the email.
+        $rows = \App\Support\FormSubmissionPresenter::rows($questions, $savedAnswers);
 
         $html = view('emails.form-submission', [
             'profile' => $profile,
@@ -658,13 +661,31 @@ class MobileProfileController extends Controller
         $attachPdf = (int) ($profile->form_submission_format ?? 0) === 1;
         $pdfContent = $attachPdf ? $this->buildFormSubmissionPdf($profile, $sessionId, $questions, $savedAnswers) : null;
 
+        // Legacy attaches the submitted photos/documents (Upload Button + SWMS photos)
+        // to the recipient email so they open directly, not as links.
+        $attachments = [];
+        foreach ($uploadedFilePaths as $path) {
+            $path = (string) $path;
+            if ($path === '' || ! Storage::disk('public')->exists($path)) {
+                continue;
+            }
+            $attachments[] = [
+                'path' => Storage::disk('public')->path($path),
+                'name' => basename($path),
+            ];
+        }
+
         foreach ($recipients as $email) {
             try {
-                Mail::html($html, function ($message) use ($email, $subject, $pdfContent): void {
+                Mail::html($html, function ($message) use ($email, $subject, $pdfContent, $attachments): void {
                     $message->to($email)->subject($subject);
 
                     if ($pdfContent !== null) {
                         $message->attachData($pdfContent, 'form-submission.pdf', ['mime' => 'application/pdf']);
+                    }
+
+                    foreach ($attachments as $attachment) {
+                        $message->attach($attachment['path'], ['as' => $attachment['name']]);
                     }
                 });
             } catch (\Throwable $exception) {
@@ -690,28 +711,52 @@ class MobileProfileController extends Controller
         try {
             $pdf = new \TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
             $pdf->SetCreator('ScanLink');
-            $pdf->SetAuthor($profile->name);
+            $pdf->SetAuthor((string) $profile->name);
             $pdf->SetTitle('Form submission — '.$profile->name);
             $pdf->setPrintHeader(false);
             $pdf->setPrintFooter(false);
-            $pdf->SetMargins(15, 15, 15);
-            $pdf->SetAutoPageBreak(true, 15);
+            $pdf->SetMargins(14, 14, 14);
+            $pdf->SetAutoPageBreak(true, 16);
             $pdf->AddPage();
-            $pdf->SetFont('helvetica', 'B', 14);
-            $pdf->Write(0, 'Form submission — '.$profile->name, '', 0, 'L', true);
-            $pdf->SetFont('helvetica', '', 10);
-            $pdf->Write(0, 'Session: '.$sessionId, '', 0, 'L', true);
-            $pdf->Ln(4);
 
-            foreach ($savedAnswers as $questionId => $answer) {
-                $question = $questions->get((int) $questionId);
-                $label = strip_tags((string) ($question?->question_text ?: "Question #{$questionId}"));
-                $pdf->SetFont('helvetica', 'B', 10);
-                $pdf->MultiCell(0, 5, $label.':', 0, 'L', false, 1);
-                $pdf->SetFont('helvetica', '', 10);
-                $pdf->MultiCell(0, 5, (string) $answer, 0, 'L', false, 1);
-                $pdf->Ln(2);
+            // Company logo (same one shown on the mobile page + email), if resolvable AND
+            // a valid image — TCPDF aborts the whole PDF on an undecodable image.
+            $profile->loadMissing('logos');
+            $logoTag = '';
+            $logoName = (string) ($profile->logos->first()?->logo_name ?? '');
+            if ($logoName !== ''
+                && ($logoAbs = $this->resolveLocalMediaPath($logoName)) !== null
+                && @getimagesize($logoAbs) !== false) {
+                $logoTag = '<img src="'.htmlspecialchars($logoAbs, ENT_QUOTES).'" height="46">';
             }
+
+            $profileName = trim((string) ($profile->code_profile_name ?: $profile->name ?: ''));
+            $submittedAt = now()->format('d/m/Y H:i');
+
+            $presented = \App\Support\FormSubmissionPresenter::rows($questions, $savedAnswers);
+            $rowsHtml = '';
+            foreach ($presented as $row) {
+                $label = htmlspecialchars((string) $row['label'], ENT_QUOTES);
+                $answerCell = \App\Support\FormSubmissionPresenter::answerPdfHtml($row);
+                if (trim(strip_tags($answerCell)) === '') {
+                    $answerCell = '&nbsp;';
+                }
+
+                $rowsHtml .= '<tr>'
+                    .'<td width="38%" style="background-color:#f3f4f6;color:#374151;"><b>'.$label.'</b></td>'
+                    .'<td width="62%" style="color:#111827;">'.$answerCell.'</td>'
+                    .'</tr>';
+            }
+
+            $html = '<table cellpadding="0"><tr>'
+                .'<td width="62%" style="vertical-align:middle;">'.$logoTag.'</td>'
+                .'<td width="38%" style="text-align:right;vertical-align:middle;"><span style="font-size:16pt;color:#008C00;"><b>Form Submission</b></span></td>'
+                .'</tr></table>'
+                .'<p style="font-size:9pt;color:#6b7280;"><b>Profile:</b> '.htmlspecialchars($profileName, ENT_QUOTES).' &nbsp;&nbsp; <b>Profile No.:</b> '.$profile->id.'<br>'
+                .'<b>Submitted:</b> '.$submittedAt.' &nbsp;&nbsp; <b>Reference:</b> '.htmlspecialchars($sessionId, ENT_QUOTES).'</p>'
+                .'<table cellpadding="6" cellspacing="0" border="1" style="border-collapse:collapse;font-size:10pt;">'.$rowsHtml.'</table>';
+
+            $pdf->writeHTML($html, true, false, true, false, '');
 
             return $pdf->Output('', 'S');
         } catch (\Throwable $exception) {
@@ -722,6 +767,41 @@ class MobileProfileController extends Controller
 
             return null;
         }
+    }
+
+    /**
+     * Resolve a stored media name (logo/upload) to an absolute local file path for
+     * TCPDF, covering the public disk and legacy public/ locations.
+     */
+    protected function resolveLocalMediaPath(string $name): ?string
+    {
+        $name = trim($name);
+
+        if ($name === '') {
+            return null;
+        }
+
+        if (is_file($name)) {
+            return $name;
+        }
+
+        try {
+            if (Storage::disk('public')->exists($name)) {
+                return Storage::disk('public')->path($name);
+            }
+        } catch (\Throwable) {
+            // fall through to path guesses
+        }
+
+        $relative = ltrim(preg_replace('#^storage/#', '', $name), '/');
+
+        foreach ([public_path($name), public_path('storage/'.$relative), storage_path('app/public/'.$relative)] as $candidate) {
+            if (is_file($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 
     protected function recordScanHit(Request $request, Profile $profile): ?int

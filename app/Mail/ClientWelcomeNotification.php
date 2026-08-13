@@ -31,7 +31,7 @@ class ClientWelcomeNotification extends Mailable
             htmlString: view('mail.client-welcome', [
                 'client' => $this->client,
                 'plainPassword' => $this->plainPassword,
-                'portalUrl' => rtrim((string) config('scanlink.portal_url', url('/')), '/'),
+                'portalUrl' => url('/'),
             ])->render(),
         );
     }

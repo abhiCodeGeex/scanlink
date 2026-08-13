@@ -19,7 +19,8 @@ return new class extends Migration
             $table->string('password')->nullable();
             $table->string('url')->unique();
             $table->boolean('approve')->default(true);
-            $table->string('reseller_code')->nullable()->unique();
+            // Live MySQL keeps this non-unique: unassigned clients all store ''.
+            $table->string('reseller_code')->nullable();
             $table->string('reseller_email')->nullable();
             $table->boolean('is_password_change')->default(true);
             $table->timestamps();

@@ -572,3 +572,97 @@
 .mkt__alert--err { background: #fdecea; color: #c0392b; border: 1px solid #f5c6c0; }
 
 @media (max-width: 900px) { .mkt__contact { grid-template-columns: 1fr; } }
+
+/* ==========================================================================
+   Client logos, testimonials, wide enquiry form (added for legacy parity)
+   ========================================================================== */
+.mkt__logos {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: clamp(12px, 2vw, 24px);
+    align-items: center;
+}
+.mkt__logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 10px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md, 12px);
+    min-height: 72px;
+}
+.mkt__logo img {
+    max-width: 100%;
+    max-height: 46px;
+    width: auto;
+    object-fit: contain;
+    filter: grayscale(100%);
+    opacity: .72;
+    transition: filter .2s ease, opacity .2s ease;
+}
+.mkt__logo img:hover { filter: grayscale(0); opacity: 1; }
+@media (max-width: 900px) { .mkt__logos { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 560px) { .mkt__logos { grid-template-columns: repeat(3, 1fr); } }
+
+.mkt__testimonials {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--s-5);
+}
+.mkt__testimonial {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: clamp(20px, 3vw, 28px);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    align-items: flex-start;
+}
+.mkt__testimonial-icon {
+    width: 46px; height: 46px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,140,0,.08);
+    border-radius: 12px;
+}
+.mkt__testimonial h3 { font-size: 1.05rem; color: var(--ink); line-height: 1.35; }
+@media (max-width: 900px) { .mkt__testimonials { grid-template-columns: 1fr; } }
+
+/* Wide enquiry form (single column, full width) */
+.mkt__form--wide { max-width: 860px; margin-inline: auto; }
+.mkt__form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 var(--s-4);
+}
+.mkt__form-field--full { grid-column: 1 / -1; }
+@media (max-width: 640px) { .mkt__form-grid { grid-template-columns: 1fr; } }
+
+.mkt__checkset {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md, 12px);
+    padding: var(--s-4);
+    margin: var(--s-2) 0 var(--s-4);
+}
+.mkt__checkset legend { font-weight: 600; font-size: .9rem; color: var(--ink); padding: 0 8px; }
+.mkt__check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    color: var(--body);
+    font-size: .92rem;
+}
+.mkt__check input { width: 18px; height: 18px; accent-color: var(--brand); }
+
+/* Themed confirm/alert dialog (window.slConfirm / slAlert) for the marketing site */
+.sl-dialog-overlay { position: fixed; inset: 0; z-index: 10060; display: flex; align-items: center; justify-content: center; padding: 24px 16px; background: rgba(17,24,39,.55); backdrop-filter: blur(2px); box-sizing: border-box; }
+.sl-dialog-overlay[hidden] { display: none !important; }
+.sl-dialog { width: min(400px,100%); background:#fff; border-radius:14px; box-shadow:0 24px 60px rgba(0,0,0,.3); padding:22px 22px 18px; box-sizing:border-box; }
+.sl-dialog-msg { margin:0 0 18px; font-size:15px; line-height:1.5; color: var(--ink, #1f2937); }
+.sl-dialog-actions { display:flex; justify-content:flex-end; gap:10px; }
+.sl-dialog-btn { border:0; border-radius:9px; padding:9px 20px; cursor:pointer; font-size:13px; font-weight:700; font-family:inherit; }
+.sl-dialog-btn--ghost { background:#f3f4f6; color:#374151; }
+.sl-dialog-btn--primary { background: var(--brand, #008c00); color:#fff; }

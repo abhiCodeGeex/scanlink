@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Setting;
 use App\Models\User;
+use App\Support\PricingSettings;
 use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -66,7 +67,11 @@ class GlobalSettings extends Page
             return collect();
         }
 
-        return Setting::query()->orderBy('id')->get();
+        // Label / Form Builder prices are managed on the dedicated Order Pricing page.
+        return Setting::query()
+            ->whereNotIn('title', PricingSettings::keys())
+            ->orderBy('id')
+            ->get();
     }
 
     public static function settingLabel(string $key): string

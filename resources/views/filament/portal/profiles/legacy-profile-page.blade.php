@@ -21,7 +21,7 @@
     @endphp
 
     <link rel="stylesheet" href="{{ asset('styles/style.css') }}?v=legacy-profile-39">
-    <link rel="stylesheet" href="{{ asset('css/filament/scanlink-theme.css') }}?v=legacy-profile-39">
+    <link rel="stylesheet" href="{{ asset('css/filament/scanlink-theme.css') }}?v=legacy-profile-44">
 
     @if ($isUrlLinkCode)
     {{-- URL Link (code) editor — create + edit must match. Inline so SPA re-applies. --}}
@@ -318,7 +318,7 @@
                     'formBuilderPanelClass' => 'sl-survey-form-builder',
                 ]))
                 <ul class="form-view clearfix sl-survey-save-wrap">
-                    <li style="text-align:center;">
+                    <li class="no-float" style="text-align:center; width:100%; float:none;">
                         <button
                             type="button"
                             class="green-btn sl-survey-save-btn"
@@ -402,6 +402,45 @@
                     });
                 }
 
+                function applyCkTheme(editor) {
+                    try {
+                        var doc = editor && editor.document && editor.document.$;
+                        if (! doc) {
+                            return;
+                        }
+                        var head = doc.head || doc.getElementsByTagName('head')[0];
+                        if (! head) {
+                            return;
+                        }
+                        var style = doc.getElementById('sl-ck-theme');
+                        if (! style) {
+                            style = doc.createElement('style');
+                            style.id = 'sl-ck-theme';
+                            head.appendChild(style);
+                        }
+                        style.textContent = document.documentElement.classList.contains('dark')
+                            ? 'html,body{background:#111827 !important;color:#e5e7eb !important;}'
+                            : '';
+                    } catch (e) { /* cross-origin or not ready — ignore */ }
+                }
+
+                function applyCkThemeAll() {
+                    if (typeof CKEDITOR === 'undefined') {
+                        return;
+                    }
+                    Object.keys(CKEDITOR.instances || {}).forEach(function (name) {
+                        applyCkTheme(CKEDITOR.instances[name]);
+                    });
+                }
+
+                if (! window.__slCkThemeObserver) {
+                    window.__slCkThemeObserver = new MutationObserver(applyCkThemeAll);
+                    window.__slCkThemeObserver.observe(document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['class'],
+                    });
+                }
+
                 function initLegacyCkEditors() {
                     if (typeof CKEDITOR === 'undefined') {
                         return;
@@ -419,6 +458,12 @@
                             enterMode: CKEDITOR.ENTER_BR,
                             height: 120,
                             width: '100%'
+                        });
+                        // Dark mode: CKEditor's editing area is an iframe, so its
+                        // body background can't be themed from the page stylesheet.
+                        // Inject a style into the (same-origin) iframe instead.
+                        editor.on('instanceReady', function () {
+                            applyCkTheme(editor);
                         });
                         editor.on('change', function () {
                             editor.updateElement();
@@ -460,6 +505,10 @@
                 }, true);
             })();
         </script>
+    @endif
+
+    @if ($isExhibit || $isVoc)
+        @include('filament.portal.profiles.legacy-tile-reorder')
     @endif
 
     {{-- Legacy help-icon video tutorial popup --}}
@@ -602,7 +651,18 @@
                         if (! target || ! root.contains(target)) {
                             return;
                         }
+                        // While a modal action is open, the CKEditor commit-sync dispatches
+                        // synthetic input events; pushing preview drafts then cascades into
+                        // extra Livewire requests and makes the modal slow to close. Skip it.
+                        if (document.querySelector('.fi-modal-open')) {
+                            return;
+                        }
                         if (target.type === 'file') {
+                            return;
+                        }
+                        // Colour Selector updates the QR client-side; don't push a phone-preview
+                        // draft (Livewire morph would wipe the canvas recolour).
+                        if (target.closest && target.closest('.sl-code-colour-picker, .fi-fo-color-picker, hex-color-picker')) {
                             return;
                         }
                         if (typeof Livewire === 'undefined') {

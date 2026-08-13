@@ -4,6 +4,7 @@ namespace App\Filament\Portal\Pages;
 
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
 use App\Filament\Portal\Concerns\RestrictsToPrimaryClientUser;
+use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Models\Profile;
 use App\Support\LegacyEquipmentTypeLabels;
 use BackedEnum;
@@ -162,12 +163,12 @@ class CodeBalance extends Page
 
     public function exitPage(): void
     {
-        $this->redirect(EditAccount::getUrl(panel: 'portal'), navigate: false);
+        $this->redirect(ProfileResource::getUrl('index', panel: 'portal'), navigate: false);
     }
 
     public function activateUrl(int $profileId, string $typeSlag): string
     {
-        return url('/portal/profiles/create')
+        return ProfileResource::getUrl('create', panel: 'portal')
             .'?type='.urlencode($typeSlag)
             .'&slot='.$profileId;
     }

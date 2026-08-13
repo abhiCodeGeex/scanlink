@@ -6,6 +6,7 @@ use App\Enums\PhysicalOrderStatus;
 use App\Models\ClientUser;
 use App\Models\Order;
 use App\Models\Profile;
+use App\Support\PricingSettings;
 use Illuminate\Validation\ValidationException;
 
 class LabelOrderService
@@ -34,8 +35,8 @@ class LabelOrderService
             ]);
         }
 
-        $priceSmall = (float) config('scanlink.label_price_small');
-        $priceLarge = (float) config('scanlink.label_price_large');
+        $priceSmall = PricingSettings::labelSmall();
+        $priceLarge = PricingSettings::labelLarge();
 
         $address = trim((string) ($member->billing_address ?: $profile->client?->address ?: ''));
         $town = trim((string) ($member->town ?: ''));

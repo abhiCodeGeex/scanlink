@@ -322,27 +322,27 @@
                                 <tr>
                                     <td>1) 50 X 40 mm label</td>
                                     <td align="center">{{ $summary['qty_small'] }}</td>
-                                    <td align="center">{{ number_format($priceSmall, 0) }}</td>
-                                    <td align="center">{{ number_format($summary['tot_small'], 0) }}</td>
+                                    <td align="center">{{ number_format($priceSmall, 2) }}</td>
+                                    <td align="center">{{ number_format($summary['tot_small'], 2) }}</td>
                                 </tr>
                                 <tr>
                                     <td>2) 100 X 75 mm label</td>
                                     <td align="center">{{ $summary['qty_large'] }}</td>
-                                    <td align="center">{{ number_format($priceLarge, 0) }}</td>
-                                    <td align="center">{{ number_format($summary['tot_large'], 0) }}</td>
+                                    <td align="center">{{ number_format($priceLarge, 2) }}</td>
+                                    <td align="center">{{ number_format($summary['tot_large'], 2) }}</td>
                                 </tr>
                                 <tr>
                                     <td colspan="3"><strong>Total</strong></td>
-                                    <td align="center"><strong>{{ number_format($summary['total'], 0) }}</strong></td>
+                                    <td align="center"><strong>{{ number_format($summary['total'], 2) }}</strong></td>
                                 </tr>
                                 <tr>
                                     <td colspan="3">Postage &amp; Handling</td>
-                                    <td align="center">{{ number_format($summary['postage'], 0) }}</td>
+                                    <td align="center">{{ number_format($summary['postage'], 2) }}</td>
                                 </tr>
                                 <tr>
                                     <td colspan="2"><strong>Grand Total (inc GST)</strong></td>
                                     <td align="center">AUD</td>
-                                    <td align="center"><strong>{{ number_format($summary['grand_total'], 0) }}</strong></td>
+                                    <td align="center"><strong>{{ number_format($summary['grand_total'], 2) }}</strong></td>
                                 </tr>
                             </tbody>
                         </table>

@@ -20,6 +20,10 @@ return new class extends Migration
 
     public function up(): void
     {
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         $previousMode = DB::selectOne('SELECT @@SESSION.sql_mode AS mode')->mode ?? '';
 
         // Live profiles rows may have zero dates; MySQL refuses ALTER while those modes are on.

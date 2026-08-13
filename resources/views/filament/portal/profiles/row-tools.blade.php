@@ -74,9 +74,6 @@
             class="Box_recycle Delete"
             href="#"
             title="Delete"
-            @if (! $expired)
-                onclick="return confirm('Are you sure you want to delete this code?')"
-            @endif
             wire:click.prevent="mountTableAction('delete', '{{ $record->getKey() }}')"
         ></a>
     @endif

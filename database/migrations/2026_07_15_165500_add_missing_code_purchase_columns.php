@@ -11,6 +11,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         if (! Schema::hasTable('code_purchase')) {
             return;
         }

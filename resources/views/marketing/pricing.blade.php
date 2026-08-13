@@ -55,7 +55,7 @@
                 <article class="mkt__feature">
                     <div class="mkt__feature-icon"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#008c00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m23 7-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>
                     <h3>Mobile video production</h3>
-                    <p>Affordable mobile-optimised video and animation production to suit your budget. <a href="{{ route('marketing.contact') }}">Contact us</a> to discuss your requirements.</p>
+                    <p>Affordable mobile-optimised video and animation production to suit your budget. <a href="{{ route('marketing.mobileVideo') }}">Learn more</a> or <a href="{{ route('marketing.contact') }}">contact us</a> to discuss your requirements.</p>
                 </article>
             </div>
         </div>

@@ -59,32 +59,16 @@
                 @elseif ($tid === 2 || $tid === 13 || $tid === 14)
                     <div class="qa">{!! $question->question_text !!}</div>
                 @else
+                    @php
+                        $raw = (string) ($answer?->question_answer ?? '');
+                        $presented = \App\Support\FormSubmissionPresenter::presentOne($question, $raw);
+                    @endphp
                     <div class="qa">
-                        <strong>{{ strip_tags((string) $question->question_text) ?: ('Question #'.$question->question_id) }}</strong>
-                        @php $raw = (string) ($answer?->question_answer ?? ''); @endphp
+                        <strong>{{ $presented['label'] }}</strong>
                         @if ($raw === '')
                             <div>—</div>
-                        @elseif (\Illuminate\Support\Str::startsWith($raw, 'data:image'))
-                            {{-- Signature/image answers can carry appended meta ("data:image... | Name: X");
-                                 only the data URI belongs in src, or the image renders broken. --}}
-                            @php [$sigSrc, $sigMeta] = array_pad(explode(' | ', $raw, 2), 2, ''); @endphp
-                            <div>
-                                <img src="{{ $sigSrc }}" alt="Signature" style="max-width:300px;border:1px solid #ccc;" onerror="this.style.display='none';">
-                                @if (filled($sigMeta))<div>{!! \App\Support\FormAnswerHtml::text($sigMeta) !!}</div>@endif
-                            </div>
-                        @elseif ($tid === 25)
-                            @php $p = explode(':::', $raw); @endphp
-                            <div>
-                                Visitor name: {{ $p[0] ?? '' }}<br>
-                                Phone: {{ $p[1] ?? '' }}<br>
-                                Date/Time: {{ trim(($p[2] ?? '').' '.($p[3] ?? '')) }}<br>
-                                Venue: {{ trim(($p[4] ?? '').', '.($p[5] ?? ''), ', ') }}<br>
-                                Location type: {{ $p[6] ?? '' }}@if (($p[6] ?? '') === 'Vehicle' && isset($p[7])) — Vehicle: {{ $p[7] }}@endif
-                            </div>
-                        @elseif ($tid === 7)
-                            <div>{!! nl2br(e(str_replace('; ', "\n", $raw))) !!}</div>
                         @else
-                            <div>{!! \App\Support\FormAnswerHtml::text($raw) !!}</div>
+                            <div>{!! \App\Support\FormSubmissionPresenter::answerHtml($presented) !!}</div>
                         @endif
                     </div>
                 @endif

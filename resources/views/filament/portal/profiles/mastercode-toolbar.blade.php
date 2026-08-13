@@ -101,6 +101,65 @@
         </a>
     </div>
 
+    <style>
+        .sl-lowbalance {
+            clear: both;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 8px 0 12px;
+            padding: 10px 14px;
+            border: 1px solid #f0c36d;
+            border-left: 4px solid #e6a100;
+            border-radius: 6px;
+            background: #fff8e6;
+            color: #7a5c00;
+            font-size: 13px;
+            line-height: 1.35;
+        }
+        .sl-lowbalance--empty {
+            border-color: #e6b0b0;
+            border-left-color: #cc2b2b;
+            background: #fdf0f0;
+            color: #8a1f1f;
+        }
+        .sl-lowbalance__icon { font-size: 17px; line-height: 1; }
+        .sl-lowbalance__text { flex: 1; }
+        .sl-lowbalance__cta {
+            flex: 0 0 auto;
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 5px;
+            background: #008901;
+            background-image: linear-gradient(to bottom, #008901 0%, #007a01 100%);
+            color: #fff !important;
+            font-weight: 700;
+            font-size: 12px;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .sl-lowbalance__cta:hover { background: #00a001; }
+        html.dark .sl-lowbalance { background: #3a3320; border-color: #6b571f; color: #f0d98a; }
+        html.dark .sl-lowbalance--empty { background: #3a2323; border-color: #7a3030; color: #f0b0b0; }
+    </style>
+
+    {{-- Low code-balance warning (fewer than 5 unused codes remaining). --}}
+    @if (isset($codeBalance) && $codeBalance < 5)
+        <div class="sl-lowbalance {{ $codeBalance <= 0 ? 'sl-lowbalance--empty' : '' }}" role="status">
+            <span class="sl-lowbalance__icon" aria-hidden="true">&#9888;</span>
+            <span class="sl-lowbalance__text">
+                @if ($codeBalance <= 0)
+                    You have <strong>no unused codes</strong> left. Purchase codes to add new code profiles.
+                @else
+                    Low code balance: only <strong>{{ $codeBalance }}</strong> unused {{ \Illuminate\Support\Str::plural('code', $codeBalance) }} remaining.
+                @endif
+            </span>
+            @if (! empty($purchaseCodesUrl))
+                <a href="{{ $purchaseCodesUrl }}" class="sl-lowbalance__cta">Purchase codes</a>
+            @endif
+        </div>
+    @endif
+
     <div class="sl-subnav-wrap">
         <ul class="sl-sub-navigation">
             @foreach ($types as $index => $type)
@@ -111,17 +170,7 @@
                     class="{{ $index === 0 ? 'first' : '' }} {{ $activeTab === $type->slag ? 'is-active' : '' }}"
                     wire:key="type-tab-{{ $type->slag }}"
                 >
-                    @if ($type->slag !== 'code')
-                        {{-- Gating (this repo only): only the "URL Link" template tab is
-                             clickable. Other tabs keep their normal label styling (full text
-                             visibility) but are non-navigable — no href, no wire:click, and
-                             pointer events blocked. Text is NOT dimmed/hidden. --}}
-                        <a
-                            class="{{ $activeTab === $type->slag ? 'active' : '' }} sl-tab-disabled"
-                            aria-disabled="true"
-                            style="cursor:not-allowed;pointer-events:none;"
-                        >{{ $labelFor($type) }}</a>
-                    @elseif (! empty($editorMode) || ! empty($readonlyNav))
+                    @if (! empty($editorMode) || ! empty($readonlyNav))
                         {{-- Legacy innermenu / analytics pages: tab clicks are plain navigations, no Livewire $set --}}
                         <a
                             href="{{ \App\Filament\Portal\Resources\Profiles\ProfileResource::getUrl('index').'?tab='.urlencode($type->slag) }}"
@@ -239,7 +288,16 @@
                 @endif
             @endif
             @if ($canAddCode ?? false)
-                <a href="{{ $addCodeUrl }}" class="sl-add-code-btn">Add a New Code</a>
+                @if (($codeBalance ?? 1) > 0)
+                    <a href="{{ $addCodeUrl }}" class="sl-add-code-btn">Add a New Code</a>
+                @else
+                    {{-- No unused codes: show a themed popup instead of bouncing to a page. --}}
+                    <a
+                        href="#"
+                        class="sl-add-code-btn"
+                        @click.prevent="showAlert('You have no unused codes available. Please purchase codes before adding a new code profile.')"
+                    >Add a New Code</a>
+                @endif
             @endif
         </div>
         @endif

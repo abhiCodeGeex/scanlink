@@ -209,9 +209,21 @@
                         @if ($u)
                             @php
                                 $exp = $vd->expiry_date;
-                                $expLabel = ($exp && (string) $exp !== '1970-01-01') ? ($exp instanceof \Carbon\CarbonInterface ? $exp->format('d/m/Y') : $exp) : '';
+                                $hasExp = $exp && ! in_array((string) $exp, ['1970-01-01', '0000-00-00'], true);
+                                $expCarbon = $hasExp ? \Illuminate\Support\Carbon::parse($exp) : null;
+                                $expLabel = $expCarbon ? $expCarbon->format('d/m/Y') : '';
+                                // Legacy diff_date_expiry colour: green (>30 days / none),
+                                // orange (1-30 days), red (expired / due today).
+                                $docColor = '#007A01';
+                                if ($expCarbon) {
+                                    $today = \Illuminate\Support\Carbon::today();
+                                    $expDay = $expCarbon->copy()->startOfDay();
+                                    $docColor = $expDay->lte($today)
+                                        ? '#c0392b'
+                                        : ($expDay->lte($today->copy()->addDays(30)) ? '#e08600' : '#007A01');
+                                }
                             @endphp
-                            <a class="btn btn-document" href="{{ $u }}" target="_blank" rel="noopener" style="background-color:#007A01;text-align:left;">{{ $vd->name ?: 'Document' }}@if ($expLabel !== '') (Expires {{ $expLabel }})@endif</a>
+                            <a class="btn btn-document" href="{{ $u }}" target="_blank" rel="noopener" style="background-color:{{ $docColor }};text-align:left;">{{ $vd->name ?: 'Document' }}@if ($expLabel !== '') (Expires {{ $expLabel }})@endif</a>
                         @endif
                     @endforeach
                 </div>

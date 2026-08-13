@@ -172,6 +172,143 @@ class ProfileQrService
         });
     }
 
+    /**
+     * Express Code Generator (public home page) — parity with legacy qrhome.
+     * Builds a QR/DM PNG from a raw URL with NO Profile and NO persistence.
+     *
+     * @param  int  $codeType  0 = QR, 1 = Data Matrix
+     */
+    public function expressPngBinary(string $data, int $codeType, ?string $colorCode = null): string
+    {
+        $data = trim($data);
+
+        if ($data === '') {
+            throw new \InvalidArgumentException('No data to encode.');
+        }
+
+        if ($codeType === 1) {
+            $barcode = new \TCPDF2DBarcode($data, 'DATAMATRIX');
+            $png = $barcode->getBarcodePngData(8, 8, $this->colorToRgb($colorCode));
+
+            if (! is_string($png) || $png === '') {
+                throw new \RuntimeException('Failed to generate Data Matrix image.');
+            }
+
+            // White quiet zone (2 modules) so scanners read the code reliably.
+            $src = @imagecreatefromstring($png);
+            if ($src !== false) {
+                $quiet = 16;
+                $w = imagesx($src);
+                $h = imagesy($src);
+                $dst = imagecreatetruecolor($w + 2 * $quiet, $h + 2 * $quiet);
+                $white = imagecolorallocate($dst, 255, 255, 255);
+                imagefill($dst, 0, 0, $white);
+                imagecopy($dst, $src, $quiet, $quiet, 0, 0, $w, $h);
+                ob_start();
+                imagepng($dst);
+                $bordered = ob_get_clean();
+                imagedestroy($src);
+                imagedestroy($dst);
+
+                if (is_string($bordered) && $bordered !== '') {
+                    $png = $bordered;
+                }
+            }
+
+            return $png;
+        }
+
+        $options = new QROptions([
+            'outputType' => QRCode::OUTPUT_IMAGE_PNG,
+            'scale' => 8,
+            'imageBase64' => false,
+            'moduleValues' => $this->moduleValuesForColor($colorCode),
+        ]);
+
+        $rendered = (new QRCode($options))->render($data);
+
+        if (! is_string($rendered) || $rendered === '') {
+            throw new \RuntimeException('Failed to generate QR image.');
+        }
+
+        return $rendered;
+    }
+
+    /** Data URI for the express live preview (base64 PNG). */
+    public function expressPreviewDataUri(string $data, int $codeType, ?string $colorCode = null): ?string
+    {
+        if (trim($data) === '') {
+            return null;
+        }
+
+        return 'data:image/png;base64,'.base64_encode($this->expressPngBinary($data, $codeType, $colorCode));
+    }
+
+    /**
+     * Stream an express code as a download. Supports pdf|png|jpg (TIFF/EPS need
+     * ImageMagick, which is not installed — same limitation as the portal).
+     */
+    public function expressDownload(string $data, int $codeType, string $format): StreamedResponse
+    {
+        $format = strtolower(trim($format));
+        $png = $this->expressPngBinary($data, $codeType, null);
+
+        [$binary, $filename, $mime] = match ($format) {
+            'png' => [$png, 'scanlink-code.png', 'image/png'],
+            'jpg', 'jpeg' => [$this->pngBinaryToJpg($png), 'scanlink-code.jpg', 'image/jpeg'],
+            'pdf' => [$this->pngBinaryToPdf($png, $data), 'scanlink-code.pdf', 'application/pdf'],
+            default => throw new \InvalidArgumentException('Unsupported express format: '.$format),
+        };
+
+        return response()->streamDownload(
+            function () use ($binary): void {
+                echo $binary;
+            },
+            $filename,
+            ['Content-Type' => $mime],
+        );
+    }
+
+    protected function pngBinaryToJpg(string $png): string
+    {
+        $src = @imagecreatefromstring($png);
+
+        if ($src === false) {
+            throw new \RuntimeException('Could not read PNG for JPG conversion.');
+        }
+
+        $canvas = imagecreatetruecolor(imagesx($src), imagesy($src));
+        $white = imagecolorallocate($canvas, 255, 255, 255);
+        imagefilledrectangle($canvas, 0, 0, imagesx($src), imagesy($src), $white);
+        imagecopy($canvas, $src, 0, 0, 0, 0, imagesx($src), imagesy($src));
+        ob_start();
+        imagejpeg($canvas, null, 92);
+        $binary = (string) ob_get_clean();
+        imagedestroy($src);
+        imagedestroy($canvas);
+
+        return $binary;
+    }
+
+    protected function pngBinaryToPdf(string $png, string $url): string
+    {
+        $pdf = new TCPDF;
+        $pdf->SetCreator('ScanLink');
+        $pdf->SetPrintHeader(false);
+        $pdf->SetPrintFooter(false);
+        $pdf->SetMargins(15, 15, 15);
+        $pdf->AddPage();
+
+        $pdf->SetFont('helvetica', 'B', 16);
+        $pdf->Cell(0, 10, 'ScanLink Express Code', 0, 1, 'C');
+        $pdf->SetFont('helvetica', '', 11);
+        $pdf->MultiCell(0, 8, 'URL: '.$url, 0, 'C');
+        $pdf->Ln(6);
+        $pdf->Image('@'.$png, 75, 60, 60, 60, 'PNG');
+
+        return (string) $pdf->Output('scanlink-code.pdf', 'S');
+    }
+
     public function applyColorAndRegenerate(Profile $profile, string $colorCode): QrImage
     {
         $normalized = $this->normalizeColor($colorCode) ?? '#000000';

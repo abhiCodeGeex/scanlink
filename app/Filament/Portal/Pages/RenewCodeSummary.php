@@ -3,6 +3,7 @@
 namespace App\Filament\Portal\Pages;
 
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
+use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Mail\ScanlinkMail;
 use App\Support\SystemNotifier;
 use App\Models\Client;
@@ -77,7 +78,7 @@ class RenewCodeSummary extends Page
                 ->danger()
                 ->send();
 
-            $this->redirect(CodeBalance::getUrl(panel: 'portal'), navigate: false);
+            $this->redirect(ProfileResource::getUrl('index', panel: 'portal'), navigate: false);
         }
     }
 
@@ -152,7 +153,7 @@ class RenewCodeSummary extends Page
                 ->title('Renew session expired. Please select codes again.')
                 ->danger()
                 ->send();
-            $this->redirect(CodeBalance::getUrl(panel: 'portal'), navigate: false);
+            $this->redirect(ProfileResource::getUrl('index', panel: 'portal'), navigate: false);
 
             return;
         }
@@ -177,7 +178,7 @@ class RenewCodeSummary extends Page
                 ->title('Please select code to be renew.')
                 ->danger()
                 ->send();
-            $this->redirect(CodeBalance::getUrl(panel: 'portal'), navigate: false);
+            $this->redirect(ProfileResource::getUrl('index', panel: 'portal'), navigate: false);
 
             return;
         }
@@ -204,7 +205,7 @@ class RenewCodeSummary extends Page
 
         $returnUrl = is_string($renew['return_url'] ?? null) && filled($renew['return_url'])
             ? $renew['return_url']
-            : CodeBalance::getUrl(panel: 'portal');
+            : ProfileResource::getUrl('index', panel: 'portal');
 
         session()->forget(self::SESSION_RENEW);
 

@@ -8,16 +8,38 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->text('app_authentication_secret')->nullable()->after('password');
-            $table->text('app_authentication_recovery_codes')->nullable()->after('app_authentication_secret');
+        if (! Schema::hasTable('users')) {
+            return;
+        }
+
+        Schema::table('users', function (Blueprint $table): void {
+            if (! Schema::hasColumn('users', 'app_authentication_secret')) {
+                $table->text('app_authentication_secret')->nullable()->after('password');
+            }
+
+            if (! Schema::hasColumn('users', 'app_authentication_recovery_codes')) {
+                $after = Schema::hasColumn('users', 'app_authentication_secret')
+                    ? 'app_authentication_secret'
+                    : 'password';
+                $table->text('app_authentication_recovery_codes')->nullable()->after($after);
+            }
         });
     }
 
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['app_authentication_secret', 'app_authentication_recovery_codes']);
+        if (! Schema::hasTable('users')) {
+            return;
+        }
+
+        Schema::table('users', function (Blueprint $table): void {
+            if (Schema::hasColumn('users', 'app_authentication_recovery_codes')) {
+                $table->dropColumn('app_authentication_recovery_codes');
+            }
+
+            if (Schema::hasColumn('users', 'app_authentication_secret')) {
+                $table->dropColumn('app_authentication_secret');
+            }
         });
     }
 };

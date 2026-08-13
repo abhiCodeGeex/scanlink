@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/marketing.css') }}?v=3">
+    <link rel="stylesheet" href="{{ asset('css/marketing.css') }}?v=9">
     @stack('head')
 </head>
 <body class="mkt">
@@ -91,12 +91,14 @@
                     <li><a href="{{ route('marketing.pricing') }}">Pricing</a></li>
                     <li><a href="{{ route('marketing.faq') }}">FAQ</a></li>
                     <li><a href="{{ route('marketing.workplace') }}">The Workplace</a></li>
+                    <li><a href="{{ route('marketing.mobileVideo') }}">Mobile video</a></li>
                 </ul>
             </div>
             <div>
                 <h4>Support</h4>
                 <ul>
                     <li><a href="{{ route('marketing.contact') }}">Contact us</a></li>
+                    <li><a href="{{ route('marketing.enquiry') }}">Solutions enquiry</a></li>
                     <li><a href="{{ route('marketing.how-to') }}">How to</a></li>
                     <li><a href="{{ route('marketing.terms') }}">Terms &amp; Conditions</a></li>
                     <li><a href="{{ route('marketing.privacy') }}">Privacy Policy</a></li>
@@ -193,5 +195,6 @@
     })();
 </script>
 @stack('scripts')
+@include('filament.hooks.themed-dialog')
 </body>
 </html>

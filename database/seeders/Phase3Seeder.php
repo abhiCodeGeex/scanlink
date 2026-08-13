@@ -70,16 +70,18 @@ class Phase3Seeder extends Seeder
     private function seedEquipmentTypes(): void
     {
         $types = [
-            ['name' => 'Asset', 'slag' => 'asset'],
+            ['name' => 'Person/Business', 'slag' => 'asset'],
             ['name' => 'Product', 'slag' => 'product'],
             ['name' => 'People', 'slag' => 'people'],
-            ['name' => 'Plant', 'slag' => 'plant'],
+            ['name' => 'Plant & Equipment', 'slag' => 'plant'],
             ['name' => 'Location', 'slag' => 'location'],
             ['name' => 'Procedure', 'slag' => 'procedure'],
             ['name' => 'Misc', 'slag' => 'misc'],
             ['name' => 'Custom QR', 'slag' => 'customqr'],
             ['name' => 'Exhibit', 'slag' => 'exhibit'],
-            ['name' => 'Code', 'slag' => 'code'],
+            ['name' => 'URL Link', 'slag' => 'code'],
+            ['name' => 'Form/Survey/Checklist', 'slag' => 'survey'],
+            ['name' => 'VOCC', 'slag' => 'voc'],
         ];
 
         foreach ($types as $type) {
