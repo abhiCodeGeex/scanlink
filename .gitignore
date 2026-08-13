@@ -31,3 +31,37 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 /assets/
+
+# Local one-off probes / browser harnesses (not product code)
+/scripts/browser-*
+/scripts/debug-*
+/scripts/probe-*
+/scripts/check-*
+/scripts/compare-*
+/scripts/inspect-*
+/scripts/list-*
+/scripts/lookup-*
+/scripts/ensure-*
+/scripts/try-*
+/scripts/verify-*
+/scripts/render-*
+/scripts/seed-*
+/scripts/set-client-*
+/scripts/setup-form-*
+/scripts/regress-*
+/scripts/regen-*
+/scripts/analyze-*
+/scripts/cleanup-*
+/scripts/create-*-login.php
+/scripts/create-portal-*
+/scripts/dump-*
+/scripts/fix-admin-*
+/scripts/generate_*
+/scripts/live-server-*
+/scripts/screenshot-*
+/scripts/smoke-*
+/scripts/test-*
+/scripts/_pdo_*
+
+# Saved page vault / accidental downloads
+/public/_pv/
