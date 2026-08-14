@@ -188,6 +188,9 @@ class CreateProfile extends EditRecord
             'videos',
         ]);
 
+        // Form Builder is "draft until Save": reopening/reloading reverts uncommitted elements.
+        app(\App\Services\FormBuilderDraftService::class)->syncOnOpen((int) $this->record->id);
+
         $this->loadFormBuilderSidebarState($this->record);
     }
 
@@ -276,6 +279,9 @@ class CreateProfile extends EditRecord
         app(ProfileDraftSlotService::class)->finalize($this->record);
         $this->syncProfileAssets();
         $this->syncFormBuilderSidebarSettings();
+
+        // Commit the current Form Builder elements as the new baseline (they now persist).
+        app(\App\Services\FormBuilderDraftService::class)->commit((int) $this->record->id);
 
         // Free the create-session draft so "Add a New Code" claims a fresh slot.
         $clientId = (int) ($this->record->client_id ?? 0);
