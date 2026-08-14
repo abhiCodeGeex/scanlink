@@ -1587,42 +1587,70 @@ tr.sl-row-active {
     display: none;
     position: absolute;
     left: 50%;
-    bottom: calc(100% + 10px);
+    bottom: calc(100% + 12px);
     transform: translateX(-50%);
-    z-index: 40;
-    color: #000;
-    border: 3px solid #f7760e;
-    padding: 8px 18px;
-    font-family: Verdana, Arial, sans-serif;
-    font-size: 15px;
-    background: #fff;
-    min-height: 38px;
+    z-index: 60;
+    padding: 9px 16px;
+    border: 0;
+    border-radius: 10px;
+    color: #fff;
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.25;
+    background: #1f2937;
     white-space: nowrap;
     box-sizing: border-box;
+    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, .35), 0 4px 10px -4px rgba(15, 23, 42, .25);
 }
 
 .fi-page:has(.sl-profile-editor) .sl-help-wrap:hover .help-div,
 .fi-page:has(.sl-profile-editor) .sl-help-wrap:focus-within .help-div {
     display: block;
+    animation: slHelpTipIn .18s ease-out;
+}
+
+@keyframes slHelpTipIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(6px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
 .fi-page:has(.sl-profile-editor) .help-div a,
 .fi-page:has(.sl-profile-editor) .help-div a.sl-help-video {
-    color: #000 !important;
+    color: #fff !important;
     text-decoration: none !important;
-    font-weight: normal;
+    font-weight: 600;
+    letter-spacing: .01em;
+    transition: color .15s ease;
 }
 
-.fi-page:has(.sl-profile-editor) .help-div .arrow-bg {
-    background: url('/images/tooltip-arrow.png') left bottom no-repeat;
+.fi-page:has(.sl-profile-editor) .help-div a:hover,
+.fi-page:has(.sl-profile-editor) .help-div a.sl-help-video:hover {
+    color: #fdba74 !important;
+}
+
+/* Modern CSS caret replaces the legacy tooltip-arrow.png */
+.fi-page:has(.sl-profile-editor) .help-div::after {
+    content: '';
     position: absolute;
-    bottom: -27px;
+    top: 100%;
     left: 50%;
-    margin-left: -20px;
-    height: 28px;
-    width: 40px;
-    z-index: 3;
-    pointer-events: none;
+    transform: translateX(-50%);
+    border: 7px solid transparent;
+    border-top-color: #1f2937;
+}
+
+.fi-page:has(.sl-profile-editor) .help-div .arrow-bg { display: none !important; }
+
+/* Let the Form Builder help tooltip escape its card instead of being clipped */
+.fi-page:has(.sl-profile-editor) .form-builder-box,
+.fi-page:has(.sl-profile-editor) .sl-form-builder-panel,
+.fi-page:has(.sl-profile-editor) .form-builder-title,
+.fi-page:has(.sl-profile-editor) .fi-section:has(.form-builder-box),
+.fi-page:has(.sl-profile-editor) .fi-section-content-ctn:has(.form-builder-box),
+.fi-page:has(.sl-profile-editor) .fi-section-content:has(.form-builder-box),
+.fi-page:has(.sl-profile-editor) .fi-fieldset:has(.form-builder-box) {
+    overflow: visible !important;
 }
 
 .fi-page:has(.sl-profile-editor) .sl-add-form-left .fi-section-header,

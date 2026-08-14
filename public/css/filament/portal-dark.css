@@ -910,8 +910,13 @@ html.dark .fi-panel-portal .sl-existing-form-preview-item {
 html.dark .fi-panel-portal .fi-page:has(.sl-profile-editor) .help-div {
     background: var(--sl-dark-raised) !important;
     color: var(--sl-dark-text) !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, .6), 0 4px 10px -4px rgba(0, 0, 0, .5) !important;
+}
+html.dark .fi-panel-portal .fi-page:has(.sl-profile-editor) .help-div::after {
+    border-top-color: var(--sl-dark-raised) !important;
 }
 html.dark .fi-panel-portal .fi-page:has(.sl-profile-editor) .help-div a { color: var(--sl-dark-text) !important; }
+html.dark .fi-panel-portal .fi-page:has(.sl-profile-editor) .help-div a:hover { color: #fdba74 !important; }
 
 /* --- A5 Legacy QR gray download button --- */
 html.dark .fi-panel-portal .button-section .gray-btn,

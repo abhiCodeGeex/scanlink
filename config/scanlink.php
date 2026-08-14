@@ -58,11 +58,13 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Testing: only deliver outbound mail to this domain (e.g. yopmail.com).
-    | Set SCANLINK_MAIL_RESTRICT_ENABLED=false to allow real recipients again.
+    | Outbound mail delivery.
+    | Restriction disabled: notifications are delivered to every recipient
+    | (not just @yopmail.com). Set SCANLINK_MAIL_RESTRICT_ENABLED=true to
+    | re-enable the testing safety net that limits mail to mail_restrict_domain.
     |--------------------------------------------------------------------------
     */
-    'mail_restrict_enabled' => (bool) env('SCANLINK_MAIL_RESTRICT_ENABLED', true),
+    'mail_restrict_enabled' => (bool) env('SCANLINK_MAIL_RESTRICT_ENABLED', false),
     'mail_restrict_domain' => env('SCANLINK_MAIL_RESTRICT_DOMAIN', 'yopmail.com'),
 
     /*
