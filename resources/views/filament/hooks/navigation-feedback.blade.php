@@ -281,8 +281,24 @@
         // filters, pagination) are Livewire commits and must NOT be flagged here, otherwise
         // livewire:navigated never arrives and the loader would get stuck.
         document.addEventListener('click', (event) => {
+            // Only a plain left-click that navigates THIS tab should show the loader.
+            // Skip modified/middle clicks, new-tab/new-window links, download links, and
+            // clicks another handler already consumed — otherwise the loader flashes (and
+            // briefly sticks until the safety timer) when nothing is loading in this tab.
+            if (
+                event.defaultPrevented
+                || event.button !== 0
+                || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey
+            ) {
+                return;
+            }
+
             var anchor = resolveAnchor(event.target);
             if (!anchor) return;
+
+            var target = (anchor.getAttribute('target') || '').toLowerCase();
+            if (target && target !== '_self') return;
+            if (anchor.hasAttribute('download')) return;
 
             var href = anchor.getAttribute('href');
             if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
