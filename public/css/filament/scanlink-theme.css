@@ -647,6 +647,15 @@ html:not(.dark) .fi-topbar-collapse-sidebar-btn-ctn .fi-icon-btn svg {
     color: #ffffff !important;
 }
 
+/* Mobile hamburger (open/close overlay sidebar) — white so it reads on the green (light)
+   and near-black (dark) topbar banner; Filament's default grey vanishes on the green. */
+.fi-topbar .fi-topbar-open-sidebar-btn,
+.fi-topbar .fi-topbar-open-sidebar-btn svg,
+.fi-topbar .fi-topbar-close-sidebar-btn,
+.fi-topbar .fi-topbar-close-sidebar-btn svg {
+    color: #ffffff !important;
+}
+
 html:not(.dark) .fi-topbar-collapse-sidebar-btn-ctn .fi-icon-btn:hover {
     background-color: rgb(255 255 255 / 0.15) !important;
 }
