@@ -210,10 +210,10 @@ trait HasLegacyProfileEditorLayout
             && $record instanceof Profile
             && $record->exists
         ) {
-            // Guarantee the PNG actually exists on disk. Legacy-imported qrimage rows
-            // point at files that were never migrated, so a plain "no row?" check leaves
-            // a broken <img>. ensureFor() regenerates when the row exists but the file is
-            // missing (best effort — sidebar still shows the URL block on failure).
+            // Guarantee the PNG exists on disk and encodes the short link. Legacy-imported
+            // qrimage rows point at files that were never migrated, and codes generated
+            // before URL shortening was configured still carry a long-URL PNG — ensureFor()
+            // now regenerates in both cases (see ProfileQrService::ensureQrFile).
             app(ProfileQrService::class)->ensureFor($record);
             $record->load('qrImage');
 

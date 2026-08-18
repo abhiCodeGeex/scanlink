@@ -459,15 +459,54 @@ class ProfileQrService
             $needsGenerate = $relative === '' || ! Storage::disk('public')->exists($relative);
         }
 
+        // A code generated before URL shortening was configured still carries a long-URL QR
+        // PNG (blank shorturl). If a TinyURL token is now configured and this profile can be
+        // shortened, regenerate so the stored image encodes the short link. A short cache lock
+        // keeps a flaky/unreachable API from triggering a fresh 10s HTTP call — and a rewrite —
+        // on every display/download. (The public scan path never calls this, only the editor
+        // and the download/PDF exports.)
+        $shortenLock = 'qr.shorten.attempt.'.$profile->id;
+
+        if (
+            ! $needsGenerate
+            && blank($profile->shorturl)
+            && filled(config('scanlink.short_url_api_token'))
+            && $this->canShorten($profile)
+            && ! Cache::has($shortenLock)
+        ) {
+            $needsGenerate = true;
+        }
+
         if ($needsGenerate) {
             $this->generateFor($profile);
             $profile->unsetRelation('qrImage');
             $profile->load('qrImage');
+
+            // Still no short link => the API is down/blocked. Back off for 10 minutes so we
+            // don't re-attempt (and rewrite the PNG) on every subsequent view/download.
+            if (blank($profile->shorturl)) {
+                Cache::put($shortenLock, true, now()->addMinutes(10));
+            }
         }
 
         if ($profile->qrImage === null) {
             throw new \RuntimeException('Unable to generate QR image for profile '.$profile->id);
         }
+    }
+
+    /**
+     * Whether this profile has a real scan destination that can be shortened — mirrors the
+     * gate in resolveQrData(): a CustomQR with a target, or a linked client that has a URL.
+     */
+    protected function canShorten(Profile $profile): bool
+    {
+        $profile->loadMissing('client');
+
+        if ($profile->typeSlug() === 'customqr' && filled($profile->name)) {
+            return true;
+        }
+
+        return filled($profile->client?->url);
     }
 
     protected function convertQrImage(string $sourcePath, string $extension): string
