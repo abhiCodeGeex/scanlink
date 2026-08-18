@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Form Builder</title>
     <link rel="stylesheet" href="{{ asset('form-builder/css/style.css') }}?v=fluid-3" media="screen">
@@ -110,6 +111,40 @@
         #div_drop_area ol {
             min-height: 120px;
             height: auto !important;
+        }
+
+        /* Mobile: the legacy form builder is a fixed 440px+440px / 980px desktop layout. Now
+           that the viewport is device-width, fluidize the remaining fixed-width containers so
+           dropped questions, previews and inputs fit the phone instead of clipping. */
+        @media (max-width: 640px) {
+            .from-box,
+            .text-black,
+            .text-box-black,
+            .text-box-black2,
+            #div_drop_area,
+            #div_drop_area .ui-droppable,
+            #div_drop_area ol,
+            .top-part,
+            .rounded {
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box;
+                float: none !important;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+            }
+            .text-black .text-box-black,
+            .text-box-black input[type="text"],
+            .text-box-black input[type="number"],
+            .text-box-black textarea,
+            .text-box-black select,
+            .text-black input[type="text"],
+            .text-black textarea,
+            .text-black select {
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box;
+            }
         }
     </style>
 </head>

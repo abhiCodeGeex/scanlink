@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Upload result</title>
     <style>
         body { margin: 0; padding: 8px; font: 12px Arial, sans-serif; background: #f1f1f1; }

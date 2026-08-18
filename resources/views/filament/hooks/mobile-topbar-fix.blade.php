@@ -61,4 +61,48 @@
         .fi-topbar-start { gap: 0.4rem; }
         .fi-topbar-end { gap: 0.35rem; }
     }
+
+    /* 4. Profile editor/create — the two-column (500px + 450px) layout must collapse to a
+          single full-width column on tablets/phones. Shipped INLINE (not only in the cached
+          scanlink-theme.css) so a stale cached stylesheet on a phone can't leave the editor
+          in its wide desktop layout with the right column clipped off-screen. */
+    @media (max-width: 1100px) {
+        .sl-profile-editor,
+        .sl-profile-editor--survey,
+        .sl-profile-editor--code,
+        .sl-profile-editor--voc,
+        .sl-profile-editor--exhibit,
+        .sl-profile-editor--misc,
+        .sl-profile-editor--asset {
+            display: block !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            grid-template-columns: none !important;
+            grid-template-areas: none !important;
+        }
+        .sl-profile-editor .add-form-left,
+        .sl-profile-editor .sl-add-form-left,
+        .sl-profile-editor .sl-add-form-left--survey,
+        .sl-profile-editor .add-form-right,
+        .sl-profile-editor .sl-add-form-right {
+            float: none !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            grid-area: auto !important;
+        }
+        .sl-survey-form-builder,
+        .sl-profile-editor--survey .sl-survey-form-builder { max-width: 100% !important; }
+    }
+
+    /* 5. Global mobile safety net: no portal page should scroll sideways, and long content
+          (inputs, the QR/preview column, the iPhone mock, tables) must never push past the
+          screen. Fluid, not clipped. */
+    @media (max-width: 1023.98px) {
+        .fi-main-ctn, .fi-main, .fi-page, .fi-page-content { max-width: 100% !important; min-width: 0 !important; }
+        .fi-main { overflow-x: clip; }
+        .sl-profile-editor img,
+        .sl-profile-editor iframe,
+        .sl-profile-editor .iphone-preview-container { max-width: 100% !important; }
+        .fi-input-wrp, .fi-fo-field-wrp, .fi-fo-component-ctn { min-width: 0 !important; max-width: 100% !important; }
+    }
 </style>
