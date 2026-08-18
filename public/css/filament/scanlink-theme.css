@@ -665,6 +665,36 @@ html:not(.dark) .fi-topbar-collapse-sidebar-btn-ctn .fi-icon-btn:hover {
     gap: 0.5rem;
 }
 
+/* ---------------------------------------------------------------------------
+ * Mobile topbar — below Filament's `lg` sidebar breakpoint the sidebar becomes
+ * an overlay with its own hamburger, so the relocated desktop collapse button
+ * (forced display:flex above) shows as a SECOND hamburger. And the forced-width
+ * global search (min-width:10rem) can't shrink, so it overlaps the logo on phones.
+ * ------------------------------------------------------------------------- */
+@media (max-width: 1023.98px) {
+    /* Only the mobile hamburger should remain. */
+    .fi-topbar-collapse-sidebar-btn-ctn { display: none !important; }
+    .fi-topbar { padding-inline: 0.75rem !important; }
+    /* Let the search shrink into the space between logo and actions (no overlap). */
+    .fi-topbar .fi-global-search-ctn,
+    .fi-topbar [data-global-search-input] {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+        max-width: none !important;
+    }
+}
+
+@media (max-width: 640px) {
+    /* Phones: hide the topbar search entirely (navigation lives in the sidebar) so
+       the logo, hamburger, bell and avatar always fit on one clean row. */
+    .fi-topbar .fi-global-search-ctn,
+    .fi-topbar [data-global-search-input] { display: none !important; }
+    .fi-topbar { min-height: 3.5rem !important; padding-inline: 0.6rem !important; }
+    .fi-logo { max-width: 8.5rem !important; height: 2.25rem !important; }
+    .fi-topbar-start { gap: 0.4rem; }
+    .fi-topbar-end { gap: 0.35rem; }
+}
+
 .fi-body.fi-body-has-sidebar-collapsible-on-desktop .fi-sidebar:not(.fi-sidebar-open) .fi-sidebar-nav-groups,
 .fi-body.fi-body-has-sidebar-fully-collapsible-on-desktop .fi-sidebar:not(.fi-sidebar-open) .fi-sidebar-nav-groups {
     margin-inline: 0;
@@ -5107,3 +5137,37 @@ html.dark .sl-sa__popup-row span { color: #222 !important; }
 .sl-dialog-btn--ghost:hover { background: #e5e7eb; }
 .sl-dialog-btn--primary { background: #008C00; color: #fff; }
 .sl-dialog-btn--primary:hover { background: #00a000; }
+
+/* ---------------------------------------------------------------------------
+ * Mobile profile editors (final override) — the base editor stacks below 1100px,
+ * but per-variant rules (survey/code/etc.) re-declare fixed 2-column px grids
+ * AFTER that media query, so they'd overflow on phones. This block is last in the
+ * file, so it wins: every variant stacks form-over-preview and fills the width.
+ * ------------------------------------------------------------------------- */
+@media (max-width: 1100px) {
+    .sl-profile-editor,
+    .sl-profile-editor--survey,
+    .sl-profile-editor--code,
+    .sl-profile-editor--voc,
+    .sl-profile-editor--exhibit,
+    .sl-profile-editor--misc {
+        display: block !important;
+        width: 100% !important;
+        grid-template-columns: none !important;
+        grid-template-areas: none !important;
+    }
+
+    .sl-profile-editor .add-form-left,
+    .sl-profile-editor .sl-add-form-left,
+    .sl-profile-editor .sl-add-form-left--survey,
+    .sl-profile-editor .add-form-right,
+    .sl-profile-editor .sl-add-form-right {
+        float: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        grid-area: auto !important;
+    }
+
+    .sl-survey-form-builder,
+    .sl-profile-editor--survey .sl-survey-form-builder { max-width: 100% !important; }
+}

@@ -20,11 +20,16 @@ class ProfileQrService
     {
         $profile->loadMissing('client');
 
-        return rtrim(config('scanlink.portal_url'), '/')
-            .'/'
-            .$profile->client->url
-            .'/'
-            .$profile->id;
+        $base = rtrim(config('scanlink.portal_url'), '/');
+        $clientUrl = $profile->client?->url;
+
+        // Orphan profile (client missing/deleted): no valid public scan path. Return a clean
+        // base/id URL instead of a double-slashed one — and avoid a "property on null" warning.
+        if (blank($clientUrl)) {
+            return $base.'/'.$profile->id;
+        }
+
+        return $base.'/'.$clientUrl.'/'.$profile->id;
     }
 
     public function resolveQrData(Profile $profile): string
@@ -33,16 +38,19 @@ class ProfileQrService
             return $profile->shorturl;
         }
 
-        $profile->loadMissing('equipmentType');
+        $profile->loadMissing(['equipmentType', 'client']);
 
         // CustomQR encodes the destination URL (profiles.name), not the portal path.
-        $targetUrl = $profile->typeSlug() === 'customqr' && filled($profile->name)
-            ? $profile->name
-            : $this->profileUrl($profile);
+        $isCustomQr = $profile->typeSlug() === 'customqr' && filled($profile->name);
+        $targetUrl = $isCustomQr ? $profile->name : $this->profileUrl($profile);
+
+        // Don't shorten an orphan profile (no linked client) — it has no valid scan
+        // destination yet, so a short link would just point at a dead URL. Fall back to raw.
+        $canShorten = $isCustomQr || filled($profile->client?->url);
 
         $token = config('scanlink.short_url_api_token');
 
-        if ($token) {
+        if ($canShorten && $token) {
             $short = $this->shortenUrl($targetUrl, $token);
 
             if ($short) {

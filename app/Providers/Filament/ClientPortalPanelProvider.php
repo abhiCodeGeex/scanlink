@@ -144,7 +144,7 @@ class ClientPortalPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=78">'
+                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=79">'
                     .'<link rel="stylesheet" href="'.asset('css/filament/portal-dark.css').'?v=14">',
             )
             ->renderHook(

@@ -425,6 +425,8 @@
     </div>
 </div>
 
+@include('marketing.partials.password-expired-modal')
+
 {{-- ===================== Video modal ===================== --}}
 <div class="mkt__overlay" id="mkt-video" role="dialog" aria-modal="true" aria-label="Video player">
     <div class="mkt__modal mkt__modal--video">

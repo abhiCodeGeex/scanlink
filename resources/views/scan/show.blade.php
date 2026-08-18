@@ -10,6 +10,10 @@
         .wrap { max-width: 640px; margin: 0 auto; padding: 1.5rem; }
         /* Legacy has no elevated card — content sits directly on white. */
         .card { background: #fff; border-radius: 0; padding: 10px 12px; box-shadow: none; margin-bottom: 0; }
+        /* Keep every embedded image inside the mobile width and at its natural aspect ratio.
+           (figure has a 40px browser default margin that otherwise insets images.) */
+        img { max-width: 100%; height: auto; }
+        figure { margin: 0 0 0.75rem; }
         a { color: #278b28; }
         /* Legacy MobileBottomText: label (bold) then value; block runs at 14px/22px. */
         .MobileBottomText { font-size: 14px; line-height: 22px; }
@@ -96,7 +100,9 @@
         .logo-row img { max-height: 80px; max-width: 100%; object-fit: contain; border-radius: 6px; }
         .tile-grid { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
         .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: .75rem; margin-top: .75rem; }
-        .gallery img { width: 100%; border-radius: 8px; object-fit: cover; aspect-ratio: 1; }
+        /* Full-width, natural aspect (never crop — e.g. an uploaded QR must stay square/whole). */
+        .gallery img { width: 100%; height: auto; border-radius: 8px; display: block; }
+        .gallery figure { margin: 0; }
         .video-wrap { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; margin-top: .75rem; }
         .video-wrap iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
         .checklist { list-style: none; padding: 0; margin: .75rem 0 0; }
@@ -890,6 +896,70 @@
                                 ? ('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(val))
                                 : 'https://www.google.com/maps';
                         }
+                    });
+                })();
+            </script>
+            <script>
+                // Mobile/tablet only: add a "Take photo" (camera capture) option next to every
+                // file field so users can shoot a photo, not just pick one from the library.
+                // Desktop is left untouched (no camera → an upload-only file picker is correct).
+                (function () {
+                    function isMobileOrTablet() {
+                        var ua = navigator.userAgent || '';
+                        // Client Hints: the browser's own mobile flag (most reliable when present).
+                        if (navigator.userAgentData && navigator.userAgentData.mobile === true) return true;
+                        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Tablet|Silk|Kindle/i.test(ua)) return true;
+                        // iPadOS 13+ masquerades as desktop Safari but reports multi-touch.
+                        if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) return true;
+                        // Real touch device with a coarse primary pointer and no hover — i.e. a phone
+                        // or tablet. Guards against touchscreen laptops (which still expose hover / a
+                        // fine pointer) and desktop Electron shells (which report maxTouchPoints 0).
+                        return navigator.maxTouchPoints > 0
+                            && !!window.matchMedia
+                            && window.matchMedia('(pointer: coarse)').matches
+                            && window.matchMedia('(hover: none)').matches;
+                    }
+                    if (!isMobileOrTablet()) return;
+
+                    document.querySelectorAll('form input[type="file"]').forEach(function (input) {
+                        if (input.dataset.slCam) return;
+                        input.dataset.slCam = '1';
+
+                        // Hidden input whose `capture` hint opens the rear camera directly.
+                        var cam = document.createElement('input');
+                        cam.type = 'file';
+                        cam.accept = 'image/*';
+                        cam.setAttribute('capture', 'environment');
+                        cam.style.display = 'none';
+
+                        var btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'btn btn-outline';
+                        btn.style.marginTop = '.4rem';
+                        btn.innerHTML = '📷 Take photo';
+
+                        input.insertAdjacentElement('afterend', btn);
+                        btn.insertAdjacentElement('afterend', cam);
+
+                        btn.addEventListener('click', function () { cam.click(); });
+                        cam.addEventListener('change', function () {
+                            if (!cam.files || !cam.files.length) return;
+                            try {
+                                // Merge the captured photo into the real field so it submits under
+                                // the field's own name (keeps `multiple`/required/preview intact).
+                                var dt = new DataTransfer();
+                                if (input.multiple && input.files) {
+                                    for (var i = 0; i < input.files.length; i++) dt.items.add(input.files[i]);
+                                }
+                                for (var j = 0; j < cam.files.length; j++) dt.items.add(cam.files[j]);
+                                input.files = dt.files;
+                                input.dispatchEvent(new Event('change', { bubbles: true }));
+                            } catch (e) {
+                                // Old browsers without DataTransfer: submit the camera input directly.
+                                cam.name = input.name;
+                                cam.style.display = '';
+                            }
+                        });
                     });
                 })();
             </script>

@@ -319,38 +319,44 @@ class SyncAllUsers extends Command
 
         $needsPassword = ! $user->exists || blank($user->getRawOriginal('password') ?? null);
 
-        if ($needsPassword && $this->isBcrypt($rawPassword)) {
+        if (! $needsPassword) {
+            $user->save();
+
+            return $user;
+        }
+
+        // Reuse a legacy bcrypt hash as-is (write it raw so the model's `hashed` cast never
+        // double-hashes it). Placeholder first so the NOT NULL password column accepts the insert.
+        if ($this->isBcrypt($rawPassword)) {
+            $user->password = Str::random(40);
             $user->save();
             DB::table('users')->where('id', $user->id)->update(['password' => $rawPassword]);
 
             return $user->refresh();
         }
 
-        if ($needsPassword) {
-            $this->assignPassword($user, $rawPassword, $defaultPassword);
-        }
-
-        $user->save();
-
-        return $user;
-    }
-
-    protected function assignPassword(User $user, ?string $rawPassword, ?string $defaultPassword): void
-    {
+        // Legacy plaintext → let the model hash it; the user's existing password keeps working.
         if ($this->isLegacyPlain($rawPassword)) {
             $user->password = $rawPassword;
+            $user->save();
 
-            return;
+            return $user;
         }
+
+        // MD5 / unknown / empty → cannot be reused (one-way or missing). Store a BLANK password
+        // (raw) as the "must reset" marker: the account can never authenticate, and the portal
+        // login flow emails a reset link + shows an "expired password" notice on first sign-in.
+        // $defaultPassword is intentionally NOT applied here — a shared fallback for hundreds of
+        // accounts would be a security hole.
+        $user->password = Str::random(40);
+        $user->save();
+        DB::table('users')->where('id', $user->id)->update(['password' => '']);
 
         if ($this->isMd5($rawPassword)) {
-            $user->password = $defaultPassword ?: 'changeme';
-            $this->warn("MD5 password for {$user->email} — set to fallback; user should reset.");
-
-            return;
+            $this->warn("MD5 password for {$user->email} — blanked; user resets on first login.");
         }
 
-        $user->password = $defaultPassword ?: 'changeme';
+        return $user->refresh();
     }
 
     protected function isBcrypt(?string $value): bool
