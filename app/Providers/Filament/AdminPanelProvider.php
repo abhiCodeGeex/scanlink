@@ -129,6 +129,10 @@ class AdminPanelProvider extends PanelProvider
                 PanelsRenderHook::HEAD_END,
                 fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=80">',
             )
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                fn (): string => view('filament.hooks.mobile-topbar-fix')->render(),
+            )
             ->widgets([
                 Widgets\AccountWidget::class,
             ])

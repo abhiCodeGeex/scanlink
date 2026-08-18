@@ -153,6 +153,10 @@ class ClientPortalPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
+                fn (): string => view('filament.hooks.mobile-topbar-fix')->render(),
+            )
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
                 fn (): string => view('filament.hooks.force-light-auth')->render(),
             )
             ->widgets([])
