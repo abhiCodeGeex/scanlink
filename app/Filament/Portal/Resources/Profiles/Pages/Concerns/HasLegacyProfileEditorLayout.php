@@ -218,6 +218,13 @@ trait HasLegacyProfileEditorLayout
             $record->load('qrImage');
 
             $qrImageUrl = $record->qrImage?->publicUrl();
+
+            // Show the short link (exactly what the QR encodes) in the URL box once the
+            // profile has been shortened, so the displayed URL matches the QR instead of the
+            // long destination it redirects to.
+            if (filled($record->shorturl)) {
+                $qrUrl = $record->shorturl;
+            }
         }
 
         return [
