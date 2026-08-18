@@ -7,9 +7,10 @@
     <style>
         /* Legacy mobile page: plain white body, 12px #555755 base text. */
         body { font-family: Arial, Helvetica, sans-serif; margin: 0; background: #fff; color: #555755; font-size: 12px; line-height: 22px; }
-        .wrap { max-width: 640px; margin: 0 auto; padding: 1.5rem; }
-        /* Legacy has no elevated card — content sits directly on white. */
-        .card { background: #fff; border-radius: 0; padding: 10px 12px; box-shadow: none; margin-bottom: 0; }
+        /* Legacy insets: .wrapper margin 0 10px + .content-container padding 10px = ~20px each side. */
+        .wrap { max-width: 640px; margin: 0 auto; padding: 0 10px; }
+        /* Legacy content sits on plain white (card shadow intentionally omitted for a flat look). */
+        .card { background: #fff; border-radius: 0; padding: 10px; box-shadow: none; margin-bottom: 0; }
         /* Keep every embedded image inside the mobile width and at its natural aspect ratio.
            (figure has a 40px browser default margin that otherwise insets images.) */
         img { max-width: 100%; height: auto; }
@@ -20,7 +21,7 @@
         .MobileBottomText h3 { margin: 0 0 7px 0; font-size: 1rem; font-weight: 700; color: #222; }
         .MobileBottomText p { margin: 0 0 7px 0; color: #555755; }
         h1 { color: #222; margin: 0 0 .5rem; font-size: 1.25rem; }
-        h2 { font-size: 1.1rem; margin-top: 1.5rem; }
+        h2 { font-size: 1.1rem; margin-top: .6rem; margin-bottom: .3rem; }
         .btn { display: inline-block; background: #008C00; color: #fff; padding: .6rem 1rem; border-radius: 8px; text-decoration: none; border: 0; cursor: pointer; margin: .25rem .25rem .25rem 0; }
         .btn-outline { background: #fff; color: #008C00; border: 1px solid #008C00; }
         /* Legacy View Map (.gray-mob-btn): solid grey button floated right. */
@@ -83,8 +84,9 @@
             font: inherit;
             cursor: pointer;
         }
-        label { display: block; margin-top: .75rem; font-weight: 600; }
-        input, textarea, select { width: 100%; padding: .5rem; margin-top: .25rem; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        /* Legacy form rhythm is tight (.frm_builder 14px/25px, labels are inline text + <br>). */
+        label { display: block; margin-top: .4rem; font-weight: 600; }
+        input, textarea, select { width: 100%; padding: .4rem .5rem; margin-top: .2rem; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
         .frm_builder input[type="checkbox"],
         .frm_builder input[type="radio"] {
             width: auto;
@@ -96,13 +98,39 @@
         }
         .notice { background: #e8f5e9; color: #1b5e20; padding: .75rem; border-radius: 8px; margin-bottom: 1rem; }
         .visitor-form { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #eee; }
-        .logo-row { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: 1rem; }
-        .logo-row img { max-height: 80px; max-width: 100%; object-fit: contain; border-radius: 6px; }
+        /* Legacy .BannerImage: the company logo is a full-width banner at the top — centered,
+           natural aspect, NO height cap (style.css .MobilePage .BannerImage img { max-width:100% }). */
+        .logo-row { display: block; text-align: center; min-height: 50px; margin-bottom: .5rem; }
+        .logo-row img { display: block; width: 100%; max-width: 100%; height: auto; margin: 0 auto .25rem; border-radius: 0; }
         .tile-grid { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
-        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: .75rem; margin-top: .75rem; }
-        /* Full-width, natural aspect (never crop — e.g. an uploaded QR must stay square/whole). */
-        .gallery img { width: 100%; height: auto; border-radius: 8px; display: block; }
-        .gallery figure { margin: 0; }
+        /* Legacy gallery: uploaded pictures render as a single-row, horizontally-swipeable strip
+           of thumbnails (Swiper) — each ≤250px wide / ≤166px tall, centered — NOT a full-width
+           grid. (style.css .swiper-slide 280×300; img max-width:250px, max-height:166px.) */
+        .gallery {
+            display: flex;
+            gap: 12px;
+            margin-top: .75rem;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 6px;
+        }
+        .gallery figure {
+            flex: 0 0 auto;
+            width: 250px;
+            max-width: 80vw;
+            margin: 0;
+            scroll-snap-align: center;
+            text-align: center;
+        }
+        .gallery img {
+            max-width: 100%;
+            max-height: 166px;
+            width: auto;
+            height: auto;
+            display: inline-block;
+            border-radius: 0;
+        }
         .video-wrap { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; margin-top: .75rem; }
         .video-wrap iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
         .checklist { list-style: none; padding: 0; margin: .75rem 0 0; }
@@ -167,8 +195,9 @@
         body.portal-preview input,
         body.portal-preview textarea,
         body.portal-preview select { width: 100%; max-width: 100%; box-sizing: border-box; }
-        body.portal-preview .gallery { grid-template-columns: 1fr; }
-        body.portal-preview .gallery img { max-width: 100%; height: auto; aspect-ratio: auto; }
+        /* Keep the legacy thumbnail carousel in the narrow preview (smaller thumbs so they fit). */
+        body.portal-preview .gallery figure { width: 190px; max-width: 78%; }
+        body.portal-preview .gallery img { max-height: 130px; }
         @endif
     </style>
 </head>
@@ -429,7 +458,7 @@
                         $qid = $question->question_id;
                         $required = $question->is_mandatory ? 'required' : '';
                     @endphp
-                    <div style="margin-bottom:1rem;">
+                    <div style="margin-bottom:.5rem;">
                         @switch($tid)
                             @case(1)
                                 <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>

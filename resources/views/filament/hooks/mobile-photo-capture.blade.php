@@ -9,7 +9,9 @@
 --}}
 <style>
     .sl-take-photo-btn {
-        display: inline-flex;
+        display: flex;
+        width: fit-content;
+        margin-left: auto;   /* right-align the button under the upload */
         align-items: center;
         gap: .4rem;
         margin-top: .5rem;
