@@ -143,8 +143,12 @@ class ClientPortalPanelProvider extends PanelProvider
                 fn (): string => view('filament.hooks.themed-dialog')->render(),
             )
             ->renderHook(
+                PanelsRenderHook::BODY_END,
+                fn (): string => view('filament.hooks.mobile-photo-capture')->render(),
+            )
+            ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=79">'
+                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=80">'
                     .'<link rel="stylesheet" href="'.asset('css/filament/portal-dark.css').'?v=14">',
             )
             ->renderHook(
