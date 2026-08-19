@@ -727,33 +727,39 @@
                                 @break
 
                             @case(22)
-                                <label>{{ $question->question_text ?: 'SWMS Hazard / Risk' }}@if($question->is_mandatory) *@endif</label>
-                                <label>Task | Activity{{ $question->is_mandatory ? ' *' : '' }}</label>
-                                <textarea name="answers_meta[{{ $qid }}][task]" rows="1" {{ $required }}></textarea>
-                                <label>Potential Hazards{{ $question->is_mandatory ? ' *' : '' }}</label>
-                                <textarea name="answers_meta[{{ $qid }}][potential_hazards]" rows="1" {{ $required }}></textarea>
-                                <label>Risk Score (Before){{ $question->is_mandatory ? ' *' : '' }}</label>
-                                <select name="answers_meta[{{ $qid }}][risk_score_before]" style="width:150px;max-width:100%;" {{ $required }}>
-                                    <option value="">Select</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                    <option value="5">5</option>
-                                </select>
-                                <label>Photo (optional)</label>
-                                <input type="file" name="answers_file[{{ $qid }}]" accept="image/*">
-                                <label>Control Measures{{ $question->is_mandatory ? ' *' : '' }}</label>
-                                <textarea name="answers_meta[{{ $qid }}][control_measures]" rows="1" {{ $required }}></textarea>
-                                <label>Risk Score (After){{ $question->is_mandatory ? ' *' : '' }}</label>
-                                <select name="answers_meta[{{ $qid }}][risk_score_after]" style="width:150px;max-width:100%;" {{ $required }}>
-                                    <option value="">Select</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                    <option value="5">5</option>
-                                </select>
+                                <label>{{ $question->question_text ?: 'SWMS Hazard / Risk' }}{{ $question->is_mandatory ? ' *' : '' }}</label>
+                                <div class="sl-repeat" data-sl-repeat>
+                                    <div class="sl-repeat-item">
+                                        <label>Task | Activity{{ $question->is_mandatory ? ' *' : '' }}</label>
+                                        <textarea name="answers_meta[{{ $qid }}][task][]" rows="1" {{ $required }}></textarea>
+                                        <label>Potential Hazards{{ $question->is_mandatory ? ' *' : '' }}</label>
+                                        <textarea name="answers_meta[{{ $qid }}][potential_hazards][]" rows="1" {{ $required }}></textarea>
+                                        <label>Risk Score (Before){{ $question->is_mandatory ? ' *' : '' }}</label>
+                                        <select name="answers_meta[{{ $qid }}][risk_score_before][]" style="width:150px;max-width:100%;" {{ $required }}>
+                                            <option value="">Select</option>
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                            <option value="5">5</option>
+                                        </select>
+                                        <label>Photo (optional)</label>
+                                        <input type="file" name="answers_file[{{ $qid }}][]" accept="image/*">
+                                        <label>Control Measures{{ $question->is_mandatory ? ' *' : '' }}</label>
+                                        <textarea name="answers_meta[{{ $qid }}][control_measures][]" rows="1" {{ $required }}></textarea>
+                                        <label>Risk Score (After){{ $question->is_mandatory ? ' *' : '' }}</label>
+                                        <select name="answers_meta[{{ $qid }}][risk_score_after][]" style="width:150px;max-width:100%;" {{ $required }}>
+                                            <option value="">Select</option>
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                            <option value="5">5</option>
+                                        </select>
+                                    </div>
+                                    {{-- Legacy add_another_hazard: appends another full SWMS hazard row. --}}
+                                    <a href="javascript:;" class="sl-add-another" style="display:inline-block;margin-top:.5rem;font-size:.9rem;color:#008C00;font-weight:600;">+ Add another</a>
+                                </div>
                                 @break
 
                             @case(24)
