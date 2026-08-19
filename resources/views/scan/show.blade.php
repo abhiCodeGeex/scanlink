@@ -728,16 +728,32 @@
 
                             @case(22)
                                 <label>{{ $question->question_text ?: 'SWMS Hazard / Risk' }}@if($question->is_mandatory) *@endif</label>
-                                <label>Task / activity</label>
-                                <input type="text" name="answers_meta[{{ $qid }}][task]" {{ $required }}>
-                                <label>Hazards</label>
-                                <textarea name="answers_meta[{{ $qid }}][hazards]" rows="2"></textarea>
-                                <label>Risk before controls</label>
-                                <input type="text" name="answers_meta[{{ $qid }}][risk_before]">
-                                <label>Controls / risk after</label>
-                                <textarea name="answers_meta[{{ $qid }}][risk_after]" rows="2"></textarea>
+                                <label>Task | Activity{{ $question->is_mandatory ? ' *' : '' }}</label>
+                                <textarea name="answers_meta[{{ $qid }}][task]" rows="1" {{ $required }}></textarea>
+                                <label>Potential Hazards{{ $question->is_mandatory ? ' *' : '' }}</label>
+                                <textarea name="answers_meta[{{ $qid }}][potential_hazards]" rows="1" {{ $required }}></textarea>
+                                <label>Risk Score (Before){{ $question->is_mandatory ? ' *' : '' }}</label>
+                                <select name="answers_meta[{{ $qid }}][risk_score_before]" style="width:150px;max-width:100%;" {{ $required }}>
+                                    <option value="">Select</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                </select>
                                 <label>Photo (optional)</label>
                                 <input type="file" name="answers_file[{{ $qid }}]" accept="image/*">
+                                <label>Control Measures{{ $question->is_mandatory ? ' *' : '' }}</label>
+                                <textarea name="answers_meta[{{ $qid }}][control_measures]" rows="1" {{ $required }}></textarea>
+                                <label>Risk Score (After){{ $question->is_mandatory ? ' *' : '' }}</label>
+                                <select name="answers_meta[{{ $qid }}][risk_score_after]" style="width:150px;max-width:100%;" {{ $required }}>
+                                    <option value="">Select</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                </select>
                                 @break
 
                             @case(24)
