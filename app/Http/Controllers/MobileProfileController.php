@@ -651,12 +651,18 @@ class MobileProfileController extends Controller
         // Build readable rows (clean labels, structured ::: answers) for the email.
         $rows = \App\Support\FormSubmissionPresenter::rows($questions, $savedAnswers);
 
+        // Use the profile's own company logo in the email header when it has one; otherwise the
+        // layout falls back to the ScanLink logo.
+        $logoName = trim((string) optional($profile->logos->first())->logo_name);
+        $profileLogo = $logoName !== '' ? \App\Support\PublicMediaPath::url($logoName) : null;
+
         $html = view('emails.form-submission', [
             'profile' => $profile,
             'profileName' => trim((string) ($profile->code_profile_name ?: $profile->name)),
             'submittedAt' => now()->format('d/m/Y H:i'),
             'sessionId' => $sessionId,
             'rows' => $rows,
+            'profileLogo' => $profileLogo,
         ])->render();
 
         $attachPdf = (int) ($profile->form_submission_format ?? 0) === 1;
