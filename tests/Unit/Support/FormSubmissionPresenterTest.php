@@ -134,8 +134,9 @@ class FormSubmissionPresenterTest extends TestCase
         ]);
         $question->setRelation('options', collect());
 
-        // Valid 1x1 transparent PNG so the PDF path (which decodes + validates) also embeds an <img>.
-        $dataUri = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+        // A genuinely valid PNG (built with GD) so the PDF path, which decodes + validates the
+        // image, also embeds an <img>.
+        $dataUri = self::validPngDataUri();
         $raw = 'Brent Palmer | Signature: '.$dataUri;
 
         $row = FormSubmissionPresenter::presentOne($question, $raw);
@@ -160,7 +161,7 @@ class FormSubmissionPresenterTest extends TestCase
         ]);
         $question->setRelation('options', collect());
 
-        $png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+        $png = self::validPngDataUri();
         $raw = 'name=Alice@@F@@signature='.$png.'@@ROW@@name=Bob@@F@@signature='.$png;
 
         $row = FormSubmissionPresenter::presentOne($question, $raw);
@@ -223,5 +224,20 @@ class FormSubmissionPresenterTest extends TestCase
         ]);
         $this->assertStringContainsString('<ul', $list->toHtml());
         $this->assertStringContainsString('One', $list->toHtml());
+    }
+
+    /**
+     * A genuinely valid PNG (built with GD) as a data URI, so the PDF renderer's decode+validate
+     * step accepts it and embeds an <img> — mirrors a real canvas signature.
+     */
+    private static function validPngDataUri(): string
+    {
+        $img = imagecreatetruecolor(4, 4);
+        ob_start();
+        imagepng($img);
+        $binary = (string) ob_get_clean();
+        imagedestroy($img);
+
+        return 'data:image/png;base64,'.base64_encode($binary);
     }
 }
