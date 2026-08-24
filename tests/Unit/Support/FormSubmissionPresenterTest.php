@@ -134,8 +134,8 @@ class FormSubmissionPresenterTest extends TestCase
         ]);
         $question->setRelation('options', collect());
 
-        // Valid 1x1 PNG so the PDF path (which decodes + validates) also embeds an <img>.
-        $dataUri = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+        // Valid 1x1 transparent PNG so the PDF path (which decodes + validates) also embeds an <img>.
+        $dataUri = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
         $raw = 'Brent Palmer | Signature: '.$dataUri;
 
         $row = FormSubmissionPresenter::presentOne($question, $raw);
