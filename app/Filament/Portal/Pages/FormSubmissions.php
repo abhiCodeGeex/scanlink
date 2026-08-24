@@ -339,11 +339,18 @@ class FormSubmissions extends Page
 
         abort_if($answers->isEmpty(), 404);
 
+        // Company logo for the printed report header (falls back to the ScanLink logo).
+        $logo = \App\Models\Logo::query()->where('profile_id', $profile->id)->orderBy('id')->first();
+        $logoUrl = $logo?->logo_name
+            ? \App\Support\PublicMediaPath::url($logo->logo_name)
+            : asset('images/logo.png');
+
         $html = view('filament.portal.pages.form-submission-print', [
             'profile' => $profile,
             'sessionId' => $sessionId,
             'answers' => $answers,
             'submittedAt' => $answers->min('date_time'),
+            'logoUrl' => $logoUrl,
         ])->render();
 
         return response($html, 200, [

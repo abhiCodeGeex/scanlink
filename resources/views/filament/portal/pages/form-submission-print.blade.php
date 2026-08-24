@@ -24,9 +24,14 @@
         <button type="button" class="print-btn" onclick="window.print()">Print / Save as PDF</button>
     </div>
 
+    @if (! empty($logoUrl))
+        <img src="{{ $logoUrl }}" alt="Logo" style="max-height:90px;max-width:260px;width:auto;height:auto;display:block;margin:0 0 1rem;">
+    @endif
+
     <h1>{{ $profile->form_title ?: $profile->name }}</h1>
     <p class="meta">
-        Profile: {{ $profile->name }}<br>
+        Profile number: {{ $profile->id }}<br>
+        Profile: {{ $profile->code_profile_name ?: ($profile->name ?: $profile->form_title) }}<br>
         Session: {{ $sessionId }}<br>
         Submitted: {{ $submittedAt ? \Illuminate\Support\Carbon::parse($submittedAt)->format('d M Y H:i') : '—' }}
     </p>

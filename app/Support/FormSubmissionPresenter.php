@@ -96,6 +96,7 @@ class FormSubmissionPresenter
             'value' => '',
             'items' => [],
             'fields' => [],
+            'instances' => [],
             'signature_src' => '',
             'signature_meta' => '',
         ];
@@ -107,6 +108,20 @@ class FormSubmissionPresenter
                 'kind' => 'signature',
                 'signature_src' => trim((string) $sigSrc),
                 'signature_meta' => trim((string) $sigMeta),
+            ]);
+        }
+
+        // SWMS (type 22): each hazard row is stored as its own "@@SWMS@@"-delimited instance
+        // of "@@F@@"-delimited "slug=value" fields. Present as grouped instances so the
+        // email / print / PDF can divide the rows visually.
+        if ($typeId === 22 && (
+            str_contains($raw, '@@F@@')
+            || str_contains($raw, '@@SWMS@@')
+            || preg_match('/^(task|hazards|risk_before|control|risk_after|photo)=/', $raw)
+        )) {
+            return array_merge($base, [
+                'kind' => 'swms',
+                'instances' => self::swmsInstances($raw),
             ]);
         }
 
@@ -293,12 +308,67 @@ class FormSubmissionPresenter
     }
 
     /**
+     * Parse a stored SWMS (type 22) answer into a list of hazard-row instances, each a list
+     * of {label, value, is_file} fields.
+     *
+     * @return list<list<array{label: string, value: string, is_file: bool}>>
+     */
+    public static function swmsInstances(string $raw): array
+    {
+        $labels = [
+            'task' => 'Task / Activity',
+            'hazards' => 'Potential Hazards',
+            'risk_before' => 'Risk Score (Before)',
+            'control' => 'Control Measures',
+            'risk_after' => 'Risk Score (After)',
+            'photo' => 'Photo',
+        ];
+
+        $instances = [];
+
+        foreach (explode('@@SWMS@@', $raw) as $block) {
+            $block = trim($block);
+            if ($block === '') {
+                continue;
+            }
+
+            $fields = [];
+            foreach (explode('@@F@@', $block) as $segment) {
+                $segment = trim($segment);
+                if ($segment === '') {
+                    continue;
+                }
+
+                [$slug, $value] = array_pad(explode('=', $segment, 2), 2, '');
+                $slug = trim($slug);
+                $value = trim($value);
+                if ($value === '') {
+                    continue;
+                }
+
+                $fields[] = [
+                    'label' => $labels[$slug] ?? ucfirst(str_replace('_', ' ', $slug)),
+                    'value' => $value,
+                    'is_file' => $slug === 'photo',
+                ];
+            }
+
+            if ($fields !== []) {
+                $instances[] = $fields;
+            }
+        }
+
+        return $instances;
+    }
+
+    /**
      * Safe HTML for a presented answer value (text / list items / fields).
      */
     public static function answerHtml(array $row): HtmlString
     {
         return match ($row['kind']) {
             'signature' => self::signatureHtml($row),
+            'swms' => self::swmsHtml($row),
             'list' => new HtmlString(
                 '<ul style="margin:0;padding-left:18px;">'
                 .collect($row['items'])->map(
@@ -333,6 +403,7 @@ class FormSubmissionPresenter
     {
         return match ($row['kind']) {
             'signature' => self::signaturePdfHtml($row),
+            'swms' => self::swmsPdfHtml($row),
             'list' => '<ul>'
                 .collect($row['items'])->map(
                     static fn (string $item): string => '<li>'.nl2br(e($item)).'</li>'
@@ -350,6 +421,76 @@ class FormSubmissionPresenter
                 ? '&nbsp;'
                 : nl2br(e($v)),
         };
+    }
+
+    /**
+     * HTML for a SWMS answer: each hazard row rendered as its own titled block, divided by a
+     * rule (SWMS #1 — divider — SWMS #2 …). Photo values become clickable file links.
+     */
+    protected static function swmsHtml(array $row): HtmlString
+    {
+        $instances = $row['instances'] ?? [];
+
+        if ($instances === []) {
+            return new HtmlString('—');
+        }
+
+        $html = collect($instances)->map(static function (array $fields, int $i): string {
+            $divider = $i > 0
+                ? '<div style="border-top:2px solid #d1d5db;margin:14px 0 12px;"></div>'
+                : '';
+
+            $heading = '<div style="font-size:13px;font-weight:bold;color:#065f06;margin:0 0 6px;">SWMS #'.($i + 1).'</div>';
+
+            $rows = collect($fields)->map(static function (array $field): string {
+                return '<tr>'
+                    .'<td style="padding:3px 12px 3px 0;color:#6b7280;font-size:13px;width:42%;vertical-align:top;">'
+                    .e($field['label'])
+                    .'</td>'
+                    .'<td style="padding:3px 0;color:#111827;font-size:14px;vertical-align:top;">'
+                    .FormAnswerHtml::text((string) $field['value'])->toHtml()
+                    .'</td>'
+                    .'</tr>';
+            })->implode('');
+
+            return $divider.$heading
+                .'<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;">'
+                .$rows
+                .'</table>';
+        })->implode('');
+
+        return new HtmlString($html);
+    }
+
+    /**
+     * TCPDF-friendly SWMS markup: titled blocks divided by a rule, simple tags only.
+     */
+    protected static function swmsPdfHtml(array $row): string
+    {
+        $instances = $row['instances'] ?? [];
+
+        if ($instances === []) {
+            return '&nbsp;';
+        }
+
+        return collect($instances)->map(static function (array $fields, int $i): string {
+            $divider = $i > 0 ? '<hr>' : '';
+            $heading = '<p><b>SWMS #'.($i + 1).'</b></p>';
+
+            $rows = collect($fields)->map(static function (array $field): string {
+                $value = $field['is_file']
+                    ? e(basename((string) $field['value']))
+                    : nl2br(e((string) $field['value']));
+
+                return '<tr>'
+                    .'<td width="40%" style="color:#4b5563;"><b>'.e($field['label']).'</b></td>'
+                    .'<td width="60%">'.$value.'</td>'
+                    .'</tr>';
+            })->implode('');
+
+            return $divider.$heading
+                .'<table cellpadding="3" cellspacing="0" border="0" width="100%">'.$rows.'</table>';
+        })->implode('');
     }
 
     protected static function signatureHtml(array $row): HtmlString

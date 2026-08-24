@@ -239,6 +239,12 @@ class MobileProfileController extends Controller
 
             $question = $questions->get((int) $questionId);
 
+            // SWMS (type 22) has a dedicated pass below that groups each hazard row into its
+            // own delimited instance, so skip the generic per-field flattening here.
+            if ($question && (int) $question->question_type_id === 22) {
+                continue;
+            }
+
             // Legacy Covid check-in stores fields joined with ::: in fixed order.
             if ($question && (int) $question->question_type_id === 25) {
                 $parts = [
@@ -297,6 +303,12 @@ class MobileProfileController extends Controller
         $uploadedFilePaths = [];
 
         foreach ($files as $questionId => $file) {
+            // SWMS (type 22) photos are stored per hazard row in the dedicated SWMS pass below.
+            $fileQuestion = $questions->get((int) $questionId);
+            if ($fileQuestion && (int) $fileQuestion->question_type_id === 22) {
+                continue;
+            }
+
             // "Add another" upload sends an array of files; SWMS sends a single file.
             $fileList = is_array($file) ? $file : [$file];
             $storedPaths = [];
@@ -320,6 +332,81 @@ class MobileProfileController extends Controller
             $answerMap[$questionId] = filled($existing)
                 ? trim((string) $existing.' | File: '.$pathStr)
                 : $pathStr;
+        }
+
+        // SWMS (type 22): store every hazard row as its own delimited instance so the email,
+        // print page and PDF can render the rows divided (SWMS #1 — divider — SWMS #2 …)
+        // instead of merging each field's values. Photos are aligned to their hazard row.
+        foreach ($questions as $swmsQuestion) {
+            if ((int) $swmsQuestion->question_type_id !== 22) {
+                continue;
+            }
+
+            $qid = $swmsQuestion->question_id;
+            $meta = $validated['answers_meta'][$qid] ?? $validated['answers_meta'][(string) $qid] ?? [];
+            if (! is_array($meta)) {
+                $meta = [];
+            }
+
+            // Mobile-form meta key => compact stored slug, in on-screen field order.
+            $swmsFields = [
+                'task' => 'task',
+                'potential_hazards' => 'hazards',
+                'risk_score_before' => 'risk_before',
+                'control_measures' => 'control',
+                'risk_score_after' => 'risk_after',
+            ];
+
+            // Store each hazard row's optional photo, keeping its row index for alignment.
+            $swmsPhotos = [];
+            $swmsFiles = $request->file('answers_file.'.$qid);
+            if (is_array($swmsFiles)) {
+                foreach ($swmsFiles as $rowIndex => $singleFile) {
+                    if ($singleFile instanceof UploadedFile
+                        && $singleFile->isValid()
+                        && $singleFile->getSize() <= 10240 * 1024) {
+                        $stored = $singleFile->store('form-uploads/'.$profile->id, 'public');
+                        $swmsPhotos[(int) $rowIndex] = $stored;
+                        $uploadedFilePaths[] = $stored;
+                    }
+                }
+            }
+
+            // Number of hazard rows submitted (max across all fields and photos).
+            $rowCount = 0;
+            foreach ($swmsFields as $metaKey => $slug) {
+                if (is_array($meta[$metaKey] ?? null)) {
+                    $rowCount = max($rowCount, count($meta[$metaKey]));
+                }
+            }
+            if ($swmsPhotos !== []) {
+                $rowCount = max($rowCount, max(array_keys($swmsPhotos)) + 1);
+            }
+
+            $instances = [];
+            for ($i = 0; $i < $rowCount; $i++) {
+                $segments = [];
+                foreach ($swmsFields as $metaKey => $slug) {
+                    $value = trim((string) ($meta[$metaKey][$i] ?? ''));
+                    // Keep user text off our delimiters (latin1-safe ASCII sentinels).
+                    $value = str_replace(['@@SWMS@@', '@@F@@'], ' ', $value);
+                    if ($value !== '') {
+                        $segments[] = $slug.'='.$value;
+                    }
+                }
+                if (isset($swmsPhotos[$i])) {
+                    $segments[] = 'photo='.$swmsPhotos[$i];
+                }
+                if ($segments !== []) {
+                    $instances[] = implode('@@F@@', $segments);
+                }
+            }
+
+            if ($instances !== []) {
+                $answerMap[$qid] = implode('@@SWMS@@', $instances);
+            } else {
+                unset($answerMap[$qid]);
+            }
         }
 
         foreach ($questions as $question) {
@@ -490,7 +577,11 @@ class MobileProfileController extends Controller
             return null;
         }
 
-        foreach ([$profile->shorturl, $profile->url, $profile->name] as $candidate) {
+        // Never redirect to $profile->shorturl: for a "code" profile the short URL is the
+        // TinyURL that points back at THIS scan page, so using it as the redirect target
+        // creates an infinite loop (ERR_TOO_MANY_REDIRECTS). The real destination lives in
+        // $profile->url (or the legacy $profile->name).
+        foreach ([$profile->url, $profile->name] as $candidate) {
             if (! filled($candidate)) {
                 continue;
             }
