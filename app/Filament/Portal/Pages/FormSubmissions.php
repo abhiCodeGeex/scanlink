@@ -263,9 +263,9 @@ class FormSubmissions extends Page
         // readable base size so the downloaded report is legible.
         $pdf->SetFont('helvetica', '', 11);
 
-        // Company logo as a local file path (TCPDF can't reliably fetch the http URL that the
-        // browser view uses); falls back to the bundled ScanLink logo.
-        $logoUrl = $this->profileLogoLocalPath($profile);
+        // Company logo as an inline base64 data URI (TCPDF renders those reliably, unlike the
+        // http URL the browser view uses or some local file paths); falls back to ScanLink logo.
+        $logoUrl = $this->profilePdfLogoSrc($profile);
 
         $rendered = 0;
         foreach ($sessionIds as $sessionId) {
@@ -464,37 +464,49 @@ class FormSubmissions extends Page
     }
 
     /**
-     * Resolve the profile's company logo to an absolute local file path for TCPDF (which can't
-     * reliably fetch the http URL used in the browser view). Returns null when there is no
-     * usable image; the print view then falls back to the bundled ScanLink logo path.
+     * Company logo for the PDF report as a base64 data URI. TCPDF is unreliable at fetching the
+     * http URL the browser view uses AND at loading some local file paths, but it renders inline
+     * data URIs dependably (same approach used for signatures). The stored logo_name is
+     * normalized the same way the scan page resolves it, with legacy public/ locations and the
+     * bundled ScanLink logo as fallbacks. Returns null when no usable image exists.
      */
-    protected function profileLogoLocalPath(Profile $profile): ?string
+    protected function profilePdfLogoSrc(Profile $profile): ?string
     {
         $logo = \App\Models\Logo::query()->where('profile_id', $profile->id)->orderBy('id')->first();
         $name = trim((string) ($logo?->logo_name ?? ''));
+        $normalized = \App\Support\PublicMediaPath::normalize($name);
 
         $candidates = [];
-        if ($name !== '') {
+        if ($normalized !== '') {
             try {
-                if (Storage::disk('public')->exists($name)) {
-                    $candidates[] = Storage::disk('public')->path($name);
+                if (Storage::disk('public')->exists($normalized)) {
+                    $candidates[] = Storage::disk('public')->path($normalized);
                 }
             } catch (\Throwable) {
                 // fall through to path guesses
             }
 
-            $relative = ltrim((string) preg_replace('#^storage/#', '', $name), '/');
+            $candidates[] = public_path('storage/'.$normalized);
+            $candidates[] = storage_path('app/public/'.$normalized);
+            $candidates[] = public_path($normalized);
+        }
+        if ($name !== '') {
             $candidates[] = public_path($name);
-            $candidates[] = public_path('storage/'.$relative);
-            $candidates[] = storage_path('app/public/'.$relative);
         }
 
-        // Bundled ScanLink logo fallback.
-        $candidates[] = public_path('images/logo.png');
+        // Bundled ScanLink logo fallbacks.
+        foreach (['images/logo.png', 'images/scanlink-logo.png', 'images/email-logo.png'] as $fallback) {
+            $candidates[] = public_path($fallback);
+        }
 
         foreach ($candidates as $candidate) {
-            if (is_file($candidate) && @getimagesize($candidate) !== false) {
-                return $candidate;
+            if (is_file($candidate) && ($info = @getimagesize($candidate)) !== false) {
+                $data = @file_get_contents($candidate);
+                if ($data !== false && $data !== '') {
+                    $mime = $info['mime'] ?? 'image/png';
+
+                    return 'data:'.$mime.';base64,'.base64_encode($data);
+                }
             }
         }
 

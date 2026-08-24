@@ -27,9 +27,12 @@
     </div>
 
     @if (! empty($logoUrl))
-        {{-- height attr is for TCPDF (Download PDF), which ignores max-height CSS; the browser
-             view keeps the responsive style rules. --}}
-        <img src="{{ $logoUrl }}" alt="Logo" @if (! empty($forPdf)) height="64" @endif style="max-height:90px;max-width:260px;width:auto;height:auto;display:block;margin:0 0 16px;">
+        @if (! empty($forPdf))
+            {{-- TCPDF: clean img with an explicit height and no conflicting height:auto style. --}}
+            <img src="{{ $logoUrl }}" alt="Logo" height="60">
+        @else
+            <img src="{{ $logoUrl }}" alt="Logo" style="max-height:90px;max-width:260px;width:auto;height:auto;display:block;margin:0 0 16px;">
+        @endif
     @endif
 
     <h1>{{ $profile->form_title ?: $profile->name }}</h1>
