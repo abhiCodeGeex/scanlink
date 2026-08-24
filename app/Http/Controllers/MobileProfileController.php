@@ -239,9 +239,9 @@ class MobileProfileController extends Controller
 
             $question = $questions->get((int) $questionId);
 
-            // SWMS (type 22) has a dedicated pass below that groups each hazard row into its
-            // own delimited instance, so skip the generic per-field flattening here.
-            if ($question && (int) $question->question_type_id === 22) {
+            // SWMS (type 22) and repeatable signatures (type 16) have dedicated passes below that
+            // group each entry into its own delimited instance — skip the generic flattening here.
+            if ($question && in_array((int) $question->question_type_id, [16, 22], true)) {
                 continue;
             }
 
@@ -404,6 +404,51 @@ class MobileProfileController extends Controller
 
             if ($instances !== []) {
                 $answerMap[$qid] = implode('@@SWMS@@', $instances);
+            } else {
+                unset($answerMap[$qid]);
+            }
+        }
+
+        // Signature (type 16): store each repeatable entry as its own "@@ROW@@"-delimited instance
+        // of "@@F@@"-delimited "slug=value" fields (name/employer/email/phone/signature) so the
+        // report / email / PDF can render each signature divided.
+        foreach ($questions as $sigQuestion) {
+            if ((int) $sigQuestion->question_type_id !== 16) {
+                continue;
+            }
+
+            $qid = $sigQuestion->question_id;
+            $meta = $validated['answers_meta'][$qid] ?? $validated['answers_meta'][(string) $qid] ?? [];
+            if (! is_array($meta)) {
+                $meta = [];
+            }
+
+            $sigFields = ['name', 'employer', 'email', 'phone', 'signature'];
+
+            $rowCount = 0;
+            foreach ($sigFields as $field) {
+                if (is_array($meta[$field] ?? null)) {
+                    $rowCount = max($rowCount, count($meta[$field]));
+                }
+            }
+
+            $instances = [];
+            for ($i = 0; $i < $rowCount; $i++) {
+                $segments = [];
+                foreach ($sigFields as $field) {
+                    $value = trim((string) ($meta[$field][$i] ?? ''));
+                    $value = str_replace(['@@ROW@@', '@@F@@'], ' ', $value);
+                    if ($value !== '') {
+                        $segments[] = $field.'='.$value;
+                    }
+                }
+                if ($segments !== []) {
+                    $instances[] = implode('@@F@@', $segments);
+                }
+            }
+
+            if ($instances !== []) {
+                $answerMap[$qid] = implode('@@ROW@@', $instances);
             } else {
                 unset($answerMap[$qid]);
             }

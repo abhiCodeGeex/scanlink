@@ -656,28 +656,34 @@
                                 @break
 
                             @case(16)
-                                {{-- Legacy parity: name/employer/email/phone first, signature pad at the bottom. --}}
-                                @if ($question->include_name)
-                                    <label>Name{{ $question->is_mandatory ? ' *' : '' }}</label>
-                                    <input type="text" name="answers_meta[{{ $qid }}][name]" {{ $required }}>
-                                @endif
-                                @if ($question->include_employer)
-                                    <label>Employer</label>
-                                    <input type="text" name="answers_meta[{{ $qid }}][employer]">
-                                @endif
-                                @if ($question->include_email)
-                                    <label>Email</label>
-                                    <input type="email" name="answers_meta[{{ $qid }}][email]">
-                                @endif
-                                @if ($question->include_phone)
-                                    <label>Phone</label>
-                                    <input type="text" name="answers_meta[{{ $qid }}][phone]">
-                                @endif
-                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
-                                <div class="signature-wrap">
-                                    <canvas id="sig-{{ $qid }}" width="320" height="120"></canvas>
-                                    <input type="hidden" name="answers[{{ $qid }}]" id="sig-input-{{ $qid }}">
-                                    <p style="margin:.35rem 0;"><button type="button" class="btn-outline btn" onclick="clearSig({{ $qid }})">Clear signature</button></p>
+                                {{-- Legacy parity: fields first, signature pad last; repeatable via Add another. --}}
+                                <div class="sl-repeat" data-sl-repeat>
+                                    <div class="sl-repeat-item">
+                                        @if ($question->include_name)
+                                            <label>Name{{ $question->is_mandatory ? ' *' : '' }}</label>
+                                            <input type="text" name="answers_meta[{{ $qid }}][name][]" {{ $required }}>
+                                        @endif
+                                        @if ($question->include_employer)
+                                            <label>Employer</label>
+                                            <input type="text" name="answers_meta[{{ $qid }}][employer][]">
+                                        @endif
+                                        @if ($question->include_email)
+                                            <label>Email</label>
+                                            <input type="email" name="answers_meta[{{ $qid }}][email][]">
+                                        @endif
+                                        @if ($question->include_phone)
+                                            <label>Phone</label>
+                                            <input type="text" name="answers_meta[{{ $qid }}][phone][]">
+                                        @endif
+                                        <label>{{ $question->question_text }}{{ $question->is_mandatory ? ' *' : '' }}</label>
+                                        <div class="signature-wrap">
+                                            <canvas class="sl-sig-canvas" width="320" height="120"></canvas>
+                                            <input type="hidden" name="answers_meta[{{ $qid }}][signature][]" class="sl-sig-input">
+                                            <p style="margin:.35rem 0;"><button type="button" class="btn-outline btn sl-sig-clear">Clear signature</button></p>
+                                        </div>
+                                    </div>
+                                    {{-- Legacy add_another: appends another name + signature entry. --}}
+                                    <a href="javascript:;" class="sl-add-another" style="display:inline-block;margin-top:.5rem;font-size:.9rem;color:#008C00;font-weight:600;">+ Add another</a>
                                 </div>
                                 @break
 
@@ -901,6 +907,52 @@
                 })();
             </script>
             <script>
+                // Repeatable signature pads (type 16): class-based init so "Add another" clones work.
+                (function () {
+                    function initSigCanvas(canvas) {
+                        if (!canvas || canvas.dataset.slSigInit === '1') return;
+                        canvas.dataset.slSigInit = '1';
+                        var wrap = canvas.closest('.signature-wrap');
+                        var input = wrap ? wrap.querySelector('.sl-sig-input') : null;
+                        var ctx = canvas.getContext('2d');
+                        ctx.strokeStyle = '#111';
+                        ctx.lineWidth = 2;
+                        ctx.lineCap = 'round';
+                        var drawing = false;
+                        function pos(e) {
+                            var r = canvas.getBoundingClientRect();
+                            var t = e.touches ? e.touches[0] : e;
+                            return { x: t.clientX - r.left, y: t.clientY - r.top };
+                        }
+                        function start(e) { drawing = true; ctx.beginPath(); var p = pos(e); ctx.moveTo(p.x, p.y); e.preventDefault(); }
+                        function draw(e) { if (!drawing) return; var p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); e.preventDefault(); }
+                        function end() { drawing = false; if (input) input.value = canvas.toDataURL('image/png'); }
+                        canvas.addEventListener('mousedown', start);
+                        canvas.addEventListener('mousemove', draw);
+                        canvas.addEventListener('mouseup', end);
+                        canvas.addEventListener('mouseleave', end);
+                        canvas.addEventListener('touchstart', start, { passive: false });
+                        canvas.addEventListener('touchmove', draw, { passive: false });
+                        canvas.addEventListener('touchend', end);
+                    }
+                    window.slInitSignatures = function () {
+                        document.querySelectorAll('.sl-sig-canvas').forEach(initSigCanvas);
+                    };
+                    window.slInitSignatures();
+                    document.addEventListener('click', function (e) {
+                        var btn = e.target.closest('.sl-sig-clear');
+                        if (!btn) return;
+                        e.preventDefault();
+                        var wrap = btn.closest('.signature-wrap');
+                        if (!wrap) return;
+                        var canvas = wrap.querySelector('.sl-sig-canvas');
+                        var input = wrap.querySelector('.sl-sig-input');
+                        if (canvas) { canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height); }
+                        if (input) input.value = '';
+                    });
+                })();
+            </script>
+            <script>
                 // Legacy "Add another": clone the last repeat item, clearing its inputs.
                 (function () {
                     document.addEventListener('click', function (e) {
@@ -915,7 +967,13 @@
                         clone.querySelectorAll('input, textarea, select').forEach(function (el) {
                             if (el.type === 'checkbox' || el.type === 'radio') { el.checked = false; } else { el.value = ''; }
                         });
+                        // Reset any cloned signature pad so it initialises fresh (blank + re-bound).
+                        clone.querySelectorAll('.sl-sig-canvas').forEach(function (c) {
+                            c.removeAttribute('data-sl-sig-init');
+                            try { c.getContext('2d').clearRect(0, 0, c.width, c.height); } catch (err) {}
+                        });
                         wrap.insertBefore(clone, link);
+                        if (window.slInitSignatures) { window.slInitSignatures(); }
                     });
                 })();
             </script>

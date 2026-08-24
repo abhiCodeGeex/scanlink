@@ -151,6 +151,38 @@ class FormSubmissionPresenterTest extends TestCase
     }
 
     #[Test]
+    public function it_divides_multiple_signature_entries_into_instances(): void
+    {
+        $question = new FormBuilderQuestion([
+            'question_id' => 12,
+            'question_type_id' => 16,
+            'question_text' => 'Signature Test',
+        ]);
+        $question->setRelation('options', collect());
+
+        $png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+        $raw = 'name=Alice@@F@@signature='.$png.'@@ROW@@name=Bob@@F@@signature='.$png;
+
+        $row = FormSubmissionPresenter::presentOne($question, $raw);
+
+        $this->assertSame('sigrows', $row['kind']);
+        $this->assertCount(2, $row['instances']);
+        $this->assertSame('Name', $row['instances'][0][0]['label']);
+        $this->assertSame('Alice', $row['instances'][0][0]['value']);
+        $this->assertTrue($row['instances'][0][1]['is_signature']);
+
+        $html = FormSubmissionPresenter::answerHtml($row)->toHtml();
+        $this->assertStringContainsString('Signature #1', $html);
+        $this->assertStringContainsString('Signature #2', $html);
+        $this->assertSame(2, substr_count($html, '<img'));
+        $this->assertStringContainsString('Alice', $html);
+        $this->assertStringContainsString('Bob', $html);
+
+        $pdf = FormSubmissionPresenter::answerPdfHtml($row);
+        $this->assertStringContainsString('<img', $pdf);
+    }
+
+    #[Test]
     public function it_builds_rows_keyed_by_question_id(): void
     {
         $q = new FormBuilderQuestion([

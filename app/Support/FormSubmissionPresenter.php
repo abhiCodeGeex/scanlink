@@ -125,6 +125,20 @@ class FormSubmissionPresenter
             ]);
         }
 
+        // Repeatable signature element (type 16): each entry is stored as an "@@ROW@@"-delimited
+        // instance of "@@F@@"-delimited "slug=value" fields (name/employer/email/phone/signature).
+        // (Old single-signature answers start with "data:image" and are handled above.)
+        if ($typeId === 16 && (
+            str_contains($raw, '@@ROW@@')
+            || str_contains($raw, '@@F@@')
+            || preg_match('/^(name|employer|email|phone|signature)=/', $raw)
+        )) {
+            return array_merge($base, [
+                'kind' => 'sigrows',
+                'instances' => self::signatureRows($raw),
+            ]);
+        }
+
         if ($typeId === 25) {
             return array_merge($base, [
                 'kind' => 'fields',
@@ -362,6 +376,59 @@ class FormSubmissionPresenter
     }
 
     /**
+     * Parse a repeatable signature (type 16) answer into a list of instances, each a list of
+     * {label, value, is_signature} fields.
+     *
+     * @return list<list<array{label: string, value: string, is_signature: bool}>>
+     */
+    public static function signatureRows(string $raw): array
+    {
+        $labels = [
+            'name' => 'Name',
+            'employer' => 'Employer',
+            'email' => 'Email',
+            'phone' => 'Phone',
+            'signature' => 'Signature',
+        ];
+
+        $instances = [];
+
+        foreach (explode('@@ROW@@', $raw) as $block) {
+            $block = trim($block);
+            if ($block === '') {
+                continue;
+            }
+
+            $fields = [];
+            foreach (explode('@@F@@', $block) as $segment) {
+                $segment = trim($segment);
+                if ($segment === '') {
+                    continue;
+                }
+
+                [$slug, $value] = array_pad(explode('=', $segment, 2), 2, '');
+                $slug = trim($slug);
+                $value = trim($value);
+                if ($value === '') {
+                    continue;
+                }
+
+                $fields[] = [
+                    'label' => $labels[$slug] ?? ucfirst(str_replace('_', ' ', $slug)),
+                    'value' => $value,
+                    'is_signature' => $slug === 'signature',
+                ];
+            }
+
+            if ($fields !== []) {
+                $instances[] = $fields;
+            }
+        }
+
+        return $instances;
+    }
+
+    /**
      * Safe HTML for a presented answer value (text / list items / fields).
      */
     public static function answerHtml(array $row): HtmlString
@@ -369,6 +436,7 @@ class FormSubmissionPresenter
         return match ($row['kind']) {
             'signature' => self::signatureHtml($row),
             'swms' => self::swmsHtml($row),
+            'sigrows' => self::sigHtml($row),
             'list' => new HtmlString(
                 '<ul style="margin:0;padding-left:18px;">'
                 .collect($row['items'])->map(
@@ -404,6 +472,7 @@ class FormSubmissionPresenter
         return match ($row['kind']) {
             'signature' => self::signaturePdfHtml($row),
             'swms' => self::swmsPdfHtml($row),
+            'sigrows' => self::sigPdfHtml($row),
             'list' => '<ul>'
                 .collect($row['items'])->map(
                     static fn (string $item): string => '<li>'.self::pdfText($item).'</li>'
@@ -460,6 +529,79 @@ class FormSubmissionPresenter
         })->implode('');
 
         return new HtmlString($html);
+    }
+
+    /**
+     * HTML for a repeatable signature answer: each entry rendered as its own block (divided by a
+     * rule when there is more than one), with the signature drawn as an image.
+     */
+    protected static function sigHtml(array $row): HtmlString
+    {
+        $instances = $row['instances'] ?? [];
+
+        if ($instances === []) {
+            return new HtmlString('—');
+        }
+
+        $multi = count($instances) > 1;
+
+        $html = collect($instances)->map(static function (array $fields, int $i) use ($multi): string {
+            $divider = $i > 0
+                ? '<div style="border-top:2px solid #d1d5db;margin:14px 0 12px;"></div>'
+                : '';
+
+            $heading = $multi
+                ? '<div style="font-size:13px;font-weight:bold;color:#065f06;margin:0 0 6px;">Signature #'.($i + 1).'</div>'
+                : '';
+
+            $rows = collect($fields)->map(static function (array $field): string {
+                if (! empty($field['is_signature'])) {
+                    return '<div style="margin:4px 0;">'
+                        .'<div style="color:#6b7280;font-size:13px;margin:0 0 2px;">'.e($field['label']).'</div>'
+                        .'<img src="'.e((string) $field['value']).'" alt="Signature" '
+                        .'style="max-width:280px;height:auto;border:1px solid #e5e7eb;border-radius:4px;background:#fff;">'
+                        .'</div>';
+                }
+
+                return '<div style="margin:2px 0;">'
+                    .'<span style="color:#6b7280;font-size:13px;">'.e($field['label']).':</span> '
+                    .FormAnswerHtml::text((string) $field['value'])->toHtml()
+                    .'</div>';
+            })->implode('');
+
+            return $divider.$heading.$rows;
+        })->implode('');
+
+        return new HtmlString($html);
+    }
+
+    /**
+     * TCPDF-safe repeatable-signature markup: blocks divided by a rule, signature embedded inline.
+     */
+    protected static function sigPdfHtml(array $row): string
+    {
+        $instances = $row['instances'] ?? [];
+
+        if ($instances === []) {
+            return '&nbsp;';
+        }
+
+        $multi = count($instances) > 1;
+
+        return collect($instances)->map(static function (array $fields, int $i) use ($multi): string {
+            $divider = $i > 0 ? '<hr>' : '';
+            $heading = $multi ? '<p><b>Signature #'.($i + 1).'</b></p>' : '';
+
+            $rows = collect($fields)->map(static function (array $field): string {
+                if (! empty($field['is_signature'])) {
+                    return '<p><b>'.e($field['label']).':</b><br>'.self::pdfText((string) $field['value']).'</p>';
+                }
+
+                return '<p><b>'.e($field['label']).':</b> '.nl2br(e((string) $field['value'])).'</p>';
+            })->implode('');
+
+            return $divider.$heading.$rows;
+        })->implode('');
     }
 
     /**
