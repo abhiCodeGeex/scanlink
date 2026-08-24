@@ -226,6 +226,13 @@
             @include('scan.partials.ordered-tiles')
         @endif
 
+        {{-- Legacy: "Display the code number at the top of mobile screen" shows a green header bar above the logo. --}}
+        @if ($profile->show_header && ! in_array($profile->typeSlug(), $slOrderedTileTypes, true))
+            <div class="code-header-bar" style="background:#178a00;color:#fff;font-weight:700;font-size:1rem;line-height:1.3;padding:10px 12px;margin:-10px -10px 10px;">
+                Profile No: {{ $profile->id }}
+            </div>
+        @endif
+
         @if ($profile->logos->isNotEmpty() && ! in_array($profile->typeSlug(), $slOrderedTileTypes, true))
             <div class="logo-row">
                 @foreach ($profile->logos as $logo)
@@ -236,11 +243,7 @@
             </div>
         @endif
 
-        @if ($profile->show_header)
-            <nav class="top-navigation" style="margin:0 0 .75rem;padding:.35rem 0;border-bottom:1px solid #eee;">
-                <h2 style="margin:0;font-size:.95rem;font-weight:700;color:#222;">Profile No: {{ $profile->id }}</h2>
-            </nav>
-        @elseif ($profile->name_company && $profile->typeSlug() !== 'people')
+        @if ($profile->name_company && $profile->typeSlug() !== 'people' && ! $profile->show_header)
             <p class="text-sm" style="color:#555;margin:0 0 .5rem;">
                 {{ $profile->name_company }}
             </p>
@@ -399,7 +402,6 @@
              builder (see block below). Kept here only is the media that legacy shows
              above the form. --}}
         @if ($profile->videos->isNotEmpty() && ! in_array($profile->typeSlug(), $slOrderedTileTypes, true))
-            <h2>Videos</h2>
             @foreach ($profile->videos as $video)
                 @php
                     $embedUrl = $youtubeEmbedUrl((string) $video->video_name);
@@ -1077,7 +1079,6 @@
 
         {{-- Legacy mobile order: Form → Gallery → Documents → Links → Share (mobile/index.php). --}}
         @if ($profile->pictures->isNotEmpty() && ! in_array($profile->typeSlug(), $slOrderedTileTypes, true))
-            <h2>Gallery</h2>
             <div class="gallery">
                 @foreach ($profile->pictures as $picture)
                     @if ($picUrl = $publicMediaUrl($picture->picture_name))
@@ -1093,7 +1094,6 @@
         @endif
 
         @if ($profile->documents->isNotEmpty() && ! in_array($profile->typeSlug(), $slOrderedTileTypes, true))
-            <h2>Documents</h2>
             <div class="tile-grid" style="display:block;">
                 @foreach ($profile->documents as $document)
                     @if ($docUrl = $publicMediaUrl($document->doc_name))
@@ -1128,7 +1128,6 @@
             });
         @endphp
         @if ($visibleWeblinks->isNotEmpty() && ! in_array($profile->typeSlug(), $slOrderedTileTypes, true))
-            <h2>Links</h2>
             <div class="tile-grid" style="display:block;">
                 @foreach ($visibleWeblinks as $weblink)
                     @php
