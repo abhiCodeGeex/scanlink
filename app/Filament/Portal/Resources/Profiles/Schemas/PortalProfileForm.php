@@ -253,10 +253,9 @@ class PortalProfileForm
                             // (Enable is ->live() so this re-evaluates when it's unticked.)
                             ->required(fn (Get $get): bool => (bool) $get('voc_title_bar_enable'))
                             ->validationMessages(['required' => 'Please enter title bar text.'])
-                            ->extraInputAttributes([
-                                'class' => 'sl-ckeditor',
-                                'data-ck-toolbar' => 'custom1',
-                            ])
+                            // NB: NOT a CKEditor field — the custom sl-ckeditor binding swallowed
+                            // the value on submit (cleared text + false "required" error). Plain
+                            // textarea binds via wire:model and saves reliably.
                             ->columnSpanFull(),
                         ColorPicker::make('voc_title_bar_colour')
                             ->label('Title Bar Background Colour:')
