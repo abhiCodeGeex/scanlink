@@ -75,7 +75,14 @@ switch ($question_type_id) {
 	case "11": // image
 
 		if (($form_builder_image_temp ?? '') != "") {
-			echo '<div align="' . $image_align . '"><img src="' . rtrim(url('/'), '/').'/' . 'images/form_builder_uploaded_images/' . $form_builder_image_temp . '" width="100" title="' . $image_title . '" ></div>';
+			// Serve from the public storage disk (the upload always lands there); the legacy
+			// public/images/ copy can fail on locked-down hosts, leaving a broken image.
+			$fbImgFile = $form_builder_image_temp;
+			$fbImgDiskPath = 'form-builder/images/' . $fbImgFile;
+			$fbImgUrl = \Illuminate\Support\Facades\Storage::disk('public')->exists($fbImgDiskPath)
+				? rtrim(url('/'), '/') . '/storage/' . $fbImgDiskPath
+				: rtrim(url('/'), '/') . '/images/form_builder_uploaded_images/' . $fbImgFile;
+			echo '<div align="' . $image_align . '"><img src="' . $fbImgUrl . '" width="100" title="' . $image_title . '" ></div>';
 		}
 
 		break;
