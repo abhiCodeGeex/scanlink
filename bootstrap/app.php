@@ -29,4 +29,17 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );
+
+        // A login submitted from a stale tab (expired session/CSRF token) threw a 419
+        // "Page Expired" error page. Send the visitor back to the login instead so they
+        // can simply try again.
+        $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, Request $request) {
+            if ($request->is('portal-login')) {
+                return redirect()
+                    ->route('marketing.home')
+                    ->withErrors(['portal_login' => 'Your session expired. Please log in again.']);
+            }
+
+            return null;
+        });
     })->create();

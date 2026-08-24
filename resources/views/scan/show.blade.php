@@ -422,6 +422,19 @@
                 @endif
                 <p><a href="{{ $profile->url }}" target="_blank" rel="noopener">{{ $profile->url }}</a></p>
             @endif
+
+            {{-- Contacts added on the profile editor (people/companies associated with this code). --}}
+            @if ($profile->contacts->isNotEmpty())
+                <h3>Contacts</h3>
+                @foreach ($profile->contacts as $contact)
+                    <p>
+                        {{ $contact->name_company }}
+                        @if (filled($contact->telephone))
+                            &middot; <a href="tel:{{ $contact->telephone }}">{{ $contact->telephone }}</a>
+                        @endif
+                    </p>
+                @endforeach
+            @endif
         </div>
         @endunless
 
