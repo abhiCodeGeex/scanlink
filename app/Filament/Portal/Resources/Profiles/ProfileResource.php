@@ -80,12 +80,26 @@ class ProfileResource extends Resource
 
     protected static function baseClientQuery(): Builder
     {
-        $clientId = static::currentClientId();
+        $member = static::currentMembership();
+        $clientId = $member?->client_id;
 
-        return parent::getEloquentQuery()
+        $query = parent::getEloquentQuery()
             ->with(['contacts', 'equipmentType'])
-            ->when($clientId, fn (Builder $query): Builder => $query->where('client_id', $clientId))
+            ->when($clientId, fn (Builder $q): Builder => $q->where('client_id', $clientId))
             ->active();
+
+        // Legacy "Manage User → Select Code Profile": a sub-user with an explicit profile
+        // list only sees those profiles ('0' / empty = unrestricted). This was saved by
+        // Edit User but never enforced, so limited users still saw every profile.
+        $allowed = trim((string) ($member->show_code_profile_id_to_acc_user ?? ''));
+        if ($member && ! $member->isPrimary() && $allowed !== '' && $allowed !== '0') {
+            $ids = array_values(array_filter(array_map('intval', explode(',', $allowed))));
+            if ($ids !== []) {
+                $query->whereIn('id', $ids);
+            }
+        }
+
+        return $query;
     }
 
     public static function canViewAny(): bool

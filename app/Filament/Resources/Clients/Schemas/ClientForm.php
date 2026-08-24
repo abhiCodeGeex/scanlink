@@ -54,7 +54,13 @@ class ClientForm
                             ->email()
                             ->required()
                             ->maxLength(255)
-                            ->autocomplete('off'),
+                            ->autocomplete('off')
+                            // New clients must not reuse an email that already belongs to an
+                            // existing client or login user.
+                            ->rules(fn (string $operation): array => $operation === 'create'
+                                ? [new Unique('clients', 'email'), new Unique('client_users', 'email')]
+                                : [])
+                            ->validationMessages(['unique' => 'This email address is already registered.']),
                         TextInput::make('password')
                             ->label('Password')
                             ->password()

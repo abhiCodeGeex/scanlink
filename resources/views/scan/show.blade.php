@@ -457,11 +457,13 @@
                         $options = $question->options;
                         $qid = $question->question_id;
                         $required = $question->is_mandatory ? 'required' : '';
+                        // Red mandatory marker, used inline on every required element's label.
+                        $star = $question->is_mandatory ? ' <span class="mandatory_field">*</span>' : '';
                     @endphp
                     <div style="margin-bottom:.5rem;">
                         @switch($tid)
                             @case(1)
-                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                                <label>{{ $question->question_text }}{!! $star !!}</label>
                                 <input type="text" name="answers[{{ $qid }}]" {{ $required }}>
                                 @break
 
@@ -499,7 +501,7 @@
                                 @if ($question->question_text && ! str_contains($question->question_text, ',') && ! str_contains($question->question_text, ':::'))
                                     <p style="font-weight:600;margin-bottom:.35rem;">{{ $question->question_text }}</p>
                                 @endif
-                                <label>{{ $question->doc_title ?: 'Select documents' }}@if($question->is_mandatory) *@endif</label>
+                                <label>{{ $question->doc_title ?: 'Select documents' }}{!! $star !!}</label>
                                 <div class="field-choice">
                                     @foreach ($docChoices as $doc)
                                         <div style="margin-bottom:.35rem;">
@@ -521,7 +523,7 @@
                                     $choiceOptions = \App\Support\FormBuilderMedia::choiceOptions($question);
                                 @endphp
                                 @if ($choiceLabel !== '')
-                                    <label>{{ $choiceLabel }}@if($question->is_mandatory) *@endif</label>
+                                    <label>{{ $choiceLabel }}{!! $star !!}</label>
                                 @elseif ($question->is_mandatory)
                                     <span style="color:#c00;font-size:.85rem;">*</span>
                                 @endif
@@ -541,7 +543,7 @@
                                     $choiceOptions = \App\Support\FormBuilderMedia::choiceOptions($question);
                                 @endphp
                                 @if ($choiceLabel !== '')
-                                    <label>{{ $choiceLabel }}@if($question->is_mandatory) <span class="mandatory_field">*</span>@endif</label>
+                                    <label>{{ $choiceLabel }}{!! $star !!}</label>
                                 @elseif ($question->is_mandatory)
                                     <span class="mandatory_field">*</span><br>
                                 @endif
@@ -561,7 +563,7 @@
                                     $choiceOptions = \App\Support\FormBuilderMedia::choiceOptions($question);
                                 @endphp
                                 @if ($choiceLabel !== '')
-                                    <label>{{ $choiceLabel }}@if($question->is_mandatory) *@endif</label>
+                                    <label>{{ $choiceLabel }}{!! $star !!}</label>
                                 @elseif ($question->is_mandatory)
                                     <span style="color:#c00;font-size:.85rem;">*</span>
                                 @endif
@@ -579,7 +581,7 @@
                                     $scaleTo = (int) ($options->firstWhere('question_option_type_id', 2)?->option_name ?? 5);
                                     if ($scaleFrom > $scaleTo) { [$scaleFrom, $scaleTo] = [$scaleTo, $scaleFrom]; }
                                 @endphp
-                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                                <label>{{ $question->question_text }}{!! $star !!}</label>
                                 <select name="answers[{{ $qid }}]" {{ $required }}>
                                     <option value="">Select…</option>
                                     @for ($i = $scaleFrom; $i <= $scaleTo; $i++)
@@ -593,7 +595,7 @@
                                     $rows = $options->where('question_option_type_id', 5);
                                     $cols = $options->where('question_option_type_id', 6);
                                 @endphp
-                                <label>{{ $question->question_text }}</label>
+                                <label>{{ $question->question_text }}{!! $star !!}</label>
                                 @if ($rows->isNotEmpty() && $cols->isNotEmpty())
                                     <table class="field-grid">
                                         <thead>
@@ -623,12 +625,12 @@
                                 @break
 
                             @case(8)
-                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                                <label>{{ $question->question_text }}{!! $star !!}</label>
                                 <input type="date" name="answers[{{ $qid }}]" {{ $required }}>
                                 @break
 
                             @case(9)
-                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                                <label>{{ $question->question_text }}{!! $star !!}</label>
                                 <input type="time" name="answers[{{ $qid }}]" {{ $required }}>
                                 @break
 
@@ -651,7 +653,7 @@
                                 @break
 
                             @case(15)
-                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                                <label>{{ $question->question_text }}{!! $star !!}</label>
                                 <textarea name="answers[{{ $qid }}]" rows="3" {{ $required }}></textarea>
                                 @break
 
@@ -660,7 +662,7 @@
                                 <div class="sl-repeat" data-sl-repeat>
                                     <div class="sl-repeat-item">
                                         @if ($question->include_name)
-                                            <label>Name{{ $question->is_mandatory ? ' *' : '' }}</label>
+                                            <label>Name{!! $star !!}</label>
                                             <input type="text" name="answers_meta[{{ $qid }}][name][]" {{ $required }}>
                                         @endif
                                         @if ($question->include_employer)
@@ -675,7 +677,7 @@
                                             <label>Phone</label>
                                             <input type="text" name="answers_meta[{{ $qid }}][phone][]">
                                         @endif
-                                        <label>{{ $question->question_text }}{{ $question->is_mandatory ? ' *' : '' }}</label>
+                                        <label>{{ $question->question_text }}{!! $star !!}</label>
                                         <div class="signature-wrap">
                                             <canvas class="sl-sig-canvas" width="320" height="120"></canvas>
                                             <input type="hidden" name="answers_meta[{{ $qid }}][signature][]" class="sl-sig-input">
@@ -688,13 +690,13 @@
                                 @break
 
                             @case(17)
-                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                                <label>{{ $question->question_text }}{!! $star !!}</label>
                                 {{-- Legacy "Add another": native multi-file selection. --}}
                                 <input type="file" name="answers_file[{{ $qid }}][]" multiple {{ $required }}>
                                 @break
 
                             @case(18)
-                                <label>{{ $question->question_text ?: 'Participant name' }}@if($question->is_mandatory) *@endif</label>
+                                <label>{{ $question->question_text ?: 'Participant name' }}{!! $star !!}</label>
                                 @if ($question->participant_include_signature)
                                     {{-- With a signature pad this stays single-instance (one canvas). --}}
                                     <input type="text" name="answers[{{ $qid }}]" placeholder="Full name" {{ $required }}>
@@ -722,7 +724,7 @@
                                 @break
 
                             @case(19)
-                                <label>{{ $question->question_text ?: 'Location' }}@if($question->is_mandatory) *@endif</label>
+                                <label>{{ $question->question_text ?: 'Location' }}{!! $star !!}</label>
                                 <div class="sl-loc-row">
                                     <input type="text" name="answers[{{ $qid }}]" id="sl-loc-{{ $qid }}" class="sl-loc-input" placeholder="Location" {{ $required }}>
                                     <button type="button" class="sl-loc-btn" data-loc-target="sl-loc-{{ $qid }}">
@@ -734,14 +736,14 @@
                                 @break
 
                             @case(22)
-                                <label>{{ $question->question_text ?: 'SWMS Hazard / Risk' }}{{ $question->is_mandatory ? ' *' : '' }}</label>
+                                <label>{{ $question->question_text ?: 'SWMS Hazard / Risk' }}{!! $star !!}</label>
                                 <div class="sl-repeat" data-sl-repeat>
                                     <div class="sl-repeat-item">
-                                        <label>Task | Activity{{ $question->is_mandatory ? ' *' : '' }}</label>
+                                        <label>Task | Activity{!! $star !!}</label>
                                         <textarea name="answers_meta[{{ $qid }}][task][]" rows="1" {{ $required }}></textarea>
-                                        <label>Potential Hazards{{ $question->is_mandatory ? ' *' : '' }}</label>
+                                        <label>Potential Hazards{!! $star !!}</label>
                                         <textarea name="answers_meta[{{ $qid }}][potential_hazards][]" rows="1" {{ $required }}></textarea>
-                                        <label>Risk Score (Before){{ $question->is_mandatory ? ' *' : '' }}</label>
+                                        <label>Risk Score (Before){!! $star !!}</label>
                                         <select name="answers_meta[{{ $qid }}][risk_score_before][]" style="width:150px;max-width:100%;" {{ $required }}>
                                             <option value="">Select</option>
                                             <option value="1">1</option>
@@ -752,9 +754,9 @@
                                         </select>
                                         <label>Photo (optional)</label>
                                         <input type="file" name="answers_file[{{ $qid }}][]" accept="image/*">
-                                        <label>Control Measures{{ $question->is_mandatory ? ' *' : '' }}</label>
+                                        <label>Control Measures{!! $star !!}</label>
                                         <textarea name="answers_meta[{{ $qid }}][control_measures][]" rows="1" {{ $required }}></textarea>
-                                        <label>Risk Score (After){{ $question->is_mandatory ? ' *' : '' }}</label>
+                                        <label>Risk Score (After){!! $star !!}</label>
                                         <select name="answers_meta[{{ $qid }}][risk_score_after][]" style="width:150px;max-width:100%;" {{ $required }}>
                                             <option value="">Select</option>
                                             <option value="1">1</option>
@@ -770,7 +772,7 @@
                                 @break
 
                             @case(24)
-                                <label>{{ $question->question_text ?: 'Additional recipient email' }}@if($question->is_mandatory) *@endif</label>
+                                <label>{{ $question->question_text ?: 'Additional recipient email' }}{!! $star !!}</label>
                                 {{-- Legacy "Add another": multiple additional recipient emails. --}}
                                 <div class="sl-repeat" data-sl-repeat>
                                     <div class="sl-repeat-item">
@@ -840,7 +842,7 @@
                                 @break
 
                             @default
-                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                                <label>{{ $question->question_text }}{!! $star !!}</label>
                                 <textarea name="answers[{{ $qid }}]" rows="2" {{ $required }}></textarea>
                         @endswitch
                     </div>
@@ -984,7 +986,12 @@
                         var btn = e.target.closest('.sl-loc-btn');
                         if (btn) {
                             var input = document.getElementById(btn.getAttribute('data-loc-target'));
-                            if (!input || !navigator.geolocation) { return; }
+                            if (!input) { return; }
+                            // Browsers only allow geolocation on secure (https) origins.
+                            if (!navigator.geolocation || (!window.isSecureContext && location.hostname !== 'localhost')) {
+                                alert('Location requires a secure (https) connection. Please type your location instead.');
+                                return;
+                            }
                             var restore = btn.innerHTML;
                             btn.disabled = true;
                             btn.textContent = 'Locating…';
@@ -992,9 +999,13 @@
                                 input.value = p.coords.latitude.toFixed(6) + ', ' + p.coords.longitude.toFixed(6);
                                 btn.disabled = false;
                                 btn.innerHTML = restore;
-                            }, function () {
+                            }, function (err) {
                                 btn.disabled = false;
                                 btn.innerHTML = restore;
+                                // Tell the visitor why nothing happened instead of failing silently.
+                                alert(err && err.code === 1
+                                    ? 'Location permission was denied. Please allow location access, or type your location.'
+                                    : 'Unable to get your location. Please type it instead.');
                             }, { enableHighAccuracy: true, timeout: 8000 });
                             return;
                         }

@@ -248,6 +248,14 @@ trait HasLegacyFormBuilderSidebar
         }
 
         $this->libraryPreviewTitle = (string) ($entry->form_title ?: 'Form '.$formId);
+
+        // Show which code profile this library form belongs to in the preview heading.
+        $sourceProfile = Profile::query()->where('form_id', $formId)->orderBy('id')->first();
+        if ($sourceProfile) {
+            $sourceLabel = trim((string) ($sourceProfile->code_profile_name ?: $sourceProfile->name));
+            $this->libraryPreviewTitle .= ' — Profile #'.$sourceProfile->id.($sourceLabel !== '' ? ' ('.$sourceLabel.')' : '');
+        }
+
         $this->libraryPreviewQuestions = FormBuilderQuestion::query()
             ->where('form_id', $formId)
             ->orderBy('question_order')
@@ -326,8 +334,13 @@ trait HasLegacyFormBuilderSidebar
         $this->existingFormStatus = null;
         $this->otherAccountPassword = '';
         $this->showOtherAccountLibrary = true;
+        // List the WHOLE account's library (main user + sub-users) — matching "My library"
+        // for that account — not just forms saved by the specific user who logged in here.
+        $accountUserIds = \Illuminate\Support\Facades\DB::table('client_users')
+            ->where('client_id', $member->client_id)
+            ->pluck('id');
         $this->otherAccountLibraryForms = FormBuilderLibrary::query()
-            ->where('user_id', $member->id)
+            ->whereIn('user_id', $accountUserIds->isNotEmpty() ? $accountUserIds : collect([$member->id]))
             ->where('is_deleted_from_library', false)
             ->orderBy('form_title')
             ->get()
