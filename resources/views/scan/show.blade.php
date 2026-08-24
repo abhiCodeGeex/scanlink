@@ -656,10 +656,9 @@
                                 @break
 
                             @case(16)
-                                {{-- Legacy parity: the name/employer/email/phone fields come first,
-                                     then the signature pad sits at the BOTTOM of the element. --}}
+                                {{-- Legacy parity: name/employer/email/phone first, signature pad at the bottom. --}}
                                 @if ($question->include_name)
-                                    <label>Name@if($question->is_mandatory) *@endif</label>
+                                    <label>Name{{ $question->is_mandatory ? ' *' : '' }}</label>
                                     <input type="text" name="answers_meta[{{ $qid }}][name]" {{ $required }}>
                                 @endif
                                 @if ($question->include_employer)
