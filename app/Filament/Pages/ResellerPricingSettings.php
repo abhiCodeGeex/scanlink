@@ -32,6 +32,11 @@ class ResellerPricingSettings extends Page
         return $user instanceof User && $user->admin_role?->canManageSettings();
     }
 
+    // Hidden from the sidebar: Code Pricing already carries the reseller per-code column,
+    // and the duplicate "Reseller Pricing" entry was confusing. The page stays reachable
+    // by URL if ever needed.
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $navigationLabel = 'Reseller Pricing';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Settings';
