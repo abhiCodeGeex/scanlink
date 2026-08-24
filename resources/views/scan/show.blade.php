@@ -249,6 +249,33 @@
             </p>
         @endif
 
+        {{-- Video(s) render above the Words / description block (legacy parity). --}}
+        @if ($profile->videos->isNotEmpty() && ! in_array($profile->typeSlug(), $slOrderedTileTypes, true))
+            @foreach ($profile->videos as $video)
+                @php
+                    $embedUrl = $youtubeEmbedUrl((string) $video->video_name);
+                    $vName = (string) $video->video_name;
+                    // Legacy: a video_name that is a file (has an extension) is an uploaded clip.
+                    $vFileUrl = (! $embedUrl && preg_match('/\.(mp4|m4v|mov|webm|ogg)$/i', $vName))
+                        ? $publicMediaUrl(str_contains($vName, '/') ? $vName : 'images/video/'.$vName)
+                        : null;
+                @endphp
+                @if ($embedUrl)
+                    <p style="margin:.5rem 0 .25rem;font-weight:600;">{{ $video->title ?: 'Video' }}</p>
+                    <div class="video-wrap">
+                        <iframe src="{{ $embedUrl }}" allowfullscreen loading="lazy" title="{{ $video->title ?: 'YouTube video' }}"></iframe>
+                    </div>
+                @elseif ($vFileUrl)
+                    <p style="margin:.5rem 0 .25rem;font-weight:600;">{{ $video->title ?: 'Video' }}</p>
+                    <div class="video-wrap">
+                        <video controls playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;"><source src="{{ $vFileUrl }}"></video>
+                    </div>
+                @elseif (filled($vName))
+                    <a class="btn" href="{{ $vName }}" target="_blank" rel="noopener">{{ $video->title ?: 'Watch video' }}</a>
+                @endif
+            @endforeach
+        @endif
+
         {{-- Legacy mobile/index.php: only show Make/Model / Location name when profile name is set.
              Never fall back to form_title (that caused duplicate green+black titles).
              exhibit/voc render Words / Profile Information via the ordered-tiles partial. --}}
@@ -397,35 +424,6 @@
             @endif
         </div>
         @endunless
-
-        {{-- Legacy ordering: Gallery / Documents / Links / Share render AFTER the form
-             builder (see block below). Kept here only is the media that legacy shows
-             above the form. --}}
-        @if ($profile->videos->isNotEmpty() && ! in_array($profile->typeSlug(), $slOrderedTileTypes, true))
-            @foreach ($profile->videos as $video)
-                @php
-                    $embedUrl = $youtubeEmbedUrl((string) $video->video_name);
-                    $vName = (string) $video->video_name;
-                    // Legacy: a video_name that is a file (has an extension) is an uploaded clip.
-                    $vFileUrl = (! $embedUrl && preg_match('/\.(mp4|m4v|mov|webm|ogg)$/i', $vName))
-                        ? $publicMediaUrl(str_contains($vName, '/') ? $vName : 'images/video/'.$vName)
-                        : null;
-                @endphp
-                @if ($embedUrl)
-                    <p style="margin:.5rem 0 .25rem;font-weight:600;">{{ $video->title ?: 'Video' }}</p>
-                    <div class="video-wrap">
-                        <iframe src="{{ $embedUrl }}" allowfullscreen loading="lazy" title="{{ $video->title ?: 'YouTube video' }}"></iframe>
-                    </div>
-                @elseif ($vFileUrl)
-                    <p style="margin:.5rem 0 .25rem;font-weight:600;">{{ $video->title ?: 'Video' }}</p>
-                    <div class="video-wrap">
-                        <video controls playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;"><source src="{{ $vFileUrl }}"></video>
-                    </div>
-                @elseif (filled($vName))
-                    <a class="btn" href="{{ $vName }}" target="_blank" rel="noopener">{{ $video->title ?: 'Watch video' }}</a>
-                @endif
-            @endforeach
-        @endif
 
         @if ($profile->checklistItems->isNotEmpty())
             <h2>Checklist</h2>
@@ -1079,11 +1077,13 @@
 
         {{-- Legacy mobile order: Form → Gallery → Documents → Links → Share (mobile/index.php). --}}
         @if ($profile->pictures->isNotEmpty() && ! in_array($profile->typeSlug(), $slOrderedTileTypes, true))
-            <div class="gallery">
+            <div class="gallery" data-sl-gallery>
                 @foreach ($profile->pictures as $picture)
                     @if ($picUrl = $publicMediaUrl($picture->picture_name))
                         <figure>
-                            <img src="{{ $picUrl }}" alt="{{ $picture->txt_footer ?: 'Picture' }}">
+                            <img src="{{ $picUrl }}" alt="{{ $picture->txt_footer ?: 'Picture' }}"
+                                 class="sl-gallery-img" style="cursor:pointer;"
+                                 data-full="{{ $picUrl }}" data-caption="{{ $picture->txt_footer }}">
                             @if ($picture->txt_footer)
                                 <figcaption style="font-size:.85rem;color:#666;margin-top:.25rem;">{{ $picture->txt_footer }}</figcaption>
                             @endif
@@ -1246,6 +1246,51 @@
         </figure>
     </footer>
 </div>
+
+{{-- Gallery lightbox: click a gallery image to open it full-size with prev/next + autoplay. --}}
+<div id="sl-lightbox" style="display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.9);align-items:center;justify-content:center;flex-direction:column;">
+    <img id="sl-lightbox-img" src="" alt="" style="max-width:92vw;max-height:80vh;object-fit:contain;box-shadow:0 4px 30px rgba(0,0,0,.5);border-radius:4px;">
+    <div id="sl-lightbox-caption" style="color:#fff;margin-top:12px;font-size:14px;text-align:center;max-width:92vw;"></div>
+    <button type="button" id="sl-lb-close" aria-label="Close" style="position:absolute;top:14px;right:18px;background:none;border:0;color:#fff;font-size:34px;line-height:1;cursor:pointer;">&times;</button>
+    <button type="button" id="sl-lb-prev" aria-label="Previous" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);border:0;color:#fff;font-size:28px;width:46px;height:46px;border-radius:50%;cursor:pointer;">&#8249;</button>
+    <button type="button" id="sl-lb-next" aria-label="Next" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);border:0;color:#fff;font-size:28px;width:46px;height:46px;border-radius:50%;cursor:pointer;">&#8250;</button>
+    <button type="button" id="sl-lb-play" style="position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.15);border:0;color:#fff;font-size:13px;padding:8px 14px;border-radius:20px;cursor:pointer;">&#9654; Autoplay</button>
+</div>
+<script>
+    (function () {
+        var imgs = Array.prototype.slice.call(document.querySelectorAll('.sl-gallery-img'));
+        if (! imgs.length) { return; }
+        var lb = document.getElementById('sl-lightbox');
+        var lbImg = document.getElementById('sl-lightbox-img');
+        var lbCap = document.getElementById('sl-lightbox-caption');
+        var playBtn = document.getElementById('sl-lb-play');
+        var idx = 0, timer = null;
+        function show(i) {
+            idx = (i + imgs.length) % imgs.length;
+            var el = imgs[idx];
+            lbImg.src = el.getAttribute('data-full') || el.src;
+            lbCap.textContent = el.getAttribute('data-caption') || '';
+        }
+        function stop() { if (timer) { clearInterval(timer); timer = null; playBtn.innerHTML = '&#9654; Autoplay'; } }
+        function next() { show(idx + 1); }
+        function prev() { show(idx - 1); }
+        function open(i) { show(i); lb.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
+        function close() { lb.style.display = 'none'; document.body.style.overflow = ''; stop(); }
+        function play() { if (timer) { stop(); return; } timer = setInterval(next, 2500); playBtn.innerHTML = '&#10073;&#10073; Pause'; }
+        imgs.forEach(function (el, i) { el.addEventListener('click', function () { open(i); }); });
+        document.getElementById('sl-lb-close').addEventListener('click', close);
+        document.getElementById('sl-lb-next').addEventListener('click', function () { stop(); next(); });
+        document.getElementById('sl-lb-prev').addEventListener('click', function () { stop(); prev(); });
+        playBtn.addEventListener('click', play);
+        lb.addEventListener('click', function (e) { if (e.target === lb) { close(); } });
+        document.addEventListener('keydown', function (e) {
+            if (lb.style.display !== 'flex') { return; }
+            if (e.key === 'Escape') { close(); }
+            else if (e.key === 'ArrowRight') { stop(); next(); }
+            else if (e.key === 'ArrowLeft') { stop(); prev(); }
+        });
+    })();
+</script>
 
 {{--
     Scan geolocation: attach the visitor's GPS (and IP-derived country/region/city, resolved
