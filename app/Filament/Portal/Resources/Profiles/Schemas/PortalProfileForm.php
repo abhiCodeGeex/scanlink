@@ -241,11 +241,16 @@ class PortalProfileForm
                     ->schema([
                         Checkbox::make('voc_title_bar_enable')
                             ->label('Enable')
-                            ->default(true),
+                            ->default(true)
+                            // Live so unticking Enable reactively drops the required rule below
+                            // (otherwise the textarea keeps its browser "required" attribute and
+                            // blocks save even though the title bar is disabled).
+                            ->live(),
                         Textarea::make('voc_title_bar_text')
                             ->label('Text:')
                             ->rows(4)
-                            // Legacy: title-bar text is required when "Enable" is ticked.
+                            // Legacy: title-bar text is required only when "Enable" is ticked.
+                            // (Enable is ->live() so this re-evaluates when it's unticked.)
                             ->required(fn (Get $get): bool => (bool) $get('voc_title_bar_enable'))
                             ->validationMessages(['required' => 'Please enter title bar text.'])
                             ->extraInputAttributes([

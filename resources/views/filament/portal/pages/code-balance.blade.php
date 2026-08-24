@@ -1,4 +1,8 @@
 <x-filament-panels::page>
+    {{-- Each profile-type label must stay on one line (the row can still wrap between labels). --}}
+    <style>
+        .sl-cb__templates a { white-space: nowrap; }
+    </style>
     {{-- Legacy /profile/codeBalance — listing-table layout --}}
     <div
         class="sl-cb"
