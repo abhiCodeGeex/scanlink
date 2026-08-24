@@ -358,7 +358,10 @@ class ProfileQrService
         $pdf->SetFont('helvetica', '', 14);
         $pdf->SetY(45);
         $pdf->Cell(0, 10, 'Profile No. : '.$profile->id, 0, 1);
-        $pdf->Cell(0, 10, 'Name : '.($profile->name ?: $profile->application ?: '-'), 0, 1);
+        // Prefer the code's profile name (many code types leave `name` blank and store the
+        // display name in code_profile_name), falling back to name / application.
+        $qrName = trim((string) ($profile->code_profile_name ?: $profile->name ?: $profile->application));
+        $pdf->Cell(0, 10, 'Name : '.($qrName !== '' ? $qrName : '-'), 0, 1);
 
         $url = $profile->url ?: $this->profileUrl($profile);
         $pdf->MultiCell(0, 10, 'URL :'.$url, 0, 'L');

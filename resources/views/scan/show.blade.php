@@ -656,14 +656,10 @@
                                 @break
 
                             @case(16)
-                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
-                                <div class="signature-wrap">
-                                    <canvas id="sig-{{ $qid }}" width="320" height="120"></canvas>
-                                    <input type="hidden" name="answers[{{ $qid }}]" id="sig-input-{{ $qid }}">
-                                    <p style="margin:.35rem 0;"><button type="button" class="btn-outline btn" onclick="clearSig({{ $qid }})">Clear signature</button></p>
-                                </div>
+                                {{-- Legacy parity: the name/employer/email/phone fields come first,
+                                     then the signature pad sits at the BOTTOM of the element. --}}
                                 @if ($question->include_name)
-                                    <label>Name</label>
+                                    <label>Name@if($question->is_mandatory) *@endif</label>
                                     <input type="text" name="answers_meta[{{ $qid }}][name]" {{ $required }}>
                                 @endif
                                 @if ($question->include_employer)
@@ -678,6 +674,12 @@
                                     <label>Phone</label>
                                     <input type="text" name="answers_meta[{{ $qid }}][phone]">
                                 @endif
+                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                                <div class="signature-wrap">
+                                    <canvas id="sig-{{ $qid }}" width="320" height="120"></canvas>
+                                    <input type="hidden" name="answers[{{ $qid }}]" id="sig-input-{{ $qid }}">
+                                    <p style="margin:.35rem 0;"><button type="button" class="btn-outline btn" onclick="clearSig({{ $qid }})">Clear signature</button></p>
+                                </div>
                                 @break
 
                             @case(17)

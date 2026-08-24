@@ -34,6 +34,18 @@ class FormAnswerHtml
                 continue;
             }
 
+            // Signature / drawn-image sub-fields are stored inline as a data URI (optionally
+            // "Signature: data:image…"). Render the image, not the raw base64 blob.
+            if (preg_match('/^(?:([^:]{1,40}):\s*)?(data:image\/[a-z0-9.+-]+;base64,[A-Za-z0-9+\/=\s]+)$/i', $segment, $m)) {
+                $label = trim((string) ($m[1] ?? ''));
+                $src = (string) preg_replace('/\s+/', '', (string) $m[2]);
+                $lines[] = ($label !== '' ? '<strong>'.e($label).':</strong><br>' : '')
+                    .'<img src="'.e($src).'" alt="'.e($label !== '' ? $label : 'Signature').'" '
+                    .'style="max-width:280px;height:auto;border:1px solid #e5e7eb;border-radius:4px;background:#fff;">';
+
+                continue;
+            }
+
             // Drop the "File:" label the submit handler prepends to upload segments.
             $segment = (string) preg_replace('/^File:\s*/i', '', $segment);
 

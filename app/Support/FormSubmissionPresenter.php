@@ -406,14 +406,14 @@ class FormSubmissionPresenter
             'swms' => self::swmsPdfHtml($row),
             'list' => '<ul>'
                 .collect($row['items'])->map(
-                    static fn (string $item): string => '<li>'.nl2br(e($item)).'</li>'
+                    static fn (string $item): string => '<li>'.self::pdfText($item).'</li>'
                 )->implode('')
                 .'</ul>',
             'fields' => '<table cellpadding="3" cellspacing="0" border="0" width="100%">'
                 .collect($row['fields'])->map(static function (array $field): string {
                     return '<tr>'
                         .'<td width="40%" style="color:#4b5563;"><b>'.e($field['label']).'</b></td>'
-                        .'<td width="60%">'.nl2br(e($field['value'])).'</td>'
+                        .'<td width="60%">'.self::pdfText((string) $field['value']).'</td>'
                         .'</tr>';
                 })->implode('')
                 .'</table>',
@@ -491,6 +491,32 @@ class FormSubmissionPresenter
             return $divider.$heading
                 .'<table cellpadding="3" cellspacing="0" border="0" width="100%">'.$rows.'</table>';
         })->implode('');
+    }
+
+    /**
+     * TCPDF-safe rendering of one list item / field value: embeds an inline signature/image
+     * data URI as an <img> (validated) instead of dumping the raw base64 string.
+     */
+    protected static function pdfText(string $raw): string
+    {
+        $raw = trim($raw);
+
+        if (preg_match('/^(?:([^:]{1,40}):\s*)?(data:image\/[a-z0-9.+-]+;base64,[A-Za-z0-9+\/=\s]+)$/i', $raw, $m)) {
+            $label = trim((string) ($m[1] ?? ''));
+            $src = (string) preg_replace('/\s+/', '', (string) $m[2]);
+
+            if (preg_match('#^data:image/[a-z0-9.+-]+;base64,(.+)$#i', $src, $b)
+                && ($bin = base64_decode($b[1], true)) !== false
+                && @imagecreatefromstring($bin) !== false) {
+                $img = '<img src="'.htmlspecialchars($src, ENT_QUOTES).'" width="200">';
+            } else {
+                $img = '[signature image]';
+            }
+
+            return ($label !== '' ? '<b>'.e($label).':</b><br>' : '').$img;
+        }
+
+        return nl2br(e($raw));
     }
 
     protected static function signatureHtml(array $row): HtmlString

@@ -125,6 +125,32 @@ class FormSubmissionPresenterTest extends TestCase
     }
 
     #[Test]
+    public function it_renders_inline_signature_as_image_not_raw_base64(): void
+    {
+        $question = new FormBuilderQuestion([
+            'question_id' => 9,
+            'question_type_id' => 18,
+            'question_text' => 'Participant Name',
+        ]);
+        $question->setRelation('options', collect());
+
+        // Valid 1x1 PNG so the PDF path (which decodes + validates) also embeds an <img>.
+        $dataUri = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+        $raw = 'Brent Palmer | Signature: '.$dataUri;
+
+        $row = FormSubmissionPresenter::presentOne($question, $raw);
+        $html = FormSubmissionPresenter::answerHtml($row)->toHtml();
+
+        $this->assertStringContainsString('<img', $html);
+        $this->assertStringContainsString('data:image/png;base64', $html);
+        // The raw base64 must not appear as escaped plain text outside an <img src>.
+        $this->assertStringNotContainsString('Signature: data:image', strip_tags($html));
+
+        $pdf = FormSubmissionPresenter::answerPdfHtml($row);
+        $this->assertStringContainsString('<img', $pdf);
+    }
+
+    #[Test]
     public function it_builds_rows_keyed_by_question_id(): void
     {
         $q = new FormBuilderQuestion([

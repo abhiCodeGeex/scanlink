@@ -173,13 +173,13 @@
                     <button type="button" class="sl-fslog__btn sl-fslog__btn--wide" wire:click="downloadAll">DOWNLOAD ALL</button>
                     <button type="button" class="sl-fslog__btn" wire:click="exportXlsx">EXPORT</button>
 
-                    <span>
+                    <span wire:ignore x-data="slFsLogDatePicker({ property: 'fromDate', initial: @js($fromDate) })">
                         <label for="from_date">From Date</label>
-                        <input id="from_date" type="text" wire:model="fromDate" placeholder="dd/mm/yyyy" autocomplete="off">
+                        <input id="from_date" x-ref="input" type="text" placeholder="dd/mm/yyyy" autocomplete="off">
                     </span>
-                    <span>
+                    <span wire:ignore x-data="slFsLogDatePicker({ property: 'toDate', initial: @js($toDate) })">
                         <label for="to_date">To Date</label>
-                        <input id="to_date" type="text" wire:model="toDate" placeholder="dd/mm/yyyy" autocomplete="off">
+                        <input id="to_date" x-ref="input" type="text" placeholder="dd/mm/yyyy" autocomplete="off">
                     </span>
 
                     <button type="button" class="sl-fslog__btn" wire:click="search">SEARCH</button>
@@ -276,4 +276,39 @@
             @endif
         </div>
     </div>
+
+    {{-- Date-picker popup for the From/To Date filters (flatpickr, same as the participant list). --}}
+    <link rel="stylesheet" href="{{ asset('vendor/flatpickr/flatpickr.min.css') }}">
+    <script src="{{ asset('vendor/flatpickr/flatpickr.min.js') }}"></script>
+    <script>
+        window.slFsLogDatePicker = function (config) {
+            return {
+                fp: null,
+                init() {
+                    if (typeof flatpickr !== 'function' || ! this.$refs.input) {
+                        return;
+                    }
+                    var self = this;
+                    this.fp = flatpickr(this.$refs.input, {
+                        dateFormat: 'd/m/Y',
+                        allowInput: true,
+                        disableMobile: true,
+                        defaultDate: config.initial || null,
+                        onChange: function (dates, str) { self.$wire.set(config.property, str || ''); },
+                        onClose: function (dates, str) { self.$wire.set(config.property, str || ''); },
+                    });
+                },
+                destroy() {
+                    if (this.fp) { this.fp.destroy(); this.fp = null; }
+                },
+            };
+        };
+    </script>
+
+    <style>
+        .flatpickr-calendar { z-index: 100001 !important; font-family: Arial, Helvetica, sans-serif !important; }
+        .flatpickr-day.selected, .flatpickr-day.selected:hover { background: #008901 !important; border-color: #008901 !important; }
+        .flatpickr-day.today { border-color: #008901 !important; }
+        .flatpickr-day:hover { background: #e8f6e8 !important; border-color: #e8f6e8 !important; }
+    </style>
 </x-filament-panels::page>

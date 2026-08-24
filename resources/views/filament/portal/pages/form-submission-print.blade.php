@@ -5,11 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Form submission — {{ $profile->name }}</title>
     <style>
-        body { font-family: system-ui, sans-serif; margin: 0; padding: 2rem; color: #222; }
-        h1 { color: #008C00; margin: 0 0 .25rem; font-size: 1.35rem; }
-        .meta { color: #666; font-size: .875rem; margin-bottom: 1.5rem; }
-        table { width: 100%; border-collapse: collapse; font-size: .9rem; }
-        th, td { border: 1px solid #ddd; padding: .6rem .75rem; text-align: left; vertical-align: top; }
+        /* NB: font sizes use px, not rem — this view is also rendered by TCPDF (Download /
+           Download All), which misreads rem as tiny units and produces microscopic text. */
+        body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; color: #222; font-size: 14px; }
+        h1 { color: #008C00; margin: 0 0 4px; font-size: 22px; }
+        .meta { color: #666; font-size: 14px; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { border: 1px solid #ddd; padding: 9px 11px; text-align: left; vertical-align: top; }
         th { background: #f5f5f5; width: 35%; font-weight: 600; }
         .print-bar { margin-bottom: 1.5rem; }
         .print-btn { background: #008C00; color: #fff; border: 0; border-radius: 8px; padding: .55rem 1rem; font-weight: 600; cursor: pointer; }
@@ -25,7 +27,9 @@
     </div>
 
     @if (! empty($logoUrl))
-        <img src="{{ $logoUrl }}" alt="Logo" style="max-height:90px;max-width:260px;width:auto;height:auto;display:block;margin:0 0 1rem;">
+        {{-- height attr is for TCPDF (Download PDF), which ignores max-height CSS; the browser
+             view keeps the responsive style rules. --}}
+        <img src="{{ $logoUrl }}" alt="Logo" @if (! empty($forPdf)) height="64" @endif style="max-height:90px;max-width:260px;width:auto;height:auto;display:block;margin:0 0 16px;">
     @endif
 
     <h1>{{ $profile->form_title ?: $profile->name }}</h1>

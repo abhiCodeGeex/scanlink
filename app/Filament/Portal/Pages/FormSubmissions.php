@@ -259,6 +259,13 @@ class FormSubmissions extends Page
         $pdf->setPrintFooter(false);
         $pdf->SetMargins(12, 12, 12);
         $pdf->SetAutoPageBreak(true, 12);
+        // TCPDF ignores the blade's rem-based sizes and defaults to a tiny font — set a
+        // readable base size so the downloaded report is legible.
+        $pdf->SetFont('helvetica', '', 11);
+
+        // Company logo as a local file path (TCPDF can't reliably fetch the http URL that the
+        // browser view uses); falls back to the bundled ScanLink logo.
+        $logoUrl = $this->profileLogoLocalPath($profile);
 
         $rendered = 0;
         foreach ($sessionIds as $sessionId) {
@@ -278,6 +285,8 @@ class FormSubmissions extends Page
                 'sessionId' => $sessionId,
                 'answers' => $answers,
                 'submittedAt' => $answers->min('date_time'),
+                'logoUrl' => $logoUrl,
+                'forPdf' => true,
             ])->render();
 
             $pdf->AddPage();
@@ -452,6 +461,44 @@ class FormSubmissions extends Page
             ->where('client_id', $client->id)
             ->active()
             ->findOrFail($this->selectedProfileId);
+    }
+
+    /**
+     * Resolve the profile's company logo to an absolute local file path for TCPDF (which can't
+     * reliably fetch the http URL used in the browser view). Returns null when there is no
+     * usable image; the print view then falls back to the bundled ScanLink logo path.
+     */
+    protected function profileLogoLocalPath(Profile $profile): ?string
+    {
+        $logo = \App\Models\Logo::query()->where('profile_id', $profile->id)->orderBy('id')->first();
+        $name = trim((string) ($logo?->logo_name ?? ''));
+
+        $candidates = [];
+        if ($name !== '') {
+            try {
+                if (Storage::disk('public')->exists($name)) {
+                    $candidates[] = Storage::disk('public')->path($name);
+                }
+            } catch (\Throwable) {
+                // fall through to path guesses
+            }
+
+            $relative = ltrim((string) preg_replace('#^storage/#', '', $name), '/');
+            $candidates[] = public_path($name);
+            $candidates[] = public_path('storage/'.$relative);
+            $candidates[] = storage_path('app/public/'.$relative);
+        }
+
+        // Bundled ScanLink logo fallback.
+        $candidates[] = public_path('images/logo.png');
+
+        foreach ($candidates as $candidate) {
+            if (is_file($candidate) && @getimagesize($candidate) !== false) {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 
     protected function filteredSessionsQuery(int $profileId)
