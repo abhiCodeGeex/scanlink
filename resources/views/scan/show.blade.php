@@ -691,7 +691,7 @@
                             @case(17)
                                 <label>{{ $question->question_text }}{!! $star !!}</label>
                                 {{-- Legacy "Add another": native multi-file selection. --}}
-                                <input type="file" name="answers_file[{{ $qid }}][]" multiple {{ $required }}>
+                                <input type="file" name="answers_file[{{ $qid }}][]" multiple class="sl-multi-upload" {{ $required }}>
                                 @break
 
                             @case(18)
@@ -752,7 +752,8 @@
                                             <option value="5">5</option>
                                         </select>
                                         <label>Photo (optional)</label>
-                                        <input type="file" name="answers_file[{{ $qid }}][]" accept="image/*">
+                                        {{-- Legacy SWMS photo input is `multiple`; names are re-indexed per row by the Add-another JS. --}}
+                                        <input type="file" name="answers_file[{{ $qid }}][0][]" multiple accept="image/*" class="sl-multi-upload">
                                         <label>Control Measures{!! $star !!}</label>
                                         <textarea name="answers_meta[{{ $qid }}][control_measures][]" rows="1" {{ $required }}></textarea>
                                         <label>Risk Score (After){!! $star !!}</label>
@@ -982,6 +983,13 @@
                             c.removeAttribute('data-sl-sig-init');
                             try { c.getContext('2d').clearRect(0, 0, c.width, c.height); } catch (err) {}
                         });
+                        // Cloned dropzones/previews lose their listeners — strip them and let
+                        // slInitDropzones build fresh ones for the new row.
+                        clone.querySelectorAll('.sl-dropzone, .sl-file-preview').forEach(function (el) { el.remove(); });
+                        clone.querySelectorAll('input[type="file"]').forEach(function (fi) {
+                            fi.removeAttribute('data-sl-dz');
+                            fi.style.display = '';
+                        });
                         if (!clone.querySelector('.sl-remove-section')) {
                             var del = document.createElement('a');
                             del.href = 'javascript:;';
@@ -991,8 +999,63 @@
                             clone.appendChild(del);
                         }
                         wrap.insertBefore(clone, link);
+                        // Re-index per-row file inputs (answers_file[qid][row][]) so each SWMS
+                        // row keeps its own photo set.
+                        var rows = wrap.querySelectorAll('.sl-repeat-item');
+                        rows.forEach(function (row, idx) {
+                            row.querySelectorAll('input[type="file"]').forEach(function (fi) {
+                                if (/\[\d+\]\[\]$/.test(fi.name)) {
+                                    fi.name = fi.name.replace(/\[\d+\]\[\]$/, '[' + idx + '][]');
+                                }
+                            });
+                        });
+                        if (window.slInitDropzones) { window.slInitDropzones(); }
                         if (window.slInitSignatures) { window.slInitSignatures(); }
                     });
+                })();
+            </script>
+            <script>
+                // Multi-image inputs (Upload Button + SWMS photos — the two spots legacy allows
+                // multiple files) render as a drag & drop box; dropped/browsed files merge into
+                // the input and feed the existing preview strip.
+                (function () {
+                    function mergeFiles(input, newFiles) {
+                        try {
+                            var dt = new DataTransfer();
+                            Array.prototype.forEach.call(input.files || [], function (f) { dt.items.add(f); });
+                            Array.prototype.forEach.call(newFiles || [], function (f) {
+                                if (!input.accept || input.accept.indexOf('image') === -1 || /^image\//.test(f.type)) {
+                                    dt.items.add(f);
+                                }
+                            });
+                            input.files = dt.files;
+                            input.dispatchEvent(new Event('change', { bubbles: true }));
+                        } catch (e) {}
+                    }
+                    function initDropzone(input) {
+                        if (input.dataset.slDz === '1') return;
+                        input.dataset.slDz = '1';
+                        input.style.display = 'none';
+                        var box = document.createElement('div');
+                        box.className = 'sl-dropzone';
+                        box.innerHTML = '<span style="font-size:1.3rem;display:block;margin-bottom:2px;">&#128247;</span>'
+                            + 'Drag &amp; drop images here or <span style="color:#008C00;font-weight:700;text-decoration:underline;">browse</span>';
+                        box.style.cssText = 'border:2px dashed #b6c8b6;border-radius:10px;background:#f6faf6;color:#557055;'
+                            + 'text-align:center;padding:16px 10px;font-size:.85rem;cursor:pointer;margin:4px 0 2px;';
+                        input.insertAdjacentElement('beforebegin', box);
+                        box.addEventListener('click', function () { input.click(); });
+                        box.addEventListener('dragover', function (e) { e.preventDefault(); box.style.background = '#e8f6e8'; });
+                        box.addEventListener('dragleave', function () { box.style.background = '#f6faf6'; });
+                        box.addEventListener('drop', function (e) {
+                            e.preventDefault();
+                            box.style.background = '#f6faf6';
+                            if (e.dataTransfer && e.dataTransfer.files) { mergeFiles(input, e.dataTransfer.files); }
+                        });
+                    }
+                    window.slInitDropzones = function () {
+                        document.querySelectorAll('input.sl-multi-upload').forEach(initDropzone);
+                    };
+                    window.slInitDropzones();
                 })();
             </script>
             <script>

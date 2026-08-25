@@ -369,17 +369,28 @@ class MobileProfileController extends Controller
                 'risk_score_after' => 'risk_after',
             ];
 
-            // Store each hazard row's optional photo, keeping its row index for alignment.
+            // Store each hazard row's photos (legacy allows MULTIPLE per input), keeping the
+            // row index for alignment. Rows arrive as answers_file[qid][rowIdx][] — but a
+            // legacy-shaped flat answers_file[qid][] still works (one file per row).
             $swmsPhotos = [];
             $swmsFiles = $request->file('answers_file.'.$qid);
             if (is_array($swmsFiles)) {
-                foreach ($swmsFiles as $rowIndex => $singleFile) {
-                    if ($singleFile instanceof UploadedFile
-                        && $singleFile->isValid()
-                        && $singleFile->getSize() <= 10240 * 1024) {
-                        $stored = $singleFile->store('form-uploads/'.$profile->id, 'public');
-                        $swmsPhotos[(int) $rowIndex] = $stored;
-                        $uploadedFilePaths[] = $stored;
+                foreach ($swmsFiles as $rowIndex => $fileOrList) {
+                    $list = is_array($fileOrList) ? $fileOrList : [$fileOrList];
+                    $storedRow = [];
+
+                    foreach ($list as $singleFile) {
+                        if ($singleFile instanceof UploadedFile
+                            && $singleFile->isValid()
+                            && $singleFile->getSize() <= 10240 * 1024) {
+                            $stored = $singleFile->store('form-uploads/'.$profile->id, 'public');
+                            $storedRow[] = $stored;
+                            $uploadedFilePaths[] = $stored;
+                        }
+                    }
+
+                    if ($storedRow !== []) {
+                        $swmsPhotos[(int) $rowIndex] = implode(',', $storedRow);
                     }
                 }
             }

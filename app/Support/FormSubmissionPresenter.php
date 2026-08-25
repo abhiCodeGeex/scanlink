@@ -67,13 +67,16 @@ class FormSubmissionPresenter
 
             $used[$qid] = true;
 
-            if (in_array((int) $question->question_type_id, self::DISPLAY_ONLY_TYPES, true)) {
-                continue;
-            }
-
             $raw = trim((string) $answer);
 
             if ($raw === '') {
+                continue;
+            }
+
+            // Display-only types normally carry no answer — but when one DOES (e.g. a
+            // Document Button click stored the file), render it: everything the visitor
+            // filled must appear in the email/PDF.
+            if (in_array((int) $question->question_type_id, self::DISPLAY_ONLY_TYPES, true) && $raw === '') {
                 continue;
             }
 
@@ -86,19 +89,13 @@ class FormSubmissionPresenter
                 continue;
             }
 
-            $question = $byId->get((int) $questionId);
-
-            if ($question && in_array((int) $question->question_type_id, self::DISPLAY_ONLY_TYPES, true)) {
-                continue;
-            }
-
             $raw = trim((string) $answer);
 
             if ($raw === '') {
                 continue;
             }
 
-            $rows[] = self::presentOne($question, $raw);
+            $rows[] = self::presentOne($byId->get((int) $questionId), $raw);
         }
 
         return $rows;
@@ -660,7 +657,7 @@ class FormSubmissionPresenter
 
             $rows = collect($fields)->map(static function (array $field): string {
                 $value = $field['is_file']
-                    ? self::pdfFileHtml((string) $field['value'])
+                    ? self::pdfText((string) $field['value'])
                     : nl2br(e((string) $field['value']));
 
                 return '<tr>'
@@ -697,24 +694,31 @@ class FormSubmissionPresenter
             return ($label !== '' ? '<b>'.e($label).':</b><br>' : '').$img;
         }
 
-        // Stored upload paths ("form-uploads/…", optionally "Label: path1, path2"): embed
-        // IMAGES into the PDF from disk; render documents as clickable links.
-        if (str_contains($raw, 'form-uploads/')) {
+        // Stored files ("form-uploads/…" paths or bare builder files "fb_doc_*"/"fb_img_*",
+        // optionally "Label: file1, file2"): embed IMAGES from disk; documents become links.
+        $isFileToken = fn (string $t): bool => str_contains($t, 'form-uploads/')
+            || preg_match('/^fb_(doc|img)_[A-Za-z0-9_.-]+\.[A-Za-z0-9]{2,5}$/', $t) === 1;
+
+        $label = '';
+        $candidate = $raw;
+        if (preg_match('/^([^:\/]{1,40}):\s*(.+)$/s', $raw, $lm)) {
+            $label = trim($lm[1]);
+            $candidate = trim($lm[2]);
+        }
+
+        $tokens = array_values(array_filter(array_map('trim', explode(',', $candidate))));
+
+        if ($tokens === [] || ! collect($tokens)->every($isFileToken)) {
+            // Retry without the label split (a filename itself never contains ':').
             $label = '';
-            $value = $raw;
-            if (preg_match('/^([^:]{1,40}):\s*(form-uploads\/.+)$/i', $raw, $lm)) {
-                $label = trim($lm[1]);
-                $value = trim($lm[2]);
-            }
+            $tokens = array_values(array_filter(array_map('trim', explode(',', $raw))));
+        }
 
-            $tokens = array_values(array_filter(array_map('trim', explode(',', $value))));
+        if ($tokens !== [] && collect($tokens)->every($isFileToken)) {
+            $parts = array_map(fn (string $t): string => self::pdfFileHtml($t), $tokens);
 
-            if ($tokens !== [] && collect($tokens)->every(fn (string $t): bool => str_contains($t, 'form-uploads/'))) {
-                $parts = array_map(fn (string $t): string => self::pdfFileHtml($t), $tokens);
-
-                return ($label !== '' && strcasecmp($label, 'File') !== 0 ? '<b>'.e($label).':</b><br>' : '')
-                    .implode('<br>', $parts);
-            }
+            return ($label !== '' && strcasecmp($label, 'File') !== 0 ? '<b>'.e($label).':</b><br>' : '')
+                .implode('<br>', $parts);
         }
 
         return nl2br(e($raw));
