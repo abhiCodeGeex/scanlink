@@ -162,30 +162,65 @@
             border: 0 !important;
             vertical-align: middle;
         }
-        /* Dummy display "fields" (Date/Time/Upload/MAP previews are divs, not inputs). */
+        /* List rhythm: uniform gutters, no stray browser margins on the <p> labels the legacy
+           markup sprinkles between fields (they caused the uneven left insets and gaps). */
+        #div_drop_area ol { margin: 0 !important; padding: 0 !important; list-style: none; }
+        #div_drop_area li { padding: 10px 12px !important; margin: 0 0 4px !important; box-sizing: border-box; }
+        #div_drop_area li p {
+            margin: 8px 0 3px !important;
+            padding: 0 !important;
+            font: 700 12px Arial, Helvetica, sans-serif;
+            color: #374151;
+        }
+        /* Dummy display "fields" (Signature/comments/date/time previews are DIVS, not inputs).
+           Legacy CSS pins them to height:17px with NO left padding — text sat on the border.
+           Force the same geometry as real inputs. */
         #div_drop_area div.text-box-black {
-            box-sizing: border-box;
+            box-sizing: border-box !important;
+            display: block;
             width: 100% !important;
             max-width: 100% !important;
-            min-height: 36px;
-            line-height: 36px;
-            padding: 0 12px;
-            margin: 4px 0 10px;
+            height: auto !important;
+            min-height: 36px !important;
+            line-height: 34px !important;
+            padding: 0 12px !important;
+            margin: 4px 0 10px !important;
             border: 1px solid #d1d5db;
             border-radius: 8px;
             background: #fff;
             color: #6b7280;
-            font: 13px Arial, Helvetica, sans-serif;
+            font-size: 13px;
+            font-family: Arial, Helvetica, sans-serif;
+            overflow: hidden;
+            float: none !important;
+        }
+        /* Coloured preview bars (Upload / MAP / Web Link / Document / SWMS / Menu): each carries
+           different inline styles (left vs center text, padding-left:10px, width:140px on MAP).
+           Normalise ALL of them into one identical bar: full width, centered, 38px tall. */
+        #div_drop_area div.text-box-black[style*="background-color"],
+        #div_drop_area .checkin-form-btn {
+            box-sizing: border-box !important;
+            display: block;
+            width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+            min-height: 38px !important;
+            line-height: 38px !important;
+            padding: 0 12px !important;
+            margin: 6px 0 10px !important;
+            border: 0 !important;
+            border-radius: 8px !important;
+            text-align: center !important;
+            font-weight: 700;
+            font-size: 13px;
+            color: #fff;
             overflow: hidden;
         }
-        /* Keep the Upload (green) and MAP (grey) preview bars tidy — their inline colours win,
-           these just fix the shape/spacing. Inline width:140px on MAP is overridden. */
-        #div_drop_area div.text-box-black[style*="background-color"] {
-            border: 0;
-            border-radius: 8px;
-            font-weight: 700;
-            width: 100% !important;
-        }
+        #div_drop_area .checkin-form-btn { background: #007A01; }
+        /* "Send email notifications to" recipient preview: inline width:90% input → full width. */
+        #div_drop_area .add_recipient { padding: 0 !important; }
+        #div_drop_area .add_recipient input { width: 100% !important; }
+        #div_drop_area .add_recipient .rounded { margin: 4px 0 !important; padding: 0 !important; background: none; border: 0; }
         /* Uploaded image preview: breathing room + rounded thumbnail. */
         #div_drop_area .fb-image-preview { margin: 6px 0 10px; }
         #div_drop_area .fb-image-preview img {
