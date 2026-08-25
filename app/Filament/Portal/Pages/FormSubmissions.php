@@ -298,7 +298,7 @@ class FormSubmissions extends Page
                     $html = '&nbsp;';
                 }
 
-                $rows[] = ['label' => $presented['label'], 'html' => $html];
+                $rows[] = ['label' => $presented['label'], 'kind' => $presented['kind'], 'html' => $html];
             }
 
             if ($rows === []) {
@@ -395,6 +395,7 @@ class FormSubmissions extends Page
         foreach (\App\Support\FormSubmissionPresenter::rows($questions, $answerMap) as $presented) {
             $rows[] = [
                 'label' => $presented['label'],
+                'kind' => $presented['kind'],
                 'html' => \App\Support\FormSubmissionPresenter::answerHtml($presented)->toHtml(),
             ];
         }

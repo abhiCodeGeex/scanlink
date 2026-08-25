@@ -44,9 +44,24 @@
             padding-top: 2px;
             word-break: break-word;
         }
-        .sl-fsview__a { flex: 1; min-width: 0; font-size: 14px; line-height: 1.5; word-break: break-word; }
+        .sl-fsview__a { flex: 1; min-width: 0; font-size: 14px; line-height: 1.5; overflow-wrap: break-word; }
         .sl-fsview__a a { color: var(--fs-green); font-weight: 600; }
         .sl-fsview__a img { max-width: 280px; height: auto; border-radius: 6px; }
+        .sl-fsview__section { padding: 13px 0; border-bottom: 1px solid #f3f4f6; }
+        .sl-fsview__section:last-child { border-bottom: 0; }
+        .sl-fsview__sec-label {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            color: var(--fs-muted);
+            margin: 0 0 10px;
+        }
+        .sl-fsview__sec-body { font-size: 14px; line-height: 1.5; overflow-wrap: break-word; }
+        .sl-fsview__sec-body a { color: var(--fs-green); font-weight: 600; }
+        .sl-fsview__sec-body img { max-width: 280px; height: auto; border-radius: 6px; }
+        .sl-fsview__sec-body table { width: 100% !important; table-layout: fixed; }
+        .sl-fsview__a table { width: 100% !important; table-layout: fixed; }
         .sl-fsview__h1 { font-size: 19px; color: var(--fs-green); margin: 18px 0 4px; font-weight: 700; }
         .sl-fsview__h3 { font-size: 15px; color: var(--fs-text); margin: 14px 0 2px; font-weight: 700; }
         .sl-fsview__html { padding: 10px 0; font-size: 14px; color: var(--fs-text); line-height: 1.5; }
@@ -132,17 +147,29 @@
                     @php
                         $raw = (string) ($answer?->question_answer ?? '');
                         $presented = \App\Support\FormSubmissionPresenter::presentOne($question, $raw);
+                        $isBlock = in_array($presented['kind'], ['swms', 'sigrows', 'fields'], true);
                     @endphp
-                    <div class="sl-fsview__row">
-                        <div class="sl-fsview__q">{{ $presented['label'] }}</div>
-                        <div class="sl-fsview__a">
-                            @if ($raw === '')
-                                <span style="color:#9ca3af;">—</span>
-                            @else
+                    @if ($isBlock && $raw !== '')
+                        {{-- Complex answers (SWMS / signatures / field groups) span the full width —
+                             their inner label/value tables need the room. --}}
+                        <div class="sl-fsview__section">
+                            <div class="sl-fsview__sec-label">{{ $presented['label'] }}</div>
+                            <div class="sl-fsview__sec-body">
                                 {!! \App\Support\FormSubmissionPresenter::answerHtml($presented) !!}
-                            @endif
+                            </div>
                         </div>
-                    </div>
+                    @else
+                        <div class="sl-fsview__row">
+                            <div class="sl-fsview__q">{{ $presented['label'] }}</div>
+                            <div class="sl-fsview__a">
+                                @if ($raw === '')
+                                    <span style="color:#9ca3af;">—</span>
+                                @else
+                                    {!! \App\Support\FormSubmissionPresenter::answerHtml($presented) !!}
+                                @endif
+                            </div>
+                        </div>
+                    @endif
                 @endif
             @endforeach
         </div>

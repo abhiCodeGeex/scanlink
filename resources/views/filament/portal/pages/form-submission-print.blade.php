@@ -51,9 +51,24 @@
             padding-top: 2px;
             word-break: break-word;
         }
-        .a { flex: 1; min-width: 0; line-height: 1.5; word-break: break-word; }
+        .a { flex: 1; min-width: 0; line-height: 1.5; overflow-wrap: break-word; }
         .a a { color: #008901; font-weight: 600; }
         .a img { max-width: 280px; height: auto; border-radius: 6px; }
+        .a table { width: 100% !important; table-layout: fixed; }
+        .section { padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
+        .section:last-child { border-bottom: 0; }
+        .sec-label {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            color: #6b7280;
+            margin: 0 0 10px;
+        }
+        .sec-body { line-height: 1.5; overflow-wrap: break-word; }
+        .sec-body a { color: #008901; font-weight: 600; }
+        .sec-body img { max-width: 280px; height: auto; border-radius: 6px; }
+        .sec-body table { width: 100% !important; table-layout: fixed; }
         .print-bar { max-width: 760px; margin: 0 auto 14px; text-align: right; }
         .print-btn {
             background: #008901;
@@ -99,10 +114,18 @@
 
         <div class="body">
             @foreach ($rows as $row)
-                <div class="row">
-                    <div class="q">{{ $row['label'] }}</div>
-                    <div class="a">{!! $row['html'] !== '' ? $row['html'] : '<span style="color:#9ca3af;">—</span>' !!}</div>
-                </div>
+                @if (in_array($row['kind'] ?? 'text', ['swms', 'sigrows', 'fields'], true))
+                    {{-- Complex answers span the full width — their inner tables need the room. --}}
+                    <div class="section">
+                        <div class="sec-label">{{ $row['label'] }}</div>
+                        <div class="sec-body">{!! $row['html'] !!}</div>
+                    </div>
+                @else
+                    <div class="row">
+                        <div class="q">{{ $row['label'] }}</div>
+                        <div class="a">{!! $row['html'] !== '' ? $row['html'] : '<span style="color:#9ca3af;">—</span>' !!}</div>
+                    </div>
+                @endif
             @endforeach
         </div>
     </div>

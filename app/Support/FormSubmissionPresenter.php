@@ -505,10 +505,10 @@ class FormSubmissionPresenter
                 .'</ul>'
             ),
             'fields' => new HtmlString(
-                '<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;">'
+                '<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;table-layout:fixed;border-collapse:collapse;">'
                 .collect($row['fields'])->map(static function (array $field): string {
                     return '<tr>'
-                        .'<td style="padding:4px 12px 4px 0;color:#6b7280;font-size:13px;width:38%;vertical-align:top;">'
+                        .'<td style="padding:4px 12px 4px 0;color:#6b7280;font-size:13px;width:28%;vertical-align:top;">'
                         .e($field['label'])
                         .'</td>'
                         .'<td style="padding:4px 0;color:#111827;font-size:14px;vertical-align:top;">'
@@ -533,16 +533,17 @@ class FormSubmissionPresenter
             'sigrows' => self::sigPdfHtml($row),
             'file_link' => '<a href="'.e((string) ($row['href'] ?? '#')).'">'
                 .e((string) ($row['name'] ?: 'Document')).'</a>',
-            'list' => '<ul>'
-                .collect($row['items'])->map(
-                    static fn (string $item): string => '<li>'.self::pdfText($item).'</li>'
-                )->implode('')
-                .'</ul>',
-            'fields' => '<table cellpadding="3" cellspacing="0" border="0" width="100%">'
+            // Plain <br>-joined lines: <ul> inside a table cell breaks TCPDF's layout.
+            'list' => collect($row['items'])->map(
+                static fn (string $item): string => '- '.self::pdfText($item)
+            )->implode('<br>'),
+            // Full-width top-level table (the PDF template renders 'fields' outside the
+            // main rows table — TCPDF cannot nest tables).
+            'fields' => '<table cellpadding="4" cellspacing="0" border="0" width="100%">'
                 .collect($row['fields'])->map(static function (array $field): string {
                     return '<tr>'
-                        .'<td width="40%" style="color:#4b5563;"><b>'.e($field['label']).'</b></td>'
-                        .'<td width="60%">'.self::pdfText((string) $field['value']).'</td>'
+                        .'<td width="28%" style="color:#6b7280;font-size:9pt;"><b>'.e($field['label']).'</b></td>'
+                        .'<td width="72%" style="font-size:10pt;color:#111827;">'.self::pdfText((string) $field['value']).'</td>'
                         .'</tr>';
                 })->implode('')
                 .'</table>',
@@ -573,7 +574,7 @@ class FormSubmissionPresenter
 
             $rows = collect($fields)->map(static function (array $field): string {
                 return '<tr>'
-                    .'<td style="padding:3px 12px 3px 0;color:#6b7280;font-size:13px;width:42%;vertical-align:top;">'
+                    .'<td style="padding:3px 12px 3px 0;color:#6b7280;font-size:13px;width:28%;vertical-align:top;">'
                     .e($field['label'])
                     .'</td>'
                     .'<td style="padding:3px 0;color:#111827;font-size:14px;vertical-align:top;">'
@@ -583,7 +584,7 @@ class FormSubmissionPresenter
             })->implode('');
 
             return $divider.$heading
-                .'<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;">'
+                .'<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;table-layout:fixed;border-collapse:collapse;">'
                 .$rows
                 .'</table>';
         })->implode('');
@@ -642,7 +643,9 @@ class FormSubmissionPresenter
     }
 
     /**
-     * TCPDF-safe repeatable-signature markup: blocks divided by a rule, signature embedded inline.
+     * TCPDF-safe repeatable-signature markup. Rendered by the PDF template as a full-width
+     * section (NEVER inside another table — TCPDF cannot nest tables): one top-level
+     * 28/72 table per entry, green "Signature #n" micro-heading when there are several.
      */
     protected static function sigPdfHtml(array $row): string
     {
@@ -656,24 +659,32 @@ class FormSubmissionPresenter
 
         return collect($instances)->map(static function (array $fields, int $i) use ($multi): string {
             $divider = $i > 0 ? '<br>' : '';
-            $heading = $multi ? '<span style="color:#008901;font-size:9pt;"><b>Signature #'.($i + 1).'</b></span><br>' : '';
+            $heading = $multi
+                ? '<table cellpadding="2" cellspacing="0" border="0" width="100%"><tr>'
+                    .'<td style="color:#008901;font-size:9pt;"><b>Signature #'.($i + 1).'</b></td>'
+                    .'</tr></table>'
+                : '';
 
             $rows = collect($fields)->map(static function (array $field): string {
-                if (! empty($field['is_signature'])) {
-                    return '<p style="margin:2px 0;"><span style="color:#6b7280;font-size:9pt;">'.e($field['label']).'</span><br>'
-                        .self::pdfText((string) $field['value']).'</p>';
-                }
+                $value = ! empty($field['is_signature'])
+                    ? self::pdfText((string) $field['value'])
+                    : nl2br(e((string) $field['value']));
 
-                return '<p style="margin:2px 0;"><span style="color:#6b7280;font-size:9pt;">'.e($field['label']).':</span> '
-                    .nl2br(e((string) $field['value'])).'</p>';
+                return '<tr>'
+                    .'<td width="28%" style="color:#6b7280;font-size:9pt;"><b>'.e($field['label']).'</b></td>'
+                    .'<td width="72%" style="font-size:10pt;color:#111827;">'.$value.'</td>'
+                    .'</tr>';
             })->implode('');
 
-            return $divider.$heading.$rows;
+            return $divider.$heading
+                .'<table cellpadding="4" cellspacing="0" border="0" width="100%">'.$rows.'</table>';
         })->implode('');
     }
 
     /**
-     * TCPDF-friendly SWMS markup: titled blocks divided by a rule, simple tags only.
+     * TCPDF-safe SWMS markup. Rendered by the PDF template as a full-width section
+     * (NEVER inside another table — TCPDF cannot nest tables): one top-level 28/72
+     * table per hazard row, green "SWMS #n" micro-heading when there are several.
      */
     protected static function swmsPdfHtml(array $row): string
     {
@@ -683,9 +694,15 @@ class FormSubmissionPresenter
             return '&nbsp;';
         }
 
-        return collect($instances)->map(static function (array $fields, int $i): string {
+        $multi = count($instances) > 1;
+
+        return collect($instances)->map(static function (array $fields, int $i) use ($multi): string {
             $divider = $i > 0 ? '<br>' : '';
-            $heading = '<span style="color:#008901;font-size:9pt;"><b>SWMS #'.($i + 1).'</b></span>';
+            $heading = $multi
+                ? '<table cellpadding="2" cellspacing="0" border="0" width="100%"><tr>'
+                    .'<td style="color:#008901;font-size:9pt;"><b>SWMS #'.($i + 1).'</b></td>'
+                    .'</tr></table>'
+                : '';
 
             $rows = collect($fields)->map(static function (array $field): string {
                 $value = $field['is_file']
@@ -693,13 +710,13 @@ class FormSubmissionPresenter
                     : nl2br(e((string) $field['value']));
 
                 return '<tr>'
-                    .'<td width="38%" style="color:#6b7280;font-size:9pt;">'.e($field['label']).'</td>'
-                    .'<td width="62%">'.$value.'</td>'
+                    .'<td width="28%" style="color:#6b7280;font-size:9pt;"><b>'.e($field['label']).'</b></td>'
+                    .'<td width="72%" style="font-size:10pt;color:#111827;">'.$value.'</td>'
                     .'</tr>';
             })->implode('');
 
             return $divider.$heading
-                .'<table cellpadding="3" cellspacing="0" border="0" width="100%">'.$rows.'</table>';
+                .'<table cellpadding="4" cellspacing="0" border="0" width="100%">'.$rows.'</table>';
         })->implode('');
     }
 
