@@ -259,15 +259,16 @@ class FormSubmissions extends Page
         $pdf->setPrintFooter(false);
         $pdf->SetMargins(12, 12, 12);
         $pdf->SetAutoPageBreak(true, 12);
-        // TCPDF ignores the blade's rem-based sizes and defaults to a tiny font — set a
-        // readable base size so the downloaded report is legible.
-        $pdf->SetFont('helvetica', '', 11);
+        // TCPDF ignores rem-based sizes and defaults tiny — set a readable base font.
+        $pdf->SetFont('helvetica', '', 10);
 
         // Company logo as an inline base64 data URI (TCPDF renders those reliably, unlike the
         // http URL the browser view uses or some local file paths); falls back to ScanLink logo.
         $logoUrl = $this->profilePdfLogoSrc($profile);
 
-        $rendered = 0;
+        // Collect every submission up-front so the whole report renders as ONE flowing
+        // document (submissions divided by <hr>), not one page per submission.
+        $sessions = [];
         foreach ($sessionIds as $sessionId) {
             $answers = FormBuilderAnswer::query()
                 ->with('question')
@@ -280,23 +281,48 @@ class FormSubmissions extends Page
                 continue;
             }
 
-            $html = view('filament.portal.pages.form-submission-print', [
-                'profile' => $profile,
-                'sessionId' => $sessionId,
-                'answers' => $answers,
-                'submittedAt' => $answers->min('date_time'),
-                'logoUrl' => $logoUrl,
-                'forPdf' => true,
-            ])->render();
+            $rows = [];
+            foreach ($answers as $answer) {
+                $raw = trim((string) ($answer->question_answer ?? ''));
+                if ($raw === '') {
+                    continue;
+                }
 
-            $pdf->AddPage();
-            $pdf->writeHTML($html, true, false, true, false, '');
-            $rendered++;
+                $presented = \App\Support\FormSubmissionPresenter::presentOne($answer->question, $raw);
+                $html = \App\Support\FormSubmissionPresenter::answerPdfHtml($presented);
+                if (trim(strip_tags($html)) === '' && ! str_contains($html, '<img')) {
+                    $html = '&nbsp;';
+                }
+
+                $rows[] = ['label' => $presented['label'], 'html' => $html];
+            }
+
+            if ($rows === []) {
+                continue;
+            }
+
+            $submittedRaw = $answers->min('date_time');
+            $sessions[] = [
+                'sessionId' => (string) $sessionId,
+                'submittedAt' => $submittedRaw ? Carbon::parse($submittedRaw)->format('d M Y H:i') : '—',
+                'rows' => $rows,
+            ];
         }
 
-        if ($rendered === 0) {
-            $pdf->AddPage();
+        $pdf->AddPage();
+
+        if ($sessions === []) {
             $pdf->writeHTML('<p>No submissions found.</p>');
+        } else {
+            $html = view('filament.portal.pages.form-submissions-pdf', [
+                'profile' => $profile,
+                'profileName' => trim((string) ($profile->code_profile_name ?: ($profile->name ?: $profile->form_title))),
+                'logoUrl' => $logoUrl,
+                'sessions' => $sessions,
+                'generatedAt' => now()->format('d M Y H:i'),
+            ])->render();
+
+            $pdf->writeHTML($html, true, false, true, false, '');
         }
 
         $content = (string) $pdf->Output('', 'S');
