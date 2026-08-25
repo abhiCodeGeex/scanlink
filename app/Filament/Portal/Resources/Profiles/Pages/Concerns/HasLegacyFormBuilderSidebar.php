@@ -384,10 +384,14 @@ trait HasLegacyFormBuilderSidebar
             return;
         }
 
+        // Sub-users only see forms of the profiles selected for them in Manage User.
+        $allowed = \App\Filament\Portal\Concerns\InteractsWithClientMembership::portalMembership()?->allowedProfileIds();
+
         $this->existingFormProfiles = Profile::query()
             ->where('client_id', $client->id)
             ->where('id', '!=', $profile->id)
             ->where('form_id', '>', 0)
+            ->when($allowed !== null, fn ($q) => $q->whereIn('id', $allowed))
             ->orderByDesc('id')
             ->get(['id', 'form_title', 'name'])
             ->map(fn (Profile $row): array => [

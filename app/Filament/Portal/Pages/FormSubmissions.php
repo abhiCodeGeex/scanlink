@@ -360,8 +360,11 @@ class FormSubmissions extends Page
 
         abort_unless($member, 403);
 
+        $allowed = $member->allowedProfileIds();
+
         $profile = Profile::query()
             ->where('client_id', $member->client_id)
+            ->when($allowed !== null, fn ($q) => $q->whereIn('id', $allowed))
             ->active()
             ->findOrFail($profileId);
 
@@ -445,9 +448,12 @@ class FormSubmissions extends Page
     protected function loadProfile(int $profileId): void
     {
         $client = $this->requireClient();
+        $allowed = $this->requireClientUser()->allowedProfileIds();
 
         $profile = Profile::query()
             ->where('client_id', $client->id)
+            // Sub-users only reach profiles selected for them in Manage User.
+            ->when($allowed !== null, fn ($q) => $q->whereIn('id', $allowed))
             ->active()
             ->findOrFail($profileId);
 
@@ -482,9 +488,11 @@ class FormSubmissions extends Page
     protected function resolveProfile(): Profile
     {
         $client = $this->requireClient();
+        $allowed = $this->requireClientUser()->allowedProfileIds();
 
         return Profile::query()
             ->where('client_id', $client->id)
+            ->when($allowed !== null, fn ($q) => $q->whereIn('id', $allowed))
             ->active()
             ->findOrFail($this->selectedProfileId);
     }

@@ -926,7 +926,13 @@
 										case '11': // image
 
 											if ($question_text != '') {
-												echo '<div align="' . $questions['image_align'] . '"><img src="' . rtrim(url('/'), '/').'/images/form_builder_uploaded_images/' . $question_text . '" width="100"  title="' . $questions['image_title'] . '" ></div><br>';
+												// Serve from the public storage disk (uploads always land there); the
+												// legacy public/images/ copy can fail on locked-down hosts → broken img.
+												$fbImgDisk = 'form-builder/images/' . $question_text;
+												$fbImgSrc = \Illuminate\Support\Facades\Storage::disk('public')->exists($fbImgDisk)
+													? rtrim(url('/'), '/') . '/storage/' . $fbImgDisk
+													: rtrim(url('/'), '/') . '/images/form_builder_uploaded_images/' . $question_text;
+												echo '<div align="' . $questions['image_align'] . '" class="fb-image-preview"><img src="' . $fbImgSrc . '" width="100" title="' . $questions['image_title'] . '" ></div><br>';
 											}
 											echo '<br>';
 											break;

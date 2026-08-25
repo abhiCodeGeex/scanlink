@@ -113,6 +113,100 @@
             height: auto !important;
         }
 
+        /* ============ Canvas ("CREATE YOUR FORM HERE") — clean field design ============
+           The legacy stylesheet leaves dropped-question inputs at odd widths with cramped
+           padding, cropped edges and inconsistent spacing. Normalise every field inside the
+           drop area into one consistent system. Checkboxes/radios/buttons are excluded. */
+        #div_drop_area input[type="text"],
+        #div_drop_area input[type="number"],
+        #div_drop_area input[type="email"],
+        #div_drop_area textarea,
+        #div_drop_area select {
+            display: block;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+            height: 36px;
+            padding: 0 12px !important;
+            margin: 4px 0 10px !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 8px !important;
+            background: #fff !important;
+            font: 13px/1.4 Arial, Helvetica, sans-serif !important;
+            color: #111827 !important;
+            float: none !important;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        #div_drop_area textarea {
+            height: auto;
+            min-height: 64px;
+            padding: 9px 12px !important;
+            resize: vertical;
+        }
+        #div_drop_area input[type="text"]:focus,
+        #div_drop_area input[type="number"]:focus,
+        #div_drop_area input[type="email"]:focus,
+        #div_drop_area textarea:focus,
+        #div_drop_area select:focus {
+            outline: none;
+            border-color: #008C00 !important;
+            box-shadow: 0 0 0 3px rgba(0, 140, 0, 0.14);
+        }
+        #div_drop_area input[type="checkbox"],
+        #div_drop_area input[type="radio"] {
+            display: inline-block;
+            width: auto !important;
+            height: auto;
+            margin: 0 5px 0 0 !important;
+            padding: 0 !important;
+            border: 0 !important;
+            vertical-align: middle;
+        }
+        /* Dummy display "fields" (Date/Time/Upload/MAP previews are divs, not inputs). */
+        #div_drop_area div.text-box-black {
+            box-sizing: border-box;
+            width: 100% !important;
+            max-width: 100% !important;
+            min-height: 36px;
+            line-height: 36px;
+            padding: 0 12px;
+            margin: 4px 0 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: #fff;
+            color: #6b7280;
+            font: 13px Arial, Helvetica, sans-serif;
+            overflow: hidden;
+        }
+        /* Keep the Upload (green) and MAP (grey) preview bars tidy — their inline colours win,
+           these just fix the shape/spacing. Inline width:140px on MAP is overridden. */
+        #div_drop_area div.text-box-black[style*="background-color"] {
+            border: 0;
+            border-radius: 8px;
+            font-weight: 700;
+            width: 100% !important;
+        }
+        /* Uploaded image preview: breathing room + rounded thumbnail. */
+        #div_drop_area .fb-image-preview { margin: 6px 0 10px; }
+        #div_drop_area .fb-image-preview img {
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+            padding: 3px;
+            background: #fff;
+        }
+        /* Labels above fields (Image Title / Row Label / question labels). */
+        #div_drop_area .image-label,
+        #div_drop_area .row-label,
+        #div_drop_area .column-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #374151;
+            margin: 8px 0 2px;
+        }
+        /* Question blocks: consistent inner padding so nothing touches the edges. */
+        #div_drop_area li { box-sizing: border-box; }
+        #div_drop_area .parent_content { padding: 2px 2px 4px; }
+
         /* Mobile: the legacy form builder is a fixed 440px+440px / 980px desktop layout. Now
            that the viewport is device-width, fluidize the remaining fixed-width containers so
            dropped questions, previews and inputs fit the phone instead of clipping. */

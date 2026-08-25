@@ -88,15 +88,12 @@ class ProfileResource extends Resource
             ->when($clientId, fn (Builder $q): Builder => $q->where('client_id', $clientId))
             ->active();
 
-        // Legacy "Manage User → Select Code Profile": a sub-user with an explicit profile
-        // list only sees those profiles ('0' / empty = unrestricted). This was saved by
-        // Edit User but never enforced, so limited users still saw every profile.
-        $allowed = trim((string) ($member->show_code_profile_id_to_acc_user ?? ''));
-        if ($member && ! $member->isPrimary() && $allowed !== '' && $allowed !== '0') {
-            $ids = array_values(array_filter(array_map('intval', explode(',', $allowed))));
-            if ($ids !== []) {
-                $query->whereIn('id', $ids);
-            }
+        // "Manage User → Select Code Profile": a sub-user only sees the explicitly selected
+        // profiles — and with NOTHING selected they see NO profiles (an empty whereIn).
+        // Primary users (allowedProfileIds() === null) are unrestricted.
+        $allowed = $member?->allowedProfileIds();
+        if ($allowed !== null) {
+            $query->whereIn('id', $allowed);
         }
 
         return $query;

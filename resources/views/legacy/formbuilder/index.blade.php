@@ -903,7 +903,7 @@
 										case '11': // image
 
 											if ($question_text != '') {
-												echo '<div align="' . $questions['image_align'] . '"><img src="' . url('/images/form_builder_uploaded_images/' . $question_text . '" width="100"  title="' . $questions['image_title'] . '" ></div><br>';
+												echo '<div align="' . $questions['image_align'] . '"><img src="' . url('/images/form_builder_uploaded_images/' . $question_text) . '" width="100"  title="' . $questions['image_title'] . '" ></div><br>';
 											}
 											echo '<br>';
 											break;

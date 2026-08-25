@@ -222,15 +222,16 @@
         {{-- Legacy mobile/index.php: outside the activation window the page shows only the logo. --}}
         @if ($withinActivationWindow ?? true)
 
-        @if (in_array($profile->typeSlug(), $slOrderedTileTypes, true))
-            @include('scan.partials.ordered-tiles')
-        @endif
-
-        {{-- Legacy: "Display the code number at the top of mobile screen" shows a green header bar above the logo. --}}
-        @if ($profile->show_header && ! in_array($profile->typeSlug(), $slOrderedTileTypes, true))
+        {{-- Legacy: "Display the code number at the top of mobile screen" shows a green header
+             bar at the very top of the page — for EVERY profile type (incl. exhibit/voc). --}}
+        @if ($profile->show_header)
             <div class="code-header-bar" style="background:#178a00;color:#fff;font-weight:700;font-size:1rem;line-height:1.3;padding:10px 12px;margin:-10px -10px 10px;">
                 Profile No: {{ $profile->id }}
             </div>
+        @endif
+
+        @if (in_array($profile->typeSlug(), $slOrderedTileTypes, true))
+            @include('scan.partials.ordered-tiles')
         @endif
 
         @if ($profile->logos->isNotEmpty() && ! in_array($profile->typeSlug(), $slOrderedTileTypes, true))
@@ -281,7 +282,9 @@
              exhibit/voc render Words / Profile Information via the ordered-tiles partial. --}}
         @unless (in_array($profile->typeSlug(), $slOrderedTileTypes, true))
         <div class="MobileBottomText">
-            @if (filled($profile->name))
+            {{-- Asset "Words" checkboxes hide the WHOLE block (heading + value), not just the heading. --}}
+            @php $slAsset = $profile->typeSlug() === 'asset'; @endphp
+            @if (filled($profile->name) && (! $slAsset || $profile->show_name))
                 @if (! empty($nameHeading))
                     <h3>{{ $nameHeading }}</h3>
                 @endif
@@ -309,7 +312,7 @@
                 <p>{{ $profile->serial_no }}</p>
             @endif
 
-            @if ($profile->description)
+            @if ($profile->description && (! $slAsset || $profile->show_description))
                 @php
                     $descPlain = trim(str_replace('&nbsp;', '', strip_tags((string) $profile->description)));
                     $slug = $profile->typeSlug();
@@ -368,15 +371,8 @@
                 @endforeach
             @endif
 
-            @if ($profile->address && $profile->typeSlug() !== 'voc')
-                @php
-                    $showAddressHeading = $profile->typeSlug() === 'asset'
-                        ? (bool) $profile->show_address
-                        : true;
-                @endphp
-                @if ($showAddressHeading)
-                    <h3>Address</h3>
-                @endif
+            @if ($profile->address && $profile->typeSlug() !== 'voc' && (! $slAsset || $profile->show_address))
+                <h3>Address</h3>
                 <p>{{ $profile->address }}</p>
                 @if (in_array($profile->typeSlug(), ['location', 'asset'], true))
                     <p>&nbsp;<a class="gray-mob-btn" href="https://maps.google.com?q={{ urlencode($profile->address) }}" target="_blank" rel="noopener">View Map</a></p>
@@ -395,31 +391,23 @@
                 <p>{{ $profile->name_company }}</p>
             @endif
 
-            @if ($profile->telephone && $profile->typeSlug() !== 'voc')
-                @if ($profile->typeSlug() !== 'asset' || $profile->show_telephone)
-                    <h3>Telephone</h3>
-                @endif
+            @if ($profile->telephone && $profile->typeSlug() !== 'voc' && (! $slAsset || $profile->show_telephone))
+                <h3>Telephone</h3>
                 <p><a href="tel:{{ $profile->telephone }}">{{ $profile->telephone }}</a></p>
             @endif
 
-            @if (filled($profile->mobile))
-                @if ($profile->typeSlug() !== 'asset' || $profile->show_mobile)
-                    <h3>Mobile</h3>
-                @endif
+            @if (filled($profile->mobile) && (! $slAsset || $profile->show_mobile))
+                <h3>Mobile</h3>
                 <p><a href="tel:{{ $profile->mobile }}">{{ $profile->mobile }}</a></p>
             @endif
 
-            @if (filled($profile->email))
-                @if ($profile->typeSlug() !== 'asset' || $profile->show_email)
-                    <h3>Email</h3>
-                @endif
+            @if (filled($profile->email) && (! $slAsset || $profile->show_email))
+                <h3>Email</h3>
                 <p><a href="mailto:{{ $profile->email }}">{{ $profile->email }}</a></p>
             @endif
 
-            @if (filled($profile->url) && $profile->typeSlug() !== 'code')
-                @if ($profile->typeSlug() !== 'asset' || $profile->show_url)
-                    <h3>Website</h3>
-                @endif
+            @if (filled($profile->url) && $profile->typeSlug() !== 'code' && (! $slAsset || $profile->show_url))
+                <h3>Website</h3>
                 <p><a href="{{ $profile->url }}" target="_blank" rel="noopener">{{ $profile->url }}</a></p>
             @endif
 

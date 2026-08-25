@@ -4151,11 +4151,12 @@ tr.sl-row-active {
 .sl-cb table.listing-table tr.sl-row-active > td { background-color: #c9ffc9 !important; }
 .sl-cb__templates {
     display: flex;
-    flex-wrap: wrap;
+    /* Keep every profile-type on ONE line — the .sl-cb__table-wrap container scrolls
+       horizontally instead of the labels wrapping onto a second row. */
+    flex-wrap: nowrap;
     align-items: center;
     gap: 10px 22px;
     width: 100%;
-    row-gap: 10px;
 }
 .sl-cb__templates a {
     display: inline-block;

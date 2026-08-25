@@ -75,10 +75,13 @@ class ManageParticipants extends Page
         $this->participants = collect();
 
         $client = $this->requireClient();
+        $allowed = $this->requireClientUser()->allowedProfileIds();
         $requested = (int) request()->query('profile', 0);
 
         $profile = Profile::query()
             ->where('client_id', $client->id)
+            // Sub-users only reach profiles selected for them in Manage User.
+            ->when($allowed !== null, fn ($q) => $q->whereIn('id', $allowed))
             ->active()
             ->when($requested > 0, fn ($q) => $q->whereKey($requested))
             ->orderBy('id')
@@ -411,9 +414,11 @@ class ManageParticipants extends Page
     protected function assertProfileOwned(int $profileId): Profile
     {
         $client = $this->requireClient();
+        $allowed = $this->requireClientUser()->allowedProfileIds();
 
         return Profile::query()
             ->where('client_id', $client->id)
+            ->when($allowed !== null, fn ($q) => $q->whereIn('id', $allowed))
             ->active()
             ->findOrFail($profileId);
     }

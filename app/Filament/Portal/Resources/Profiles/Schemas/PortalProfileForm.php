@@ -249,6 +249,9 @@ class PortalProfileForm
                         Textarea::make('voc_title_bar_text')
                             ->label('Text:')
                             ->rows(4)
+                            // Only shown while "Enable" is ticked (hidden fields aren't
+                            // dehydrated, so the stored text survives a disabled save).
+                            ->visible(fn (Get $get): bool => (bool) $get('voc_title_bar_enable'))
                             // Legacy: title-bar text is required only when "Enable" is ticked.
                             // (Enable is ->live() so this re-evaluates when it's unticked.)
                             ->required(fn (Get $get): bool => (bool) $get('voc_title_bar_enable'))
@@ -263,6 +266,7 @@ class PortalProfileForm
                             ->columnSpanFull(),
                         ColorPicker::make('voc_title_bar_colour')
                             ->label('Title Bar Background Colour:')
+                            ->visible(fn (Get $get): bool => (bool) $get('voc_title_bar_enable'))
                             ->default('#777777')
                             ->formatStateUsing(function ($state): string {
                                 $value = trim((string) ($state ?: '777777'));

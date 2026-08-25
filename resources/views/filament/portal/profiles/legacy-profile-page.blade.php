@@ -403,6 +403,7 @@
                             inst.updateElement();
                             el.dispatchEvent(new Event('input', { bubbles: true }));
                             el.dispatchEvent(new Event('change', { bubbles: true }));
+                            el.dispatchEvent(new FocusEvent('blur'));
                         } catch (e) {}
                     });
                 }
@@ -496,11 +497,13 @@
                             editor.updateElement();
                             el.dispatchEvent(new Event('input', { bubbles: true }));
                             el.dispatchEvent(new Event('change', { bubbles: true }));
+                            el.dispatchEvent(new FocusEvent('blur'));
                         });
                         editor.on('blur', function () {
                             editor.updateElement();
                             el.dispatchEvent(new Event('input', { bubbles: true }));
                             el.dispatchEvent(new Event('change', { bubbles: true }));
+                            el.dispatchEvent(new FocusEvent('blur'));
                         });
                     });
                 }
