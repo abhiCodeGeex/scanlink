@@ -262,10 +262,18 @@ trait HasLegacyFormBuilderSidebar
         $this->libraryPreviewTitle = (string) ($entry?->form_title
             ?: ($sourceProfile?->form_title ?: 'Form '.$formId));
 
-        // Show which code profile this form belongs to in the preview heading.
+        // ALWAYS show where this form comes from in the preview heading: the code profile
+        // that carries the form — or, for orphaned library saves (source form replaced /
+        // profile gone), the account user who saved it.
         if ($sourceProfile) {
             $sourceLabel = trim((string) ($sourceProfile->code_profile_name ?: $sourceProfile->name));
             $this->libraryPreviewTitle .= ' — Profile #'.$sourceProfile->id.($sourceLabel !== '' ? ' ('.$sourceLabel.')' : '');
+        } elseif ($entry) {
+            $owner = ClientUser::query()->find((int) $entry->user_id);
+            $ownerLabel = trim((string) ($owner?->email ?: ''));
+            $this->libraryPreviewTitle .= $ownerLabel !== ''
+                ? ' — saved by '.$ownerLabel
+                : ' — Library form #'.$formId;
         }
 
         $this->libraryPreviewQuestions = FormBuilderQuestion::query()
@@ -480,13 +488,32 @@ trait HasLegacyFormBuilderSidebar
 
         $currentFormId = (int) ($profile->form_id ?: 0);
 
-        $this->existingLibraryForms = app(FormLibraryService::class)
+        $libraryRows = app(FormLibraryService::class)
             ->libraryFormsForClient((int) $client->id)
-            ->filter(fn (FormBuilderLibrary $row): bool => $currentFormId === 0 || (int) $row->form_id !== $currentFormId)
-            ->map(fn (FormBuilderLibrary $row): array => [
-                'form_id' => (int) $row->form_id,
-                'form_title' => (string) ($row->form_title ?: 'Form '.$row->form_id),
-            ])
+            ->filter(fn (FormBuilderLibrary $row): bool => $currentFormId === 0 || (int) $row->form_id !== $currentFormId);
+
+        // Resolve each library form's source code profile so the list can show it.
+        $sourceProfiles = Profile::query()
+            ->whereIn('form_id', $libraryRows->pluck('form_id')->all() ?: [0])
+            ->orderBy('id')
+            ->get(['id', 'form_id', 'name', 'code_profile_name'])
+            ->keyBy(fn (Profile $p): int => (int) $p->form_id);
+
+        $this->existingLibraryForms = $libraryRows
+            ->map(function (FormBuilderLibrary $row) use ($sourceProfiles): array {
+                $src = $sourceProfiles->get((int) $row->form_id);
+                $srcLabel = $src
+                    ? 'Profile #'.$src->id.(trim((string) ($src->code_profile_name ?: $src->name)) !== ''
+                        ? ' — '.trim((string) ($src->code_profile_name ?: $src->name))
+                        : '')
+                    : 'Library form #'.$row->form_id;
+
+                return [
+                    'form_id' => (int) $row->form_id,
+                    'form_title' => (string) ($row->form_title ?: 'Form '.$row->form_id),
+                    'source' => $srcLabel,
+                ];
+            })
             ->values()
             ->all();
     }

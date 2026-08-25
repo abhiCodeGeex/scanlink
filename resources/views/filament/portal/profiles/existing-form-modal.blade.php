@@ -88,7 +88,7 @@
                                 <span class="sl-efm-row-no">{{ $index + 1 }}</span>
                                 <div class="sl-efm-row-main">
                                     <span class="sl-efm-row-title">{{ $libraryForm['form_title'] !== '' ? $libraryForm['form_title'] : 'Untitled form' }}</span>
-                                    <span class="sl-efm-row-meta">Library form #{{ $libraryForm['form_id'] }}</span>
+                                    <span class="sl-efm-row-meta">{{ $libraryForm['source'] ?? 'Library form #'.$libraryForm['form_id'] }}</span>
                                 </div>
                                 <div class="sl-efm-row-actions">
                                     <button type="button" class="sl-efm-link" wire:click="previewExistingLibraryForm({{ (int) $libraryForm['form_id'] }})">Preview</button>
