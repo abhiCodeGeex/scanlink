@@ -180,7 +180,7 @@ trait HasLegacyFormBuilderSidebar
         if ($cloned === 0) {
             $this->existingFormApplying = false;
             $this->existingFormStatus = null;
-            Notification::make()->title('Source profile has no questions')->warning()->send();
+            $this->js('(window.slAlert || window.alert)('.json_encode('Source profile has no questions. Please choose a form that contains questions.').')');
 
             return;
         }
@@ -204,7 +204,7 @@ trait HasLegacyFormBuilderSidebar
         if ($cloned === 0) {
             $this->existingFormApplying = false;
             $this->existingFormStatus = null;
-            Notification::make()->title('Library form has no questions')->warning()->send();
+            $this->js('(window.slAlert || window.alert)('.json_encode('This library form has no questions. Please choose a form that contains questions.').')');
 
             return;
         }
@@ -492,7 +492,7 @@ trait HasLegacyFormBuilderSidebar
         if ($cloned === 0) {
             $this->existingFormApplying = false;
             $this->existingFormStatus = null;
-            Notification::make()->title("That profile's form has no questions")->warning()->send();
+            $this->js('(window.slAlert || window.alert)('.json_encode("That profile's form has no questions. Please choose a form that contains questions.").')');
 
             return;
         }
