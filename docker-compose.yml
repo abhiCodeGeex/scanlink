@@ -39,6 +39,45 @@ services:
       REDIS_CLIENT: phpredis
       REDIS_HOST: redis
 
+  # Runs Laravel's scheduler so dailyAt() jobs actually fire: code-expiry emails
+  # (30/3/0 days, 06:00), VOC document expiry (06:30), participant reminders (07:00).
+  # Same image/code/config as `app`, but CONTAINER_ROLE=scheduler makes the entrypoint
+  # run `schedule:work` instead of php-fpm.
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: scanlink-laravel-scheduler
+    working_dir: /var/www/html
+    restart: unless-stopped
+    volumes:
+      - ./:/var/www/html
+      - vendor_data:/var/www/html/vendor
+      - storage_framework:/var/www/html/storage/framework
+      - bootstrap_cache:/var/www/html/bootstrap/cache
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file:
+      - .env.docker
+    environment:
+      CONTAINER_ROLE: scheduler
+      APP_ENV: local
+      APP_DEBUG: "false"
+      VIEW_COMPILED_PATH: /tmp/laravel-views
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_DATABASE: scanlink_laravel
+      DB_USERNAME: scanlink
+      DB_PASSWORD: scanlink
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      REDIS_CLIENT: phpredis
+      REDIS_HOST: redis
+
   nginx:
     image: nginx:1.27-alpine
     container_name: scanlink-laravel-nginx

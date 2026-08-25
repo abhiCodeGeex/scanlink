@@ -47,7 +47,14 @@ class YouTubeService
       return $input;
     }
 
-    if (preg_match('/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/', $input, $matches)) {
+    // Path-style YouTube URLs: /embed/ID, /shorts/ID, /v/ID, or youtu.be/ID (with optional
+    // trailing query like ?si=... or ?t=...).
+    if (preg_match('~(?:youtube\.com/(?:embed|shorts|v)/|youtu\.be/)([a-zA-Z0-9_-]{11})~', $input, $matches)) {
+      return $matches[1];
+    }
+
+    // watch URLs where v= may be anywhere in the query string (e.g. watch?app=desktop&v=ID).
+    if (preg_match('~[?&]v=([a-zA-Z0-9_-]{11})~', $input, $matches)) {
       return $matches[1];
     }
 

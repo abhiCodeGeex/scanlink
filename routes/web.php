@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [MarketingController::class, 'home'])->name('marketing.home');
 Route::post('/portal-login', [PortalAuthController::class, 'login'])->name('marketing.portal-login');
+// Login is POST-only; a stale tab / expired session refresh lands here as a GET (405 error).
+// Send the visitor back to the home page login instead of an error page.
+Route::get('/portal-login', fn () => redirect()->route('marketing.home'));
 
 Route::get('/contact', [MarketingController::class, 'contact'])->name('marketing.contact');
 Route::post('/contact', [MarketingController::class, 'submitContact'])->name('marketing.contact.submit');

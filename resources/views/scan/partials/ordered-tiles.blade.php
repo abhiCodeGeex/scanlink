@@ -43,11 +43,9 @@
         @case('exhibit-14')
             @php $vids = $profile->videos->where('is_extra', $tileId === 14); @endphp
             @if ($vids->isNotEmpty())
-                <h2>Videos</h2>
                 @foreach ($vids as $video)
                     @php $embed = $youtubeEmbedUrl((string) $video->video_name); @endphp
                     @if ($embed)
-                        <p style="margin:.5rem 0 .25rem;font-weight:600;">{{ $video->title ?: 'Video' }}</p>
                         <div class="video-wrap"><iframe src="{{ $embed }}" allowfullscreen loading="lazy" title="{{ $video->title ?: 'YouTube video' }}"></iframe></div>
                     @elseif (filled($video->video_name))
                         <a class="btn" href="{{ $video->video_name }}" target="_blank" rel="noopener">{{ $video->title ?: 'Watch video' }}</a>
@@ -78,11 +76,10 @@
 
         @case('exhibit-4')
             @if ($profile->pictures->isNotEmpty())
-                <h2>Gallery</h2>
-                <div class="gallery">
+                <div class="gallery" data-sl-gallery>
                     @foreach ($profile->pictures as $pic)
                         @if ($u = $publicMediaUrl($pic->picture_name))
-                            <figure><img src="{{ $u }}" alt="{{ $pic->txt_footer ?: 'Picture' }}">@if ($pic->txt_footer)<figcaption style="font-size:.85rem;color:#666;margin-top:.25rem;">{{ $pic->txt_footer }}</figcaption>@endif</figure>
+                            <figure><img src="{{ $u }}" alt="{{ $pic->txt_footer ?: 'Picture' }}" class="sl-gallery-img" style="cursor:pointer;" data-full="{{ $u }}" data-caption="{{ $pic->txt_footer }}">@if ($pic->txt_footer)<figcaption style="font-size:.85rem;color:#666;margin-top:.25rem;">{{ $pic->txt_footer }}</figcaption>@endif</figure>
                         @endif
                     @endforeach
                 </div>
@@ -94,7 +91,7 @@
                 <div class="gallery">
                     @foreach ($profile->picturesExtra as $pic)
                         @if ($u = $publicMediaUrl($pic->picture_name))
-                            <figure><img src="{{ $u }}" alt="{{ $pic->txt_footer ?: 'Picture' }}">@if ($pic->txt_footer)<figcaption style="font-size:.85rem;color:#666;margin-top:.25rem;">{{ $pic->txt_footer }}</figcaption>@endif</figure>
+                            <figure><img src="{{ $u }}" alt="{{ $pic->txt_footer ?: 'Picture' }}" class="sl-gallery-img" style="cursor:pointer;" data-full="{{ $u }}" data-caption="{{ $pic->txt_footer }}">@if ($pic->txt_footer)<figcaption style="font-size:.85rem;color:#666;margin-top:.25rem;">{{ $pic->txt_footer }}</figcaption>@endif</figure>
                         @endif
                     @endforeach
                 </div>
@@ -103,7 +100,6 @@
 
         @case('exhibit-5')
             @if ($profile->documents->isNotEmpty())
-                <h2>Documents</h2>
                 <div class="tile-grid" style="display:block;">
                     @foreach ($profile->documents as $doc)
                         @if ($u = $publicMediaUrl($doc->doc_name))
@@ -123,7 +119,6 @@
                 $links = $profile->weblinks->filter(fn ($w): bool => ($w->link_button === true || $w->link_button === 1 || $w->link_button === '1') && filled($w->link_button_url));
             @endphp
             @if ($links->isNotEmpty())
-                <h2>Links</h2>
                 <div class="tile-grid" style="display:block;">
                     @foreach ($links as $w)
                         @php
@@ -172,7 +167,7 @@
             @if ($profile->pictures->isNotEmpty())
                 <div class="gallery">
                     @foreach ($profile->pictures as $pic)
-                        @if ($u = $publicMediaUrl($pic->picture_name))<figure><img src="{{ $u }}" alt="Profile picture"></figure>@endif
+                        @if ($u = $publicMediaUrl($pic->picture_name))<figure><img src="{{ $u }}" alt="Profile picture" class="sl-gallery-img" style="cursor:pointer;" data-full="{{ $u }}" data-caption=""></figure>@endif
                     @endforeach
                 </div>
             @endif
@@ -202,7 +197,6 @@
 
         @case('voc-5')
             @if ($profile->vocDocuments->isNotEmpty())
-                <h2>Documents</h2>
                 <div class="tile-grid" style="display:block;">
                     @foreach ($profile->vocDocuments as $vd)
                         @php $u = $publicMediaUrl($vd->file_name); @endphp

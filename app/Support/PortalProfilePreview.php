@@ -132,7 +132,11 @@ class PortalProfilePreview
 
         foreach (self::DRAFT_SCALAR_KEYS as $key) {
             if (array_key_exists($key, $scalars)) {
-                $fill[$key] = $scalars[$key];
+                $value = $scalars[$key];
+                // Filament's RichEditor keeps its LIVE form state as a TipTap document
+                // (an array) — it only becomes HTML on save. Convert any array draft value
+                // to HTML so the phone preview never hits "Array to string conversion".
+                $fill[$key] = is_array($value) ? self::tipTapToHtml($value) : $value;
             }
         }
 
@@ -167,5 +171,70 @@ class PortalProfilePreview
             ->values();
 
         $profile->setRelation('weblinks', $links);
+    }
+
+    /**
+     * Minimal TipTap-document → HTML converter for phone-preview drafts (the live state of
+     * Filament's RichEditor). Covers the node/mark types our toolbars offer; anything
+     * unknown falls back to its children's text. Dependency-free on purpose.
+     */
+    public static function tipTapToHtml(array $doc): string
+    {
+        $nodes = $doc['content'] ?? $doc;
+
+        return is_array($nodes) ? self::tipTapNodes($nodes) : '';
+    }
+
+    /**
+     * @param  array<int, mixed>  $nodes
+     */
+    private static function tipTapNodes(array $nodes): string
+    {
+        $html = '';
+
+        foreach ($nodes as $node) {
+            if (! is_array($node)) {
+                continue;
+            }
+
+            $children = is_array($node['content'] ?? null) ? self::tipTapNodes($node['content']) : '';
+
+            $html .= match ($node['type'] ?? '') {
+                'text' => self::tipTapText($node),
+                'paragraph' => '<p>'.$children.'</p>',
+                'heading' => '<h3>'.$children.'</h3>',
+                'bulletList' => '<ul>'.$children.'</ul>',
+                'orderedList' => '<ol>'.$children.'</ol>',
+                'listItem' => '<li>'.$children.'</li>',
+                'hardBreak' => '<br>',
+                default => $children,
+            };
+        }
+
+        return $html;
+    }
+
+    /**
+     * @param  array<string, mixed>  $node
+     */
+    private static function tipTapText(array $node): string
+    {
+        $text = e((string) ($node['text'] ?? ''));
+
+        foreach (($node['marks'] ?? []) as $mark) {
+            if (! is_array($mark)) {
+                continue;
+            }
+
+            $text = match ($mark['type'] ?? '') {
+                'bold' => '<strong>'.$text.'</strong>',
+                'italic' => '<em>'.$text.'</em>',
+                'underline' => '<u>'.$text.'</u>',
+                'link' => '<a href="'.e((string) ($mark['attrs']['href'] ?? '#')).'" target="_blank" rel="noopener">'.$text.'</a>',
+                default => $text,
+            };
+        }
+
+        return $text;
     }
 }

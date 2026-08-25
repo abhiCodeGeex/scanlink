@@ -1,4 +1,4 @@
-<x-emails.layout title="Form submission" font="Arial, Helvetica, sans-serif">
+<x-emails.layout title="Form submission" font="Arial, Helvetica, sans-serif" :logo="$profileLogo ?? null">
 @php
     $profileName = $profileName ?: ('Profile #'.$profile->id);
     $rows = $rows ?? [];

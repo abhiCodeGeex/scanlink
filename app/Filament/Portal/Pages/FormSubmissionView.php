@@ -83,8 +83,12 @@ class FormSubmissionView extends Page
         abort_unless($profileId > 0 && $sessionId !== '', 404);
 
         $client = $this->requireClient();
+        $allowed = $this->requireClientUser()->allowedProfileIds();
+
         $profile = Profile::query()
             ->where('client_id', $client->id)
+            // Sub-users only reach profiles selected for them in Manage User.
+            ->when($allowed !== null, fn ($q) => $q->whereIn('id', $allowed))
             ->active()
             ->findOrFail($profileId);
 

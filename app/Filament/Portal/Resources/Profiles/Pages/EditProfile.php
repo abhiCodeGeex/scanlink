@@ -63,6 +63,10 @@ class EditProfile extends EditRecord
             return;
         }
 
+        // Form Builder is "draft until Save": opening/reloading the editor reverts any
+        // element changes that were not committed with the green page SAVE.
+        app(\App\Services\FormBuilderDraftService::class)->syncOnOpen((int) $this->record->id);
+
         $this->consumeFormBuilderOrderSuccess($this->record);
         $this->loadFormBuilderSidebarState($this->record);
     }
@@ -158,6 +162,9 @@ class EditProfile extends EditRecord
     {
         $this->syncProfileAssets();
         $this->syncFormBuilderSidebarSettings();
+
+        // Commit the current Form Builder elements as the new baseline (they now persist).
+        app(\App\Services\FormBuilderDraftService::class)->commit((int) $this->record->id);
 
         if ($this->record?->exists) {
             // Re-arm the password gate after save so preview/real URL show login again

@@ -584,6 +584,13 @@
 </style>
 
 <script>
+    // "Clear list" and the row delete buttons call window.slConfirm(), which is defined on the
+    // parent Form Builder page but NOT inside this (embedded) participant iframe — so without a
+    // fallback the call throws and the action never runs. Provide a native-confirm fallback.
+    window.slConfirm = window.slConfirm || function (message) {
+        return Promise.resolve(window.confirm(message));
+    };
+
     window.slPlistDatePicker = function (config) {
         return {
             fp: null,

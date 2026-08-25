@@ -16,6 +16,7 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -146,14 +147,10 @@ class PortalProfileForm
                             ->label('Email Text:')
                             ->helperText('The default text is "Click here to find a service provider near you"')
                             ->columnSpanFull(),
-                        Textarea::make('voc_email_sign_line1')
+                        RichEditor::make('voc_email_sign_line1')
                             ->label('Email Signature:')
                             ->helperText('The default signature is "ScanLink Support Team"')
-                            ->rows(4)
-                            ->extraInputAttributes([
-                                'class' => 'sl-ckeditor',
-                                'data-ck-toolbar' => 'custom',
-                            ])
+                            ->toolbarButtons(['bold', 'italic', 'underline', 'bulletList', 'orderedList', 'link', 'undo', 'redo'])
                             ->columnSpanFull(),
                         // Legacy keeps a second signature line but hides it (display:none); the
                         // CKEditor rich-text line 1 supersedes it. Kept hidden for data round-trip.
@@ -221,7 +218,21 @@ class PortalProfileForm
                 Section::make(LegacySectionHelp::heading('Videos'))
                     ->extraAttributes(['class' => 'SectionTitleBox sl-section-box sl-sortable-tile', 'data-tile-id' => 2])
                     ->schema(fn (): array => self::videoFields('video_titles'))
-                    ->visible(fn (Get $get): bool => ! in_array(self::slug($get('type_id')), ['code', 'survey', 'voc'], true)),
+                    // Legacy people/edit.php hides the whole Videos section unless the logged-in
+                    // user has the video_upload permission (users.video_upload).
+                    ->visible(function (Get $get): bool {
+                        $slug = self::slug($get('type_id'));
+
+                        if (in_array($slug, ['code', 'survey', 'voc'], true)) {
+                            return false;
+                        }
+
+                        if ($slug === 'people') {
+                            return (bool) (\App\Filament\Portal\Concerns\InteractsWithClientMembership::portalMembership()?->video_upload);
+                        }
+
+                        return true;
+                    }),
 
                 // Live Words / Profile Information — type-specific fields + contacts where legacy has them.
                 Section::make(LegacySectionHelp::heading('Words'))
@@ -241,20 +252,28 @@ class PortalProfileForm
                     ->schema([
                         Checkbox::make('voc_title_bar_enable')
                             ->label('Enable')
-                            ->default(true),
-                        Textarea::make('voc_title_bar_text')
+                            ->default(true)
+                            // Live so unticking Enable reactively drops the required rule below
+                            // (otherwise the textarea keeps its browser "required" attribute and
+                            // blocks save even though the title bar is disabled).
+                            ->live(),
+                        // Filament's native RichEditor: Livewire-first, so content ALWAYS reaches
+                        // the server on save and the editor survives re-renders (the old CKEditor
+                        // bridge randomly disappeared and cleared the field).
+                        RichEditor::make('voc_title_bar_text')
                             ->label('Text:')
-                            ->rows(4)
-                            // Legacy: title-bar text is required when "Enable" is ticked.
+                            // Only shown while "Enable" is ticked (hidden fields aren't
+                            // dehydrated, so the stored text survives a disabled save).
+                            ->visible(fn (Get $get): bool => (bool) $get('voc_title_bar_enable'))
+                            // Legacy: title-bar text is required only when "Enable" is ticked.
+                            // (Enable is ->live() so this re-evaluates when it's unticked.)
                             ->required(fn (Get $get): bool => (bool) $get('voc_title_bar_enable'))
                             ->validationMessages(['required' => 'Please enter title bar text.'])
-                            ->extraInputAttributes([
-                                'class' => 'sl-ckeditor',
-                                'data-ck-toolbar' => 'custom1',
-                            ])
+                            ->toolbarButtons(['bold', 'italic', 'underline', 'bulletList', 'orderedList', 'undo', 'redo'])
                             ->columnSpanFull(),
                         ColorPicker::make('voc_title_bar_colour')
                             ->label('Title Bar Background Colour:')
+                            ->visible(fn (Get $get): bool => (bool) $get('voc_title_bar_enable'))
                             ->default('#777777')
                             ->formatStateUsing(function ($state): string {
                                 $value = trim((string) ($state ?: '777777'));
@@ -403,20 +422,16 @@ class PortalProfileForm
 
                 Section::make(LegacySectionHelp::heading('Videos #2'))
                     ->extraAttributes(['class' => 'SectionTitleBox sl-section-box sl-sortable-tile', 'data-tile-id' => 14])
-                    ->schema(fn (): array => self::videoFields('video_extra_titles'))
+                    ->schema(fn (): array => self::videoFields('video_extra_titles', allowUpload: true))
                     ->visible(fn (Get $get): bool => self::slug($get('type_id')) === 'exhibit'),
 
                 Section::make(LegacySectionHelp::heading('Words #2'))
                     ->extraAttributes(['class' => 'SectionTitleBox sl-section-box sl-sortable-tile', 'data-tile-id' => 15])
                     ->schema([
                         TextInput::make('name2')->hiddenLabel()->maxLength(255),
-                        Textarea::make('description2')
+                        RichEditor::make('description2')
                             ->hiddenLabel()
-                            ->rows(4)
-                            ->extraInputAttributes([
-                                'class' => 'sl-ckeditor',
-                                'data-ck-toolbar' => 'MyToolbar',
-                            ])
+                            ->toolbarButtons(['bold', 'italic', 'underline', 'bulletList', 'orderedList', 'link', 'undo', 'redo'])
                             ->columnSpanFull(),
                     ])
                     ->visible(fn (Get $get): bool => self::slug($get('type_id')) === 'exhibit'),
@@ -1267,16 +1282,57 @@ class PortalProfileForm
      *
      * @return array<int, mixed>
      */
-    private static function videoFields(string $statePath): array
+    private static function videoFields(string $statePath, bool $allowUpload = false): array
     {
         $normalizeVideo = function (array $data): array {
+            // Resolve the chosen source (YouTube / local upload / existing catalogue pick)
+            // into the stored title + video_name pair.
+            $source = (string) ($data['video_source'] ?? 'youtube');
+
+            if ($source === 'upload' && filled($data['video_file'] ?? null)) {
+                $path = is_array($data['video_file']) ? (string) reset($data['video_file']) : (string) $data['video_file'];
+                $data['video_name'] = $path; // e.g. images/video/abc123.mp4 — played as a local file
+                if (blank($data['title'] ?? null)) {
+                    $data['title'] = pathinfo($path, PATHINFO_FILENAME);
+                }
+            } elseif ($source === 'existing' && filled($data['existing_video_id'] ?? null)) {
+                $clientId = \App\Filament\Portal\Concerns\InteractsWithClientMembership::portalMembership()?->client_id;
+                $existing = \App\Models\Video::query()
+                    ->where('client_id', $clientId ?? 0)
+                    ->find((int) $data['existing_video_id']);
+
+                if ($existing) {
+                    $data['video_name'] = (string) $existing->video_name;
+                    if (blank($data['title'] ?? null)) {
+                        $data['title'] = (string) $existing->title;
+                    }
+                }
+            }
+
+            unset($data['video_source'], $data['video_file'], $data['existing_video_id']);
+
             $data['title'] = (string) ($data['title'] ?? '');
             $data['video_name'] = trim((string) ($data['video_name'] ?? ''));
 
             return $data;
         };
 
+        // Legacy modal panels, verified against the old app:
+        // - test/index.php (Videos on every type): YouTube detail + Select From Existing —
+        //   its "Upload New" panel is commented out, so NO local upload there.
+        // - test/video_extra.php (exhibit "Videos #2" ONLY): Upload New + YouTube + Existing.
+        $sourceOptions = ['youtube' => 'YouTube video (URL or ID)'];
+        if ($allowUpload) {
+            $sourceOptions['upload'] = 'Upload new (video file)';
+        }
+        $sourceOptions['existing'] = 'Select from existing';
+
         $videoForm = [
+            Radio::make('video_source')
+                ->hiddenLabel()
+                ->options($sourceOptions)
+                ->default('youtube')
+                ->live(),
             TextInput::make('title')
                 ->label('Video title')
                 ->placeholder('e.g. Product demo')
@@ -1285,9 +1341,48 @@ class PortalProfileForm
             TextInput::make('video_name')
                 ->label('YouTube URL or video ID')
                 ->placeholder('https://www.youtube.com/watch?v=… or video ID')
-                ->required()
+                ->visible(fn (Get $get): bool => ($get('video_source') ?? 'youtube') === 'youtube')
+                ->required(fn (Get $get): bool => ($get('video_source') ?? 'youtube') === 'youtube')
+                // Must actually be a YouTube URL / 11-char video id — not an arbitrary string.
+                ->rule(fn (Get $get) => function (string $attribute, mixed $value, \Closure $fail) use ($get): void {
+                    if (($get('video_source') ?? 'youtube') !== 'youtube') {
+                        return;
+                    }
+                    if (filled($value) && app(YouTubeService::class)->parseVideoId((string) $value) === null) {
+                        $fail('Please enter a valid YouTube URL or video ID.');
+                    }
+                })
                 ->maxLength(255)
                 ->autocomplete(false),
+            FileUpload::make('video_file')
+                ->label('Select file: (MP4, MOV, WEBM, OGG) (Max 100 MB)')
+                ->disk('public')
+                ->directory('images/video')
+                ->acceptedFileTypes(['video/mp4', 'video/quicktime', 'video/webm', 'video/ogg'])
+                ->maxSize(102400)
+                ->visible(fn (Get $get): bool => $allowUpload && $get('video_source') === 'upload')
+                ->required(fn (Get $get): bool => $allowUpload && $get('video_source') === 'upload'),
+            Select::make('existing_video_id')
+                ->label('Your existing videos')
+                ->options(function (): array {
+                    $clientId = \App\Filament\Portal\Concerns\InteractsWithClientMembership::portalMembership()?->client_id;
+
+                    if (! $clientId) {
+                        return [];
+                    }
+
+                    return \App\Models\Video::query()
+                        ->where('client_id', $clientId)
+                        ->orderByDesc('id')
+                        ->get()
+                        ->mapWithKeys(fn (\App\Models\Video $v): array => [
+                            (int) $v->id => trim((string) ($v->title ?: $v->video_name)).' — Profile #'.$v->profile_id,
+                        ])
+                        ->all();
+                })
+                ->searchable()
+                ->visible(fn (Get $get): bool => $get('video_source') === 'existing')
+                ->required(fn (Get $get): bool => $get('video_source') === 'existing'),
         ];
 
         return [
@@ -1330,7 +1425,7 @@ class PortalProfileForm
                         ->modalHeading(fn (Repeater $component): string => count($component->getRawState() ?? []) > 0
                             ? 'Add another video'
                             : 'Upload a Video')
-                        ->modalDescription('Add a YouTube URL or video ID and the title shown on the mobile page.')
+                        ->modalDescription('Add a YouTube video, upload a video file, or pick one of your existing videos.')
                         ->modalSubmitActionLabel('Save video')
                         ->modalCancelActionLabel('Cancel')
                         ->modalWidth('md')
@@ -1412,6 +1507,14 @@ class PortalProfileForm
             return null;
         }
 
+        // Locally uploaded video file (images/video/… or any name with a video extension):
+        // link to the stored file itself — NOT a bogus youtube.com/watch?v=<filename> URL.
+        if (preg_match('/\.(mp4|m4v|mov|webm|ogg)$/i', $input)) {
+            return \App\Support\PublicMediaPath::url(
+                str_contains($input, '/') ? $input : 'images/video/'.$input
+            );
+        }
+
         $youtube = app(YouTubeService::class);
 
         if (str_starts_with($input, 'http://') || str_starts_with($input, 'https://')) {
@@ -1420,9 +1523,10 @@ class PortalProfileForm
             return $id ? $youtube->watchUrl($id) : $input;
         }
 
-        $id = $youtube->parseVideoId($input) ?? $input;
+        // Only link when it's a real YouTube id — junk values render as plain text.
+        $id = $youtube->parseVideoId($input);
 
-        return $youtube->watchUrl($id);
+        return $id ? $youtube->watchUrl($id) : null;
     }
 
     /**

@@ -67,6 +67,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Live (production) DB source for `php artisan scanlink:refresh-from-live`.
+    | Credentials live in the machine's gitignored .env as LIVE_DB_* — never
+    | hardcoded here. Read via config so it survives `config:cache`.
+    |--------------------------------------------------------------------------
+    */
+    'live_db' => [
+        'host' => env('LIVE_DB_HOST'),
+        'port' => env('LIVE_DB_PORT', '3306'),
+        'database' => env('LIVE_DB_DATABASE', 'scanlink_development'),
+        'username' => env('LIVE_DB_USERNAME'),
+        'password' => env('LIVE_DB_PASSWORD'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Physical QR label prices (AUD) — legacy dashboard constants
     |--------------------------------------------------------------------------
     */

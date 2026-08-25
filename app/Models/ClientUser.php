@@ -142,6 +142,31 @@ class ClientUser extends Model
     }
 
     /**
+     * Profile ids this member may access, or null for unrestricted (primary users).
+     *
+     * Manage User → "Select Code Profile" stores the selection in
+     * show_code_profile_id_to_acc_user as a comma list. For sub-users the selection is the
+     * whole entitlement: an empty selection ('' / '0') means NO profiles are visible —
+     * not "all of them".
+     *
+     * @return list<int>|null
+     */
+    public function allowedProfileIds(): ?array
+    {
+        if ($this->isPrimary()) {
+            return null;
+        }
+
+        $raw = trim((string) ($this->show_code_profile_id_to_acc_user ?? ''));
+
+        if ($raw === '' || $raw === '0') {
+            return [];
+        }
+
+        return array_values(array_filter(array_map('intval', explode(',', $raw))));
+    }
+
+    /**
      * Password is stored only on Laravel users; keep local column empty.
      */
     protected function password(): Attribute

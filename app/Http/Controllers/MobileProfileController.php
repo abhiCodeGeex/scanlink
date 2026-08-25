@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -224,6 +225,7 @@ class MobileProfileController extends Controller
 
         $answerMap = $validated['answers'] ?? [];
         $rawAnswers = $answerMap;
+        $uploadedFilePaths = [];
 
         foreach ($validated['answers_sig_text'] ?? [] as $questionId => $sigText) {
             if (filled($sigText) && empty($answerMap[$questionId])) {
@@ -236,7 +238,25 @@ class MobileProfileController extends Controller
                 continue;
             }
 
+            // Signatures arrive as canvas data URIs. Persist them as real PNG files so the
+            // email (clients block data: images), web response and PDF can all render them.
+            foreach ($meta as $metaKey => $metaValue) {
+                if (is_string($metaValue) && str_starts_with($metaValue, 'data:image')) {
+                    $storedSig = $this->storeSignatureImage($metaValue, (int) $profile->id);
+                    if ($storedSig !== null) {
+                        $meta[$metaKey] = $storedSig;
+                        $uploadedFilePaths[] = $storedSig;
+                    }
+                }
+            }
+
             $question = $questions->get((int) $questionId);
+
+            // SWMS (type 22) and repeatable signatures (type 16) have dedicated passes below that
+            // group each entry into its own delimited instance — skip the generic flattening here.
+            if ($question && in_array((int) $question->question_type_id, [16, 22], true)) {
+                continue;
+            }
 
             // Legacy Covid check-in stores fields joined with ::: in fixed order.
             if ($question && (int) $question->question_type_id === 25) {
@@ -293,9 +313,14 @@ class MobileProfileController extends Controller
         }
 
         $files = $request->file('answers_file') ?? [];
-        $uploadedFilePaths = [];
 
         foreach ($files as $questionId => $file) {
+            // SWMS (type 22) photos are stored per hazard row in the dedicated SWMS pass below.
+            $fileQuestion = $questions->get((int) $questionId);
+            if ($fileQuestion && (int) $fileQuestion->question_type_id === 22) {
+                continue;
+            }
+
             // "Add another" upload sends an array of files; SWMS sends a single file.
             $fileList = is_array($file) ? $file : [$file];
             $storedPaths = [];
@@ -319,6 +344,148 @@ class MobileProfileController extends Controller
             $answerMap[$questionId] = filled($existing)
                 ? trim((string) $existing.' | File: '.$pathStr)
                 : $pathStr;
+        }
+
+        // SWMS (type 22): store every hazard row as its own delimited instance so the email,
+        // print page and PDF can render the rows divided (SWMS #1 — divider — SWMS #2 …)
+        // instead of merging each field's values. Photos are aligned to their hazard row.
+        foreach ($questions as $swmsQuestion) {
+            if ((int) $swmsQuestion->question_type_id !== 22) {
+                continue;
+            }
+
+            $qid = $swmsQuestion->question_id;
+            $meta = $validated['answers_meta'][$qid] ?? $validated['answers_meta'][(string) $qid] ?? [];
+            if (! is_array($meta)) {
+                $meta = [];
+            }
+
+            // Mobile-form meta key => compact stored slug, in on-screen field order.
+            $swmsFields = [
+                'task' => 'task',
+                'potential_hazards' => 'hazards',
+                'risk_score_before' => 'risk_before',
+                'control_measures' => 'control',
+                'risk_score_after' => 'risk_after',
+            ];
+
+            // Store each hazard row's photos (legacy allows MULTIPLE per input), keeping the
+            // row index for alignment. Rows arrive as answers_file[qid][rowIdx][] — but a
+            // legacy-shaped flat answers_file[qid][] still works (one file per row).
+            $swmsPhotos = [];
+            $swmsFiles = $request->file('answers_file.'.$qid);
+            if (is_array($swmsFiles)) {
+                foreach ($swmsFiles as $rowIndex => $fileOrList) {
+                    $list = is_array($fileOrList) ? $fileOrList : [$fileOrList];
+                    $storedRow = [];
+
+                    foreach ($list as $singleFile) {
+                        if ($singleFile instanceof UploadedFile
+                            && $singleFile->isValid()
+                            && $singleFile->getSize() <= 10240 * 1024) {
+                            $stored = $singleFile->store('form-uploads/'.$profile->id, 'public');
+                            $storedRow[] = $stored;
+                            $uploadedFilePaths[] = $stored;
+                        }
+                    }
+
+                    if ($storedRow !== []) {
+                        $swmsPhotos[(int) $rowIndex] = implode(',', $storedRow);
+                    }
+                }
+            }
+
+            // Number of hazard rows submitted (max across all fields and photos).
+            $rowCount = 0;
+            foreach ($swmsFields as $metaKey => $slug) {
+                if (is_array($meta[$metaKey] ?? null)) {
+                    $rowCount = max($rowCount, count($meta[$metaKey]));
+                }
+            }
+            if ($swmsPhotos !== []) {
+                $rowCount = max($rowCount, max(array_keys($swmsPhotos)) + 1);
+            }
+
+            $instances = [];
+            for ($i = 0; $i < $rowCount; $i++) {
+                $segments = [];
+                foreach ($swmsFields as $metaKey => $slug) {
+                    $value = trim((string) ($meta[$metaKey][$i] ?? ''));
+                    // Keep user text off our delimiters (latin1-safe ASCII sentinels).
+                    $value = str_replace(['@@SWMS@@', '@@F@@'], ' ', $value);
+                    if ($value !== '') {
+                        $segments[] = $slug.'='.$value;
+                    }
+                }
+                if (isset($swmsPhotos[$i])) {
+                    $segments[] = 'photo='.$swmsPhotos[$i];
+                }
+                if ($segments !== []) {
+                    $instances[] = implode('@@F@@', $segments);
+                }
+            }
+
+            if ($instances !== []) {
+                $answerMap[$qid] = implode('@@SWMS@@', $instances);
+            } else {
+                unset($answerMap[$qid]);
+            }
+        }
+
+        // Signature (type 16): store each repeatable entry as its own "@@ROW@@"-delimited instance
+        // of "@@F@@"-delimited "slug=value" fields (name/employer/email/phone/signature) so the
+        // report / email / PDF can render each signature divided.
+        foreach ($questions as $sigQuestion) {
+            if ((int) $sigQuestion->question_type_id !== 16) {
+                continue;
+            }
+
+            $qid = $sigQuestion->question_id;
+            $meta = $validated['answers_meta'][$qid] ?? $validated['answers_meta'][(string) $qid] ?? [];
+            if (! is_array($meta)) {
+                $meta = [];
+            }
+
+            $sigFields = ['name', 'employer', 'email', 'phone', 'signature'];
+
+            $rowCount = 0;
+            foreach ($sigFields as $field) {
+                if (is_array($meta[$field] ?? null)) {
+                    $rowCount = max($rowCount, count($meta[$field]));
+                }
+            }
+
+            $instances = [];
+            for ($i = 0; $i < $rowCount; $i++) {
+                $segments = [];
+                foreach ($sigFields as $field) {
+                    $value = trim((string) ($meta[$field][$i] ?? ''));
+                    $value = str_replace(['@@ROW@@', '@@F@@'], ' ', $value);
+                    // Persist drawn signatures as PNG files (data: images are blocked by
+                    // email clients and bloat the answer column).
+                    if ($field === 'signature' && str_starts_with($value, 'data:image')) {
+                        $storedSig = $this->storeSignatureImage($value, (int) $profile->id);
+                        if ($storedSig !== null) {
+                            $value = $storedSig;
+                            $uploadedFilePaths[] = $storedSig;
+                        } else {
+                            $value = '';
+                        }
+                    }
+                    if ($value !== '') {
+                        $segments[] = $field.'='.$value;
+                    }
+                }
+                if ($segments !== []) {
+                    $instances[] = implode('@@F@@', $segments);
+                }
+            }
+
+            if ($instances !== []) {
+                $answerMap[$qid] = implode('@@ROW@@', $instances);
+            } else {
+                unset($answerMap[$qid]);
+            }
         }
 
         foreach ($questions as $question) {
@@ -454,6 +621,28 @@ class MobileProfileController extends Controller
         return redirect()->route('scan.show', [$clientUrl, $profileId]);
     }
 
+    /**
+     * Persist a canvas signature (data:image URI) as a real PNG on the public disk.
+     * Returns the stored path, or null when the payload isn't a valid image.
+     */
+    protected function storeSignatureImage(string $dataUri, int $profileId): ?string
+    {
+        if (! preg_match('#^data:image/(?:png|jpe?g);base64,(.+)$#i', $dataUri, $m)) {
+            return null;
+        }
+
+        $binary = base64_decode($m[1], true);
+
+        if ($binary === false || @imagecreatefromstring($binary) === false) {
+            return null;
+        }
+
+        $path = 'form-uploads/'.$profileId.'/sig_'.Str::random(12).'.png';
+        Storage::disk('public')->put($path, $binary);
+
+        return $path;
+    }
+
     protected function resolveProfile(string $clientUrl, int $profileId, bool $eager = false): Profile
     {
         $client = Client::query()->where('url', $clientUrl)->firstOrFail();
@@ -489,7 +678,11 @@ class MobileProfileController extends Controller
             return null;
         }
 
-        foreach ([$profile->shorturl, $profile->url, $profile->name] as $candidate) {
+        // Never redirect to $profile->shorturl: for a "code" profile the short URL is the
+        // TinyURL that points back at THIS scan page, so using it as the redirect target
+        // creates an infinite loop (ERR_TOO_MANY_REDIRECTS). The real destination lives in
+        // $profile->url (or the legacy $profile->name).
+        foreach ([$profile->url, $profile->name] as $candidate) {
             if (! filled($candidate)) {
                 continue;
             }
@@ -650,12 +843,18 @@ class MobileProfileController extends Controller
         // Build readable rows (clean labels, structured ::: answers) for the email.
         $rows = \App\Support\FormSubmissionPresenter::rows($questions, $savedAnswers);
 
+        // Use the profile's own company logo in the email header when it has one; otherwise the
+        // layout falls back to the ScanLink logo.
+        $logoName = trim((string) optional($profile->logos->first())->logo_name);
+        $profileLogo = $logoName !== '' ? \App\Support\PublicMediaPath::url($logoName) : null;
+
         $html = view('emails.form-submission', [
             'profile' => $profile,
             'profileName' => trim((string) ($profile->code_profile_name ?: $profile->name)),
             'submittedAt' => now()->format('d/m/Y H:i'),
             'sessionId' => $sessionId,
             'rows' => $rows,
+            'profileLogo' => $profileLogo,
         ])->render();
 
         $attachPdf = (int) ($profile->form_submission_format ?? 0) === 1;

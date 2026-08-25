@@ -42,6 +42,15 @@ class PortalProfilesTable
             // Legacy: free codes without renewal_required cannot be selected.
             ->checkIfRecordIsSelectableUsing(fn (Profile $record): bool => $record->isExpiryManaged())
             ->columns([
+                // Inactive flag: profiles whose activation window (start/end dates) excludes today
+                // are inactive — show a "no entry" marker (nothing for active profiles).
+                TextColumn::make('activation_flag')
+                    ->label('')
+                    ->getStateUsing(fn (Profile $record): string => $record->isWithinActivationWindow() ? '' : '🚫')
+                    ->tooltip(fn (Profile $record): ?string => $record->isWithinActivationWindow()
+                        ? null
+                        : 'Inactive — outside its activation dates')
+                    ->alignCenter(),
                 TextColumn::make('id')
                     ->label('Profile No.')
                     ->sortable()

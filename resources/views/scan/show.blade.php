@@ -7,16 +7,21 @@
     <style>
         /* Legacy mobile page: plain white body, 12px #555755 base text. */
         body { font-family: Arial, Helvetica, sans-serif; margin: 0; background: #fff; color: #555755; font-size: 12px; line-height: 22px; }
-        .wrap { max-width: 640px; margin: 0 auto; padding: 1.5rem; }
-        /* Legacy has no elevated card — content sits directly on white. */
-        .card { background: #fff; border-radius: 0; padding: 10px 12px; box-shadow: none; margin-bottom: 0; }
+        /* Legacy insets: .wrapper margin 0 10px + .content-container padding 10px = ~20px each side. */
+        .wrap { max-width: 640px; margin: 0 auto; padding: 0 10px; }
+        /* Legacy content sits on plain white (card shadow intentionally omitted for a flat look). */
+        .card { background: #fff; border-radius: 0; padding: 10px; box-shadow: none; margin-bottom: 0; }
+        /* Keep every embedded image inside the mobile width and at its natural aspect ratio.
+           (figure has a 40px browser default margin that otherwise insets images.) */
+        img { max-width: 100%; height: auto; }
+        figure { margin: 0 0 0.75rem; }
         a { color: #278b28; }
         /* Legacy MobileBottomText: label (bold) then value; block runs at 14px/22px. */
         .MobileBottomText { font-size: 14px; line-height: 22px; }
         .MobileBottomText h3 { margin: 0 0 7px 0; font-size: 1rem; font-weight: 700; color: #222; }
         .MobileBottomText p { margin: 0 0 7px 0; color: #555755; }
         h1 { color: #222; margin: 0 0 .5rem; font-size: 1.25rem; }
-        h2 { font-size: 1.1rem; margin-top: 1.5rem; }
+        h2 { font-size: 1.1rem; margin-top: .6rem; margin-bottom: .3rem; }
         .btn { display: inline-block; background: #008C00; color: #fff; padding: .6rem 1rem; border-radius: 8px; text-decoration: none; border: 0; cursor: pointer; margin: .25rem .25rem .25rem 0; }
         .btn-outline { background: #fff; color: #008C00; border: 1px solid #008C00; }
         /* Legacy View Map (.gray-mob-btn): solid grey button floated right. */
@@ -79,8 +84,9 @@
             font: inherit;
             cursor: pointer;
         }
-        label { display: block; margin-top: .75rem; font-weight: 600; }
-        input, textarea, select { width: 100%; padding: .5rem; margin-top: .25rem; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        /* Legacy form rhythm is tight (.frm_builder 14px/25px, labels are inline text + <br>). */
+        label { display: block; margin-top: .4rem; font-weight: 600; }
+        input, textarea, select { width: 100%; padding: .4rem .5rem; margin-top: .2rem; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
         .frm_builder input[type="checkbox"],
         .frm_builder input[type="radio"] {
             width: auto;
@@ -92,11 +98,39 @@
         }
         .notice { background: #e8f5e9; color: #1b5e20; padding: .75rem; border-radius: 8px; margin-bottom: 1rem; }
         .visitor-form { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #eee; }
-        .logo-row { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: 1rem; }
-        .logo-row img { max-height: 80px; max-width: 100%; object-fit: contain; border-radius: 6px; }
+        /* Legacy .BannerImage: the company logo is a full-width banner at the top — centered,
+           natural aspect, NO height cap (style.css .MobilePage .BannerImage img { max-width:100% }). */
+        .logo-row { display: block; text-align: center; min-height: 50px; margin-bottom: .5rem; }
+        .logo-row img { display: block; width: 100%; max-width: 100%; height: auto; margin: 0 auto .25rem; border-radius: 0; }
         .tile-grid { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
-        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: .75rem; margin-top: .75rem; }
-        .gallery img { width: 100%; border-radius: 8px; object-fit: cover; aspect-ratio: 1; }
+        /* Legacy gallery: uploaded pictures render as a single-row, horizontally-swipeable strip
+           of thumbnails (Swiper) — each ≤250px wide / ≤166px tall, centered — NOT a full-width
+           grid. (style.css .swiper-slide 280×300; img max-width:250px, max-height:166px.) */
+        .gallery {
+            display: flex;
+            gap: 12px;
+            margin-top: .75rem;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 6px;
+        }
+        .gallery figure {
+            flex: 0 0 auto;
+            width: 250px;
+            max-width: 80vw;
+            margin: 0;
+            scroll-snap-align: center;
+            text-align: center;
+        }
+        .gallery img {
+            max-width: 100%;
+            max-height: 166px;
+            width: auto;
+            height: auto;
+            display: inline-block;
+            border-radius: 0;
+        }
         .video-wrap { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; margin-top: .75rem; }
         .video-wrap iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
         .checklist { list-style: none; padding: 0; margin: .75rem 0 0; }
@@ -161,8 +195,9 @@
         body.portal-preview input,
         body.portal-preview textarea,
         body.portal-preview select { width: 100%; max-width: 100%; box-sizing: border-box; }
-        body.portal-preview .gallery { grid-template-columns: 1fr; }
-        body.portal-preview .gallery img { max-width: 100%; height: auto; aspect-ratio: auto; }
+        /* Keep the legacy thumbnail carousel in the narrow preview (smaller thumbs so they fit). */
+        body.portal-preview .gallery figure { width: 190px; max-width: 78%; }
+        body.portal-preview .gallery img { max-height: 130px; }
         @endif
     </style>
 </head>
@@ -187,6 +222,14 @@
         {{-- Legacy mobile/index.php: outside the activation window the page shows only the logo. --}}
         @if ($withinActivationWindow ?? true)
 
+        {{-- Legacy: "Display the code number at the top of mobile screen" shows a green header
+             bar at the very top of the page — for EVERY profile type (incl. exhibit/voc). --}}
+        @if ($profile->show_header)
+            <div class="code-header-bar" style="background:#178a00;color:#fff;font-weight:700;font-size:1rem;line-height:1.3;padding:10px 12px;margin:-10px -10px 10px;">
+                Profile No: {{ $profile->id }}
+            </div>
+        @endif
+
         @if (in_array($profile->typeSlug(), $slOrderedTileTypes, true))
             @include('scan.partials.ordered-tiles')
         @endif
@@ -201,14 +244,35 @@
             </div>
         @endif
 
-        @if ($profile->show_header)
-            <nav class="top-navigation" style="margin:0 0 .75rem;padding:.35rem 0;border-bottom:1px solid #eee;">
-                <h2 style="margin:0;font-size:.95rem;font-weight:700;color:#222;">Profile No: {{ $profile->id }}</h2>
-            </nav>
-        @elseif ($profile->name_company && $profile->typeSlug() !== 'people')
+        @if ($profile->name_company && $profile->typeSlug() !== 'people' && ! $profile->show_header)
             <p class="text-sm" style="color:#555;margin:0 0 .5rem;">
                 {{ $profile->name_company }}
             </p>
+        @endif
+
+        {{-- Video(s) render above the Words / description block (legacy parity). --}}
+        @if ($profile->videos->isNotEmpty() && ! in_array($profile->typeSlug(), $slOrderedTileTypes, true))
+            @foreach ($profile->videos as $video)
+                @php
+                    $embedUrl = $youtubeEmbedUrl((string) $video->video_name);
+                    $vName = (string) $video->video_name;
+                    // Legacy: a video_name that is a file (has an extension) is an uploaded clip.
+                    $vFileUrl = (! $embedUrl && preg_match('/\.(mp4|m4v|mov|webm|ogg)$/i', $vName))
+                        ? $publicMediaUrl(str_contains($vName, '/') ? $vName : 'images/video/'.$vName)
+                        : null;
+                @endphp
+                @if ($embedUrl)
+                    <div class="video-wrap">
+                        <iframe src="{{ $embedUrl }}" allowfullscreen loading="lazy" title="{{ $video->title ?: 'YouTube video' }}"></iframe>
+                    </div>
+                @elseif ($vFileUrl)
+                    <div class="video-wrap">
+                        <video controls playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;"><source src="{{ $vFileUrl }}"></video>
+                    </div>
+                @elseif (filled($vName))
+                    <a class="btn" href="{{ $vName }}" target="_blank" rel="noopener">{{ $video->title ?: 'Watch video' }}</a>
+                @endif
+            @endforeach
         @endif
 
         {{-- Legacy mobile/index.php: only show Make/Model / Location name when profile name is set.
@@ -216,7 +280,9 @@
              exhibit/voc render Words / Profile Information via the ordered-tiles partial. --}}
         @unless (in_array($profile->typeSlug(), $slOrderedTileTypes, true))
         <div class="MobileBottomText">
-            @if (filled($profile->name))
+            {{-- Asset "Words" checkboxes hide the WHOLE block (heading + value), not just the heading. --}}
+            @php $slAsset = $profile->typeSlug() === 'asset'; @endphp
+            @if (filled($profile->name) && (! $slAsset || $profile->show_name))
                 @if (! empty($nameHeading))
                     <h3>{{ $nameHeading }}</h3>
                 @endif
@@ -244,7 +310,7 @@
                 <p>{{ $profile->serial_no }}</p>
             @endif
 
-            @if ($profile->description)
+            @if ($profile->description && (! $slAsset || $profile->show_description))
                 @php
                     $descPlain = trim(str_replace('&nbsp;', '', strip_tags((string) $profile->description)));
                     $slug = $profile->typeSlug();
@@ -303,15 +369,8 @@
                 @endforeach
             @endif
 
-            @if ($profile->address && $profile->typeSlug() !== 'voc')
-                @php
-                    $showAddressHeading = $profile->typeSlug() === 'asset'
-                        ? (bool) $profile->show_address
-                        : true;
-                @endphp
-                @if ($showAddressHeading)
-                    <h3>Address</h3>
-                @endif
+            @if ($profile->address && $profile->typeSlug() !== 'voc' && (! $slAsset || $profile->show_address))
+                <h3>Address</h3>
                 <p>{{ $profile->address }}</p>
                 @if (in_array($profile->typeSlug(), ['location', 'asset'], true))
                     <p>&nbsp;<a class="gray-mob-btn" href="https://maps.google.com?q={{ urlencode($profile->address) }}" target="_blank" rel="noopener">View Map</a></p>
@@ -330,65 +389,40 @@
                 <p>{{ $profile->name_company }}</p>
             @endif
 
-            @if ($profile->telephone && $profile->typeSlug() !== 'voc')
-                @if ($profile->typeSlug() !== 'asset' || $profile->show_telephone)
-                    <h3>Telephone</h3>
-                @endif
+            @if ($profile->telephone && $profile->typeSlug() !== 'voc' && (! $slAsset || $profile->show_telephone))
+                <h3>Telephone</h3>
                 <p><a href="tel:{{ $profile->telephone }}">{{ $profile->telephone }}</a></p>
             @endif
 
-            @if (filled($profile->mobile))
-                @if ($profile->typeSlug() !== 'asset' || $profile->show_mobile)
-                    <h3>Mobile</h3>
-                @endif
+            @if (filled($profile->mobile) && (! $slAsset || $profile->show_mobile))
+                <h3>Mobile</h3>
                 <p><a href="tel:{{ $profile->mobile }}">{{ $profile->mobile }}</a></p>
             @endif
 
-            @if (filled($profile->email))
-                @if ($profile->typeSlug() !== 'asset' || $profile->show_email)
-                    <h3>Email</h3>
-                @endif
+            @if (filled($profile->email) && (! $slAsset || $profile->show_email))
+                <h3>Email</h3>
                 <p><a href="mailto:{{ $profile->email }}">{{ $profile->email }}</a></p>
             @endif
 
-            @if (filled($profile->url) && $profile->typeSlug() !== 'code')
-                @if ($profile->typeSlug() !== 'asset' || $profile->show_url)
-                    <h3>Website</h3>
-                @endif
+            @if (filled($profile->url) && $profile->typeSlug() !== 'code' && (! $slAsset || $profile->show_url))
+                <h3>Website</h3>
                 <p><a href="{{ $profile->url }}" target="_blank" rel="noopener">{{ $profile->url }}</a></p>
+            @endif
+
+            {{-- Contacts added on the profile editor (people/companies associated with this code). --}}
+            @if ($profile->contacts->isNotEmpty())
+                <h3>Contacts</h3>
+                @foreach ($profile->contacts as $contact)
+                    <p>
+                        {{ $contact->name_company }}
+                        @if (filled($contact->telephone))
+                            &middot; <a href="tel:{{ $contact->telephone }}">{{ $contact->telephone }}</a>
+                        @endif
+                    </p>
+                @endforeach
             @endif
         </div>
         @endunless
-
-        {{-- Legacy ordering: Gallery / Documents / Links / Share render AFTER the form
-             builder (see block below). Kept here only is the media that legacy shows
-             above the form. --}}
-        @if ($profile->videos->isNotEmpty() && ! in_array($profile->typeSlug(), $slOrderedTileTypes, true))
-            <h2>Videos</h2>
-            @foreach ($profile->videos as $video)
-                @php
-                    $embedUrl = $youtubeEmbedUrl((string) $video->video_name);
-                    $vName = (string) $video->video_name;
-                    // Legacy: a video_name that is a file (has an extension) is an uploaded clip.
-                    $vFileUrl = (! $embedUrl && preg_match('/\.(mp4|m4v|mov|webm|ogg)$/i', $vName))
-                        ? $publicMediaUrl(str_contains($vName, '/') ? $vName : 'images/video/'.$vName)
-                        : null;
-                @endphp
-                @if ($embedUrl)
-                    <p style="margin:.5rem 0 .25rem;font-weight:600;">{{ $video->title ?: 'Video' }}</p>
-                    <div class="video-wrap">
-                        <iframe src="{{ $embedUrl }}" allowfullscreen loading="lazy" title="{{ $video->title ?: 'YouTube video' }}"></iframe>
-                    </div>
-                @elseif ($vFileUrl)
-                    <p style="margin:.5rem 0 .25rem;font-weight:600;">{{ $video->title ?: 'Video' }}</p>
-                    <div class="video-wrap">
-                        <video controls playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;"><source src="{{ $vFileUrl }}"></video>
-                    </div>
-                @elseif (filled($vName))
-                    <a class="btn" href="{{ $vName }}" target="_blank" rel="noopener">{{ $video->title ?: 'Watch video' }}</a>
-                @endif
-            @endforeach
-        @endif
 
         @if ($profile->checklistItems->isNotEmpty())
             <h2>Checklist</h2>
@@ -422,11 +456,13 @@
                         $options = $question->options;
                         $qid = $question->question_id;
                         $required = $question->is_mandatory ? 'required' : '';
+                        // Red mandatory marker, used inline on every required element's label.
+                        $star = $question->is_mandatory ? ' <span class="mandatory_field">*</span>' : '';
                     @endphp
-                    <div style="margin-bottom:1rem;">
+                    <div style="margin-bottom:.5rem;">
                         @switch($tid)
                             @case(1)
-                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                                <label>{{ $question->question_text }}{!! $star !!}</label>
                                 <input type="text" name="answers[{{ $qid }}]" {{ $required }}>
                                 @break
 
@@ -464,7 +500,7 @@
                                 @if ($question->question_text && ! str_contains($question->question_text, ',') && ! str_contains($question->question_text, ':::'))
                                     <p style="font-weight:600;margin-bottom:.35rem;">{{ $question->question_text }}</p>
                                 @endif
-                                <label>{{ $question->doc_title ?: 'Select documents' }}@if($question->is_mandatory) *@endif</label>
+                                <label>{{ $question->doc_title ?: 'Select documents' }}{!! $star !!}</label>
                                 <div class="field-choice">
                                     @foreach ($docChoices as $doc)
                                         <div style="margin-bottom:.35rem;">
@@ -486,7 +522,7 @@
                                     $choiceOptions = \App\Support\FormBuilderMedia::choiceOptions($question);
                                 @endphp
                                 @if ($choiceLabel !== '')
-                                    <label>{{ $choiceLabel }}@if($question->is_mandatory) *@endif</label>
+                                    <label>{{ $choiceLabel }}{!! $star !!}</label>
                                 @elseif ($question->is_mandatory)
                                     <span style="color:#c00;font-size:.85rem;">*</span>
                                 @endif
@@ -506,7 +542,7 @@
                                     $choiceOptions = \App\Support\FormBuilderMedia::choiceOptions($question);
                                 @endphp
                                 @if ($choiceLabel !== '')
-                                    <label>{{ $choiceLabel }}@if($question->is_mandatory) <span class="mandatory_field">*</span>@endif</label>
+                                    <label>{{ $choiceLabel }}{!! $star !!}</label>
                                 @elseif ($question->is_mandatory)
                                     <span class="mandatory_field">*</span><br>
                                 @endif
@@ -526,7 +562,7 @@
                                     $choiceOptions = \App\Support\FormBuilderMedia::choiceOptions($question);
                                 @endphp
                                 @if ($choiceLabel !== '')
-                                    <label>{{ $choiceLabel }}@if($question->is_mandatory) *@endif</label>
+                                    <label>{{ $choiceLabel }}{!! $star !!}</label>
                                 @elseif ($question->is_mandatory)
                                     <span style="color:#c00;font-size:.85rem;">*</span>
                                 @endif
@@ -544,7 +580,7 @@
                                     $scaleTo = (int) ($options->firstWhere('question_option_type_id', 2)?->option_name ?? 5);
                                     if ($scaleFrom > $scaleTo) { [$scaleFrom, $scaleTo] = [$scaleTo, $scaleFrom]; }
                                 @endphp
-                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                                <label>{{ $question->question_text }}{!! $star !!}</label>
                                 <select name="answers[{{ $qid }}]" {{ $required }}>
                                     <option value="">Select…</option>
                                     @for ($i = $scaleFrom; $i <= $scaleTo; $i++)
@@ -558,7 +594,7 @@
                                     $rows = $options->where('question_option_type_id', 5);
                                     $cols = $options->where('question_option_type_id', 6);
                                 @endphp
-                                <label>{{ $question->question_text }}</label>
+                                <label>{{ $question->question_text }}{!! $star !!}</label>
                                 @if ($rows->isNotEmpty() && $cols->isNotEmpty())
                                     <table class="field-grid">
                                         <thead>
@@ -588,12 +624,12 @@
                                 @break
 
                             @case(8)
-                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                                <label>{{ $question->question_text }}{!! $star !!}</label>
                                 <input type="date" name="answers[{{ $qid }}]" {{ $required }}>
                                 @break
 
                             @case(9)
-                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                                <label>{{ $question->question_text }}{!! $star !!}</label>
                                 <input type="time" name="answers[{{ $qid }}]" {{ $required }}>
                                 @break
 
@@ -616,43 +652,50 @@
                                 @break
 
                             @case(15)
-                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                                <label>{{ $question->question_text }}{!! $star !!}</label>
                                 <textarea name="answers[{{ $qid }}]" rows="3" {{ $required }}></textarea>
                                 @break
 
                             @case(16)
-                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
-                                <div class="signature-wrap">
-                                    <canvas id="sig-{{ $qid }}" width="320" height="120"></canvas>
-                                    <input type="hidden" name="answers[{{ $qid }}]" id="sig-input-{{ $qid }}">
-                                    <p style="margin:.35rem 0;"><button type="button" class="btn-outline btn" onclick="clearSig({{ $qid }})">Clear signature</button></p>
+                                {{-- Legacy parity: fields first, signature pad last; repeatable via Add another. --}}
+                                <div class="sl-repeat" data-sl-repeat>
+                                    <div class="sl-repeat-item">
+                                        @if ($question->include_name)
+                                            <label>Name{!! $star !!}</label>
+                                            <input type="text" name="answers_meta[{{ $qid }}][name][]" {{ $required }}>
+                                        @endif
+                                        @if ($question->include_employer)
+                                            <label>Employer</label>
+                                            <input type="text" name="answers_meta[{{ $qid }}][employer][]">
+                                        @endif
+                                        @if ($question->include_email)
+                                            <label>Email</label>
+                                            <input type="email" name="answers_meta[{{ $qid }}][email][]">
+                                        @endif
+                                        @if ($question->include_phone)
+                                            <label>Phone</label>
+                                            <input type="text" name="answers_meta[{{ $qid }}][phone][]">
+                                        @endif
+                                        <label>{{ $question->question_text }}{!! $star !!}</label>
+                                        <div class="signature-wrap">
+                                            <canvas class="sl-sig-canvas" width="320" height="120"></canvas>
+                                            <input type="hidden" name="answers_meta[{{ $qid }}][signature][]" class="sl-sig-input">
+                                            <p style="margin:.35rem 0;"><button type="button" class="btn-outline btn sl-sig-clear">Clear signature</button></p>
+                                        </div>
+                                    </div>
+                                    {{-- Legacy add_another: appends another name + signature entry. --}}
+                                    <a href="javascript:;" class="sl-add-another" style="display:inline-block;margin-top:.5rem;font-size:.9rem;color:#008C00;font-weight:600;">+ Add another</a>
                                 </div>
-                                @if ($question->include_name)
-                                    <label>Name</label>
-                                    <input type="text" name="answers_meta[{{ $qid }}][name]" {{ $required }}>
-                                @endif
-                                @if ($question->include_employer)
-                                    <label>Employer</label>
-                                    <input type="text" name="answers_meta[{{ $qid }}][employer]">
-                                @endif
-                                @if ($question->include_email)
-                                    <label>Email</label>
-                                    <input type="email" name="answers_meta[{{ $qid }}][email]">
-                                @endif
-                                @if ($question->include_phone)
-                                    <label>Phone</label>
-                                    <input type="text" name="answers_meta[{{ $qid }}][phone]">
-                                @endif
                                 @break
 
                             @case(17)
-                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                                <label>{{ $question->question_text }}{!! $star !!}</label>
                                 {{-- Legacy "Add another": native multi-file selection. --}}
-                                <input type="file" name="answers_file[{{ $qid }}][]" multiple {{ $required }}>
+                                <input type="file" name="answers_file[{{ $qid }}][]" multiple class="sl-multi-upload" {{ $required }}>
                                 @break
 
                             @case(18)
-                                <label>{{ $question->question_text ?: 'Participant name' }}@if($question->is_mandatory) *@endif</label>
+                                <label>{{ $question->question_text ?: 'Participant name' }}{!! $star !!}</label>
                                 @if ($question->participant_include_signature)
                                     {{-- With a signature pad this stays single-instance (one canvas). --}}
                                     <input type="text" name="answers[{{ $qid }}]" placeholder="Full name" {{ $required }}>
@@ -680,7 +723,7 @@
                                 @break
 
                             @case(19)
-                                <label>{{ $question->question_text ?: 'Location' }}@if($question->is_mandatory) *@endif</label>
+                                <label>{{ $question->question_text ?: 'Location' }}{!! $star !!}</label>
                                 <div class="sl-loc-row">
                                     <input type="text" name="answers[{{ $qid }}]" id="sl-loc-{{ $qid }}" class="sl-loc-input" placeholder="Location" {{ $required }}>
                                     <button type="button" class="sl-loc-btn" data-loc-target="sl-loc-{{ $qid }}">
@@ -692,21 +735,44 @@
                                 @break
 
                             @case(22)
-                                <label>{{ $question->question_text ?: 'SWMS Hazard / Risk' }}@if($question->is_mandatory) *@endif</label>
-                                <label>Task / activity</label>
-                                <input type="text" name="answers_meta[{{ $qid }}][task]" {{ $required }}>
-                                <label>Hazards</label>
-                                <textarea name="answers_meta[{{ $qid }}][hazards]" rows="2"></textarea>
-                                <label>Risk before controls</label>
-                                <input type="text" name="answers_meta[{{ $qid }}][risk_before]">
-                                <label>Controls / risk after</label>
-                                <textarea name="answers_meta[{{ $qid }}][risk_after]" rows="2"></textarea>
-                                <label>Photo (optional)</label>
-                                <input type="file" name="answers_file[{{ $qid }}]" accept="image/*">
+                                <label>{{ $question->question_text ?: 'SWMS Hazard / Risk' }}{!! $star !!}</label>
+                                <div class="sl-repeat" data-sl-repeat>
+                                    <div class="sl-repeat-item">
+                                        <label>Task | Activity{!! $star !!}</label>
+                                        <textarea name="answers_meta[{{ $qid }}][task][]" rows="1" {{ $required }}></textarea>
+                                        <label>Potential Hazards{!! $star !!}</label>
+                                        <textarea name="answers_meta[{{ $qid }}][potential_hazards][]" rows="1" {{ $required }}></textarea>
+                                        <label>Risk Score (Before){!! $star !!}</label>
+                                        <select name="answers_meta[{{ $qid }}][risk_score_before][]" style="width:150px;max-width:100%;" {{ $required }}>
+                                            <option value="">Select</option>
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                            <option value="5">5</option>
+                                        </select>
+                                        <label>Photo (optional)</label>
+                                        {{-- Legacy SWMS photo input is `multiple`; names are re-indexed per row by the Add-another JS. --}}
+                                        <input type="file" name="answers_file[{{ $qid }}][0][]" multiple accept="image/*" class="sl-multi-upload">
+                                        <label>Control Measures{!! $star !!}</label>
+                                        <textarea name="answers_meta[{{ $qid }}][control_measures][]" rows="1" {{ $required }}></textarea>
+                                        <label>Risk Score (After){!! $star !!}</label>
+                                        <select name="answers_meta[{{ $qid }}][risk_score_after][]" style="width:150px;max-width:100%;" {{ $required }}>
+                                            <option value="">Select</option>
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                            <option value="5">5</option>
+                                        </select>
+                                    </div>
+                                    {{-- Legacy add_another_hazard: appends another full SWMS hazard row. --}}
+                                    <a href="javascript:;" class="sl-add-another" style="display:inline-block;margin-top:.5rem;font-size:.9rem;color:#008C00;font-weight:600;">+ Add another</a>
+                                </div>
                                 @break
 
                             @case(24)
-                                <label>{{ $question->question_text ?: 'Additional recipient email' }}@if($question->is_mandatory) *@endif</label>
+                                <label>{{ $question->question_text ?: 'Additional recipient email' }}{!! $star !!}</label>
                                 {{-- Legacy "Add another": multiple additional recipient emails. --}}
                                 <div class="sl-repeat" data-sl-repeat>
                                     <div class="sl-repeat-item">
@@ -776,7 +842,7 @@
                                 @break
 
                             @default
-                                <label>{{ $question->question_text }}@if($question->is_mandatory) *@endif</label>
+                                <label>{{ $question->question_text }}{!! $star !!}</label>
                                 <textarea name="answers[{{ $qid }}]" rows="2" {{ $required }}></textarea>
                         @endswitch
                     </div>
@@ -843,9 +909,64 @@
                 })();
             </script>
             <script>
+                // Repeatable signature pads (type 16): class-based init so "Add another" clones work.
+                (function () {
+                    function initSigCanvas(canvas) {
+                        if (!canvas || canvas.dataset.slSigInit === '1') return;
+                        canvas.dataset.slSigInit = '1';
+                        var wrap = canvas.closest('.signature-wrap');
+                        var input = wrap ? wrap.querySelector('.sl-sig-input') : null;
+                        var ctx = canvas.getContext('2d');
+                        ctx.strokeStyle = '#111';
+                        ctx.lineWidth = 2;
+                        ctx.lineCap = 'round';
+                        var drawing = false;
+                        function pos(e) {
+                            var r = canvas.getBoundingClientRect();
+                            var t = e.touches ? e.touches[0] : e;
+                            return { x: t.clientX - r.left, y: t.clientY - r.top };
+                        }
+                        function start(e) { drawing = true; ctx.beginPath(); var p = pos(e); ctx.moveTo(p.x, p.y); e.preventDefault(); }
+                        function draw(e) { if (!drawing) return; var p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); e.preventDefault(); }
+                        function end() { drawing = false; if (input) input.value = canvas.toDataURL('image/png'); }
+                        canvas.addEventListener('mousedown', start);
+                        canvas.addEventListener('mousemove', draw);
+                        canvas.addEventListener('mouseup', end);
+                        canvas.addEventListener('mouseleave', end);
+                        canvas.addEventListener('touchstart', start, { passive: false });
+                        canvas.addEventListener('touchmove', draw, { passive: false });
+                        canvas.addEventListener('touchend', end);
+                    }
+                    window.slInitSignatures = function () {
+                        document.querySelectorAll('.sl-sig-canvas').forEach(initSigCanvas);
+                    };
+                    window.slInitSignatures();
+                    document.addEventListener('click', function (e) {
+                        var btn = e.target.closest('.sl-sig-clear');
+                        if (!btn) return;
+                        e.preventDefault();
+                        var wrap = btn.closest('.signature-wrap');
+                        if (!wrap) return;
+                        var canvas = wrap.querySelector('.sl-sig-canvas');
+                        var input = wrap.querySelector('.sl-sig-input');
+                        if (canvas) { canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height); }
+                        if (input) input.value = '';
+                    });
+                })();
+            </script>
+            <script>
                 // Legacy "Add another": clone the last repeat item, clearing its inputs.
+                // Every ADDED section gets a "Remove" link (the original section never does),
+                // so only sections created on this page can be deleted.
                 (function () {
                     document.addEventListener('click', function (e) {
+                        var rm = e.target.closest('.sl-remove-section');
+                        if (rm) {
+                            e.preventDefault();
+                            var item = rm.closest('.sl-repeat-item');
+                            if (item) { item.remove(); }
+                            return;
+                        }
                         var link = e.target.closest('.sl-add-another');
                         if (!link) return;
                         e.preventDefault();
@@ -857,7 +978,150 @@
                         clone.querySelectorAll('input, textarea, select').forEach(function (el) {
                             if (el.type === 'checkbox' || el.type === 'radio') { el.checked = false; } else { el.value = ''; }
                         });
+                        // Reset any cloned signature pad so it initialises fresh (blank + re-bound).
+                        clone.querySelectorAll('.sl-sig-canvas').forEach(function (c) {
+                            c.removeAttribute('data-sl-sig-init');
+                            try { c.getContext('2d').clearRect(0, 0, c.width, c.height); } catch (err) {}
+                        });
+                        // Cloned dropzones/previews lose their listeners — strip them and let
+                        // slInitDropzones build fresh ones for the new row.
+                        clone.querySelectorAll('.sl-dropzone, .sl-file-preview').forEach(function (el) { el.remove(); });
+                        clone.querySelectorAll('input[type="file"]').forEach(function (fi) {
+                            fi.removeAttribute('data-sl-dz');
+                            fi.style.display = '';
+                        });
+                        if (!clone.querySelector('.sl-remove-section')) {
+                            var del = document.createElement('a');
+                            del.href = 'javascript:;';
+                            del.className = 'sl-remove-section';
+                            del.textContent = 'Remove';
+                            del.style.cssText = 'display:block;text-align:right;color:#c62828;font-size:.85rem;font-weight:700;margin-top:.35rem;text-decoration:none;';
+                            clone.appendChild(del);
+                        }
                         wrap.insertBefore(clone, link);
+                        // Re-index per-row file inputs (answers_file[qid][row][]) so each SWMS
+                        // row keeps its own photo set.
+                        var rows = wrap.querySelectorAll('.sl-repeat-item');
+                        rows.forEach(function (row, idx) {
+                            row.querySelectorAll('input[type="file"]').forEach(function (fi) {
+                                if (/\[\d+\]\[\]$/.test(fi.name)) {
+                                    fi.name = fi.name.replace(/\[\d+\]\[\]$/, '[' + idx + '][]');
+                                }
+                            });
+                        });
+                        if (window.slInitDropzones) { window.slInitDropzones(); }
+                        if (window.slInitSignatures) { window.slInitSignatures(); }
+                    });
+                })();
+            </script>
+            <script>
+                // Multi-image inputs (Upload Button + SWMS photos — the two spots legacy allows
+                // multiple files) render as a drag & drop box; dropped/browsed files merge into
+                // the input and feed the existing preview strip.
+                (function () {
+                    function mergeFiles(input, newFiles) {
+                        try {
+                            var dt = new DataTransfer();
+                            Array.prototype.forEach.call(input.files || [], function (f) { dt.items.add(f); });
+                            Array.prototype.forEach.call(newFiles || [], function (f) {
+                                if (!input.accept || input.accept.indexOf('image') === -1 || /^image\//.test(f.type)) {
+                                    dt.items.add(f);
+                                }
+                            });
+                            input.files = dt.files;
+                            input.dispatchEvent(new Event('change', { bubbles: true }));
+                        } catch (e) {}
+                    }
+                    function initDropzone(input) {
+                        if (input.dataset.slDz === '1') return;
+                        input.dataset.slDz = '1';
+                        input.style.display = 'none';
+                        var box = document.createElement('div');
+                        box.className = 'sl-dropzone';
+                        box.innerHTML = '<span style="font-size:1.3rem;display:block;margin-bottom:2px;">&#128247;</span>'
+                            + 'Drag &amp; drop images here or <span style="color:#008C00;font-weight:700;text-decoration:underline;">browse</span>';
+                        box.style.cssText = 'border:2px dashed #b6c8b6;border-radius:10px;background:#f6faf6;color:#557055;'
+                            + 'text-align:center;padding:16px 10px;font-size:.85rem;cursor:pointer;margin:4px 0 2px;';
+                        input.insertAdjacentElement('beforebegin', box);
+                        box.addEventListener('click', function () { input.click(); });
+                        box.addEventListener('dragover', function (e) { e.preventDefault(); box.style.background = '#e8f6e8'; });
+                        box.addEventListener('dragleave', function () { box.style.background = '#f6faf6'; });
+                        box.addEventListener('drop', function (e) {
+                            e.preventDefault();
+                            box.style.background = '#f6faf6';
+                            if (e.dataTransfer && e.dataTransfer.files) { mergeFiles(input, e.dataTransfer.files); }
+                        });
+                    }
+                    window.slInitDropzones = function () {
+                        document.querySelectorAll('input.sl-multi-upload').forEach(initDropzone);
+                    };
+                    window.slInitDropzones();
+                })();
+            </script>
+            <script>
+                // Every file input shows a live preview of what was chosen — image thumbnails
+                // or a document chip — each with a ✕ to remove that file before submitting.
+                (function () {
+                    function renderFilePreview(input) {
+                        var wrap = input.nextElementSibling;
+                        if (!wrap || !wrap.classList || !wrap.classList.contains('sl-file-preview')) {
+                            wrap = document.createElement('div');
+                            wrap.className = 'sl-file-preview';
+                            wrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 2px;';
+                            input.insertAdjacentElement('afterend', wrap);
+                        }
+                        wrap.innerHTML = '';
+                        Array.prototype.forEach.call(input.files || [], function (f, idx) {
+                            var item = document.createElement('div');
+                            item.style.cssText = 'position:relative;border:1px solid #d1d5db;border-radius:8px;background:#fff;padding:4px;max-width:130px;';
+                            if (/^image\//.test(f.type)) {
+                                var img = document.createElement('img');
+                                img.src = URL.createObjectURL(f);
+                                img.onload = function () { URL.revokeObjectURL(img.src); };
+                                img.style.cssText = 'display:block;width:120px;height:90px;object-fit:cover;border-radius:5px;';
+                                item.appendChild(img);
+                            } else {
+                                var doc = document.createElement('div');
+                                doc.textContent = '📄 ' + f.name;
+                                doc.style.cssText = 'font-size:.78rem;color:#374151;max-width:120px;padding:14px 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+                                item.appendChild(doc);
+                            }
+                            var rm = document.createElement('button');
+                            rm.type = 'button';
+                            rm.className = 'sl-file-remove';
+                            rm.setAttribute('data-idx', idx);
+                            rm.textContent = '×';
+                            rm.title = 'Remove';
+                            rm.style.cssText = 'position:absolute;top:-7px;right:-7px;width:20px;height:20px;line-height:17px;text-align:center;border:0;border-radius:50%;background:#c62828;color:#fff;font-size:14px;cursor:pointer;padding:0;';
+                            item.appendChild(rm);
+                            wrap.appendChild(item);
+                        });
+                    }
+
+                    document.addEventListener('change', function (e) {
+                        if (e.target && e.target.matches && e.target.matches('form input[type="file"]')) {
+                            renderFilePreview(e.target);
+                        }
+                    });
+
+                    document.addEventListener('click', function (e) {
+                        var rm = e.target.closest && e.target.closest('.sl-file-remove');
+                        if (!rm) return;
+                        e.preventDefault();
+                        var wrap = rm.closest('.sl-file-preview');
+                        var input = wrap && wrap.previousElementSibling;
+                        if (!input || input.type !== 'file') return;
+                        var idx = parseInt(rm.getAttribute('data-idx'), 10);
+                        try {
+                            var dt = new DataTransfer();
+                            Array.prototype.forEach.call(input.files || [], function (f, i) {
+                                if (i !== idx) { dt.items.add(f); }
+                            });
+                            input.files = dt.files;
+                        } catch (err) {
+                            input.value = '';
+                        }
+                        renderFilePreview(input);
                     });
                 })();
             </script>
@@ -868,7 +1132,12 @@
                         var btn = e.target.closest('.sl-loc-btn');
                         if (btn) {
                             var input = document.getElementById(btn.getAttribute('data-loc-target'));
-                            if (!input || !navigator.geolocation) { return; }
+                            if (!input) { return; }
+                            // Browsers only allow geolocation on secure (https) origins.
+                            if (!navigator.geolocation || (!window.isSecureContext && location.hostname !== 'localhost')) {
+                                alert('Location requires a secure (https) connection. Please type your location instead.');
+                                return;
+                            }
                             var restore = btn.innerHTML;
                             btn.disabled = true;
                             btn.textContent = 'Locating…';
@@ -876,9 +1145,13 @@
                                 input.value = p.coords.latitude.toFixed(6) + ', ' + p.coords.longitude.toFixed(6);
                                 btn.disabled = false;
                                 btn.innerHTML = restore;
-                            }, function () {
+                            }, function (err) {
                                 btn.disabled = false;
                                 btn.innerHTML = restore;
+                                // Tell the visitor why nothing happened instead of failing silently.
+                                alert(err && err.code === 1
+                                    ? 'Location permission was denied. Please allow location access, or type your location.'
+                                    : 'Unable to get your location. Please type it instead.');
                             }, { enableHighAccuracy: true, timeout: 8000 });
                             return;
                         }
@@ -893,16 +1166,81 @@
                     });
                 })();
             </script>
+            <script>
+                // Mobile/tablet only: add a "Take photo" (camera capture) option next to every
+                // file field so users can shoot a photo, not just pick one from the library.
+                // Desktop is left untouched (no camera → an upload-only file picker is correct).
+                (function () {
+                    function isMobileOrTablet() {
+                        var ua = navigator.userAgent || '';
+                        // Client Hints: the browser's own mobile flag (most reliable when present).
+                        if (navigator.userAgentData && navigator.userAgentData.mobile === true) return true;
+                        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Tablet|Silk|Kindle/i.test(ua)) return true;
+                        // iPadOS 13+ masquerades as desktop Safari but reports multi-touch.
+                        if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) return true;
+                        // Real touch device with a coarse primary pointer and no hover — i.e. a phone
+                        // or tablet. Guards against touchscreen laptops (which still expose hover / a
+                        // fine pointer) and desktop Electron shells (which report maxTouchPoints 0).
+                        return navigator.maxTouchPoints > 0
+                            && !!window.matchMedia
+                            && window.matchMedia('(pointer: coarse)').matches
+                            && window.matchMedia('(hover: none)').matches;
+                    }
+                    if (!isMobileOrTablet()) return;
+
+                    document.querySelectorAll('form input[type="file"]').forEach(function (input) {
+                        if (input.dataset.slCam) return;
+                        input.dataset.slCam = '1';
+
+                        // Hidden input whose `capture` hint opens the rear camera directly.
+                        var cam = document.createElement('input');
+                        cam.type = 'file';
+                        cam.accept = 'image/*';
+                        cam.setAttribute('capture', 'environment');
+                        cam.style.display = 'none';
+
+                        var btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'btn btn-outline';
+                        btn.style.marginTop = '.4rem';
+                        btn.innerHTML = '📷 Take photo';
+
+                        input.insertAdjacentElement('afterend', btn);
+                        btn.insertAdjacentElement('afterend', cam);
+
+                        btn.addEventListener('click', function () { cam.click(); });
+                        cam.addEventListener('change', function () {
+                            if (!cam.files || !cam.files.length) return;
+                            try {
+                                // Merge the captured photo into the real field so it submits under
+                                // the field's own name (keeps `multiple`/required/preview intact).
+                                var dt = new DataTransfer();
+                                if (input.multiple && input.files) {
+                                    for (var i = 0; i < input.files.length; i++) dt.items.add(input.files[i]);
+                                }
+                                for (var j = 0; j < cam.files.length; j++) dt.items.add(cam.files[j]);
+                                input.files = dt.files;
+                                input.dispatchEvent(new Event('change', { bubbles: true }));
+                            } catch (e) {
+                                // Old browsers without DataTransfer: submit the camera input directly.
+                                cam.name = input.name;
+                                cam.style.display = '';
+                            }
+                        });
+                    });
+                })();
+            </script>
         @endif
 
         {{-- Legacy mobile order: Form → Gallery → Documents → Links → Share (mobile/index.php). --}}
         @if ($profile->pictures->isNotEmpty() && ! in_array($profile->typeSlug(), $slOrderedTileTypes, true))
-            <h2>Gallery</h2>
-            <div class="gallery">
+            <div class="gallery" data-sl-gallery>
                 @foreach ($profile->pictures as $picture)
                     @if ($picUrl = $publicMediaUrl($picture->picture_name))
                         <figure>
-                            <img src="{{ $picUrl }}" alt="{{ $picture->txt_footer ?: 'Picture' }}">
+                            <img src="{{ $picUrl }}" alt="{{ $picture->txt_footer ?: 'Picture' }}"
+                                 class="sl-gallery-img" style="cursor:pointer;"
+                                 data-full="{{ $picUrl }}" data-caption="{{ $picture->txt_footer }}">
                             @if ($picture->txt_footer)
                                 <figcaption style="font-size:.85rem;color:#666;margin-top:.25rem;">{{ $picture->txt_footer }}</figcaption>
                             @endif
@@ -913,7 +1251,6 @@
         @endif
 
         @if ($profile->documents->isNotEmpty() && ! in_array($profile->typeSlug(), $slOrderedTileTypes, true))
-            <h2>Documents</h2>
             <div class="tile-grid" style="display:block;">
                 @foreach ($profile->documents as $document)
                     @if ($docUrl = $publicMediaUrl($document->doc_name))
@@ -948,7 +1285,6 @@
             });
         @endphp
         @if ($visibleWeblinks->isNotEmpty() && ! in_array($profile->typeSlug(), $slOrderedTileTypes, true))
-            <h2>Links</h2>
             <div class="tile-grid" style="display:block;">
                 @foreach ($visibleWeblinks as $weblink)
                     @php
@@ -1067,6 +1403,51 @@
         </figure>
     </footer>
 </div>
+
+{{-- Gallery lightbox: click a gallery image to open it full-size with prev/next + autoplay. --}}
+<div id="sl-lightbox" style="display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.9);align-items:center;justify-content:center;flex-direction:column;">
+    <img id="sl-lightbox-img" src="" alt="" style="max-width:92vw;max-height:80vh;object-fit:contain;box-shadow:0 4px 30px rgba(0,0,0,.5);border-radius:4px;">
+    <div id="sl-lightbox-caption" style="color:#fff;margin-top:12px;font-size:14px;text-align:center;max-width:92vw;"></div>
+    <button type="button" id="sl-lb-close" aria-label="Close" style="position:absolute;top:14px;right:18px;background:none;border:0;color:#fff;font-size:34px;line-height:1;cursor:pointer;">&times;</button>
+    <button type="button" id="sl-lb-prev" aria-label="Previous" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);border:0;color:#fff;font-size:28px;width:46px;height:46px;border-radius:50%;cursor:pointer;">&#8249;</button>
+    <button type="button" id="sl-lb-next" aria-label="Next" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);border:0;color:#fff;font-size:28px;width:46px;height:46px;border-radius:50%;cursor:pointer;">&#8250;</button>
+    <button type="button" id="sl-lb-play" style="position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.15);border:0;color:#fff;font-size:13px;padding:8px 14px;border-radius:20px;cursor:pointer;">&#9654; Autoplay</button>
+</div>
+<script>
+    (function () {
+        var imgs = Array.prototype.slice.call(document.querySelectorAll('.sl-gallery-img'));
+        if (! imgs.length) { return; }
+        var lb = document.getElementById('sl-lightbox');
+        var lbImg = document.getElementById('sl-lightbox-img');
+        var lbCap = document.getElementById('sl-lightbox-caption');
+        var playBtn = document.getElementById('sl-lb-play');
+        var idx = 0, timer = null;
+        function show(i) {
+            idx = (i + imgs.length) % imgs.length;
+            var el = imgs[idx];
+            lbImg.src = el.getAttribute('data-full') || el.src;
+            lbCap.textContent = el.getAttribute('data-caption') || '';
+        }
+        function stop() { if (timer) { clearInterval(timer); timer = null; playBtn.innerHTML = '&#9654; Autoplay'; } }
+        function next() { show(idx + 1); }
+        function prev() { show(idx - 1); }
+        function open(i) { show(i); lb.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
+        function close() { lb.style.display = 'none'; document.body.style.overflow = ''; stop(); }
+        function play() { if (timer) { stop(); return; } timer = setInterval(next, 2500); playBtn.innerHTML = '&#10073;&#10073; Pause'; }
+        imgs.forEach(function (el, i) { el.addEventListener('click', function () { open(i); }); });
+        document.getElementById('sl-lb-close').addEventListener('click', close);
+        document.getElementById('sl-lb-next').addEventListener('click', function () { stop(); next(); });
+        document.getElementById('sl-lb-prev').addEventListener('click', function () { stop(); prev(); });
+        playBtn.addEventListener('click', play);
+        lb.addEventListener('click', function (e) { if (e.target === lb) { close(); } });
+        document.addEventListener('keydown', function (e) {
+            if (lb.style.display !== 'flex') { return; }
+            if (e.key === 'Escape') { close(); }
+            else if (e.key === 'ArrowRight') { stop(); next(); }
+            else if (e.key === 'ArrowLeft') { stop(); prev(); }
+        });
+    })();
+</script>
 
 {{--
     Scan geolocation: attach the visitor's GPS (and IP-derived country/region/city, resolved

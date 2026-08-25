@@ -18,14 +18,16 @@ class LegacyZeroOne implements CastsAttributes
         return (string) $value === '1' || $value === 1 || $value === true;
     }
 
-    public function set(Model $model, string $key, mixed $value, array $attributes): string|int
+    public function set(Model $model, string $key, mixed $value, array $attributes): string
     {
         $on = filter_var($value, FILTER_VALIDATE_BOOLEAN) || $value === 1 || $value === '1';
 
-        if ($this->asInteger) {
-            return $on ? 1 : 0;
-        }
-
+        // ALWAYS store the string '1'/'0', never an integer. Several live columns are
+        // enum('0','1'), and MySQL treats an integer written to an enum as a member INDEX:
+        // int 1 selects the first member ('0') and int 0 is an invalid index — so ticking a
+        // checkbox saved "off" and could never be re-enabled (e.g. the Words heading
+        // checkboxes). Strings match enum members by value, and MySQL/SQLite coerce '1'/'0'
+        // for genuine int/tinyint columns, so this is safe for every flag.
         return $on ? '1' : '0';
     }
 }

@@ -75,6 +75,115 @@ class FormSubmissionPresenterTest extends TestCase
     }
 
     #[Test]
+    public function it_divides_multiple_swms_hazard_rows_into_instances(): void
+    {
+        $question = new FormBuilderQuestion([
+            'question_id' => 7,
+            'question_type_id' => 22,
+            'question_text' => 'SWMS Test',
+        ]);
+
+        $raw = 'task=Test Activity@@F@@hazards=Test Hazards@@F@@risk_before=2@@F@@control=Test Measures@@F@@risk_after=3'
+            .'@@SWMS@@'
+            .'task=Test 2 Activity@@F@@hazards=Test 2 Hazards@@F@@risk_before=4@@F@@control=Test 2 Measures@@F@@risk_after=5';
+
+        $row = FormSubmissionPresenter::presentOne($question, $raw);
+
+        $this->assertSame('swms', $row['kind']);
+        $this->assertCount(2, $row['instances']);
+        $this->assertSame('Task / Activity', $row['instances'][0][0]['label']);
+        $this->assertSame('Test Activity', $row['instances'][0][0]['value']);
+        $this->assertSame('Test 2 Activity', $row['instances'][1][0]['value']);
+
+        $html = FormSubmissionPresenter::answerHtml($row)->toHtml();
+        $this->assertStringContainsString('SWMS #1', $html);
+        $this->assertStringContainsString('SWMS #2', $html);
+        // A divider separates the second instance from the first.
+        $this->assertStringContainsString('border-top', $html);
+
+        $pdf = FormSubmissionPresenter::answerPdfHtml($row);
+        $this->assertStringContainsString('SWMS #2', $pdf);
+        $this->assertStringContainsString('<hr>', $pdf);
+    }
+
+    #[Test]
+    public function it_renders_swms_photo_as_a_file_link(): void
+    {
+        $question = new FormBuilderQuestion([
+            'question_id' => 8,
+            'question_type_id' => 22,
+            'question_text' => 'SWMS Test',
+        ]);
+
+        $raw = 'task=Dig trench@@F@@photo=form-uploads/6818/abc.jpg';
+
+        $row = FormSubmissionPresenter::presentOne($question, $raw);
+        $html = FormSubmissionPresenter::answerHtml($row)->toHtml();
+
+        $this->assertStringContainsString('<a href=', $html);
+        $this->assertStringContainsString('abc.jpg', $html);
+    }
+
+    #[Test]
+    public function it_renders_inline_signature_as_image_not_raw_base64(): void
+    {
+        $question = new FormBuilderQuestion([
+            'question_id' => 9,
+            'question_type_id' => 18,
+            'question_text' => 'Participant Name',
+        ]);
+        $question->setRelation('options', collect());
+
+        // A genuinely valid PNG (built with GD) so the PDF path, which decodes + validates the
+        // image, also embeds an <img>.
+        $dataUri = self::validPngDataUri();
+        $raw = 'Brent Palmer | Signature: '.$dataUri;
+
+        $row = FormSubmissionPresenter::presentOne($question, $raw);
+        $html = FormSubmissionPresenter::answerHtml($row)->toHtml();
+
+        $this->assertStringContainsString('<img', $html);
+        $this->assertStringContainsString('data:image/png;base64', $html);
+        // The raw base64 must not appear as escaped plain text outside an <img src>.
+        $this->assertStringNotContainsString('Signature: data:image', strip_tags($html));
+
+        $pdf = FormSubmissionPresenter::answerPdfHtml($row);
+        $this->assertStringContainsString('<img', $pdf);
+    }
+
+    #[Test]
+    public function it_divides_multiple_signature_entries_into_instances(): void
+    {
+        $question = new FormBuilderQuestion([
+            'question_id' => 12,
+            'question_type_id' => 16,
+            'question_text' => 'Signature Test',
+        ]);
+        $question->setRelation('options', collect());
+
+        $png = self::validPngDataUri();
+        $raw = 'name=Alice@@F@@signature='.$png.'@@ROW@@name=Bob@@F@@signature='.$png;
+
+        $row = FormSubmissionPresenter::presentOne($question, $raw);
+
+        $this->assertSame('sigrows', $row['kind']);
+        $this->assertCount(2, $row['instances']);
+        $this->assertSame('Name', $row['instances'][0][0]['label']);
+        $this->assertSame('Alice', $row['instances'][0][0]['value']);
+        $this->assertTrue($row['instances'][0][1]['is_signature']);
+
+        $html = FormSubmissionPresenter::answerHtml($row)->toHtml();
+        $this->assertStringContainsString('Signature #1', $html);
+        $this->assertStringContainsString('Signature #2', $html);
+        $this->assertSame(2, substr_count($html, '<img'));
+        $this->assertStringContainsString('Alice', $html);
+        $this->assertStringContainsString('Bob', $html);
+
+        $pdf = FormSubmissionPresenter::answerPdfHtml($row);
+        $this->assertStringContainsString('<img', $pdf);
+    }
+
+    #[Test]
     public function it_builds_rows_keyed_by_question_id(): void
     {
         $q = new FormBuilderQuestion([
@@ -115,5 +224,20 @@ class FormSubmissionPresenterTest extends TestCase
         ]);
         $this->assertStringContainsString('<ul', $list->toHtml());
         $this->assertStringContainsString('One', $list->toHtml());
+    }
+
+    /**
+     * A genuinely valid PNG (built with GD) as a data URI, so the PDF renderer's decode+validate
+     * step accepts it and embeds an <img> — mirrors a real canvas signature.
+     */
+    private static function validPngDataUri(): string
+    {
+        $img = imagecreatetruecolor(4, 4);
+        ob_start();
+        imagepng($img);
+        $binary = (string) ob_get_clean();
+        imagedestroy($img);
+
+        return 'data:image/png;base64,'.base64_encode($binary);
     }
 }

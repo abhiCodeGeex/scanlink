@@ -33,6 +33,32 @@
 
 	var sorting_started = 0; // useful when prevent click
 
+	// After saving an element that was DROPPED mid-list, persist its position (the server
+	// appends new questions at the end otherwise). Mirrors the sortable-stop reorder call.
+	function persistDroppedOrder(obj) {
+		try {
+			var $el = $('#' + obj);
+			if (!$el.length) { return; }
+			var cur = $el.children('.question_id_span').text() || $el.find('.question_id_span').first().text() || $el.attr('id');
+			var next = '';
+			var $n = $el.next();
+			while ($n.length && !next) {
+				var nid = $n.attr('id') || '';
+				if (nid.indexOf('question_div_') === 0) { next = nid; break; }
+				var span = $n.find('.question_id_span').first().text();
+				if (span) { next = span; break; }
+				$n = $n.next();
+			}
+			if (!next) { return; } // dropped at the end — server order already matches
+			$.ajax({
+				type: 'GET',
+				url: '<?php echo url('/portal/legacy-form-builder/reorder-element'); ?>',
+				dataType: 'html',
+				data: { 'profile_id': '<?php echo $profile_id; ?>', 'current_ele_id': cur, 'next_ele_id': next }
+			});
+		} catch (e) {}
+	}
+
 	$(function() {
 		if ($('#enable_form_analytics').val() == 0) {
 			$(".menu-form ul li ul li").draggable({
@@ -74,7 +100,7 @@
 					mins = date_curr.getMinutes();
 					seconds = date_curr.getSeconds();
 
-					random_id = hours + "" + mins + "" + seconds;
+					random_id = hours + "" + mins + "" + seconds + "" + Math.floor(1000 + Math.random() * 9000);
 
 					counter = 1;
 
@@ -303,7 +329,20 @@
 
 
 					//$( '<div class="'+parent_ul_class+'-box" id="'+random_id+'" >' ).html(html).appendTo( this );
-					$('<div class="' + parent_ul_class + '-box" id="' + random_id + '" >').html(html).appendTo($(this).children('.placeholder'));
+					// Drop at the POINTED position: insert before the first existing element whose
+					// vertical middle is below the cursor; fall back to the bottom placeholder.
+					var $slNewBox = $('<div class="' + parent_ul_class + '-box" id="' + random_id + '" >').html(html);
+					var slPlaced = false;
+					try {
+						var slPointerY = event.pageY;
+						$(this).children().not('.placeholder').each(function () {
+							if (!slPlaced && slPointerY < $(this).offset().top + $(this).outerHeight() / 2) {
+								$slNewBox.insertBefore(this);
+								slPlaced = true;
+							}
+						});
+					} catch (e) {}
+					if (!slPlaced) { $slNewBox.appendTo($(this).children('.placeholder')); }
 
 					// New code 19-03-2021
 					if (question_type_id == '25') {
@@ -332,7 +371,7 @@
 							$('#div_drop_area').css('height', ul_scroll_height);
 							$p('#iframe_frm_builder').height(ul_scroll_height + $('.top-part').height());
 						}
-						$(":checkbox:not(.sign-text)").uniform();
+						$(":checkbox:not(.sign-text)").not("#div_drop_area *").uniform();
 					}, 3000);
 				}
 			}).sortable({
@@ -416,7 +455,7 @@
 					mins = date_curr.getMinutes();
 					seconds = date_curr.getSeconds();
 
-					random_id = hours + "" + mins + "" + seconds;
+					random_id = hours + "" + mins + "" + seconds + "" + Math.floor(1000 + Math.random() * 9000);
 
 					counter = 1;
 
@@ -447,7 +486,20 @@
 					html = html + '</div>';
 
 					//$( '<div class="'+parent_ul_class+'-box" id="'+random_id+'" >' ).html(html).appendTo( this );
-					$('<div class="' + parent_ul_class + '-box" id="' + random_id + '" >').html(html).appendTo($(this).children('.placeholder'));
+					// Drop at the POINTED position: insert before the first existing element whose
+					// vertical middle is below the cursor; fall back to the bottom placeholder.
+					var $slNewBox = $('<div class="' + parent_ul_class + '-box" id="' + random_id + '" >').html(html);
+					var slPlaced = false;
+					try {
+						var slPointerY = event.pageY;
+						$(this).children().not('.placeholder').each(function () {
+							if (!slPlaced && slPointerY < $(this).offset().top + $(this).outerHeight() / 2) {
+								$slNewBox.insertBefore(this);
+								slPlaced = true;
+							}
+						});
+					} catch (e) {}
+					if (!slPlaced) { $slNewBox.appendTo($(this).children('.placeholder')); }
 
 					$(".ui-widget-content ol").css('height', $(".ui-widget-content ol").prop('scrollHeight'));
 
@@ -459,7 +511,7 @@
 							$('#div_drop_area').css('height', ul_scroll_height);
 							$p('#iframe_frm_builder').height(ul_scroll_height + $('.top-part').height());
 						}
-						$(":checkbox").uniform();
+						$(":checkbox").not("#div_drop_area *").uniform();
 					}, 3000);
 
 
@@ -507,9 +559,9 @@
 			}); // end droppable
 		} //end of enable drag, drop and sort for participant name
 
-		$(":radio").uniform();
-		$(":checkbox").uniform();
-		$("select").uniform();
+		$(":radio").not("#div_drop_area *").uniform();
+		$(":checkbox").not("#div_drop_area *").uniform();
+		$("select").not("#div_drop_area *").uniform();
 		$(".ui-widget-content ol").css('height', $(".ui-widget-content ol").prop('scrollHeight'));
 		iframe_height = $p('#iframe_frm_builder').height();
 
@@ -787,7 +839,10 @@
 									$row_comma_separated = '';
 									$column_comma_separated = '';
 
-									$random_id = date('hms');
+									// Unique per question — bare date('hms') collided for every
+									// question rendered in the same second (multiple SWMS/signature
+									// boxes shared ids and collapsed into one on edit).
+									$random_id = date('hms') . $question_id;
 
 									$image_align = $questions['image_align'];
 									$image_title = $questions['image_title'];
@@ -926,7 +981,13 @@
 										case '11': // image
 
 											if ($question_text != '') {
-												echo '<div align="' . $questions['image_align'] . '"><img src="' . rtrim(url('/'), '/').'/images/form_builder_uploaded_images/' . $question_text . '" width="100"  title="' . $questions['image_title'] . '" ></div><br>';
+												// Serve from the public storage disk (uploads always land there); the
+												// legacy public/images/ copy can fail on locked-down hosts → broken img.
+												$fbImgDisk = 'form-builder/images/' . $question_text;
+												$fbImgSrc = \Illuminate\Support\Facades\Storage::disk('public')->exists($fbImgDisk)
+													? rtrim(url('/'), '/') . '/storage/' . $fbImgDisk
+													: rtrim(url('/'), '/') . '/images/form_builder_uploaded_images/' . $question_text;
+												echo '<div align="' . $questions['image_align'] . '" class="fb-image-preview"><img src="' . $fbImgSrc . '" width="100" title="' . $questions['image_title'] . '" ></div><br>';
 											}
 											echo '<br>';
 											break;
@@ -1539,9 +1600,10 @@
 				}
 				$('#' + obj).show();
 				$('#' + obj).html(data);
-				$(":radio").uniform();
+				persistDroppedOrder(obj);
+				$(":radio").not("#div_drop_area *").uniform();
 
-				$("select").uniform();
+				$("select").not("#div_drop_area *").uniform();
 
 				$(".ui-widget-content ol").css('height', $(".ui-widget-content ol").prop('scrollHeight'));
 
@@ -1561,7 +1623,7 @@
 
 				}, 3000);
 
-				$(":checkbox:not(.sign-text)").uniform();
+				$(":checkbox:not(.sign-text)").not("#div_drop_area *").uniform();
 			},
 			error: function(xhr) {
 				var msg = 'Could not save this form field.';
@@ -2051,7 +2113,7 @@
 			}
 
 		}, 3000);
-		$(":checkbox:not(.sign-text)").uniform();
+		$(":checkbox:not(.sign-text)").not("#div_drop_area *").uniform();
 
 	}
 

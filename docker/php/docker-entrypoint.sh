@@ -27,4 +27,12 @@ find /tmp/laravel-views -type f -name '*.php' -delete 2>/dev/null || true
 # Serve uploaded QR codes, logos, etc. at /storage/*
 php artisan storage:link --force >/dev/null 2>&1 || true
 
+# Scheduler role: run Laravel's scheduler (schedule:work runs due tasks every minute) so
+# dailyAt() jobs actually fire — code-expiry emails (30/3/0 days), VOC document expiry,
+# participant reminders. The storage/cache-path setup above already ran, so Blade email
+# views compile cleanly here too.
+if [ "$CONTAINER_ROLE" = "scheduler" ]; then
+    exec php artisan schedule:work
+fi
+
 exec docker-php-entrypoint php-fpm

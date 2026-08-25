@@ -1,8 +1,8 @@
 <x-filament-panels::page>
     {{-- Legacy parity: legacy edit.php replaces the whole form with this message when
          the code is expired (message-only, no editing). --}}
-    <link rel="stylesheet" href="{{ asset('styles/style.css') }}?v=legacy-profile-16">
-    <link rel="stylesheet" href="{{ asset('css/filament/scanlink-theme.css') }}?v=legacy-profile-16">
+    <link rel="stylesheet" href="{{ asset('styles/style.css') }}?v=legacy-profile-17">
+    <link rel="stylesheet" href="{{ asset('css/filament/scanlink-theme.css') }}?v=legacy-profile-17">
 
     <div class="scanlink-container sl-profile-editor clearfix">
         <div class="expired-profile-message"

@@ -80,12 +80,23 @@ class ProfileResource extends Resource
 
     protected static function baseClientQuery(): Builder
     {
-        $clientId = static::currentClientId();
+        $member = static::currentMembership();
+        $clientId = $member?->client_id;
 
-        return parent::getEloquentQuery()
+        $query = parent::getEloquentQuery()
             ->with(['contacts', 'equipmentType'])
-            ->when($clientId, fn (Builder $query): Builder => $query->where('client_id', $clientId))
+            ->when($clientId, fn (Builder $q): Builder => $q->where('client_id', $clientId))
             ->active();
+
+        // "Manage User → Select Code Profile": a sub-user only sees the explicitly selected
+        // profiles — and with NOTHING selected they see NO profiles (an empty whereIn).
+        // Primary users (allowedProfileIds() === null) are unrestricted.
+        $allowed = $member?->allowedProfileIds();
+        if ($allowed !== null) {
+            $query->whereIn('id', $allowed);
+        }
+
+        return $query;
     }
 
     public static function canViewAny(): bool

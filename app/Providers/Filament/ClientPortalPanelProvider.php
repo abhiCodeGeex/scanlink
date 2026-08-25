@@ -4,7 +4,6 @@ namespace App\Providers\Filament;
 
 use App\Filament\Portal\Auth\Login;
 use App\Filament\Portal\Auth\Register;
-use App\Filament\Portal\Pages\EditAccount;
 use App\Filament\Portal\Pages\FormSubmissions;
 use App\Filament\Portal\Pages\FormSubmissionView;
 use App\Filament\Portal\Pages\PortalDashboard;
@@ -70,9 +69,8 @@ class ClientPortalPanelProvider extends PanelProvider
             ->databaseNotifications()
             ->databaseNotificationsPolling('30s')
             ->profile(isSimple: false)
-            // Demo: land on Edit user profile (was Master Code List).
-            ->homeUrl(fn (): string => EditAccount::getUrl())
-            // ->homeUrl(fn (): string => ProfileResource::getUrl('index'))
+            // Land on Master Code List (profiles) as the first page after login.
+            ->homeUrl(fn (): string => ProfileResource::getUrl('index'))
             ->colors([
                 'primary' => Color::hex('#008C00'),
             ])
@@ -145,9 +143,21 @@ class ClientPortalPanelProvider extends PanelProvider
                 fn (): string => view('filament.hooks.themed-dialog')->render(),
             )
             ->renderHook(
+                PanelsRenderHook::BODY_END,
+                fn (): string => view('filament.hooks.mobile-photo-capture')->render(),
+            )
+            ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=77">'
-                    .'<link rel="stylesheet" href="'.asset('css/filament/portal-dark.css').'?v=13">',
+                fn (): string => '<link rel="stylesheet" href="'.asset('css/filament/scanlink-theme.css').'?v=81">'
+                    .'<link rel="stylesheet" href="'.asset('css/filament/portal-dark.css').'?v=14">',
+            )
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                fn (): string => view('filament.hooks.flatpickr-datepicker')->render(),
+            )
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                fn (): string => view('filament.hooks.mobile-topbar-fix')->render(),
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,

@@ -61,11 +61,20 @@ trait HasLegacyFormBuilderSidebar
     /** @var list<array{form_id: int, form_title: string}> */
     public array $otherAccountLibraryForms = [];
 
+    /** Client id of the account signed into via "Another account" (guards form copying). */
+    public ?int $otherAccountClientId = null;
+
+    /** User id signed into via "Another account" (listing + copy guard are per-user). */
+    public ?int $otherAccountUserId = null;
+
     public bool $showOtherAccountLibrary = false;
 
     public bool $showLibraryFormPreview = false;
 
     public string $libraryPreviewTitle = '';
+
+    /** Rendered form markup for the preview modal (scan-page-style, disabled controls). */
+    public string $libraryPreviewHtml = '';
 
     /** @var list<array{text: string, type: string}> */
     public array $libraryPreviewQuestions = [];
@@ -109,6 +118,8 @@ trait HasLegacyFormBuilderSidebar
         $this->showLibraryFormPreview = false;
         $this->showOtherAccountLibrary = false;
         $this->otherAccountLibraryForms = [];
+        $this->otherAccountClientId = null;
+        $this->otherAccountUserId = null;
         $this->otherAccountEmail = '';
         $this->otherAccountPassword = '';
         $this->loadExistingFormModalLists($profile);
@@ -169,7 +180,7 @@ trait HasLegacyFormBuilderSidebar
         if ($cloned === 0) {
             $this->existingFormApplying = false;
             $this->existingFormStatus = null;
-            Notification::make()->title('Source profile has no questions')->warning()->send();
+            $this->js('(window.slAlert || window.alert)('.json_encode('Source profile has no questions. Please choose a form that contains questions.').')');
 
             return;
         }
@@ -193,7 +204,7 @@ trait HasLegacyFormBuilderSidebar
         if ($cloned === 0) {
             $this->existingFormApplying = false;
             $this->existingFormStatus = null;
-            Notification::make()->title('Library form has no questions')->warning()->send();
+            $this->js('(window.slAlert || window.alert)('.json_encode('This library form has no questions. Please choose a form that contains questions.').')');
 
             return;
         }
@@ -243,31 +254,111 @@ trait HasLegacyFormBuilderSidebar
             ->where('is_deleted_from_library', false)
             ->first();
 
-        if (! $entry) {
+        // Not every previewable form is a library save — "Another account" also lists forms
+        // straight from that user's profiles, so fall back to the profile for the title.
+        $sourceProfile = Profile::query()->where('form_id', $formId)->orderBy('id')->first();
+
+        if (! $entry && ! $sourceProfile) {
             return;
         }
 
-        $this->libraryPreviewTitle = (string) ($entry->form_title ?: 'Form '.$formId);
-        $this->libraryPreviewQuestions = FormBuilderQuestion::query()
+        $this->libraryPreviewTitle = (string) ($entry?->form_title
+            ?: ($sourceProfile?->form_title ?: 'Form '.$formId));
+
+        // ALWAYS show where this form comes from in the preview heading: the code profile
+        // that carries the form — or, for orphaned library saves (source form replaced /
+        // profile gone), the account user who saved it.
+        if ($sourceProfile) {
+            $sourceLabel = trim((string) ($sourceProfile->code_profile_name ?: $sourceProfile->name));
+            $this->libraryPreviewTitle .= ' — Profile #'.$sourceProfile->id.($sourceLabel !== '' ? ' ('.$sourceLabel.')' : '');
+        } elseif ($entry) {
+            $owner = ClientUser::query()->find((int) $entry->user_id);
+            $ownerLabel = trim((string) ($owner?->email ?: ''));
+            $this->libraryPreviewTitle .= $ownerLabel !== ''
+                ? ' — saved by '.$ownerLabel
+                : ' — Library form #'.$formId;
+        }
+
+        // Legacy parity (formbuilder/get_data_for_form_preview): the preview renders the
+        // ACTUAL form — real inputs, choices, textareas — not a list of question names.
+        $questions = FormBuilderQuestion::query()
+            ->with('options')
             ->where('form_id', $formId)
             ->orderBy('question_order')
-            ->get()
-            ->map(fn (FormBuilderQuestion $q): array => [
-                // Question text is rich HTML (e.g. "<strong>Location:</strong>"); show a
-                // clean plain-text label in the compact preview instead of raw markup.
-                'text' => trim(html_entity_decode(strip_tags((string) ($q->question_text ?? '')), ENT_QUOTES)),
-                'type' => $q->typeName(),
-            ])
-            ->values()
-            ->all();
+            ->get();
+
+        $this->libraryPreviewHtml = $this->buildLibraryPreviewHtml($questions);
+        $this->libraryPreviewQuestions = [];
 
         $this->showLibraryFormPreview = true;
+    }
+
+    /**
+     * Render the form questions as scan-page-style markup for the preview modal
+     * (all controls disabled — display only).
+     *
+     * @param  Collection<int, FormBuilderQuestion>  $questions
+     */
+    protected function buildLibraryPreviewHtml(Collection $questions): string
+    {
+        $html = '';
+        $star = '<span style="color:#c00;">*</span>';
+
+        foreach ($questions as $q) {
+            $tid = (int) $q->question_type_id;
+            $label = e(trim(html_entity_decode(strip_tags((string) ($q->question_text ?? '')), ENT_QUOTES)));
+            $req = $q->is_mandatory ? ' '.$star : '';
+            $options = \App\Support\FormBuilderMedia::choiceOptions($q);
+            $choiceLabel = e(\App\Support\FormBuilderMedia::choiceLabel($q));
+
+            $html .= '<div class="sl-fp-q">';
+
+            $html .= match (true) {
+                $tid === 1 => '<label>'.$label.$req.'</label><input type="text" disabled>',
+                in_array($tid, [2, 13, 14], true) => '<div class="sl-fp-html">'.($tid === 13 ? '<hr>' : ($tid === 14 ? '<br>' : $q->question_text)).'</div>',
+                $tid === 10 => '<h1 style="font-size:20px;margin:.2rem 0;">'.$label.'</h1>',
+                $tid === 12 => '<h3 style="font-size:15px;margin:.2rem 0;">'.$label.'</h3>',
+                $tid === 3 => '<label>'.($choiceLabel !== '' ? $choiceLabel : '').$req.'</label>'
+                    .collect($options)->map(fn ($o) => '<div class="sl-fp-choice"><input type="radio" disabled> '.e($o).'</div>')->implode(''),
+                $tid === 4 => '<label>'.($choiceLabel !== '' ? $choiceLabel : '').$req.'</label>'
+                    .collect($options)->map(fn ($o) => '<div class="sl-fp-choice"><input type="checkbox" disabled> '.e($o).'</div>')->implode(''),
+                $tid === 5, $tid === 6 => '<label>'.($choiceLabel !== '' ? $choiceLabel : $label).$req.'</label>'
+                    .'<select disabled><option>Select…</option></select>',
+                $tid === 7 => '<label>'.$label.$req.'</label><div class="sl-fp-grid">Grid ('
+                    .$q->options->where('question_option_type_id', 5)->count().' rows × '
+                    .$q->options->where('question_option_type_id', 6)->count().' columns)</div>',
+                $tid === 8 => '<label>'.$label.$req.'</label><input type="date" disabled>',
+                $tid === 9 => '<label>'.$label.$req.'</label><input type="time" disabled>',
+                $tid === 15 => '<label>'.$label.$req.'</label><textarea rows="2" disabled></textarea>',
+                $tid === 16 => '<label>'.($label !== '' ? $label : 'Signature').$req.'</label><div class="sl-fp-sign">Signature</div>'
+                    .($q->include_name ? '<label>Name</label><input type="text" disabled>' : '')
+                    .($q->include_employer ? '<label>Employer</label><input type="text" disabled>' : '')
+                    .($q->include_email ? '<label>Email</label><input type="text" disabled>' : '')
+                    .($q->include_phone ? '<label>Phone</label><input type="text" disabled>' : ''),
+                $tid === 17 => '<label>'.($label !== '' ? $label : 'Upload').$req.'</label><div class="sl-fp-btn" style="background:#007A01;">Upload</div>',
+                $tid === 18 => '<label>'.($label !== '' ? $label : 'Participant name').$req.'</label><input type="text" disabled placeholder="Full name">',
+                $tid === 19 => '<label>'.($label !== '' ? $label : 'Location').$req.'</label><input type="text" disabled placeholder="Location">'
+                    .'<div class="sl-fp-btn" style="background:#808080;">MAP</div>',
+                $tid === 20 => '<div class="sl-fp-btn" style="background:#'.e($q->button_colour ?: '007A01').';">'.($label !== '' ? $label : 'Open link').'</div>',
+                $tid === 21 => '<div class="sl-fp-btn" style="background:#'.e($q->button_colour ?: '007A01').';">'.e($q->doc_title ?: 'View document').'</div>',
+                $tid === 22 => '<label>'.($label !== '' ? $label : 'SWMS Hazard / Risk').$req.'</label><div class="sl-fp-btn" style="background:#808080;">SWMS Hazard/Risk</div>',
+                $tid === 23 => '<label>'.e($q->doc_title ?: 'Select documents').$req.'</label><div class="sl-fp-btn" style="background:#808080;">Document Menu</div>',
+                $tid === 24 => '<label>'.($label !== '' ? $label : 'Additional recipient email').$req.'</label><input type="text" disabled placeholder="Email">',
+                $tid === 25 => '<div class="sl-fp-btn" style="background:#007A01;">COVID CHECK-IN</div>',
+                default => '<label>'.$label.$req.'</label><input type="text" disabled>',
+            };
+
+            $html .= '</div>';
+        }
+
+        return $html !== '' ? $html : '<p class="sl-efm-empty">This form has no questions.</p>';
     }
 
     public function backFromLibraryFormPreview(): void
     {
         $this->showLibraryFormPreview = false;
         $this->libraryPreviewTitle = '';
+        $this->libraryPreviewHtml = '';
         $this->libraryPreviewQuestions = [];
     }
 
@@ -326,17 +417,87 @@ trait HasLegacyFormBuilderSidebar
         $this->existingFormStatus = null;
         $this->otherAccountPassword = '';
         $this->showOtherAccountLibrary = true;
-        $this->otherAccountLibraryForms = FormBuilderLibrary::query()
+        $this->otherAccountClientId = (int) $member->client_id;
+        $this->otherAccountUserId = (int) $member->id;
+
+        // Per-user scope (like legacy's get_library_forms_other_user), but complete: the
+        // signed-in user's library saves PLUS every form profile that user created —
+        // "all forms of that particular user account", not just explicit library saves.
+        $library = FormBuilderLibrary::query()
             ->where('user_id', $member->id)
             ->where('is_deleted_from_library', false)
-            ->orderBy('form_title')
             ->get()
             ->map(fn (FormBuilderLibrary $row): array => [
+                'type' => 'library',
+                'id' => (int) $row->form_id,
                 'form_id' => (int) $row->form_id,
                 'form_title' => (string) ($row->form_title ?: 'Form '.$row->form_id),
-            ])
+                'meta' => 'Library form #'.$row->form_id,
+            ]);
+
+        $libraryFormIds = $library->pluck('form_id')->all();
+
+        $profiles = Profile::query()
+            ->where('client_id', $member->client_id)
+            ->where('user_id', $member->id)
+            ->where('form_id', '>', 0)
+            ->active()
+            ->when($libraryFormIds !== [], fn ($q) => $q->whereNotIn('form_id', $libraryFormIds))
+            ->orderByDesc('id')
+            ->get(['id', 'form_id', 'form_title', 'name', 'code_profile_name'])
+            ->map(fn (Profile $p): array => [
+                'type' => 'profile',
+                'id' => (int) $p->id,
+                'form_id' => (int) $p->form_id,
+                'form_title' => (string) ($p->form_title ?: ($p->code_profile_name ?: ($p->name ?: 'Profile #'.$p->id))),
+                'meta' => 'Profile #'.$p->id,
+            ]);
+
+        $this->otherAccountLibraryForms = $library->concat($profiles)
+            ->sortBy('form_title', SORT_NATURAL | SORT_FLAG_CASE)
             ->values()
             ->all();
+    }
+
+    /**
+     * Apply a form chosen on the "Another account" tab: library entries clone via the
+     * library path; plain profile forms clone straight from that profile. The source is
+     * validated against the account that was signed into (otherAccountClientId).
+     */
+    public function selectOtherAccountForm(string $type, int $id): void
+    {
+        if ($type !== 'profile') {
+            $this->selectExistingFormFromLibrary($id);
+
+            return;
+        }
+
+        $profile = $this->sidebarProfile();
+
+        if (! $profile?->exists || ! $this->otherAccountClientId) {
+            return;
+        }
+
+        $source = Profile::query()
+            ->where('client_id', $this->otherAccountClientId)
+            ->when($this->otherAccountUserId, fn ($q) => $q->where('user_id', $this->otherAccountUserId))
+            ->where('form_id', '>', 0)
+            ->findOrFail($id);
+
+        $this->existingFormApplying = true;
+        $this->existingFormStatus = 'Please Wait. Applying Form to Profile...';
+
+        $cloned = app(FormLibraryService::class)->copyFromProfile((int) $source->id, $profile);
+
+        if ($cloned === 0) {
+            $this->existingFormApplying = false;
+            $this->existingFormStatus = null;
+            $this->js('(window.slAlert || window.alert)('.json_encode("That profile's form has no questions. Please choose a form that contains questions.").')');
+
+            return;
+        }
+
+        $this->finishExistingFormApply($profile, $cloned);
     }
 
     protected function finishExistingFormApply(Profile $profile, int $cloned): void
@@ -371,10 +532,14 @@ trait HasLegacyFormBuilderSidebar
             return;
         }
 
+        // Sub-users only see forms of the profiles selected for them in Manage User.
+        $allowed = \App\Filament\Portal\Concerns\InteractsWithClientMembership::portalMembership()?->allowedProfileIds();
+
         $this->existingFormProfiles = Profile::query()
             ->where('client_id', $client->id)
             ->where('id', '!=', $profile->id)
             ->where('form_id', '>', 0)
+            ->when($allowed !== null, fn ($q) => $q->whereIn('id', $allowed))
             ->orderByDesc('id')
             ->get(['id', 'form_title', 'name'])
             ->map(fn (Profile $row): array => [
@@ -386,13 +551,32 @@ trait HasLegacyFormBuilderSidebar
 
         $currentFormId = (int) ($profile->form_id ?: 0);
 
-        $this->existingLibraryForms = app(FormLibraryService::class)
+        $libraryRows = app(FormLibraryService::class)
             ->libraryFormsForClient((int) $client->id)
-            ->filter(fn (FormBuilderLibrary $row): bool => $currentFormId === 0 || (int) $row->form_id !== $currentFormId)
-            ->map(fn (FormBuilderLibrary $row): array => [
-                'form_id' => (int) $row->form_id,
-                'form_title' => (string) ($row->form_title ?: 'Form '.$row->form_id),
-            ])
+            ->filter(fn (FormBuilderLibrary $row): bool => $currentFormId === 0 || (int) $row->form_id !== $currentFormId);
+
+        // Resolve each library form's source code profile so the list can show it.
+        $sourceProfiles = Profile::query()
+            ->whereIn('form_id', $libraryRows->pluck('form_id')->all() ?: [0])
+            ->orderBy('id')
+            ->get(['id', 'form_id', 'name', 'code_profile_name'])
+            ->keyBy(fn (Profile $p): int => (int) $p->form_id);
+
+        $this->existingLibraryForms = $libraryRows
+            ->map(function (FormBuilderLibrary $row) use ($sourceProfiles): array {
+                $src = $sourceProfiles->get((int) $row->form_id);
+                $srcLabel = $src
+                    ? 'Profile #'.$src->id.(trim((string) ($src->code_profile_name ?: $src->name)) !== ''
+                        ? ' — '.trim((string) ($src->code_profile_name ?: $src->name))
+                        : '')
+                    : 'Library form #'.$row->form_id;
+
+                return [
+                    'form_id' => (int) $row->form_id,
+                    'form_title' => (string) ($row->form_title ?: 'Form '.$row->form_id),
+                    'source' => $srcLabel,
+                ];
+            })
             ->values()
             ->all();
     }
@@ -738,20 +922,17 @@ trait HasLegacyFormBuilderSidebar
     }
 
     /**
-     * Persist analytics immediately; once on, iframe reloads in locked mode (legacy behaviour).
+     * Legacy parity: ticking "Enable Form Analytics" does NOT persist or lock anything —
+     * the flag (and the form-edit lock) only take effect when the profile is actually
+     * saved. Until then the user can freely untick the box to change their mind.
      */
     public function updatedDataEnableFormAnalytics(mixed $value): void
     {
-        $wasLocked = (bool) ($this->sidebarProfile()?->enable_form_analytics);
-        $this->persistFormBuilderSidebarFlags(notifyEnable: false);
+        $enabled = filter_var($value, FILTER_VALIDATE_BOOLEAN);
 
-        $enabled = filter_var(data_get($this->data, 'enable_form_analytics'), FILTER_VALIDATE_BOOLEAN);
-
-        if ($enabled && ! $wasLocked) {
-            $this->formBuilderEmbedNonce++;
-
+        if ($enabled && ! (bool) ($this->sidebarProfile()?->enable_form_analytics)) {
             Notification::make()
-                ->title('Form Analytics enabled — form editing is now locked')
+                ->title('Form Analytics will be enabled when you save — form editing locks after saving.')
                 ->warning()
                 ->send();
         }

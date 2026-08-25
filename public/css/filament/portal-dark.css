@@ -847,12 +847,15 @@ html.dark .fi-ta-row:not(.sl-row-active):not(.sl-row-expired):not(.sl-row-expiri
     color: rgb(209 213 219) !important;
 }
 
-/* Brand logo: the sidebar header already shows the white-pill logo, so the duplicate
-   copy in the topbar reads as a second glaring white box on the dark chrome. Hide the
-   redundant topbar logo in dark mode (light mode is left untouched). */
-html.dark .fi-panel-portal .fi-topbar .fi-logo-ctn,
-html.dark .fi-panel-portal .fi-topbar a.fi-logo,
-html.dark .fi-panel-portal .fi-topbar img.fi-logo {
+/* Brand logo: the topbar logo is the ONLY logo now (the sidebar header — which used to
+   carry a duplicate — is hidden entirely in scanlink-theme.css). It must stay visible in
+   dark mode, sitting on its white pill so the full-colour mark reads on the dark banner.
+   (Previously this hid the topbar logo, assuming the sidebar header still showed one,
+   which left dark mode with no logo at all.) */
+html.dark .fi-panel-portal .fi-topbar img.fi-logo.fi-logo-dark {
+    display: revert !important;
+}
+html.dark .fi-panel-portal .fi-topbar img.fi-logo.fi-logo-light {
     display: none !important;
 }
 
@@ -910,8 +913,13 @@ html.dark .fi-panel-portal .sl-existing-form-preview-item {
 html.dark .fi-panel-portal .fi-page:has(.sl-profile-editor) .help-div {
     background: var(--sl-dark-raised) !important;
     color: var(--sl-dark-text) !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, .6), 0 4px 10px -4px rgba(0, 0, 0, .5) !important;
+}
+html.dark .fi-panel-portal .fi-page:has(.sl-profile-editor) .help-div::after {
+    border-top-color: var(--sl-dark-raised) !important;
 }
 html.dark .fi-panel-portal .fi-page:has(.sl-profile-editor) .help-div a { color: var(--sl-dark-text) !important; }
+html.dark .fi-panel-portal .fi-page:has(.sl-profile-editor) .help-div a:hover { color: #fdba74 !important; }
 
 /* --- A5 Legacy QR gray download button --- */
 html.dark .fi-panel-portal .button-section .gray-btn,

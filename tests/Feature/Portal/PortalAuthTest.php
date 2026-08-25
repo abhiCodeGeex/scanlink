@@ -66,7 +66,7 @@ class PortalAuthTest extends TestCase
         $this->post('/portal-login', [
             'email' => 'portal-user@example.com',
             'password' => 'Portal@12345',
-        ])->assertRedirect('/portal/account');
+        ])->assertRedirect('/portal/profiles');
 
         $this->assertAuthenticatedAs($user);
     }
@@ -96,7 +96,7 @@ class PortalAuthTest extends TestCase
                 'email' => 'portal-intended@example.com',
                 'password' => 'Portal@12345',
             ])
-            ->assertRedirect('/portal/account');
+            ->assertRedirect('/portal/profiles');
 
         $this->assertAuthenticatedAs($user);
     }

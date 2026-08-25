@@ -173,13 +173,13 @@
                     <button type="button" class="sl-fslog__btn sl-fslog__btn--wide" wire:click="downloadAll">DOWNLOAD ALL</button>
                     <button type="button" class="sl-fslog__btn" wire:click="exportXlsx">EXPORT</button>
 
-                    <span>
+                    <span wire:ignore x-data="slFsLogDatePicker({ property: 'fromDate', initial: @js($fromDate) })">
                         <label for="from_date">From Date</label>
-                        <input id="from_date" type="text" wire:model="fromDate" placeholder="dd/mm/yyyy" autocomplete="off">
+                        <input id="from_date" x-ref="input" type="text" placeholder="dd/mm/yyyy" autocomplete="off">
                     </span>
-                    <span>
+                    <span wire:ignore x-data="slFsLogDatePicker({ property: 'toDate', initial: @js($toDate) })">
                         <label for="to_date">To Date</label>
-                        <input id="to_date" type="text" wire:model="toDate" placeholder="dd/mm/yyyy" autocomplete="off">
+                        <input id="to_date" x-ref="input" type="text" placeholder="dd/mm/yyyy" autocomplete="off">
                     </span>
 
                     <button type="button" class="sl-fslog__btn" wire:click="search">SEARCH</button>
@@ -276,4 +276,9 @@
             @endif
         </div>
     </div>
+
+    {{-- Date-picker assets + slFsLogDatePicker are loaded panel-wide via the
+         filament.hooks.flatpickr-datepicker HEAD_END hook (SPA navigation skips
+         page-level <script> tags, which is why they lived here before and only
+         worked after a hard refresh). --}}
 </x-filament-panels::page>

@@ -9,7 +9,11 @@
         $isExhibit = ! empty($previewData['isExhibit']);
         $isMisc = ! empty($previewData['isMisc']);
         $isAsset = ! empty($previewData['isAsset']);
-        $usesCkEditor = $isVoc || $isExhibit || $isMisc || $isAsset;
+        // CKEditor bridge retired: all rich-text fields now use Filament's native RichEditor
+        // (Livewire-first — reliable sync, survives morphs, instant load). Keeping the flag
+        // false skips the 500KB ckeditor.js and the fragile orphan/re-init machinery below.
+        // (The legacy Form Builder iframe has its own CKEditor and is unaffected.)
+        $usesCkEditor = false;
         $editorClass = trim(
             ($isUrlLinkCode ? 'sl-profile-editor--code' : '')
             .' '.($isSurvey ? 'sl-profile-editor--survey' : '')
@@ -21,7 +25,7 @@
     @endphp
 
     <link rel="stylesheet" href="{{ asset('styles/style.css') }}?v=legacy-profile-39">
-    <link rel="stylesheet" href="{{ asset('css/filament/scanlink-theme.css') }}?v=legacy-profile-44">
+    <link rel="stylesheet" href="{{ asset('css/filament/scanlink-theme.css') }}?v=legacy-profile-45">
 
     @if ($isUrlLinkCode)
     {{-- URL Link (code) editor — create + edit must match. Inline so SPA re-applies. --}}
@@ -393,12 +397,39 @@
                     }
                     Object.keys(CKEDITOR.instances || {}).forEach(function (name) {
                         try {
-                            CKEDITOR.instances[name].updateElement();
-                            var el = CKEDITOR.instances[name].element && CKEDITOR.instances[name].element.$;
-                            if (el) {
-                                el.dispatchEvent(new Event('input', { bubbles: true }));
+                            var inst = CKEDITOR.instances[name];
+                            var el = inst.element && inst.element.$;
+                            // Never sync from an editor whose element Livewire replaced —
+                            // updateElement() would write stale/empty content over the value.
+                            if (! el || ! el.isConnected) {
+                                return;
                             }
+                            inst.updateElement();
+                            el.dispatchEvent(new Event('input', { bubbles: true }));
+                            el.dispatchEvent(new Event('change', { bubbles: true }));
+                            el.dispatchEvent(new FocusEvent('blur'));
                         } catch (e) {}
+                    });
+                }
+
+                // Livewire morphs replace the textarea DOM but leave the CKEditor instance
+                // registered. That orphaned instance blocks re-init (looks like a plain box)
+                // and clears the field on save. Destroy instances whose element is detached
+                // so initLegacyCkEditors can attach a fresh editor to the new DOM.
+                function destroyOrphanedEditors() {
+                    if (typeof CKEDITOR === 'undefined') {
+                        return;
+                    }
+                    Object.keys(CKEDITOR.instances || {}).forEach(function (name) {
+                        try {
+                            var inst = CKEDITOR.instances[name];
+                            var el = inst.element && inst.element.$;
+                            if (! el || ! el.isConnected) {
+                                inst.destroy(true);
+                            }
+                        } catch (e) {
+                            try { delete CKEDITOR.instances[name]; } catch (e2) {}
+                        }
                     });
                 }
 
@@ -445,6 +476,7 @@
                     if (typeof CKEDITOR === 'undefined') {
                         return;
                     }
+                    destroyOrphanedEditors();
                     document.querySelectorAll('textarea.sl-ckeditor').forEach(function (el) {
                         if (! el.id) {
                             el.id = 'sl_ck_' + Math.random().toString(36).slice(2, 10);
@@ -468,10 +500,14 @@
                         editor.on('change', function () {
                             editor.updateElement();
                             el.dispatchEvent(new Event('input', { bubbles: true }));
+                            el.dispatchEvent(new Event('change', { bubbles: true }));
+                            el.dispatchEvent(new FocusEvent('blur'));
                         });
                         editor.on('blur', function () {
                             editor.updateElement();
                             el.dispatchEvent(new Event('input', { bubbles: true }));
+                            el.dispatchEvent(new Event('change', { bubbles: true }));
+                            el.dispatchEvent(new FocusEvent('blur'));
                         });
                     });
                 }

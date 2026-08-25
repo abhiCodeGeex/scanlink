@@ -20,11 +20,16 @@ class ProfileQrService
     {
         $profile->loadMissing('client');
 
-        return rtrim(config('scanlink.portal_url'), '/')
-            .'/'
-            .$profile->client->url
-            .'/'
-            .$profile->id;
+        $base = rtrim(config('scanlink.portal_url'), '/');
+        $clientUrl = $profile->client?->url;
+
+        // Orphan profile (client missing/deleted): no valid public scan path. Return a clean
+        // base/id URL instead of a double-slashed one — and avoid a "property on null" warning.
+        if (blank($clientUrl)) {
+            return $base.'/'.$profile->id;
+        }
+
+        return $base.'/'.$clientUrl.'/'.$profile->id;
     }
 
     public function resolveQrData(Profile $profile): string
@@ -33,16 +38,19 @@ class ProfileQrService
             return $profile->shorturl;
         }
 
-        $profile->loadMissing('equipmentType');
+        $profile->loadMissing(['equipmentType', 'client']);
 
         // CustomQR encodes the destination URL (profiles.name), not the portal path.
-        $targetUrl = $profile->typeSlug() === 'customqr' && filled($profile->name)
-            ? $profile->name
-            : $this->profileUrl($profile);
+        $isCustomQr = $profile->typeSlug() === 'customqr' && filled($profile->name);
+        $targetUrl = $isCustomQr ? $profile->name : $this->profileUrl($profile);
+
+        // Don't shorten an orphan profile (no linked client) — it has no valid scan
+        // destination yet, so a short link would just point at a dead URL. Fall back to raw.
+        $canShorten = $isCustomQr || filled($profile->client?->url);
 
         $token = config('scanlink.short_url_api_token');
 
-        if ($token) {
+        if ($canShorten && $token) {
             $short = $this->shortenUrl($targetUrl, $token);
 
             if ($short) {
@@ -350,7 +358,10 @@ class ProfileQrService
         $pdf->SetFont('helvetica', '', 14);
         $pdf->SetY(45);
         $pdf->Cell(0, 10, 'Profile No. : '.$profile->id, 0, 1);
-        $pdf->Cell(0, 10, 'Name : '.($profile->name ?: $profile->application ?: '-'), 0, 1);
+        // Prefer the code's profile name (many code types leave `name` blank and store the
+        // display name in code_profile_name), falling back to name / application.
+        $qrName = trim((string) ($profile->code_profile_name ?: $profile->name ?: $profile->application));
+        $pdf->Cell(0, 10, 'Name : '.($qrName !== '' ? $qrName : '-'), 0, 1);
 
         $url = $profile->url ?: $this->profileUrl($profile);
         $pdf->MultiCell(0, 10, 'URL :'.$url, 0, 'L');
@@ -451,15 +462,54 @@ class ProfileQrService
             $needsGenerate = $relative === '' || ! Storage::disk('public')->exists($relative);
         }
 
+        // A code generated before URL shortening was configured still carries a long-URL QR
+        // PNG (blank shorturl). If a TinyURL token is now configured and this profile can be
+        // shortened, regenerate so the stored image encodes the short link. A short cache lock
+        // keeps a flaky/unreachable API from triggering a fresh 10s HTTP call — and a rewrite —
+        // on every display/download. (The public scan path never calls this, only the editor
+        // and the download/PDF exports.)
+        $shortenLock = 'qr.shorten.attempt.'.$profile->id;
+
+        if (
+            ! $needsGenerate
+            && blank($profile->shorturl)
+            && filled(config('scanlink.short_url_api_token'))
+            && $this->canShorten($profile)
+            && ! Cache::has($shortenLock)
+        ) {
+            $needsGenerate = true;
+        }
+
         if ($needsGenerate) {
             $this->generateFor($profile);
             $profile->unsetRelation('qrImage');
             $profile->load('qrImage');
+
+            // Still no short link => the API is down/blocked. Back off for 10 minutes so we
+            // don't re-attempt (and rewrite the PNG) on every subsequent view/download.
+            if (blank($profile->shorturl)) {
+                Cache::put($shortenLock, true, now()->addMinutes(10));
+            }
         }
 
         if ($profile->qrImage === null) {
             throw new \RuntimeException('Unable to generate QR image for profile '.$profile->id);
         }
+    }
+
+    /**
+     * Whether this profile has a real scan destination that can be shortened — mirrors the
+     * gate in resolveQrData(): a CustomQR with a target, or a linked client that has a URL.
+     */
+    protected function canShorten(Profile $profile): bool
+    {
+        $profile->loadMissing('client');
+
+        if ($profile->typeSlug() === 'customqr' && filled($profile->name)) {
+            return true;
+        }
+
+        return filled($profile->client?->url);
     }
 
     protected function convertQrImage(string $sourcePath, string $extension): string

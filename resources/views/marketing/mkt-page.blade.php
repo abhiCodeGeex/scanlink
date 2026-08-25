@@ -136,6 +136,8 @@
     </div>
 </div>
 
+@include('marketing.partials.password-expired-modal')
+
 <div class="mkt__overlay" id="mkt-video" role="dialog" aria-modal="true" aria-label="Video player">
     <div class="mkt__modal mkt__modal--video">
         <button type="button" class="mkt__modal-close" data-close aria-label="Close video">&times;</button>

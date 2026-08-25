@@ -259,35 +259,74 @@ class FormSubmissions extends Page
         $pdf->setPrintFooter(false);
         $pdf->SetMargins(12, 12, 12);
         $pdf->SetAutoPageBreak(true, 12);
+        // TCPDF ignores rem-based sizes and defaults tiny — set a readable base font.
+        $pdf->SetFont('helvetica', '', 10);
 
-        $rendered = 0;
+        // Company logo as an inline base64 data URI (TCPDF renders those reliably, unlike the
+        // http URL the browser view uses or some local file paths); falls back to ScanLink logo.
+        $logoUrl = $this->profilePdfLogoSrc($profile);
+
+        // Collect every submission up-front so the whole report renders as ONE flowing
+        // document (submissions divided by <hr>), not one page per submission.
+        // Rows come from the shared presenter (form order, media, document links).
+        $questions = FormBuilderQuestion::query()
+            ->with('options')
+            ->where('profile_id', $profile->id)
+            ->get()
+            ->keyBy('question_id');
+
+        $sessions = [];
         foreach ($sessionIds as $sessionId) {
             $answers = FormBuilderAnswer::query()
-                ->with('question')
                 ->where('profile_id', $profile->id)
                 ->where('session_id', $sessionId)
-                ->orderBy('question_id')
                 ->get();
 
             if ($answers->isEmpty()) {
                 continue;
             }
 
-            $html = view('filament.portal.pages.form-submission-print', [
-                'profile' => $profile,
-                'sessionId' => $sessionId,
-                'answers' => $answers,
-                'submittedAt' => $answers->min('date_time'),
-            ])->render();
+            $answerMap = [];
+            foreach ($answers as $answer) {
+                $answerMap[(int) $answer->question_id] = (string) ($answer->question_answer ?? '');
+            }
 
-            $pdf->AddPage();
-            $pdf->writeHTML($html, true, false, true, false, '');
-            $rendered++;
+            $rows = [];
+            foreach (\App\Support\FormSubmissionPresenter::rows($questions, $answerMap) as $presented) {
+                $html = \App\Support\FormSubmissionPresenter::answerPdfHtml($presented);
+                if (trim(strip_tags($html)) === '' && ! str_contains($html, '<img')) {
+                    $html = '&nbsp;';
+                }
+
+                $rows[] = ['label' => $presented['label'], 'html' => $html];
+            }
+
+            if ($rows === []) {
+                continue;
+            }
+
+            $submittedRaw = $answers->min('date_time');
+            $sessions[] = [
+                'sessionId' => (string) $sessionId,
+                'submittedAt' => $submittedRaw ? Carbon::parse($submittedRaw)->format('d M Y H:i') : '—',
+                'rows' => $rows,
+            ];
         }
 
-        if ($rendered === 0) {
-            $pdf->AddPage();
+        $pdf->AddPage();
+
+        if ($sessions === []) {
             $pdf->writeHTML('<p>No submissions found.</p>');
+        } else {
+            $html = view('filament.portal.pages.form-submissions-pdf', [
+                'profile' => $profile,
+                'profileName' => trim((string) ($profile->code_profile_name ?: ($profile->name ?: $profile->form_title))),
+                'logoUrl' => $logoUrl,
+                'sessions' => $sessions,
+                'generatedAt' => now()->format('d M Y H:i'),
+            ])->render();
+
+            $pdf->writeHTML($html, true, false, true, false, '');
         }
 
         $content = (string) $pdf->Output('', 'S');
@@ -325,25 +364,53 @@ class FormSubmissions extends Page
 
         abort_unless($member, 403);
 
+        $allowed = $member->allowedProfileIds();
+
         $profile = Profile::query()
             ->where('client_id', $member->client_id)
+            ->when($allowed !== null, fn ($q) => $q->whereIn('id', $allowed))
             ->active()
             ->findOrFail($profileId);
 
         $answers = FormBuilderAnswer::query()
-            ->with('question')
             ->where('profile_id', $profile->id)
             ->where('session_id', $sessionId)
-            ->orderBy('question_id')
             ->get();
 
         abort_if($answers->isEmpty(), 404);
 
+        $questions = FormBuilderQuestion::query()
+            ->with('options')
+            ->where('profile_id', $profile->id)
+            ->get()
+            ->keyBy('question_id');
+
+        $answerMap = [];
+        foreach ($answers as $answer) {
+            $answerMap[(int) $answer->question_id] = (string) ($answer->question_answer ?? '');
+        }
+
+        // Shared presenter: form order, inline media, document links.
+        $rows = [];
+        foreach (\App\Support\FormSubmissionPresenter::rows($questions, $answerMap) as $presented) {
+            $rows[] = [
+                'label' => $presented['label'],
+                'html' => \App\Support\FormSubmissionPresenter::answerHtml($presented)->toHtml(),
+            ];
+        }
+
+        // Company logo for the printed report header (falls back to the ScanLink logo).
+        $logo = \App\Models\Logo::query()->where('profile_id', $profile->id)->orderBy('id')->first();
+        $logoUrl = $logo?->logo_name
+            ? \App\Support\PublicMediaPath::url($logo->logo_name)
+            : asset('images/logo.png');
+
         $html = view('filament.portal.pages.form-submission-print', [
             'profile' => $profile,
             'sessionId' => $sessionId,
-            'answers' => $answers,
+            'rows' => $rows,
             'submittedAt' => $answers->min('date_time'),
+            'logoUrl' => $logoUrl,
         ])->render();
 
         return response($html, 200, [
@@ -403,9 +470,12 @@ class FormSubmissions extends Page
     protected function loadProfile(int $profileId): void
     {
         $client = $this->requireClient();
+        $allowed = $this->requireClientUser()->allowedProfileIds();
 
         $profile = Profile::query()
             ->where('client_id', $client->id)
+            // Sub-users only reach profiles selected for them in Manage User.
+            ->when($allowed !== null, fn ($q) => $q->whereIn('id', $allowed))
             ->active()
             ->findOrFail($profileId);
 
@@ -440,11 +510,63 @@ class FormSubmissions extends Page
     protected function resolveProfile(): Profile
     {
         $client = $this->requireClient();
+        $allowed = $this->requireClientUser()->allowedProfileIds();
 
         return Profile::query()
             ->where('client_id', $client->id)
+            ->when($allowed !== null, fn ($q) => $q->whereIn('id', $allowed))
             ->active()
             ->findOrFail($this->selectedProfileId);
+    }
+
+    /**
+     * Company logo for the PDF report as a base64 data URI. TCPDF is unreliable at fetching the
+     * http URL the browser view uses AND at loading some local file paths, but it renders inline
+     * data URIs dependably (same approach used for signatures). The stored logo_name is
+     * normalized the same way the scan page resolves it, with legacy public/ locations and the
+     * bundled ScanLink logo as fallbacks. Returns null when no usable image exists.
+     */
+    protected function profilePdfLogoSrc(Profile $profile): ?string
+    {
+        $logo = \App\Models\Logo::query()->where('profile_id', $profile->id)->orderBy('id')->first();
+        $name = trim((string) ($logo?->logo_name ?? ''));
+        $normalized = \App\Support\PublicMediaPath::normalize($name);
+
+        $candidates = [];
+        if ($normalized !== '') {
+            try {
+                if (Storage::disk('public')->exists($normalized)) {
+                    $candidates[] = Storage::disk('public')->path($normalized);
+                }
+            } catch (\Throwable) {
+                // fall through to path guesses
+            }
+
+            $candidates[] = public_path('storage/'.$normalized);
+            $candidates[] = storage_path('app/public/'.$normalized);
+            $candidates[] = public_path($normalized);
+        }
+        if ($name !== '') {
+            $candidates[] = public_path($name);
+        }
+
+        // Bundled ScanLink logo fallbacks.
+        foreach (['images/logo.png', 'images/scanlink-logo.png', 'images/email-logo.png'] as $fallback) {
+            $candidates[] = public_path($fallback);
+        }
+
+        foreach ($candidates as $candidate) {
+            if (is_file($candidate) && ($info = @getimagesize($candidate)) !== false) {
+                $data = @file_get_contents($candidate);
+                if ($data !== false && $data !== '') {
+                    $mime = $info['mime'] ?? 'image/png';
+
+                    return 'data:'.$mime.';base64,'.base64_encode($data);
+                }
+            }
+        }
+
+        return null;
     }
 
     protected function filteredSessionsQuery(int $profileId)
