@@ -64,6 +64,9 @@ trait HasLegacyFormBuilderSidebar
     /** Client id of the account signed into via "Another account" (guards form copying). */
     public ?int $otherAccountClientId = null;
 
+    /** User id signed into via "Another account" (listing + copy guard are per-user). */
+    public ?int $otherAccountUserId = null;
+
     public bool $showOtherAccountLibrary = false;
 
     public bool $showLibraryFormPreview = false;
@@ -113,6 +116,7 @@ trait HasLegacyFormBuilderSidebar
         $this->showOtherAccountLibrary = false;
         $this->otherAccountLibraryForms = [];
         $this->otherAccountClientId = null;
+        $this->otherAccountUserId = null;
         $this->otherAccountEmail = '';
         $this->otherAccountPassword = '';
         $this->loadExistingFormModalLists($profile);
@@ -247,14 +251,18 @@ trait HasLegacyFormBuilderSidebar
             ->where('is_deleted_from_library', false)
             ->first();
 
-        if (! $entry) {
+        // Not every previewable form is a library save — "Another account" also lists forms
+        // straight from that user's profiles, so fall back to the profile for the title.
+        $sourceProfile = Profile::query()->where('form_id', $formId)->orderBy('id')->first();
+
+        if (! $entry && ! $sourceProfile) {
             return;
         }
 
-        $this->libraryPreviewTitle = (string) ($entry->form_title ?: 'Form '.$formId);
+        $this->libraryPreviewTitle = (string) ($entry?->form_title
+            ?: ($sourceProfile?->form_title ?: 'Form '.$formId));
 
-        // Show which code profile this library form belongs to in the preview heading.
-        $sourceProfile = Profile::query()->where('form_id', $formId)->orderBy('id')->first();
+        // Show which code profile this form belongs to in the preview heading.
         if ($sourceProfile) {
             $sourceLabel = trim((string) ($sourceProfile->code_profile_name ?: $sourceProfile->name));
             $this->libraryPreviewTitle .= ' — Profile #'.$sourceProfile->id.($sourceLabel !== '' ? ' ('.$sourceLabel.')' : '');
@@ -339,15 +347,13 @@ trait HasLegacyFormBuilderSidebar
         $this->otherAccountPassword = '';
         $this->showOtherAccountLibrary = true;
         $this->otherAccountClientId = (int) $member->client_id;
+        $this->otherAccountUserId = (int) $member->id;
 
-        // List EVERYTHING that account can share: its saved library (main user + sub-users)
-        // PLUS every code profile that has a form — not just explicit library saves.
-        $accountUserIds = \Illuminate\Support\Facades\DB::table('client_users')
-            ->where('client_id', $member->client_id)
-            ->pluck('id');
-
+        // Per-user scope (like legacy's get_library_forms_other_user), but complete: the
+        // signed-in user's library saves PLUS every form profile that user created —
+        // "all forms of that particular user account", not just explicit library saves.
         $library = FormBuilderLibrary::query()
-            ->whereIn('user_id', $accountUserIds->isNotEmpty() ? $accountUserIds : collect([$member->id]))
+            ->where('user_id', $member->id)
             ->where('is_deleted_from_library', false)
             ->get()
             ->map(fn (FormBuilderLibrary $row): array => [
@@ -362,6 +368,7 @@ trait HasLegacyFormBuilderSidebar
 
         $profiles = Profile::query()
             ->where('client_id', $member->client_id)
+            ->where('user_id', $member->id)
             ->where('form_id', '>', 0)
             ->active()
             ->when($libraryFormIds !== [], fn ($q) => $q->whereNotIn('form_id', $libraryFormIds))
@@ -402,6 +409,7 @@ trait HasLegacyFormBuilderSidebar
 
         $source = Profile::query()
             ->where('client_id', $this->otherAccountClientId)
+            ->when($this->otherAccountUserId, fn ($q) => $q->where('user_id', $this->otherAccountUserId))
             ->where('form_id', '>', 0)
             ->findOrFail($id);
 
