@@ -155,12 +155,53 @@
         #div_drop_area input[type="checkbox"],
         #div_drop_area input[type="radio"] {
             display: inline-block;
-            width: auto !important;
-            height: auto;
+            width: 16px !important;
+            height: 16px !important;
             margin: 0 5px 0 0 !important;
             padding: 0 !important;
             border: 0 !important;
             vertical-align: middle;
+            cursor: pointer;
+        }
+        /* uniform.js wraps checkboxes/radios in styled spans and hides the real input
+           (opacity 0, absolutely positioned). Those spans aren't in jQuery-UI's drag-cancel
+           list, so clicking them sometimes started a drag instead of toggling — the
+           "sometimes clickable" checkboxes. Neutralise uniform inside the canvas: show the
+           REAL native input (always clickable) and flatten the wrapper chrome. */
+        #div_drop_area div.checker,
+        #div_drop_area div.checker span,
+        #div_drop_area div.radio,
+        #div_drop_area div.radio span {
+            display: inline-block !important;
+            position: static !important;
+            width: auto !important;
+            height: auto !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            background: none !important;
+            border: 0 !important;
+        }
+        #div_drop_area div.checker input[type="checkbox"],
+        #div_drop_area div.radio input[type="radio"] {
+            opacity: 1 !important;
+            position: static !important;
+            display: inline-block !important;
+        }
+        /* Same for uniform-wrapped selects: keep the native select usable. */
+        #div_drop_area div.selector {
+            display: block !important;
+            position: static !important;
+            width: 100% !important;
+            height: auto !important;
+            padding: 0 !important;
+            background: none !important;
+            border: 0 !important;
+        }
+        #div_drop_area div.selector span { display: none !important; }
+        #div_drop_area div.selector select {
+            opacity: 1 !important;
+            position: static !important;
+            height: 36px !important;
         }
         /* List rhythm: uniform gutters, no stray browser margins on the <p> labels the legacy
            markup sprinkles between fields (they caused the uneven left insets and gaps). */
@@ -292,5 +333,29 @@
     ], EXTR_SKIP);
     include resource_path('views/legacy/formbuilder/index.php');
 @endphp
+<script>
+    // jQuery-UI drag/sort only ignores real form elements by default; uniform.js spans,
+    // labels and links inside a question box would start a drag instead of clicking.
+    // Extend the cancel list on every sortable/draggable, and keep re-applying it because
+    // the canvas re-initialises them as questions are added/edited.
+    (function () {
+        function relaxDragCancel() {
+            try {
+                var cancel = 'input,textarea,button,select,option,label,a,.checker,.radio,.selector,.image-label';
+                $('.ui-sortable').each(function () {
+                    try { $(this).sortable('option', 'cancel', cancel); } catch (e) {}
+                });
+                $('.ui-draggable').each(function () {
+                    try { $(this).draggable('option', 'cancel', cancel); } catch (e) {}
+                });
+            } catch (e) {}
+        }
+        $(function () {
+            relaxDragCancel();
+            setInterval(relaxDragCancel, 1500);
+            $(document).ajaxComplete(function () { setTimeout(relaxDragCancel, 100); });
+        });
+    })();
+</script>
 </body>
 </html>
