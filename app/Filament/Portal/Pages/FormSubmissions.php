@@ -268,32 +268,31 @@ class FormSubmissions extends Page
 
         // Collect every submission up-front so the whole report renders as ONE flowing
         // document (submissions divided by <hr>), not one page per submission.
+        // Rows come from the shared presenter (form order, media, document links).
+        $questions = FormBuilderQuestion::query()
+            ->with('options')
+            ->where('profile_id', $profile->id)
+            ->get()
+            ->keyBy('question_id');
+
         $sessions = [];
         foreach ($sessionIds as $sessionId) {
             $answers = FormBuilderAnswer::query()
-                ->with('question')
                 ->where('profile_id', $profile->id)
                 ->where('session_id', $sessionId)
-                ->get()
-                // Same serial order as the form itself (question_order, not creation id).
-                ->sortBy(fn (FormBuilderAnswer $a): array => [
-                    (int) ($a->question?->question_order ?? PHP_INT_MAX),
-                    (int) $a->question_id,
-                ])
-                ->values();
+                ->get();
 
             if ($answers->isEmpty()) {
                 continue;
             }
 
-            $rows = [];
+            $answerMap = [];
             foreach ($answers as $answer) {
-                $raw = trim((string) ($answer->question_answer ?? ''));
-                if ($raw === '') {
-                    continue;
-                }
+                $answerMap[(int) $answer->question_id] = (string) ($answer->question_answer ?? '');
+            }
 
-                $presented = \App\Support\FormSubmissionPresenter::presentOne($answer->question, $raw);
+            $rows = [];
+            foreach (\App\Support\FormSubmissionPresenter::rows($questions, $answerMap) as $presented) {
                 $html = \App\Support\FormSubmissionPresenter::answerPdfHtml($presented);
                 if (trim(strip_tags($html)) === '' && ! str_contains($html, '<img')) {
                     $html = '&nbsp;';
@@ -374,18 +373,31 @@ class FormSubmissions extends Page
             ->findOrFail($profileId);
 
         $answers = FormBuilderAnswer::query()
-            ->with('question')
             ->where('profile_id', $profile->id)
             ->where('session_id', $sessionId)
-            ->get()
-            // Same serial order as the form itself (question_order, not creation id).
-            ->sortBy(fn (FormBuilderAnswer $a): array => [
-                (int) ($a->question?->question_order ?? PHP_INT_MAX),
-                (int) $a->question_id,
-            ])
-            ->values();
+            ->get();
 
         abort_if($answers->isEmpty(), 404);
+
+        $questions = FormBuilderQuestion::query()
+            ->with('options')
+            ->where('profile_id', $profile->id)
+            ->get()
+            ->keyBy('question_id');
+
+        $answerMap = [];
+        foreach ($answers as $answer) {
+            $answerMap[(int) $answer->question_id] = (string) ($answer->question_answer ?? '');
+        }
+
+        // Shared presenter: form order, inline media, document links.
+        $rows = [];
+        foreach (\App\Support\FormSubmissionPresenter::rows($questions, $answerMap) as $presented) {
+            $rows[] = [
+                'label' => $presented['label'],
+                'html' => \App\Support\FormSubmissionPresenter::answerHtml($presented)->toHtml(),
+            ];
+        }
 
         // Company logo for the printed report header (falls back to the ScanLink logo).
         $logo = \App\Models\Logo::query()->where('profile_id', $profile->id)->orderBy('id')->first();
@@ -396,7 +408,7 @@ class FormSubmissions extends Page
         $html = view('filament.portal.pages.form-submission-print', [
             'profile' => $profile,
             'sessionId' => $sessionId,
-            'answers' => $answers,
+            'rows' => $rows,
             'submittedAt' => $answers->min('date_time'),
             'logoUrl' => $logoUrl,
         ])->render();

@@ -45,21 +45,10 @@
 
     <table>
         <tbody>
-            @foreach ($answers as $answer)
-                @php
-                    $q = $answer->question;
-                    $raw = (string) ($answer->question_answer ?? '');
-                    $presented = \App\Support\FormSubmissionPresenter::presentOne($q, $raw);
-                @endphp
+            @foreach ($rows as $row)
                 <tr>
-                    <th>{{ $presented['label'] }}</th>
-                    <td>
-                        @if ($raw === '')
-                            —
-                        @else
-                            {!! \App\Support\FormSubmissionPresenter::answerHtml($presented) !!}
-                        @endif
-                    </td>
+                    <th>{{ $row['label'] }}</th>
+                    <td>{!! $row['html'] !== '' ? $row['html'] : '—' !!}</td>
                 </tr>
             @endforeach
         </tbody>

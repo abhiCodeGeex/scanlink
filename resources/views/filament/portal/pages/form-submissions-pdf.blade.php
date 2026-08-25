@@ -17,7 +17,11 @@
     <tr>
         <td style="font-size:9.5pt;color:#4b5563;">
             <span style="color:#111827;"><b>Profile {{ $profile->id }}</b></span> &nbsp;&middot;&nbsp; {{ $profileName }}<br>
-            {{ count($sessions) }} submission{{ count($sessions) === 1 ? '' : 's' }} &nbsp;&middot;&nbsp; Generated {{ $generatedAt }}
+            @if (count($sessions) === 1)
+                Submitted {{ $sessions[0]['submittedAt'] }} &nbsp;&middot;&nbsp; Ref: {{ $sessions[0]['sessionId'] }}
+            @else
+                {{ count($sessions) }} submissions &nbsp;&middot;&nbsp; Generated {{ $generatedAt }}
+            @endif
         </td>
     </tr>
 </table>
@@ -32,16 +36,19 @@
         <br><hr><br>
     @endif
 
-    {{-- Submission title bar --}}
-    <table cellpadding="6" cellspacing="0" width="100%">
-        <tr>
-            <td width="58%" style="background-color:#008901;color:#ffffff;font-size:11pt;"><b>Submission {{ $i + 1 }}</b></td>
-            <td width="42%" align="right" style="background-color:#008901;color:#ffffff;font-size:9.5pt;">{{ $s['submittedAt'] }}</td>
-        </tr>
-    </table>
-    <table cellpadding="3" cellspacing="0" width="100%">
-        <tr><td style="font-size:8pt;color:#6b7280;">Reference: {{ $s['sessionId'] }}</td></tr>
-    </table>
+    {{-- Submission title bar — only when the PDF holds multiple submissions; a single
+         submission's date/ref already live in the header, so no duplicate banner. --}}
+    @if (count($sessions) > 1)
+        <table cellpadding="6" cellspacing="0" width="100%">
+            <tr>
+                <td width="58%" style="background-color:#008901;color:#ffffff;font-size:11pt;"><b>Submission {{ $i + 1 }}</b></td>
+                <td width="42%" align="right" style="background-color:#008901;color:#ffffff;font-size:9.5pt;">{{ $s['submittedAt'] }}</td>
+            </tr>
+        </table>
+        <table cellpadding="3" cellspacing="0" width="100%">
+            <tr><td style="font-size:8pt;color:#6b7280;">Reference: {{ $s['sessionId'] }}</td></tr>
+        </table>
+    @endif
 
     {{-- Question / answer grid --}}
     <table cellpadding="6" cellspacing="0" border="1" width="100%" style="font-size:10pt;">

@@ -58,6 +58,15 @@
                     <h3>{{ strip_tags((string) $question->question_text) }}</h3>
                 @elseif ($tid === 2 || $tid === 13 || $tid === 14)
                     <div class="qa">{!! $question->question_text !!}</div>
+                @elseif ($tid === 21)
+                    {{-- Document Button: the element's document is the content — link it. --}}
+                    @php $docHref = \App\Support\FormBuilderMedia::resolveDocumentHref($question); @endphp
+                    @if ($docHref)
+                        <div class="qa">
+                            <strong>{{ $question->doc_title ?: 'Document' }}</strong>
+                            <div><a href="{{ $docHref }}" target="_blank" rel="noopener">{{ basename((string) (parse_url($docHref, PHP_URL_PATH) ?: 'document')) }}</a></div>
+                        </div>
+                    @endif
                 @else
                     @php
                         $raw = (string) ($answer?->question_answer ?? '');

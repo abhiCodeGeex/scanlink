@@ -60,14 +60,38 @@ class FormSubmissionPresenter
         foreach ($ordered as $question) {
             $qid = (int) $question->question_id;
             $answer = $savedAnswers[$qid] ?? $savedAnswers[(string) $qid] ?? null;
+            $raw = trim((string) ($answer ?? ''));
+
+            // Document Button (21): the element's document IS the content — the visitor never
+            // "answers" it, so render its clickable link in the report/email/PDF.
+            if ((int) $question->question_type_id === 21 && $raw === '') {
+                $used[$qid] = true;
+                $href = \App\Support\FormBuilderMedia::resolveDocumentHref($question);
+
+                if (filled($href)) {
+                    $rows[] = [
+                        'label' => trim((string) ($question->doc_title ?: 'Document')),
+                        'type_id' => 21,
+                        'kind' => 'file_link',
+                        'value' => '',
+                        'items' => [],
+                        'fields' => [],
+                        'instances' => [],
+                        'signature_src' => '',
+                        'signature_meta' => '',
+                        'href' => (string) $href,
+                        'name' => basename((string) (parse_url((string) $href, PHP_URL_PATH) ?: 'document')),
+                    ];
+                }
+
+                continue;
+            }
 
             if ($answer === null) {
                 continue;
             }
 
             $used[$qid] = true;
-
-            $raw = trim((string) $answer);
 
             if ($raw === '') {
                 continue;
@@ -467,6 +491,10 @@ class FormSubmissionPresenter
             'signature' => self::signatureHtml($row),
             'swms' => self::swmsHtml($row),
             'sigrows' => self::sigHtml($row),
+            'file_link' => new HtmlString(
+                '<a href="'.e((string) ($row['href'] ?? '#')).'" target="_blank" rel="noopener">'
+                .e((string) ($row['name'] ?: 'Document')).'</a>'
+            ),
             'list' => new HtmlString(
                 '<ul style="margin:0;padding-left:18px;">'
                 .collect($row['items'])->map(
@@ -503,6 +531,8 @@ class FormSubmissionPresenter
             'signature' => self::signaturePdfHtml($row),
             'swms' => self::swmsPdfHtml($row),
             'sigrows' => self::sigPdfHtml($row),
+            'file_link' => '<a href="'.e((string) ($row['href'] ?? '#')).'">'
+                .e((string) ($row['name'] ?: 'Document')).'</a>',
             'list' => '<ul>'
                 .collect($row['items'])->map(
                     static fn (string $item): string => '<li>'.self::pdfText($item).'</li>'
