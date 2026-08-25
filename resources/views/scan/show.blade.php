@@ -262,12 +262,10 @@
                         : null;
                 @endphp
                 @if ($embedUrl)
-                    <p style="margin:.5rem 0 .25rem;font-weight:600;">{{ $video->title ?: 'Video' }}</p>
                     <div class="video-wrap">
                         <iframe src="{{ $embedUrl }}" allowfullscreen loading="lazy" title="{{ $video->title ?: 'YouTube video' }}"></iframe>
                     </div>
                 @elseif ($vFileUrl)
-                    <p style="margin:.5rem 0 .25rem;font-weight:600;">{{ $video->title ?: 'Video' }}</p>
                     <div class="video-wrap">
                         <video controls playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;"><source src="{{ $vFileUrl }}"></video>
                     </div>

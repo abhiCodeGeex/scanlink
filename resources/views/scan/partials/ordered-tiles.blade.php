@@ -46,7 +46,6 @@
                 @foreach ($vids as $video)
                     @php $embed = $youtubeEmbedUrl((string) $video->video_name); @endphp
                     @if ($embed)
-                        <p style="margin:.5rem 0 .25rem;font-weight:600;">{{ $video->title ?: 'Video' }}</p>
                         <div class="video-wrap"><iframe src="{{ $embed }}" allowfullscreen loading="lazy" title="{{ $video->title ?: 'YouTube video' }}"></iframe></div>
                     @elseif (filled($video->video_name))
                         <a class="btn" href="{{ $video->video_name }}" target="_blank" rel="noopener">{{ $video->title ?: 'Watch video' }}</a>
