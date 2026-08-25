@@ -33,6 +33,32 @@
 
 	var sorting_started = 0; // useful when prevent click
 
+	// After saving an element that was DROPPED mid-list, persist its position (the server
+	// appends new questions at the end otherwise). Mirrors the sortable-stop reorder call.
+	function persistDroppedOrder(obj) {
+		try {
+			var $el = $('#' + obj);
+			if (!$el.length) { return; }
+			var cur = $el.children('.question_id_span').text() || $el.find('.question_id_span').first().text() || $el.attr('id');
+			var next = '';
+			var $n = $el.next();
+			while ($n.length && !next) {
+				var nid = $n.attr('id') || '';
+				if (nid.indexOf('question_div_') === 0) { next = nid; break; }
+				var span = $n.find('.question_id_span').first().text();
+				if (span) { next = span; break; }
+				$n = $n.next();
+			}
+			if (!next) { return; } // dropped at the end — server order already matches
+			$.ajax({
+				type: 'GET',
+				url: '<?php echo url('/portal/legacy-form-builder/reorder-element'); ?>',
+				dataType: 'html',
+				data: { 'profile_id': '<?php echo $profile_id; ?>', 'current_ele_id': cur, 'next_ele_id': next }
+			});
+		} catch (e) {}
+	}
+
 	$(function() {
 		if ($('#enable_form_analytics').val() == 0) {
 			$(".menu-form ul li ul li").draggable({
@@ -74,7 +100,7 @@
 					mins = date_curr.getMinutes();
 					seconds = date_curr.getSeconds();
 
-					random_id = hours + "" + mins + "" + seconds;
+					random_id = hours + "" + mins + "" + seconds + "" + Math.floor(1000 + Math.random() * 9000);
 
 					counter = 1;
 
@@ -303,7 +329,20 @@
 
 
 					//$( '<div class="'+parent_ul_class+'-box" id="'+random_id+'" >' ).html(html).appendTo( this );
-					$('<div class="' + parent_ul_class + '-box" id="' + random_id + '" >').html(html).appendTo($(this).children('.placeholder'));
+					// Drop at the POINTED position: insert before the first existing element whose
+					// vertical middle is below the cursor; fall back to the bottom placeholder.
+					var $slNewBox = $('<div class="' + parent_ul_class + '-box" id="' + random_id + '" >').html(html);
+					var slPlaced = false;
+					try {
+						var slPointerY = event.pageY;
+						$(this).children().not('.placeholder').each(function () {
+							if (!slPlaced && slPointerY < $(this).offset().top + $(this).outerHeight() / 2) {
+								$slNewBox.insertBefore(this);
+								slPlaced = true;
+							}
+						});
+					} catch (e) {}
+					if (!slPlaced) { $slNewBox.appendTo($(this).children('.placeholder')); }
 
 					// New code 19-03-2021
 					if (question_type_id == '25') {
@@ -416,7 +455,7 @@
 					mins = date_curr.getMinutes();
 					seconds = date_curr.getSeconds();
 
-					random_id = hours + "" + mins + "" + seconds;
+					random_id = hours + "" + mins + "" + seconds + "" + Math.floor(1000 + Math.random() * 9000);
 
 					counter = 1;
 
@@ -447,7 +486,20 @@
 					html = html + '</div>';
 
 					//$( '<div class="'+parent_ul_class+'-box" id="'+random_id+'" >' ).html(html).appendTo( this );
-					$('<div class="' + parent_ul_class + '-box" id="' + random_id + '" >').html(html).appendTo($(this).children('.placeholder'));
+					// Drop at the POINTED position: insert before the first existing element whose
+					// vertical middle is below the cursor; fall back to the bottom placeholder.
+					var $slNewBox = $('<div class="' + parent_ul_class + '-box" id="' + random_id + '" >').html(html);
+					var slPlaced = false;
+					try {
+						var slPointerY = event.pageY;
+						$(this).children().not('.placeholder').each(function () {
+							if (!slPlaced && slPointerY < $(this).offset().top + $(this).outerHeight() / 2) {
+								$slNewBox.insertBefore(this);
+								slPlaced = true;
+							}
+						});
+					} catch (e) {}
+					if (!slPlaced) { $slNewBox.appendTo($(this).children('.placeholder')); }
 
 					$(".ui-widget-content ol").css('height', $(".ui-widget-content ol").prop('scrollHeight'));
 
@@ -787,7 +839,10 @@
 									$row_comma_separated = '';
 									$column_comma_separated = '';
 
-									$random_id = date('hms');
+									// Unique per question — bare date('hms') collided for every
+									// question rendered in the same second (multiple SWMS/signature
+									// boxes shared ids and collapsed into one on edit).
+									$random_id = date('hms') . $question_id;
 
 									$image_align = $questions['image_align'];
 									$image_title = $questions['image_title'];
@@ -1545,6 +1600,7 @@
 				}
 				$('#' + obj).show();
 				$('#' + obj).html(data);
+				persistDroppedOrder(obj);
 				$(":radio").not("#div_drop_area *").uniform();
 
 				$("select").not("#div_drop_area *").uniform();

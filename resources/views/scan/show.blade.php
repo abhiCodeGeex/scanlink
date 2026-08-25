@@ -955,8 +955,17 @@
             </script>
             <script>
                 // Legacy "Add another": clone the last repeat item, clearing its inputs.
+                // Every ADDED section gets a "Remove" link (the original section never does),
+                // so only sections created on this page can be deleted.
                 (function () {
                     document.addEventListener('click', function (e) {
+                        var rm = e.target.closest('.sl-remove-section');
+                        if (rm) {
+                            e.preventDefault();
+                            var item = rm.closest('.sl-repeat-item');
+                            if (item) { item.remove(); }
+                            return;
+                        }
                         var link = e.target.closest('.sl-add-another');
                         if (!link) return;
                         e.preventDefault();
@@ -973,6 +982,14 @@
                             c.removeAttribute('data-sl-sig-init');
                             try { c.getContext('2d').clearRect(0, 0, c.width, c.height); } catch (err) {}
                         });
+                        if (!clone.querySelector('.sl-remove-section')) {
+                            var del = document.createElement('a');
+                            del.href = 'javascript:;';
+                            del.className = 'sl-remove-section';
+                            del.textContent = 'Remove';
+                            del.style.cssText = 'display:block;text-align:right;color:#c62828;font-size:.85rem;font-weight:700;margin-top:.35rem;text-decoration:none;';
+                            clone.appendChild(del);
+                        }
                         wrap.insertBefore(clone, link);
                         if (window.slInitSignatures) { window.slInitSignatures(); }
                     });
