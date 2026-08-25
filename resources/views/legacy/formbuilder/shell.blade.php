@@ -350,10 +350,21 @@
                 });
             } catch (e) {}
         }
+        // Uniform.js must never wrap canvas controls (its spans break clicking). The
+        // uniform() calls exclude #div_drop_area now; this strips any wrapper that still
+        // sneaks in (e.g. from older markup) back to the native control.
+        function stripUniformInCanvas() {
+            try {
+                $('#div_drop_area div.checker input, #div_drop_area div.radio input, #div_drop_area div.selector select').each(function () {
+                    try { $.uniform.restore($(this)); } catch (e) {}
+                });
+            } catch (e) {}
+        }
         $(function () {
             relaxDragCancel();
-            setInterval(relaxDragCancel, 1500);
-            $(document).ajaxComplete(function () { setTimeout(relaxDragCancel, 100); });
+            stripUniformInCanvas();
+            setInterval(function () { relaxDragCancel(); stripUniformInCanvas(); }, 1000);
+            $(document).ajaxComplete(function () { setTimeout(function () { relaxDragCancel(); stripUniformInCanvas(); }, 100); });
         });
     })();
 </script>

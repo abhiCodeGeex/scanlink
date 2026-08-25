@@ -332,7 +332,7 @@
 							$('#div_drop_area').css('height', ul_scroll_height);
 							$p('#iframe_frm_builder').height(ul_scroll_height + $('.top-part').height());
 						}
-						$(":checkbox:not(.sign-text)").uniform();
+						$(":checkbox:not(.sign-text)").not("#div_drop_area *").uniform();
 					}, 3000);
 				}
 			}).sortable({
@@ -459,7 +459,7 @@
 							$('#div_drop_area').css('height', ul_scroll_height);
 							$p('#iframe_frm_builder').height(ul_scroll_height + $('.top-part').height());
 						}
-						$(":checkbox").uniform();
+						$(":checkbox").not("#div_drop_area *").uniform();
 					}, 3000);
 
 
@@ -507,9 +507,9 @@
 			}); // end droppable
 		} //end of enable drag, drop and sort for participant name
 
-		$(":radio").uniform();
-		$(":checkbox").uniform();
-		$("select").uniform();
+		$(":radio").not("#div_drop_area *").uniform();
+		$(":checkbox").not("#div_drop_area *").uniform();
+		$("select").not("#div_drop_area *").uniform();
 		$(".ui-widget-content ol").css('height', $(".ui-widget-content ol").prop('scrollHeight'));
 		iframe_height = $p('#iframe_frm_builder').height();
 
@@ -1545,9 +1545,9 @@
 				}
 				$('#' + obj).show();
 				$('#' + obj).html(data);
-				$(":radio").uniform();
+				$(":radio").not("#div_drop_area *").uniform();
 
-				$("select").uniform();
+				$("select").not("#div_drop_area *").uniform();
 
 				$(".ui-widget-content ol").css('height', $(".ui-widget-content ol").prop('scrollHeight'));
 
@@ -1567,7 +1567,7 @@
 
 				}, 3000);
 
-				$(":checkbox:not(.sign-text)").uniform();
+				$(":checkbox:not(.sign-text)").not("#div_drop_area *").uniform();
 			},
 			error: function(xhr) {
 				var msg = 'Could not save this form field.';
@@ -2057,7 +2057,7 @@
 			}
 
 		}, 3000);
-		$(":checkbox:not(.sign-text)").uniform();
+		$(":checkbox:not(.sign-text)").not("#div_drop_area *").uniform();
 
 	}
 
