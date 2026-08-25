@@ -218,7 +218,21 @@ class PortalProfileForm
                 Section::make(LegacySectionHelp::heading('Videos'))
                     ->extraAttributes(['class' => 'SectionTitleBox sl-section-box sl-sortable-tile', 'data-tile-id' => 2])
                     ->schema(fn (): array => self::videoFields('video_titles'))
-                    ->visible(fn (Get $get): bool => ! in_array(self::slug($get('type_id')), ['code', 'survey', 'voc'], true)),
+                    // Legacy people/edit.php hides the whole Videos section unless the logged-in
+                    // user has the video_upload permission (users.video_upload).
+                    ->visible(function (Get $get): bool {
+                        $slug = self::slug($get('type_id'));
+
+                        if (in_array($slug, ['code', 'survey', 'voc'], true)) {
+                            return false;
+                        }
+
+                        if ($slug === 'people') {
+                            return (bool) (\App\Filament\Portal\Concerns\InteractsWithClientMembership::portalMembership()?->video_upload);
+                        }
+
+                        return true;
+                    }),
 
                 // Live Words / Profile Information — type-specific fields + contacts where legacy has them.
                 Section::make(LegacySectionHelp::heading('Words'))
@@ -408,7 +422,7 @@ class PortalProfileForm
 
                 Section::make(LegacySectionHelp::heading('Videos #2'))
                     ->extraAttributes(['class' => 'SectionTitleBox sl-section-box sl-sortable-tile', 'data-tile-id' => 14])
-                    ->schema(fn (): array => self::videoFields('video_extra_titles'))
+                    ->schema(fn (): array => self::videoFields('video_extra_titles', allowUpload: true))
                     ->visible(fn (Get $get): bool => self::slug($get('type_id')) === 'exhibit'),
 
                 Section::make(LegacySectionHelp::heading('Words #2'))
@@ -1268,7 +1282,7 @@ class PortalProfileForm
      *
      * @return array<int, mixed>
      */
-    private static function videoFields(string $statePath): array
+    private static function videoFields(string $statePath, bool $allowUpload = false): array
     {
         $normalizeVideo = function (array $data): array {
             // Resolve the chosen source (YouTube / local upload / existing catalogue pick)
@@ -1303,17 +1317,20 @@ class PortalProfileForm
             return $data;
         };
 
-        // Legacy exhibit "Add Video" offers three sources: a YouTube URL, uploading a local
-        // video file ("Upload New"), and picking from the client's previously added videos
-        // ("Select From Existing" — legacy getVideosByClient lists the whole client account).
+        // Legacy modal panels, verified against the old app:
+        // - test/index.php (Videos on every type): YouTube detail + Select From Existing —
+        //   its "Upload New" panel is commented out, so NO local upload there.
+        // - test/video_extra.php (exhibit "Videos #2" ONLY): Upload New + YouTube + Existing.
+        $sourceOptions = ['youtube' => 'YouTube video (URL or ID)'];
+        if ($allowUpload) {
+            $sourceOptions['upload'] = 'Upload new (video file)';
+        }
+        $sourceOptions['existing'] = 'Select from existing';
+
         $videoForm = [
             Radio::make('video_source')
                 ->hiddenLabel()
-                ->options([
-                    'youtube' => 'YouTube video (URL or ID)',
-                    'upload' => 'Upload new (video file)',
-                    'existing' => 'Select from existing',
-                ])
+                ->options($sourceOptions)
                 ->default('youtube')
                 ->live(),
             TextInput::make('title')
@@ -1334,8 +1351,8 @@ class PortalProfileForm
                 ->directory('images/video')
                 ->acceptedFileTypes(['video/mp4', 'video/quicktime', 'video/webm', 'video/ogg'])
                 ->maxSize(102400)
-                ->visible(fn (Get $get): bool => $get('video_source') === 'upload')
-                ->required(fn (Get $get): bool => $get('video_source') === 'upload'),
+                ->visible(fn (Get $get): bool => $allowUpload && $get('video_source') === 'upload')
+                ->required(fn (Get $get): bool => $allowUpload && $get('video_source') === 'upload'),
             Select::make('existing_video_id')
                 ->label('Your existing videos')
                 ->options(function (): array {
