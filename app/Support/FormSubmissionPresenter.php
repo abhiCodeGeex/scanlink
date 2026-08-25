@@ -655,15 +655,17 @@ class FormSubmissionPresenter
         $multi = count($instances) > 1;
 
         return collect($instances)->map(static function (array $fields, int $i) use ($multi): string {
-            $divider = $i > 0 ? '<hr>' : '';
-            $heading = $multi ? '<p><b>Signature #'.($i + 1).'</b></p>' : '';
+            $divider = $i > 0 ? '<br>' : '';
+            $heading = $multi ? '<span style="color:#008901;font-size:9pt;"><b>Signature #'.($i + 1).'</b></span><br>' : '';
 
             $rows = collect($fields)->map(static function (array $field): string {
                 if (! empty($field['is_signature'])) {
-                    return '<p><b>'.e($field['label']).':</b><br>'.self::pdfText((string) $field['value']).'</p>';
+                    return '<p style="margin:2px 0;"><span style="color:#6b7280;font-size:9pt;">'.e($field['label']).'</span><br>'
+                        .self::pdfText((string) $field['value']).'</p>';
                 }
 
-                return '<p><b>'.e($field['label']).':</b> '.nl2br(e((string) $field['value'])).'</p>';
+                return '<p style="margin:2px 0;"><span style="color:#6b7280;font-size:9pt;">'.e($field['label']).':</span> '
+                    .nl2br(e((string) $field['value'])).'</p>';
             })->implode('');
 
             return $divider.$heading.$rows;
@@ -682,8 +684,8 @@ class FormSubmissionPresenter
         }
 
         return collect($instances)->map(static function (array $fields, int $i): string {
-            $divider = $i > 0 ? '<hr>' : '';
-            $heading = '<p><b>SWMS #'.($i + 1).'</b></p>';
+            $divider = $i > 0 ? '<br>' : '';
+            $heading = '<span style="color:#008901;font-size:9pt;"><b>SWMS #'.($i + 1).'</b></span>';
 
             $rows = collect($fields)->map(static function (array $field): string {
                 $value = $field['is_file']
@@ -691,8 +693,8 @@ class FormSubmissionPresenter
                     : nl2br(e((string) $field['value']));
 
                 return '<tr>'
-                    .'<td width="40%" style="color:#4b5563;"><b>'.e($field['label']).'</b></td>'
-                    .'<td width="60%">'.$value.'</td>'
+                    .'<td width="38%" style="color:#6b7280;font-size:9pt;">'.e($field['label']).'</td>'
+                    .'<td width="62%">'.$value.'</td>'
                     .'</tr>';
             })->implode('');
 
