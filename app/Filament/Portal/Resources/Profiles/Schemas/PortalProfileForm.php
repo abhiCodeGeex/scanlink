@@ -1343,6 +1343,15 @@ class PortalProfileForm
                 ->placeholder('https://www.youtube.com/watch?v=… or video ID')
                 ->visible(fn (Get $get): bool => ($get('video_source') ?? 'youtube') === 'youtube')
                 ->required(fn (Get $get): bool => ($get('video_source') ?? 'youtube') === 'youtube')
+                // Must actually be a YouTube URL / 11-char video id — not an arbitrary string.
+                ->rule(fn (Get $get) => function (string $attribute, mixed $value, \Closure $fail) use ($get): void {
+                    if (($get('video_source') ?? 'youtube') !== 'youtube') {
+                        return;
+                    }
+                    if (filled($value) && app(YouTubeService::class)->parseVideoId((string) $value) === null) {
+                        $fail('Please enter a valid YouTube URL or video ID.');
+                    }
+                })
                 ->maxLength(255)
                 ->autocomplete(false),
             FileUpload::make('video_file')
@@ -1498,6 +1507,14 @@ class PortalProfileForm
             return null;
         }
 
+        // Locally uploaded video file (images/video/… or any name with a video extension):
+        // link to the stored file itself — NOT a bogus youtube.com/watch?v=<filename> URL.
+        if (preg_match('/\.(mp4|m4v|mov|webm|ogg)$/i', $input)) {
+            return \App\Support\PublicMediaPath::url(
+                str_contains($input, '/') ? $input : 'images/video/'.$input
+            );
+        }
+
         $youtube = app(YouTubeService::class);
 
         if (str_starts_with($input, 'http://') || str_starts_with($input, 'https://')) {
@@ -1506,9 +1523,10 @@ class PortalProfileForm
             return $id ? $youtube->watchUrl($id) : $input;
         }
 
-        $id = $youtube->parseVideoId($input) ?? $input;
+        // Only link when it's a real YouTube id — junk values render as plain text.
+        $id = $youtube->parseVideoId($input);
 
-        return $youtube->watchUrl($id);
+        return $id ? $youtube->watchUrl($id) : null;
     }
 
     /**
