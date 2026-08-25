@@ -33,16 +33,37 @@
                         Back
                     </button>
                     <h3 class="sl-efm-preview-title">Form preview — <span>{{ $this->libraryPreviewTitle }}</span></h3>
-                    <div class="sl-efm-preview-list">
-                        @forelse ($this->libraryPreviewQuestions as $question)
-                            <div class="sl-efm-preview-item">
-                                <span class="sl-efm-preview-q">{{ $question['text'] !== '' ? $question['text'] : '(untitled)' }}</span>
-                                <span class="sl-efm-badge">{{ $question['type'] }}</span>
-                            </div>
-                        @empty
-                            <p class="sl-efm-empty">No questions in this form.</p>
-                        @endforelse
+                    {{-- Legacy parity: render the ACTUAL form (disabled controls), not a name list. --}}
+                    <div class="sl-fp">
+                        {!! $this->libraryPreviewHtml !!}
                     </div>
+                    <style>
+                        .sl-fp { max-height: 55vh; overflow-y: auto; padding: 4px 2px; font: 13px/1.45 Arial, Helvetica, sans-serif; color: #333; }
+                        .sl-fp .sl-fp-q { margin: 0 0 12px; }
+                        .sl-fp label { display: block; font-weight: 700; font-size: 12.5px; color: #374151; margin: 0 0 3px; }
+                        .sl-fp input[type="text"], .sl-fp input[type="date"], .sl-fp input[type="time"],
+                        .sl-fp select, .sl-fp textarea {
+                            width: 100%; max-width: 420px; box-sizing: border-box; height: 34px; padding: 0 10px;
+                            border: 1px solid #d1d5db; border-radius: 7px; background: #fafafa; color: #6b7280; font: inherit;
+                        }
+                        .sl-fp textarea { height: auto; min-height: 54px; padding: 8px 10px; }
+                        .sl-fp .sl-fp-choice { margin: 2px 0; color: #374151; }
+                        .sl-fp .sl-fp-choice input { width: auto; height: auto; }
+                        .sl-fp .sl-fp-btn {
+                            display: block; width: 100%; max-width: 420px; box-sizing: border-box; text-align: center;
+                            color: #fff; font-weight: 700; border-radius: 7px; padding: 9px 12px; margin: 4px 0;
+                        }
+                        .sl-fp .sl-fp-sign {
+                            width: 100%; max-width: 420px; box-sizing: border-box; height: 64px; line-height: 64px;
+                            text-align: center; border: 1px dashed #c7ccd3; border-radius: 7px; color: #9ca3af; background: #fff;
+                        }
+                        .sl-fp .sl-fp-grid {
+                            width: 100%; max-width: 420px; box-sizing: border-box; padding: 10px 12px;
+                            border: 1px solid #d1d5db; border-radius: 7px; color: #6b7280; background: #fafafa;
+                        }
+                        .sl-fp .sl-fp-html { color: #374151; }
+                        .sl-fp .sl-fp-html img { max-width: 100%; height: auto; }
+                    </style>
                 </div>
             @else
                 <div class="sl-efm-tabs" role="tablist">

@@ -73,6 +73,9 @@ trait HasLegacyFormBuilderSidebar
 
     public string $libraryPreviewTitle = '';
 
+    /** Rendered form markup for the preview modal (scan-page-style, disabled controls). */
+    public string $libraryPreviewHtml = '';
+
     /** @var list<array{text: string, type: string}> */
     public array $libraryPreviewQuestions = [];
 
@@ -276,26 +279,86 @@ trait HasLegacyFormBuilderSidebar
                 : ' — Library form #'.$formId;
         }
 
-        $this->libraryPreviewQuestions = FormBuilderQuestion::query()
+        // Legacy parity (formbuilder/get_data_for_form_preview): the preview renders the
+        // ACTUAL form — real inputs, choices, textareas — not a list of question names.
+        $questions = FormBuilderQuestion::query()
+            ->with('options')
             ->where('form_id', $formId)
             ->orderBy('question_order')
-            ->get()
-            ->map(fn (FormBuilderQuestion $q): array => [
-                // Question text is rich HTML (e.g. "<strong>Location:</strong>"); show a
-                // clean plain-text label in the compact preview instead of raw markup.
-                'text' => trim(html_entity_decode(strip_tags((string) ($q->question_text ?? '')), ENT_QUOTES)),
-                'type' => $q->typeName(),
-            ])
-            ->values()
-            ->all();
+            ->get();
+
+        $this->libraryPreviewHtml = $this->buildLibraryPreviewHtml($questions);
+        $this->libraryPreviewQuestions = [];
 
         $this->showLibraryFormPreview = true;
+    }
+
+    /**
+     * Render the form questions as scan-page-style markup for the preview modal
+     * (all controls disabled — display only).
+     *
+     * @param  Collection<int, FormBuilderQuestion>  $questions
+     */
+    protected function buildLibraryPreviewHtml(Collection $questions): string
+    {
+        $html = '';
+        $star = '<span style="color:#c00;">*</span>';
+
+        foreach ($questions as $q) {
+            $tid = (int) $q->question_type_id;
+            $label = e(trim(html_entity_decode(strip_tags((string) ($q->question_text ?? '')), ENT_QUOTES)));
+            $req = $q->is_mandatory ? ' '.$star : '';
+            $options = \App\Support\FormBuilderMedia::choiceOptions($q);
+            $choiceLabel = e(\App\Support\FormBuilderMedia::choiceLabel($q));
+
+            $html .= '<div class="sl-fp-q">';
+
+            $html .= match (true) {
+                $tid === 1 => '<label>'.$label.$req.'</label><input type="text" disabled>',
+                in_array($tid, [2, 13, 14], true) => '<div class="sl-fp-html">'.($tid === 13 ? '<hr>' : ($tid === 14 ? '<br>' : $q->question_text)).'</div>',
+                $tid === 10 => '<h1 style="font-size:20px;margin:.2rem 0;">'.$label.'</h1>',
+                $tid === 12 => '<h3 style="font-size:15px;margin:.2rem 0;">'.$label.'</h3>',
+                $tid === 3 => '<label>'.($choiceLabel !== '' ? $choiceLabel : '').$req.'</label>'
+                    .collect($options)->map(fn ($o) => '<div class="sl-fp-choice"><input type="radio" disabled> '.e($o).'</div>')->implode(''),
+                $tid === 4 => '<label>'.($choiceLabel !== '' ? $choiceLabel : '').$req.'</label>'
+                    .collect($options)->map(fn ($o) => '<div class="sl-fp-choice"><input type="checkbox" disabled> '.e($o).'</div>')->implode(''),
+                $tid === 5, $tid === 6 => '<label>'.($choiceLabel !== '' ? $choiceLabel : $label).$req.'</label>'
+                    .'<select disabled><option>Select…</option></select>',
+                $tid === 7 => '<label>'.$label.$req.'</label><div class="sl-fp-grid">Grid ('
+                    .$q->options->where('question_option_type_id', 5)->count().' rows × '
+                    .$q->options->where('question_option_type_id', 6)->count().' columns)</div>',
+                $tid === 8 => '<label>'.$label.$req.'</label><input type="date" disabled>',
+                $tid === 9 => '<label>'.$label.$req.'</label><input type="time" disabled>',
+                $tid === 15 => '<label>'.$label.$req.'</label><textarea rows="2" disabled></textarea>',
+                $tid === 16 => '<label>'.($label !== '' ? $label : 'Signature').$req.'</label><div class="sl-fp-sign">Signature</div>'
+                    .($q->include_name ? '<label>Name</label><input type="text" disabled>' : '')
+                    .($q->include_employer ? '<label>Employer</label><input type="text" disabled>' : '')
+                    .($q->include_email ? '<label>Email</label><input type="text" disabled>' : '')
+                    .($q->include_phone ? '<label>Phone</label><input type="text" disabled>' : ''),
+                $tid === 17 => '<label>'.($label !== '' ? $label : 'Upload').$req.'</label><div class="sl-fp-btn" style="background:#007A01;">Upload</div>',
+                $tid === 18 => '<label>'.($label !== '' ? $label : 'Participant name').$req.'</label><input type="text" disabled placeholder="Full name">',
+                $tid === 19 => '<label>'.($label !== '' ? $label : 'Location').$req.'</label><input type="text" disabled placeholder="Location">'
+                    .'<div class="sl-fp-btn" style="background:#808080;">MAP</div>',
+                $tid === 20 => '<div class="sl-fp-btn" style="background:#'.e($q->button_colour ?: '007A01').';">'.($label !== '' ? $label : 'Open link').'</div>',
+                $tid === 21 => '<div class="sl-fp-btn" style="background:#'.e($q->button_colour ?: '007A01').';">'.e($q->doc_title ?: 'View document').'</div>',
+                $tid === 22 => '<label>'.($label !== '' ? $label : 'SWMS Hazard / Risk').$req.'</label><div class="sl-fp-btn" style="background:#808080;">SWMS Hazard/Risk</div>',
+                $tid === 23 => '<label>'.e($q->doc_title ?: 'Select documents').$req.'</label><div class="sl-fp-btn" style="background:#808080;">Document Menu</div>',
+                $tid === 24 => '<label>'.($label !== '' ? $label : 'Additional recipient email').$req.'</label><input type="text" disabled placeholder="Email">',
+                $tid === 25 => '<div class="sl-fp-btn" style="background:#007A01;">COVID CHECK-IN</div>',
+                default => '<label>'.$label.$req.'</label><input type="text" disabled>',
+            };
+
+            $html .= '</div>';
+        }
+
+        return $html !== '' ? $html : '<p class="sl-efm-empty">This form has no questions.</p>';
     }
 
     public function backFromLibraryFormPreview(): void
     {
         $this->showLibraryFormPreview = false;
         $this->libraryPreviewTitle = '';
+        $this->libraryPreviewHtml = '';
         $this->libraryPreviewQuestions = [];
     }
 
