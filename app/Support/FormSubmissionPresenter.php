@@ -735,7 +735,7 @@ class FormSubmissionPresenter
             if (preg_match('#^data:image/[a-z0-9.+-]+;base64,(.+)$#i', $src, $b)
                 && ($bin = base64_decode($b[1], true)) !== false
                 && @imagecreatefromstring($bin) !== false) {
-                $img = '<img src="'.htmlspecialchars($src, ENT_QUOTES).'" width="300">';
+                $img = '<img src="'.htmlspecialchars($src, ENT_QUOTES).'" width="340">';
             } else {
                 $img = '[signature image]';
             }
@@ -792,7 +792,7 @@ class FormSubmissionPresenter
                         && ($bin = @file_get_contents($abs)) !== false && $bin !== '') {
                         $mime = $info['mime'] ?? 'image/png';
 
-                        return '<img src="data:'.$mime.';base64,'.base64_encode($bin).'" width="300">';
+                        return '<img src="data:'.$mime.';base64,'.base64_encode($bin).'" width="340">';
                     }
                 }
             } catch (\Throwable) {
@@ -824,7 +824,7 @@ class FormSubmissionPresenter
         if (preg_match('#^data:image/[a-z0-9.+-]+;base64,(.+)$#i', $src, $imgMatch)
             && ($imgBin = base64_decode($imgMatch[1], true)) !== false
             && @imagecreatefromstring($imgBin) !== false) {
-            $html = '<img src="'.htmlspecialchars($src, ENT_QUOTES).'" width="260">';
+            $html = '<img src="'.htmlspecialchars($src, ENT_QUOTES).'" width="300">';
         } elseif (str_starts_with($src, 'data:image/')) {
             $html = '[signature image]';
         } else {

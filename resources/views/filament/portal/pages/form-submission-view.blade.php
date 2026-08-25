@@ -6,7 +6,7 @@
             --fs-muted: #6b7280;
             --fs-text: #111827;
             font-family: Arial, Helvetica, sans-serif;
-            max-width: 780px;
+            max-width: 660px;
             margin: 0 auto;
             background: #fff;
             border: 1px solid var(--fs-border);
@@ -46,7 +46,7 @@
         }
         .sl-fsview__a { flex: 1; min-width: 0; font-size: 14px; line-height: 1.5; overflow-wrap: break-word; }
         .sl-fsview__a a { color: var(--fs-green); font-weight: 600; }
-        .sl-fsview__a img { max-width: 420px; width: auto; height: auto; border-radius: 6px; }
+        .sl-fsview__a img { width: 100% !important; max-width: 100% !important; height: auto !important; border-radius: 6px; }
         .sl-fsview__section { padding: 13px 0; border-bottom: 1px solid #f3f4f6; }
         .sl-fsview__section:last-child { border-bottom: 0; }
         .sl-fsview__sec-label {
@@ -59,7 +59,7 @@
         }
         .sl-fsview__sec-body { font-size: 14px; line-height: 1.5; overflow-wrap: break-word; }
         .sl-fsview__sec-body a { color: var(--fs-green); font-weight: 600; }
-        .sl-fsview__sec-body img { max-width: 420px; width: auto; height: auto; border-radius: 6px; }
+        .sl-fsview__sec-body img { width: 100% !important; max-width: 100% !important; height: auto !important; border-radius: 6px; }
         .sl-fsview__sec-body table { width: 100% !important; table-layout: fixed; }
         .sl-fsview__a table { width: 100% !important; table-layout: fixed; }
         .sl-fsview__h1 { font-size: 19px; color: var(--fs-green); margin: 18px 0 4px; font-weight: 700; }

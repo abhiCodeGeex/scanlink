@@ -257,7 +257,7 @@ class FormSubmissions extends Page
         $pdf->SetTitle('Form Submissions — '.$profile->id);
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false);
-        $pdf->SetMargins(12, 12, 12);
+        $pdf->SetMargins(14, 12, 14);
         $pdf->SetAutoPageBreak(true, 12);
         // TCPDF ignores rem-based sizes and defaults tiny — set a readable base font.
         $pdf->SetFont('helvetica', '', 10);
