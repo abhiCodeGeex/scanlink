@@ -114,16 +114,16 @@
                                     <span class="sl-efm-row-no">{{ $index + 1 }}</span>
                                     <div class="sl-efm-row-main">
                                         <span class="sl-efm-row-title">{{ $libraryForm['form_title'] !== '' ? $libraryForm['form_title'] : 'Untitled form' }}</span>
-                                        <span class="sl-efm-row-meta">Library form #{{ $libraryForm['form_id'] }}</span>
+                                        <span class="sl-efm-row-meta">{{ $libraryForm['meta'] ?? 'Library form #'.$libraryForm['form_id'] }}</span>
                                     </div>
                                     <button
                                         type="button"
                                         class="sl-efm-select"
-                                        wire:click="selectExistingFormFromLibrary({{ (int) $libraryForm['form_id'] }})"
+                                        wire:click="selectOtherAccountForm('{{ $libraryForm['type'] ?? 'library' }}', {{ (int) ($libraryForm['id'] ?? $libraryForm['form_id']) }})"
                                     >Select</button>
                                 </div>
                             @empty
-                                <p class="sl-efm-empty">That account has no library forms.</p>
+                                <p class="sl-efm-empty">That account has no forms.</p>
                             @endforelse
                         @else
                             <div class="sl-efm-login">

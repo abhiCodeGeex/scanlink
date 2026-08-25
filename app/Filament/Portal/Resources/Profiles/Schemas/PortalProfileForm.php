@@ -1271,13 +1271,51 @@ class PortalProfileForm
     private static function videoFields(string $statePath): array
     {
         $normalizeVideo = function (array $data): array {
+            // Resolve the chosen source (YouTube / local upload / existing catalogue pick)
+            // into the stored title + video_name pair.
+            $source = (string) ($data['video_source'] ?? 'youtube');
+
+            if ($source === 'upload' && filled($data['video_file'] ?? null)) {
+                $path = is_array($data['video_file']) ? (string) reset($data['video_file']) : (string) $data['video_file'];
+                $data['video_name'] = $path; // e.g. images/video/abc123.mp4 — played as a local file
+                if (blank($data['title'] ?? null)) {
+                    $data['title'] = pathinfo($path, PATHINFO_FILENAME);
+                }
+            } elseif ($source === 'existing' && filled($data['existing_video_id'] ?? null)) {
+                $clientId = \App\Filament\Portal\Concerns\InteractsWithClientMembership::portalMembership()?->client_id;
+                $existing = \App\Models\Video::query()
+                    ->where('client_id', $clientId ?? 0)
+                    ->find((int) $data['existing_video_id']);
+
+                if ($existing) {
+                    $data['video_name'] = (string) $existing->video_name;
+                    if (blank($data['title'] ?? null)) {
+                        $data['title'] = (string) $existing->title;
+                    }
+                }
+            }
+
+            unset($data['video_source'], $data['video_file'], $data['existing_video_id']);
+
             $data['title'] = (string) ($data['title'] ?? '');
             $data['video_name'] = trim((string) ($data['video_name'] ?? ''));
 
             return $data;
         };
 
+        // Legacy exhibit "Add Video" offers three sources: a YouTube URL, uploading a local
+        // video file ("Upload New"), and picking from the client's previously added videos
+        // ("Select From Existing" — legacy getVideosByClient lists the whole client account).
         $videoForm = [
+            Radio::make('video_source')
+                ->hiddenLabel()
+                ->options([
+                    'youtube' => 'YouTube video (URL or ID)',
+                    'upload' => 'Upload new (video file)',
+                    'existing' => 'Select from existing',
+                ])
+                ->default('youtube')
+                ->live(),
             TextInput::make('title')
                 ->label('Video title')
                 ->placeholder('e.g. Product demo')
@@ -1286,9 +1324,39 @@ class PortalProfileForm
             TextInput::make('video_name')
                 ->label('YouTube URL or video ID')
                 ->placeholder('https://www.youtube.com/watch?v=… or video ID')
-                ->required()
+                ->visible(fn (Get $get): bool => ($get('video_source') ?? 'youtube') === 'youtube')
+                ->required(fn (Get $get): bool => ($get('video_source') ?? 'youtube') === 'youtube')
                 ->maxLength(255)
                 ->autocomplete(false),
+            FileUpload::make('video_file')
+                ->label('Select file: (MP4, MOV, WEBM, OGG) (Max 100 MB)')
+                ->disk('public')
+                ->directory('images/video')
+                ->acceptedFileTypes(['video/mp4', 'video/quicktime', 'video/webm', 'video/ogg'])
+                ->maxSize(102400)
+                ->visible(fn (Get $get): bool => $get('video_source') === 'upload')
+                ->required(fn (Get $get): bool => $get('video_source') === 'upload'),
+            Select::make('existing_video_id')
+                ->label('Your existing videos')
+                ->options(function (): array {
+                    $clientId = \App\Filament\Portal\Concerns\InteractsWithClientMembership::portalMembership()?->client_id;
+
+                    if (! $clientId) {
+                        return [];
+                    }
+
+                    return \App\Models\Video::query()
+                        ->where('client_id', $clientId)
+                        ->orderByDesc('id')
+                        ->get()
+                        ->mapWithKeys(fn (\App\Models\Video $v): array => [
+                            (int) $v->id => trim((string) ($v->title ?: $v->video_name)).' — Profile #'.$v->profile_id,
+                        ])
+                        ->all();
+                })
+                ->searchable()
+                ->visible(fn (Get $get): bool => $get('video_source') === 'existing')
+                ->required(fn (Get $get): bool => $get('video_source') === 'existing'),
         ];
 
         return [
@@ -1331,7 +1399,7 @@ class PortalProfileForm
                         ->modalHeading(fn (Repeater $component): string => count($component->getRawState() ?? []) > 0
                             ? 'Add another video'
                             : 'Upload a Video')
-                        ->modalDescription('Add a YouTube URL or video ID and the title shown on the mobile page.')
+                        ->modalDescription('Add a YouTube video, upload a video file, or pick one of your existing videos.')
                         ->modalSubmitActionLabel('Save video')
                         ->modalCancelActionLabel('Cancel')
                         ->modalWidth('md')

@@ -61,6 +61,9 @@ trait HasLegacyFormBuilderSidebar
     /** @var list<array{form_id: int, form_title: string}> */
     public array $otherAccountLibraryForms = [];
 
+    /** Client id of the account signed into via "Another account" (guards form copying). */
+    public ?int $otherAccountClientId = null;
+
     public bool $showOtherAccountLibrary = false;
 
     public bool $showLibraryFormPreview = false;
@@ -109,6 +112,7 @@ trait HasLegacyFormBuilderSidebar
         $this->showLibraryFormPreview = false;
         $this->showOtherAccountLibrary = false;
         $this->otherAccountLibraryForms = [];
+        $this->otherAccountClientId = null;
         $this->otherAccountEmail = '';
         $this->otherAccountPassword = '';
         $this->loadExistingFormModalLists($profile);
@@ -334,22 +338,87 @@ trait HasLegacyFormBuilderSidebar
         $this->existingFormStatus = null;
         $this->otherAccountPassword = '';
         $this->showOtherAccountLibrary = true;
-        // List the WHOLE account's library (main user + sub-users) — matching "My library"
-        // for that account — not just forms saved by the specific user who logged in here.
+        $this->otherAccountClientId = (int) $member->client_id;
+
+        // List EVERYTHING that account can share: its saved library (main user + sub-users)
+        // PLUS every code profile that has a form — not just explicit library saves.
         $accountUserIds = \Illuminate\Support\Facades\DB::table('client_users')
             ->where('client_id', $member->client_id)
             ->pluck('id');
-        $this->otherAccountLibraryForms = FormBuilderLibrary::query()
+
+        $library = FormBuilderLibrary::query()
             ->whereIn('user_id', $accountUserIds->isNotEmpty() ? $accountUserIds : collect([$member->id]))
             ->where('is_deleted_from_library', false)
-            ->orderBy('form_title')
             ->get()
             ->map(fn (FormBuilderLibrary $row): array => [
+                'type' => 'library',
+                'id' => (int) $row->form_id,
                 'form_id' => (int) $row->form_id,
                 'form_title' => (string) ($row->form_title ?: 'Form '.$row->form_id),
-            ])
+                'meta' => 'Library form #'.$row->form_id,
+            ]);
+
+        $libraryFormIds = $library->pluck('form_id')->all();
+
+        $profiles = Profile::query()
+            ->where('client_id', $member->client_id)
+            ->where('form_id', '>', 0)
+            ->active()
+            ->when($libraryFormIds !== [], fn ($q) => $q->whereNotIn('form_id', $libraryFormIds))
+            ->orderByDesc('id')
+            ->get(['id', 'form_id', 'form_title', 'name', 'code_profile_name'])
+            ->map(fn (Profile $p): array => [
+                'type' => 'profile',
+                'id' => (int) $p->id,
+                'form_id' => (int) $p->form_id,
+                'form_title' => (string) ($p->form_title ?: ($p->code_profile_name ?: ($p->name ?: 'Profile #'.$p->id))),
+                'meta' => 'Profile #'.$p->id,
+            ]);
+
+        $this->otherAccountLibraryForms = $library->concat($profiles)
+            ->sortBy('form_title', SORT_NATURAL | SORT_FLAG_CASE)
             ->values()
             ->all();
+    }
+
+    /**
+     * Apply a form chosen on the "Another account" tab: library entries clone via the
+     * library path; plain profile forms clone straight from that profile. The source is
+     * validated against the account that was signed into (otherAccountClientId).
+     */
+    public function selectOtherAccountForm(string $type, int $id): void
+    {
+        if ($type !== 'profile') {
+            $this->selectExistingFormFromLibrary($id);
+
+            return;
+        }
+
+        $profile = $this->sidebarProfile();
+
+        if (! $profile?->exists || ! $this->otherAccountClientId) {
+            return;
+        }
+
+        $source = Profile::query()
+            ->where('client_id', $this->otherAccountClientId)
+            ->where('form_id', '>', 0)
+            ->findOrFail($id);
+
+        $this->existingFormApplying = true;
+        $this->existingFormStatus = 'Please Wait. Applying Form to Profile...';
+
+        $cloned = app(FormLibraryService::class)->copyFromProfile((int) $source->id, $profile);
+
+        if ($cloned === 0) {
+            $this->existingFormApplying = false;
+            $this->existingFormStatus = null;
+            Notification::make()->title("That profile's form has no questions")->warning()->send();
+
+            return;
+        }
+
+        $this->finishExistingFormApply($profile, $cloned);
     }
 
     protected function finishExistingFormApply(Profile $profile, int $cloned): void
@@ -755,20 +824,17 @@ trait HasLegacyFormBuilderSidebar
     }
 
     /**
-     * Persist analytics immediately; once on, iframe reloads in locked mode (legacy behaviour).
+     * Legacy parity: ticking "Enable Form Analytics" does NOT persist or lock anything —
+     * the flag (and the form-edit lock) only take effect when the profile is actually
+     * saved. Until then the user can freely untick the box to change their mind.
      */
     public function updatedDataEnableFormAnalytics(mixed $value): void
     {
-        $wasLocked = (bool) ($this->sidebarProfile()?->enable_form_analytics);
-        $this->persistFormBuilderSidebarFlags(notifyEnable: false);
+        $enabled = filter_var($value, FILTER_VALIDATE_BOOLEAN);
 
-        $enabled = filter_var(data_get($this->data, 'enable_form_analytics'), FILTER_VALIDATE_BOOLEAN);
-
-        if ($enabled && ! $wasLocked) {
-            $this->formBuilderEmbedNonce++;
-
+        if ($enabled && ! (bool) ($this->sidebarProfile()?->enable_form_analytics)) {
             Notification::make()
-                ->title('Form Analytics enabled — form editing is now locked')
+                ->title('Form Analytics will be enabled when you save — form editing locks after saving.')
                 ->warning()
                 ->send();
         }

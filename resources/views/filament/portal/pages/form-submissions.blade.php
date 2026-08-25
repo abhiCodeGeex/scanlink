@@ -277,38 +277,8 @@
         </div>
     </div>
 
-    {{-- Date-picker popup for the From/To Date filters (flatpickr, same as the participant list). --}}
-    <link rel="stylesheet" href="{{ asset('vendor/flatpickr/flatpickr.min.css') }}">
-    <script src="{{ asset('vendor/flatpickr/flatpickr.min.js') }}"></script>
-    <script>
-        window.slFsLogDatePicker = function (config) {
-            return {
-                fp: null,
-                init() {
-                    if (typeof flatpickr !== 'function' || ! this.$refs.input) {
-                        return;
-                    }
-                    var self = this;
-                    this.fp = flatpickr(this.$refs.input, {
-                        dateFormat: 'd/m/Y',
-                        allowInput: true,
-                        disableMobile: true,
-                        defaultDate: config.initial || null,
-                        onChange: function (dates, str) { self.$wire.set(config.property, str || ''); },
-                        onClose: function (dates, str) { self.$wire.set(config.property, str || ''); },
-                    });
-                },
-                destroy() {
-                    if (this.fp) { this.fp.destroy(); this.fp = null; }
-                },
-            };
-        };
-    </script>
-
-    <style>
-        .flatpickr-calendar { z-index: 100001 !important; font-family: Arial, Helvetica, sans-serif !important; }
-        .flatpickr-day.selected, .flatpickr-day.selected:hover { background: #008901 !important; border-color: #008901 !important; }
-        .flatpickr-day.today { border-color: #008901 !important; }
-        .flatpickr-day:hover { background: #e8f6e8 !important; border-color: #e8f6e8 !important; }
-    </style>
+    {{-- Date-picker assets + slFsLogDatePicker are loaded panel-wide via the
+         filament.hooks.flatpickr-datepicker HEAD_END hook (SPA navigation skips
+         page-level <script> tags, which is why they lived here before and only
+         worked after a hard refresh). --}}
 </x-filament-panels::page>

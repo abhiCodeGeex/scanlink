@@ -153,6 +153,10 @@ class ClientPortalPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
+                fn (): string => view('filament.hooks.flatpickr-datepicker')->render(),
+            )
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
                 fn (): string => view('filament.hooks.mobile-topbar-fix')->render(),
             )
             ->renderHook(
