@@ -508,7 +508,7 @@ class FormSubmissionPresenter
                 '<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;table-layout:fixed;border-collapse:collapse;">'
                 .collect($row['fields'])->map(static function (array $field): string {
                     return '<tr>'
-                        .'<td style="padding:4px 12px 4px 0;color:#6b7280;font-size:13px;width:28%;vertical-align:top;">'
+                        .'<td style="padding:4px 12px 4px 0;color:#6b7280;font-size:13px;width:24%;vertical-align:top;">'
                         .e($field['label'])
                         .'</td>'
                         .'<td style="padding:4px 0;color:#111827;font-size:14px;vertical-align:top;">'
@@ -542,8 +542,8 @@ class FormSubmissionPresenter
             'fields' => '<table cellpadding="4" cellspacing="0" border="0" width="100%">'
                 .collect($row['fields'])->map(static function (array $field): string {
                     return '<tr>'
-                        .'<td width="28%" style="color:#6b7280;font-size:9pt;"><b>'.e($field['label']).'</b></td>'
-                        .'<td width="72%" style="font-size:10pt;color:#111827;">'.self::pdfText((string) $field['value']).'</td>'
+                        .'<td width="24%" style="color:#6b7280;font-size:9pt;"><b>'.e($field['label']).'</b></td>'
+                        .'<td width="76%" style="font-size:10pt;color:#111827;">'.self::pdfText((string) $field['value']).'</td>'
                         .'</tr>';
                 })->implode('')
                 .'</table>',
@@ -574,7 +574,7 @@ class FormSubmissionPresenter
 
             $rows = collect($fields)->map(static function (array $field): string {
                 return '<tr>'
-                    .'<td style="padding:3px 12px 3px 0;color:#6b7280;font-size:13px;width:28%;vertical-align:top;">'
+                    .'<td style="padding:3px 12px 3px 0;color:#6b7280;font-size:13px;width:24%;vertical-align:top;">'
                     .e($field['label'])
                     .'</td>'
                     .'<td style="padding:3px 0;color:#111827;font-size:14px;vertical-align:top;">'
@@ -626,7 +626,7 @@ class FormSubmissionPresenter
                     return '<div style="margin:4px 0;">'
                         .'<div style="color:#6b7280;font-size:13px;margin:0 0 2px;">'.e($field['label']).'</div>'
                         .'<img src="'.e($src).'" alt="Signature" '
-                        .'style="max-width:280px;height:auto;border:1px solid #e5e7eb;border-radius:4px;background:#fff;">'
+                        .'style="max-width:340px;height:auto;border:1px solid #e5e7eb;border-radius:4px;background:#fff;">'
                         .'</div>';
                 }
 
@@ -671,8 +671,8 @@ class FormSubmissionPresenter
                     : nl2br(e((string) $field['value']));
 
                 return '<tr>'
-                    .'<td width="28%" style="color:#6b7280;font-size:9pt;"><b>'.e($field['label']).'</b></td>'
-                    .'<td width="72%" style="font-size:10pt;color:#111827;">'.$value.'</td>'
+                    .'<td width="24%" style="color:#6b7280;font-size:9pt;"><b>'.e($field['label']).'</b></td>'
+                    .'<td width="76%" style="font-size:10pt;color:#111827;">'.$value.'</td>'
                     .'</tr>';
             })->implode('');
 
@@ -710,8 +710,8 @@ class FormSubmissionPresenter
                     : nl2br(e((string) $field['value']));
 
                 return '<tr>'
-                    .'<td width="28%" style="color:#6b7280;font-size:9pt;"><b>'.e($field['label']).'</b></td>'
-                    .'<td width="72%" style="font-size:10pt;color:#111827;">'.$value.'</td>'
+                    .'<td width="24%" style="color:#6b7280;font-size:9pt;"><b>'.e($field['label']).'</b></td>'
+                    .'<td width="76%" style="font-size:10pt;color:#111827;">'.$value.'</td>'
                     .'</tr>';
             })->implode('');
 
@@ -735,7 +735,7 @@ class FormSubmissionPresenter
             if (preg_match('#^data:image/[a-z0-9.+-]+;base64,(.+)$#i', $src, $b)
                 && ($bin = base64_decode($b[1], true)) !== false
                 && @imagecreatefromstring($bin) !== false) {
-                $img = '<img src="'.htmlspecialchars($src, ENT_QUOTES).'" width="200">';
+                $img = '<img src="'.htmlspecialchars($src, ENT_QUOTES).'" width="300">';
             } else {
                 $img = '[signature image]';
             }
@@ -792,7 +792,7 @@ class FormSubmissionPresenter
                         && ($bin = @file_get_contents($abs)) !== false && $bin !== '') {
                         $mime = $info['mime'] ?? 'image/png';
 
-                        return '<img src="data:'.$mime.';base64,'.base64_encode($bin).'" width="200">';
+                        return '<img src="data:'.$mime.';base64,'.base64_encode($bin).'" width="300">';
                     }
                 }
             } catch (\Throwable) {
@@ -805,7 +805,7 @@ class FormSubmissionPresenter
 
     protected static function signatureHtml(array $row): HtmlString
     {
-        $html = '<img src="'.e($row['signature_src']).'" alt="Signature" style="max-width:280px;height:auto;border:1px solid #e5e7eb;border-radius:4px;background:#fff;">';
+        $html = '<img src="'.e($row['signature_src']).'" alt="Signature" style="max-width:340px;height:auto;border:1px solid #e5e7eb;border-radius:4px;background:#fff;">';
 
         if (filled($row['signature_meta'])) {
             $html .= '<div style="margin-top:6px;color:#4b5563;font-size:13px;">'
@@ -824,7 +824,7 @@ class FormSubmissionPresenter
         if (preg_match('#^data:image/[a-z0-9.+-]+;base64,(.+)$#i', $src, $imgMatch)
             && ($imgBin = base64_decode($imgMatch[1], true)) !== false
             && @imagecreatefromstring($imgBin) !== false) {
-            $html = '<img src="'.htmlspecialchars($src, ENT_QUOTES).'" width="200">';
+            $html = '<img src="'.htmlspecialchars($src, ENT_QUOTES).'" width="260">';
         } elseif (str_starts_with($src, 'data:image/')) {
             $html = '[signature image]';
         } else {

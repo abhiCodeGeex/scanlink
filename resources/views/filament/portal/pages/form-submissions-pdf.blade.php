@@ -84,8 +84,8 @@
             <table cellpadding="6" cellspacing="0" width="100%" style="font-size:10pt;">
                 @foreach ($seg['rows'] as $row)
                     <tr>
-                        <td width="30%" style="color:#6b7280;font-size:9.5pt;"><b>{{ $row['label'] }}</b></td>
-                        <td width="70%" style="color:#111827;">{!! $row['html'] !!}</td>
+                        <td width="26%" style="color:#6b7280;font-size:9.5pt;"><b>{{ $row['label'] }}</b></td>
+                        <td width="74%" style="color:#111827;">{!! $row['html'] !!}</td>
                     </tr>
                 @endforeach
             </table>

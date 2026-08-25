@@ -41,8 +41,8 @@
         .row { display: flex; gap: 20px; padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
         .row:last-child { border-bottom: 0; }
         .q {
-            flex: 0 0 30%;
-            max-width: 30%;
+            flex: 0 0 26%;
+            max-width: 26%;
             font-size: 12px;
             font-weight: 700;
             letter-spacing: 0.02em;
@@ -53,7 +53,7 @@
         }
         .a { flex: 1; min-width: 0; line-height: 1.5; overflow-wrap: break-word; }
         .a a { color: #008901; font-weight: 600; }
-        .a img { max-width: 280px; height: auto; border-radius: 6px; }
+        .a img { max-width: 420px; width: auto; height: auto; border-radius: 6px; }
         .a table { width: 100% !important; table-layout: fixed; }
         .section { padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
         .section:last-child { border-bottom: 0; }
@@ -67,7 +67,7 @@
         }
         .sec-body { line-height: 1.5; overflow-wrap: break-word; }
         .sec-body a { color: #008901; font-weight: 600; }
-        .sec-body img { max-width: 280px; height: auto; border-radius: 6px; }
+        .sec-body img { max-width: 420px; width: auto; height: auto; border-radius: 6px; }
         .sec-body table { width: 100% !important; table-layout: fixed; }
         .print-bar { max-width: 760px; margin: 0 auto 14px; text-align: right; }
         .print-btn {

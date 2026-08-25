@@ -34,8 +34,8 @@
         .sl-fsview__row { display: flex; gap: 20px; padding: 13px 0; border-bottom: 1px solid #f3f4f6; }
         .sl-fsview__row:last-child { border-bottom: 0; }
         .sl-fsview__q {
-            flex: 0 0 30%;
-            max-width: 30%;
+            flex: 0 0 26%;
+            max-width: 26%;
             font-size: 12px;
             font-weight: 700;
             letter-spacing: 0.02em;
@@ -46,7 +46,7 @@
         }
         .sl-fsview__a { flex: 1; min-width: 0; font-size: 14px; line-height: 1.5; overflow-wrap: break-word; }
         .sl-fsview__a a { color: var(--fs-green); font-weight: 600; }
-        .sl-fsview__a img { max-width: 280px; height: auto; border-radius: 6px; }
+        .sl-fsview__a img { max-width: 420px; width: auto; height: auto; border-radius: 6px; }
         .sl-fsview__section { padding: 13px 0; border-bottom: 1px solid #f3f4f6; }
         .sl-fsview__section:last-child { border-bottom: 0; }
         .sl-fsview__sec-label {
@@ -59,7 +59,7 @@
         }
         .sl-fsview__sec-body { font-size: 14px; line-height: 1.5; overflow-wrap: break-word; }
         .sl-fsview__sec-body a { color: var(--fs-green); font-weight: 600; }
-        .sl-fsview__sec-body img { max-width: 280px; height: auto; border-radius: 6px; }
+        .sl-fsview__sec-body img { max-width: 420px; width: auto; height: auto; border-radius: 6px; }
         .sl-fsview__sec-body table { width: 100% !important; table-layout: fixed; }
         .sl-fsview__a table { width: 100% !important; table-layout: fixed; }
         .sl-fsview__h1 { font-size: 19px; color: var(--fs-green); margin: 18px 0 4px; font-weight: 700; }
