@@ -225,6 +225,7 @@ class MobileProfileController extends Controller
 
         $answerMap = $validated['answers'] ?? [];
         $rawAnswers = $answerMap;
+        $uploadedFilePaths = [];
 
         foreach ($validated['answers_sig_text'] ?? [] as $questionId => $sigText) {
             if (filled($sigText) && empty($answerMap[$questionId])) {
@@ -235,6 +236,18 @@ class MobileProfileController extends Controller
         foreach ($validated['answers_meta'] ?? [] as $questionId => $meta) {
             if (! is_array($meta)) {
                 continue;
+            }
+
+            // Signatures arrive as canvas data URIs. Persist them as real PNG files so the
+            // email (clients block data: images), web response and PDF can all render them.
+            foreach ($meta as $metaKey => $metaValue) {
+                if (is_string($metaValue) && str_starts_with($metaValue, 'data:image')) {
+                    $storedSig = $this->storeSignatureImage($metaValue, (int) $profile->id);
+                    if ($storedSig !== null) {
+                        $meta[$metaKey] = $storedSig;
+                        $uploadedFilePaths[] = $storedSig;
+                    }
+                }
             }
 
             $question = $questions->get((int) $questionId);
@@ -300,7 +313,6 @@ class MobileProfileController extends Controller
         }
 
         $files = $request->file('answers_file') ?? [];
-        $uploadedFilePaths = [];
 
         foreach ($files as $questionId => $file) {
             // SWMS (type 22) photos are stored per hazard row in the dedicated SWMS pass below.
@@ -438,6 +450,17 @@ class MobileProfileController extends Controller
                 foreach ($sigFields as $field) {
                     $value = trim((string) ($meta[$field][$i] ?? ''));
                     $value = str_replace(['@@ROW@@', '@@F@@'], ' ', $value);
+                    // Persist drawn signatures as PNG files (data: images are blocked by
+                    // email clients and bloat the answer column).
+                    if ($field === 'signature' && str_starts_with($value, 'data:image')) {
+                        $storedSig = $this->storeSignatureImage($value, (int) $profile->id);
+                        if ($storedSig !== null) {
+                            $value = $storedSig;
+                            $uploadedFilePaths[] = $storedSig;
+                        } else {
+                            $value = '';
+                        }
+                    }
                     if ($value !== '') {
                         $segments[] = $field.'='.$value;
                     }
@@ -585,6 +608,28 @@ class MobileProfileController extends Controller
             ->update(['datetime' => null]);
 
         return redirect()->route('scan.show', [$clientUrl, $profileId]);
+    }
+
+    /**
+     * Persist a canvas signature (data:image URI) as a real PNG on the public disk.
+     * Returns the stored path, or null when the payload isn't a valid image.
+     */
+    protected function storeSignatureImage(string $dataUri, int $profileId): ?string
+    {
+        if (! preg_match('#^data:image/(?:png|jpe?g);base64,(.+)$#i', $dataUri, $m)) {
+            return null;
+        }
+
+        $binary = base64_decode($m[1], true);
+
+        if ($binary === false || @imagecreatefromstring($binary) === false) {
+            return null;
+        }
+
+        $path = 'form-uploads/'.$profileId.'/sig_'.Str::random(12).'.png';
+        Storage::disk('public')->put($path, $binary);
+
+        return $path;
     }
 
     protected function resolveProfile(string $clientUrl, int $profileId, bool $eager = false): Profile

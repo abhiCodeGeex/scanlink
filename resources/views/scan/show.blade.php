@@ -996,6 +996,73 @@
                 })();
             </script>
             <script>
+                // Every file input shows a live preview of what was chosen — image thumbnails
+                // or a document chip — each with a ✕ to remove that file before submitting.
+                (function () {
+                    function renderFilePreview(input) {
+                        var wrap = input.nextElementSibling;
+                        if (!wrap || !wrap.classList || !wrap.classList.contains('sl-file-preview')) {
+                            wrap = document.createElement('div');
+                            wrap.className = 'sl-file-preview';
+                            wrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 2px;';
+                            input.insertAdjacentElement('afterend', wrap);
+                        }
+                        wrap.innerHTML = '';
+                        Array.prototype.forEach.call(input.files || [], function (f, idx) {
+                            var item = document.createElement('div');
+                            item.style.cssText = 'position:relative;border:1px solid #d1d5db;border-radius:8px;background:#fff;padding:4px;max-width:130px;';
+                            if (/^image\//.test(f.type)) {
+                                var img = document.createElement('img');
+                                img.src = URL.createObjectURL(f);
+                                img.onload = function () { URL.revokeObjectURL(img.src); };
+                                img.style.cssText = 'display:block;width:120px;height:90px;object-fit:cover;border-radius:5px;';
+                                item.appendChild(img);
+                            } else {
+                                var doc = document.createElement('div');
+                                doc.textContent = '📄 ' + f.name;
+                                doc.style.cssText = 'font-size:.78rem;color:#374151;max-width:120px;padding:14px 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+                                item.appendChild(doc);
+                            }
+                            var rm = document.createElement('button');
+                            rm.type = 'button';
+                            rm.className = 'sl-file-remove';
+                            rm.setAttribute('data-idx', idx);
+                            rm.textContent = '×';
+                            rm.title = 'Remove';
+                            rm.style.cssText = 'position:absolute;top:-7px;right:-7px;width:20px;height:20px;line-height:17px;text-align:center;border:0;border-radius:50%;background:#c62828;color:#fff;font-size:14px;cursor:pointer;padding:0;';
+                            item.appendChild(rm);
+                            wrap.appendChild(item);
+                        });
+                    }
+
+                    document.addEventListener('change', function (e) {
+                        if (e.target && e.target.matches && e.target.matches('form input[type="file"]')) {
+                            renderFilePreview(e.target);
+                        }
+                    });
+
+                    document.addEventListener('click', function (e) {
+                        var rm = e.target.closest && e.target.closest('.sl-file-remove');
+                        if (!rm) return;
+                        e.preventDefault();
+                        var wrap = rm.closest('.sl-file-preview');
+                        var input = wrap && wrap.previousElementSibling;
+                        if (!input || input.type !== 'file') return;
+                        var idx = parseInt(rm.getAttribute('data-idx'), 10);
+                        try {
+                            var dt = new DataTransfer();
+                            Array.prototype.forEach.call(input.files || [], function (f, i) {
+                                if (i !== idx) { dt.items.add(f); }
+                            });
+                            input.files = dt.files;
+                        } catch (err) {
+                            input.value = '';
+                        }
+                        renderFilePreview(input);
+                    });
+                })();
+            </script>
+            <script>
                 // Location Function (type 19): "Locate me" fills GPS coords; "View map" opens Google Maps.
                 (function () {
                     document.addEventListener('click', function (e) {

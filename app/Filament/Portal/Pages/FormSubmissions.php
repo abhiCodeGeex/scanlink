@@ -274,8 +274,13 @@ class FormSubmissions extends Page
                 ->with('question')
                 ->where('profile_id', $profile->id)
                 ->where('session_id', $sessionId)
-                ->orderBy('question_id')
-                ->get();
+                ->get()
+                // Same serial order as the form itself (question_order, not creation id).
+                ->sortBy(fn (FormBuilderAnswer $a): array => [
+                    (int) ($a->question?->question_order ?? PHP_INT_MAX),
+                    (int) $a->question_id,
+                ])
+                ->values();
 
             if ($answers->isEmpty()) {
                 continue;
@@ -372,8 +377,13 @@ class FormSubmissions extends Page
             ->with('question')
             ->where('profile_id', $profile->id)
             ->where('session_id', $sessionId)
-            ->orderBy('question_id')
-            ->get();
+            ->get()
+            // Same serial order as the form itself (question_order, not creation id).
+            ->sortBy(fn (FormBuilderAnswer $a): array => [
+                (int) ($a->question?->question_order ?? PHP_INT_MAX),
+                (int) $a->question_id,
+            ])
+            ->values();
 
         abort_if($answers->isEmpty(), 404);
 

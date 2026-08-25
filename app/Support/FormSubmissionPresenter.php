@@ -50,12 +50,45 @@ class FormSubmissionPresenter
         }
 
         $rows = [];
+        $used = [];
 
+        // Render in the SAME order the form showed its questions (question_order) — the
+        // answer map appends meta-only items (SWMS / signatures / uploads) at the end,
+        // which put them out of sequence in the email and PDF.
+        $ordered = $byId->sortBy(fn (FormBuilderQuestion $q): int => (int) $q->question_order)->values();
+
+        foreach ($ordered as $question) {
+            $qid = (int) $question->question_id;
+            $answer = $savedAnswers[$qid] ?? $savedAnswers[(string) $qid] ?? null;
+
+            if ($answer === null) {
+                continue;
+            }
+
+            $used[$qid] = true;
+
+            if (in_array((int) $question->question_type_id, self::DISPLAY_ONLY_TYPES, true)) {
+                continue;
+            }
+
+            $raw = trim((string) $answer);
+
+            if ($raw === '') {
+                continue;
+            }
+
+            $rows[] = self::presentOne($question, $raw);
+        }
+
+        // Answers whose question no longer exists (deleted after submission) — keep at the end.
         foreach ($savedAnswers as $questionId => $answer) {
-            $question = $byId->get((int) $questionId);
-            $typeId = (int) ($question?->question_type_id ?? 0);
+            if (isset($used[(int) $questionId])) {
+                continue;
+            }
 
-            if (in_array($typeId, self::DISPLAY_ONLY_TYPES, true)) {
+            $question = $byId->get((int) $questionId);
+
+            if ($question && in_array((int) $question->question_type_id, self::DISPLAY_ONLY_TYPES, true)) {
                 continue;
             }
 
@@ -488,7 +521,7 @@ class FormSubmissionPresenter
                 .'</table>',
             default => ($v = trim((string) ($row['value'] ?? ''))) === ''
                 ? '&nbsp;'
-                : nl2br(e($v)),
+                : self::pdfText($v),
         };
     }
 
@@ -556,9 +589,15 @@ class FormSubmissionPresenter
 
             $rows = collect($fields)->map(static function (array $field): string {
                 if (! empty($field['is_signature'])) {
+                    $value = (string) $field['value'];
+                    // Stored signature file (new) or inline data URI (older submissions).
+                    $src = str_starts_with($value, 'data:image')
+                        ? $value
+                        : asset('storage/'.ltrim($value, '/'));
+
                     return '<div style="margin:4px 0;">'
                         .'<div style="color:#6b7280;font-size:13px;margin:0 0 2px;">'.e($field['label']).'</div>'
-                        .'<img src="'.e((string) $field['value']).'" alt="Signature" '
+                        .'<img src="'.e($src).'" alt="Signature" '
                         .'style="max-width:280px;height:auto;border:1px solid #e5e7eb;border-radius:4px;background:#fff;">'
                         .'</div>';
                 }
@@ -621,7 +660,7 @@ class FormSubmissionPresenter
 
             $rows = collect($fields)->map(static function (array $field): string {
                 $value = $field['is_file']
-                    ? e(basename((string) $field['value']))
+                    ? self::pdfFileHtml((string) $field['value'])
                     : nl2br(e((string) $field['value']));
 
                 return '<tr>'
@@ -658,7 +697,57 @@ class FormSubmissionPresenter
             return ($label !== '' ? '<b>'.e($label).':</b><br>' : '').$img;
         }
 
+        // Stored upload paths ("form-uploads/…", optionally "Label: path1, path2"): embed
+        // IMAGES into the PDF from disk; render documents as clickable links.
+        if (str_contains($raw, 'form-uploads/')) {
+            $label = '';
+            $value = $raw;
+            if (preg_match('/^([^:]{1,40}):\s*(form-uploads\/.+)$/i', $raw, $lm)) {
+                $label = trim($lm[1]);
+                $value = trim($lm[2]);
+            }
+
+            $tokens = array_values(array_filter(array_map('trim', explode(',', $value))));
+
+            if ($tokens !== [] && collect($tokens)->every(fn (string $t): bool => str_contains($t, 'form-uploads/'))) {
+                $parts = array_map(fn (string $t): string => self::pdfFileHtml($t), $tokens);
+
+                return ($label !== '' && strcasecmp($label, 'File') !== 0 ? '<b>'.e($label).':</b><br>' : '')
+                    .implode('<br>', $parts);
+            }
+        }
+
         return nl2br(e($raw));
+    }
+
+    /**
+     * One stored upload for the PDF: images embedded from the local disk (validated),
+     * anything else a clickable link with the filename.
+     */
+    protected static function pdfFileHtml(string $path): string
+    {
+        $path = ltrim($path, '/');
+
+        // Bare form-builder filenames (fb_doc_* / fb_img_*) live under form-builder/… .
+        $path = FormAnswerHtml::builderFilePath($path) ?? $path;
+
+        if (preg_match('/\.(png|jpe?g|gif|webp)$/i', $path)) {
+            try {
+                if (\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+                    $abs = \Illuminate\Support\Facades\Storage::disk('public')->path($path);
+                    if (($info = @getimagesize($abs)) !== false
+                        && ($bin = @file_get_contents($abs)) !== false && $bin !== '') {
+                        $mime = $info['mime'] ?? 'image/png';
+
+                        return '<img src="data:'.$mime.';base64,'.base64_encode($bin).'" width="200">';
+                    }
+                }
+            } catch (\Throwable) {
+                // fall through to the link
+            }
+        }
+
+        return '<a href="'.e(asset('storage/'.$path)).'">'.e(basename($path)).'</a>';
     }
 
     protected static function signatureHtml(array $row): HtmlString
