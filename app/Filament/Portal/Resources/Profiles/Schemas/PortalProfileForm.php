@@ -16,6 +16,7 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -146,14 +147,10 @@ class PortalProfileForm
                             ->label('Email Text:')
                             ->helperText('The default text is "Click here to find a service provider near you"')
                             ->columnSpanFull(),
-                        Textarea::make('voc_email_sign_line1')
+                        RichEditor::make('voc_email_sign_line1')
                             ->label('Email Signature:')
                             ->helperText('The default signature is "ScanLink Support Team"')
-                            ->rows(4)
-                            ->extraInputAttributes([
-                                'class' => 'sl-ckeditor',
-                                'data-ck-toolbar' => 'custom',
-                            ])
+                            ->toolbarButtons(['bold', 'italic', 'underline', 'bulletList', 'orderedList', 'link', 'undo', 'redo'])
                             ->columnSpanFull(),
                         // Legacy keeps a second signature line but hides it (display:none); the
                         // CKEditor rich-text line 1 supersedes it. Kept hidden for data round-trip.
@@ -246,9 +243,11 @@ class PortalProfileForm
                             // (otherwise the textarea keeps its browser "required" attribute and
                             // blocks save even though the title bar is disabled).
                             ->live(),
-                        Textarea::make('voc_title_bar_text')
+                        // Filament's native RichEditor: Livewire-first, so content ALWAYS reaches
+                        // the server on save and the editor survives re-renders (the old CKEditor
+                        // bridge randomly disappeared and cleared the field).
+                        RichEditor::make('voc_title_bar_text')
                             ->label('Text:')
-                            ->rows(4)
                             // Only shown while "Enable" is ticked (hidden fields aren't
                             // dehydrated, so the stored text survives a disabled save).
                             ->visible(fn (Get $get): bool => (bool) $get('voc_title_bar_enable'))
@@ -256,13 +255,7 @@ class PortalProfileForm
                             // (Enable is ->live() so this re-evaluates when it's unticked.)
                             ->required(fn (Get $get): bool => (bool) $get('voc_title_bar_enable'))
                             ->validationMessages(['required' => 'Please enter title bar text.'])
-                            // CKEditor is safe again: orphaned instances (after Livewire morphs)
-                            // are destroyed + re-inited in legacy-profile-page, so the editor no
-                            // longer clears the value on save.
-                            ->extraInputAttributes([
-                                'class' => 'sl-ckeditor',
-                                'data-ck-toolbar' => 'custom1',
-                            ])
+                            ->toolbarButtons(['bold', 'italic', 'underline', 'bulletList', 'orderedList', 'undo', 'redo'])
                             ->columnSpanFull(),
                         ColorPicker::make('voc_title_bar_colour')
                             ->label('Title Bar Background Colour:')
@@ -422,13 +415,9 @@ class PortalProfileForm
                     ->extraAttributes(['class' => 'SectionTitleBox sl-section-box sl-sortable-tile', 'data-tile-id' => 15])
                     ->schema([
                         TextInput::make('name2')->hiddenLabel()->maxLength(255),
-                        Textarea::make('description2')
+                        RichEditor::make('description2')
                             ->hiddenLabel()
-                            ->rows(4)
-                            ->extraInputAttributes([
-                                'class' => 'sl-ckeditor',
-                                'data-ck-toolbar' => 'MyToolbar',
-                            ])
+                            ->toolbarButtons(['bold', 'italic', 'underline', 'bulletList', 'orderedList', 'link', 'undo', 'redo'])
                             ->columnSpanFull(),
                     ])
                     ->visible(fn (Get $get): bool => self::slug($get('type_id')) === 'exhibit'),

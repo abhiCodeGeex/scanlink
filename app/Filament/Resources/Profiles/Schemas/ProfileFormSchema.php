@@ -12,6 +12,7 @@ use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -199,14 +200,10 @@ class ProfileFormSchema
                 Checkbox::make('show_name')->label('Name:')->inline()->default(false),
                 TextInput::make('name')->hiddenLabel()->maxLength(255),
                 Checkbox::make('show_description')->label('Description:')->inline()->default(false),
-                // Legacy asset/edit.php Description is CKEditor rich-text (class="input ckeditor").
-                Textarea::make('description')
+                // Rich text via Filament's native RichEditor (Livewire-first: reliable sync + instant load).
+                RichEditor::make('description')
                     ->hiddenLabel()
-                    ->rows(4)
-                    ->extraInputAttributes([
-                        'class' => 'sl-ckeditor',
-                        'data-ck-toolbar' => 'MyToolbar',
-                    ])
+                    ->toolbarButtons(['bold', 'italic', 'underline', 'bulletList', 'orderedList', 'link', 'undo', 'redo'])
                     ->columnSpanFull(),
                 Checkbox::make('show_address')->label('Address:')->inline()->default(false),
                 TextInput::make('address')
@@ -250,26 +247,18 @@ class ProfileFormSchema
                 // Legacy misc/index.php Words: Name + unlabeled description (CKEditor MyToolbar).
                 // Legacy: only code_profile_name is required — Name is not.
                 TextInput::make('name')->label('Name:'),
-                Textarea::make('description')
+                RichEditor::make('description')
                     ->hiddenLabel()
-                    ->rows(4)
-                    ->extraInputAttributes([
-                        'class' => 'sl-ckeditor',
-                        'data-ck-toolbar' => 'MyToolbar',
-                    ])
+                    ->toolbarButtons(['bold', 'italic', 'underline', 'bulletList', 'orderedList', 'link', 'undo', 'redo'])
                     ->columnSpanFull(),
             ],
             'exhibit' => [
-                // Legacy exhibit Words tile — unlabeled name + description (CKEditor on live).
+                // Legacy exhibit Words tile — unlabeled name + description (rich text on live).
                 // Legacy: only code_profile_name is required — name is not.
                 TextInput::make('name')->hiddenLabel(),
-                Textarea::make('description')
+                RichEditor::make('description')
                     ->hiddenLabel()
-                    ->rows(4)
-                    ->extraInputAttributes([
-                        'class' => 'sl-ckeditor',
-                        'data-ck-toolbar' => 'MyToolbar',
-                    ])
+                    ->toolbarButtons(['bold', 'italic', 'underline', 'bulletList', 'orderedList', 'link', 'undo', 'redo'])
                     ->columnSpanFull(),
             ],
             'voc' => [

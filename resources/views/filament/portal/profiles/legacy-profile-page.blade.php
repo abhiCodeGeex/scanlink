@@ -9,7 +9,11 @@
         $isExhibit = ! empty($previewData['isExhibit']);
         $isMisc = ! empty($previewData['isMisc']);
         $isAsset = ! empty($previewData['isAsset']);
-        $usesCkEditor = $isVoc || $isExhibit || $isMisc || $isAsset;
+        // CKEditor bridge retired: all rich-text fields now use Filament's native RichEditor
+        // (Livewire-first — reliable sync, survives morphs, instant load). Keeping the flag
+        // false skips the 500KB ckeditor.js and the fragile orphan/re-init machinery below.
+        // (The legacy Form Builder iframe has its own CKEditor and is unaffected.)
+        $usesCkEditor = false;
         $editorClass = trim(
             ($isUrlLinkCode ? 'sl-profile-editor--code' : '')
             .' '.($isSurvey ? 'sl-profile-editor--survey' : '')
