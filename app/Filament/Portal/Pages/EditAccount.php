@@ -516,8 +516,9 @@ class EditAccount extends Page implements HasTable
                     $this->permissionCheckbox('access_download', 'download.png', 'Download QR/DM code'),
                     $this->permissionCheckbox('access_label', 'order-label.png', 'Order Labels'),
                     $this->permissionCheckbox('access_log', 'visitor_log.png', 'View Visitor Log'),
-                    $this->permissionCheckbox('access_delete', 'delete_profile.png', 'Delete Profile')
-                        ->visible(fn (Get $get): bool => (bool) $get('enable_admin_access')),
+                    // Legacy edit_user.php shows all 8 permissions unconditionally — Delete
+                    // Profile included (it was wrongly gated behind Enable Admin Access here).
+                    $this->permissionCheckbox('access_delete', 'delete_profile.png', 'Delete Profile'),
                 ]),
             ViewField::make('code_profile_ids')
                 ->label('')
