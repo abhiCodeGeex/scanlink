@@ -588,14 +588,34 @@
         #div_drop_area .text-black {
             width: 100% !important;
             box-sizing: border-box;
-            padding: 8px 10px !important;
-            margin: 2px 0 6px !important;
+            min-height: 20px;
+            padding: 6px 10px !important;
+            margin: 0 0 2px !important;
             border: 1px dashed transparent;
             border-radius: 8px;
             font-size: 13.5px;
             color: #374151;
             line-height: 1.7;
         }
+        /* The legacy preview markup sprinkles trailing <br>s after every field — the blocks
+           already carry their own margins, so the extra line-boxes only doubled the gaps.
+           (Blank Space stays selectable through the block's min-height.) */
+        #div_drop_area .text-black > br { display: none; }
+        #div_drop_area .text-black h1 { margin: 4px 0 !important; }
+        #div_drop_area .text-black h3 { margin: 3px 0 !important; }
+        #div_drop_area .text-black .text-box-black { margin: 2px 0 6px !important; }
+        #div_drop_area .text-black div.selector:not(:has(select)) { margin: 2px 0 6px !important; }
+        /* Current-file preview link shown when re-editing Image / Document elements. */
+        #div_drop_area .image-doc-link {
+            display: inline-block;
+            margin: 2px 0 8px;
+            color: #008C00;
+            font-weight: 600;
+            font-size: 12.5px;
+            text-decoration: none;
+            word-break: break-all;
+        }
+        #div_drop_area .image-doc-link:hover { text-decoration: underline; }
         #div_drop_area .text-black:hover { border-color: #d1d5db; background: #fafafa; }
         #div_drop_area .text-black table { border-spacing: 10px 6px !important; font-size: 13px; color: #374151; }
 
