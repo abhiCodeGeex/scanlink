@@ -234,6 +234,7 @@
 
 							html = html + '</div>';
 
+							html = html + '<div class="image-label">Control Measures</div>';
 							html = html + '<div class="hazard-class"><div class="text-box-black2"></div></div>';
 							html = html + '<div class="image-label">Risk Score (After)</div>';
 							html = html + '<div class="hazard-class"><div class="selector"><span style="width: 126px;">Select</span></div></div>';
