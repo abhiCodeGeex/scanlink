@@ -142,10 +142,13 @@
                         <div class="sl-fsview__row">
                             <div class="sl-fsview__q">{{ $question->doc_title ?: 'Document' }}</div>
                             <div class="sl-fsview__a">
-                                <a href="{{ $docHref }}" target="_blank" rel="noopener">{{ basename((string) (parse_url($docHref, PHP_URL_PATH) ?: 'document')) }}</a>
+                                <a href="{{ $docHref }}" target="_blank" rel="noopener">{{ trim((string) ($question->doc_title ?: '')) ?: basename((string) (parse_url($docHref, PHP_URL_PATH) ?: 'document')) }}</a>
                             </div>
                         </div>
                     @endif
+                @elseif (($tid === 11 || $tid === 20) && trim((string) ($answer?->question_answer ?? '')) === '')
+                    {{-- Image / Web Link Button: form-only chrome with no answer — omitted from the
+                         submission response (matches the print page and PDF). --}}
                 @else
                     @php
                         $raw = (string) ($answer?->question_answer ?? '');

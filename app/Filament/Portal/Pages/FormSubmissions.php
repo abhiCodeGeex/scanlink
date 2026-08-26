@@ -292,7 +292,7 @@ class FormSubmissions extends Page
             }
 
             $rows = [];
-            foreach (\App\Support\FormSubmissionPresenter::rows($questions, $answerMap) as $presented) {
+            foreach (\App\Support\FormSubmissionPresenter::rows($questions, $answerMap, includeDisplayText: true) as $presented) {
                 $html = \App\Support\FormSubmissionPresenter::answerPdfHtml($presented);
                 if (trim(strip_tags($html)) === '' && ! str_contains($html, '<img')) {
                     $html = '&nbsp;';
@@ -392,7 +392,7 @@ class FormSubmissions extends Page
 
         // Shared presenter: form order, inline media, document links.
         $rows = [];
-        foreach (\App\Support\FormSubmissionPresenter::rows($questions, $answerMap) as $presented) {
+        foreach (\App\Support\FormSubmissionPresenter::rows($questions, $answerMap, includeDisplayText: true) as $presented) {
             $rows[] = [
                 'label' => $presented['label'],
                 'kind' => $presented['kind'],

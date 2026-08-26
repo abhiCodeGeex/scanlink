@@ -71,19 +71,22 @@
         .shareNav-mob a.shareFB { background-image: url('{{ asset('images/facebook-icon.jpg') }}'); }
         .shareNav-mob a.shareTWT { background-image: url('{{ asset('images/twitter-icon.jpg') }}'); }
         .shareNav-mob a.shareEML { background-image: url('{{ asset('images/email-grn-icon.jpg') }}'); }
-        /* Legacy mobile form Submit: native-looking button (white / black border). */
+        /* Form Submit: solid brand-green button, consistent with the rest of the form. */
         .frm_builder .submit-btn {
             display: inline-block;
-            width: auto;
+            width: 100%;
             margin: .75rem 0 0;
-            padding: .2rem .55rem;
-            background: #fff;
-            color: #111;
-            border: 1px solid #767676;
-            border-radius: 2px;
-            font: inherit;
+            padding: .65rem 1rem;
+            background: #008C00;
+            color: #fff;
+            border: 0;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 700;
             cursor: pointer;
+            transition: background .15s ease;
         }
+        .frm_builder .submit-btn:hover { background: #00a300; }
         /* Legacy form rhythm is tight (.frm_builder 14px/25px, labels are inline text + <br>). */
         label { display: block; margin-top: .4rem; font-weight: 600; }
         input, textarea, select { width: 100%; padding: .4rem .5rem; margin-top: .2rem; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
@@ -462,7 +465,7 @@
                     <div style="margin-bottom:.5rem;">
                         @switch($tid)
                             @case(1)
-                                <label>{{ $question->question_text }}{!! $star !!}</label>
+                                <label>{{ $question->question_text ?: 'Text field' }}{!! $star !!}</label>
                                 <input type="text" name="answers[{{ $qid }}]" {{ $required }}>
                                 @break
 
@@ -497,7 +500,11 @@
 
                             @case(23)
                                 @php $docChoices = \App\Support\FormBuilderMedia::documentChoices($question); @endphp
-                                @if ($question->question_text && ! str_contains($question->question_text, ',') && ! str_contains($question->question_text, ':::'))
+                                {{-- question_text stores the internal upload filename(s) (fb_doc_*) — never show those. --}}
+                                @if ($question->question_text
+                                    && ! str_contains($question->question_text, ',')
+                                    && ! str_contains($question->question_text, ':::')
+                                    && ! preg_match('/^fb_(doc|img)_/i', $question->question_text))
                                     <p style="font-weight:600;margin-bottom:.35rem;">{{ $question->question_text }}</p>
                                 @endif
                                 <label>{{ $question->doc_title ?: 'Select documents' }}{!! $star !!}</label>
@@ -521,11 +528,7 @@
                                     $choiceLabel = \App\Support\FormBuilderMedia::choiceLabel($question);
                                     $choiceOptions = \App\Support\FormBuilderMedia::choiceOptions($question);
                                 @endphp
-                                @if ($choiceLabel !== '')
-                                    <label>{{ $choiceLabel }}{!! $star !!}</label>
-                                @elseif ($question->is_mandatory)
-                                    <span style="color:#c00;font-size:.85rem;">*</span>
-                                @endif
+                                <label>{{ $choiceLabel !== '' ? $choiceLabel : 'Multiple choice' }}{!! $star !!}</label>
                                 <div class="field-choice">
                                     @foreach ($choiceOptions as $optionName)
                                         <label>
@@ -541,11 +544,7 @@
                                     $choiceLabel = \App\Support\FormBuilderMedia::choiceLabel($question);
                                     $choiceOptions = \App\Support\FormBuilderMedia::choiceOptions($question);
                                 @endphp
-                                @if ($choiceLabel !== '')
-                                    <label>{{ $choiceLabel }}{!! $star !!}</label>
-                                @elseif ($question->is_mandatory)
-                                    <span class="mandatory_field">*</span><br>
-                                @endif
+                                <label>{{ $choiceLabel !== '' ? $choiceLabel : 'Checkbox' }}{!! $star !!}</label>
                                 <div class="field-choice">
                                     @foreach ($choiceOptions as $optionName)
                                         <label>
@@ -561,11 +560,7 @@
                                     $choiceLabel = \App\Support\FormBuilderMedia::choiceLabel($question);
                                     $choiceOptions = \App\Support\FormBuilderMedia::choiceOptions($question);
                                 @endphp
-                                @if ($choiceLabel !== '')
-                                    <label>{{ $choiceLabel }}{!! $star !!}</label>
-                                @elseif ($question->is_mandatory)
-                                    <span style="color:#c00;font-size:.85rem;">*</span>
-                                @endif
+                                <label>{{ $choiceLabel !== '' ? $choiceLabel : 'Dropdown' }}{!! $star !!}</label>
                                 <select name="answers[{{ $qid }}]" {{ $required }}>
                                     <option value="">Select…</option>
                                     @foreach ($choiceOptions as $optionName)
@@ -580,7 +575,7 @@
                                     $scaleTo = (int) ($options->firstWhere('question_option_type_id', 2)?->option_name ?? 5);
                                     if ($scaleFrom > $scaleTo) { [$scaleFrom, $scaleTo] = [$scaleTo, $scaleFrom]; }
                                 @endphp
-                                <label>{{ $question->question_text }}{!! $star !!}</label>
+                                <label>{{ $question->question_text ?: 'Number scale' }}{!! $star !!}</label>
                                 <select name="answers[{{ $qid }}]" {{ $required }}>
                                     <option value="">Select…</option>
                                     @for ($i = $scaleFrom; $i <= $scaleTo; $i++)
@@ -594,7 +589,7 @@
                                     $rows = $options->where('question_option_type_id', 5);
                                     $cols = $options->where('question_option_type_id', 6);
                                 @endphp
-                                <label>{{ $question->question_text }}{!! $star !!}</label>
+                                <label>{{ $question->question_text ?: 'Grid' }}{!! $star !!}</label>
                                 @if ($rows->isNotEmpty() && $cols->isNotEmpty())
                                     <table class="field-grid">
                                         <thead>
@@ -624,12 +619,12 @@
                                 @break
 
                             @case(8)
-                                <label>{{ $question->question_text }}{!! $star !!}</label>
+                                <label>{{ $question->question_text ?: 'Date' }}{!! $star !!}</label>
                                 <input type="date" name="answers[{{ $qid }}]" {{ $required }}>
                                 @break
 
                             @case(9)
-                                <label>{{ $question->question_text }}{!! $star !!}</label>
+                                <label>{{ $question->question_text ?: 'Time' }}{!! $star !!}</label>
                                 <input type="time" name="answers[{{ $qid }}]" {{ $required }}>
                                 @break
 
@@ -652,7 +647,7 @@
                                 @break
 
                             @case(15)
-                                <label>{{ $question->question_text }}{!! $star !!}</label>
+                                <label>{{ $question->question_text ?: 'Comments' }}{!! $star !!}</label>
                                 <textarea name="answers[{{ $qid }}]" rows="3" {{ $required }}></textarea>
                                 @break
 

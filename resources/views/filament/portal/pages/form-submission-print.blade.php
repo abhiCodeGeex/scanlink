@@ -117,7 +117,10 @@
 
         <div class="body">
             @foreach ($rows as $row)
-                @if (in_array($row['kind'] ?? 'text', ['swms', 'sigrows', 'fields'], true))
+                @if (($row['kind'] ?? '') === 'display')
+                    {{-- Form context (Text / Heading blocks the visitor saw). --}}
+                    <div class="section">{!! $row['html'] !!}</div>
+                @elseif (in_array($row['kind'] ?? 'text', ['swms', 'sigrows', 'fields'], true))
                     {{-- Complex answers span the full width — their inner tables need the room. --}}
                     <div class="section">
                         <div class="sec-label">{{ $row['label'] }}</div>

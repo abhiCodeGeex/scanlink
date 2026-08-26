@@ -1522,6 +1522,21 @@
 					alert("Please upload document");
 					return false;
 				}
+
+				// Each title needs its own uploaded file — otherwise the extra titles have no
+				// document to download on the visitor form.
+				var dm_title_cnt = 0, dm_title_arr = doc_title.split(",");
+				for (var dt = 0; dt < dm_title_arr.length; dt++) {
+					if (dm_title_arr[dt].split(" ").join("") != "") { dm_title_cnt++; }
+				}
+				var dm_file_cnt = 0, dm_file_arr = user_input.split(",");
+				for (var df = 0; df < dm_file_arr.length; df++) {
+					if (dm_file_arr[df].split(" ").join("") != "") { dm_file_cnt++; }
+				}
+				if (dm_title_cnt != dm_file_cnt) {
+					alert("You entered " + dm_title_cnt + " document title(s) but uploaded " + dm_file_cnt + " file(s). Please upload one document for each title.");
+					return false;
+				}
 				break;
 			case 25:
 

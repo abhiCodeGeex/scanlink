@@ -9,7 +9,7 @@
     All submissions flow in ONE document.
 --}}
 @php
-    $blockKinds = ['swms', 'sigrows', 'fields'];
+    $blockKinds = ['swms', 'sigrows', 'fields', 'display'];
 
     $segment = static function (array $rows) use ($blockKinds): array {
         $segments = [];
@@ -83,18 +83,26 @@
         @if ($seg['type'] === 'table')
             <table cellpadding="6" cellspacing="0" width="100%" style="font-size:10pt;">
                 @foreach ($seg['rows'] as $row)
-                    <tr>
+                    <tr nobr="true">
                         <td width="26%" style="color:#6b7280;font-size:9.5pt;"><b>{{ $row['label'] }}</b></td>
                         <td width="74%" style="color:#111827;">{!! $row['html'] !!}</td>
                     </tr>
                 @endforeach
             </table>
         @else
-            {{-- Full-width section: label heading, then the block's own top-level tables. --}}
-            <table cellpadding="6" cellspacing="0" width="100%">
-                <tr><td style="color:#6b7280;font-size:9.5pt;"><b>{{ strtoupper($seg['row']['label']) }}</b></td></tr>
-            </table>
-            {!! $seg['row']['html'] !!}
+            {{-- Full-width section: label heading (when present), then the block's own top-level tables. --}}
+            @if (($seg['row']['label'] ?? '') !== '')
+                <table cellpadding="6" cellspacing="0" width="100%">
+                    <tr><td style="color:#6b7280;font-size:9.5pt;"><b>{{ strtoupper($seg['row']['label']) }}</b></td></tr>
+                </table>
+            @endif
+            @if (($seg['row']['kind'] ?? '') === 'display')
+                <table cellpadding="6" cellspacing="0" width="100%">
+                    <tr nobr="true"><td>{!! $seg['row']['html'] !!}</td></tr>
+                </table>
+            @else
+                {!! $seg['row']['html'] !!}
+            @endif
         @endif
     @endforeach
 @endforeach
