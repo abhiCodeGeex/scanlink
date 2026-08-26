@@ -46,7 +46,9 @@
         }
         .sl-fsview__a { flex: 1; min-width: 0; font-size: 14px; line-height: 1.5; overflow-wrap: break-word; }
         .sl-fsview__a a { color: var(--fs-green); font-weight: 600; }
-        .sl-fsview__a img { width: 100% !important; max-width: 100% !important; height: auto !important; border-radius: 6px; }
+        /* Natural-size thumbnails, never upscaled — the image links open the full file. */
+        .sl-fsview__a img { width: auto !important; max-width: min(260px, 100%) !important; height: auto !important; border-radius: 6px; }
+        .sl-fsview__a img[alt="Signature"] { max-width: min(340px, 100%) !important; }
         .sl-fsview__section { padding: 13px 0; border-bottom: 1px solid #f3f4f6; }
         .sl-fsview__section:last-child { border-bottom: 0; }
         .sl-fsview__sec-label {
@@ -59,7 +61,8 @@
         }
         .sl-fsview__sec-body { font-size: 14px; line-height: 1.5; overflow-wrap: break-word; }
         .sl-fsview__sec-body a { color: var(--fs-green); font-weight: 600; }
-        .sl-fsview__sec-body img { width: 100% !important; max-width: 100% !important; height: auto !important; border-radius: 6px; }
+        .sl-fsview__sec-body img { width: auto !important; max-width: min(260px, 100%) !important; height: auto !important; border-radius: 6px; }
+        .sl-fsview__sec-body img[alt="Signature"] { max-width: min(340px, 100%) !important; }
         .sl-fsview__sec-body table { width: 100% !important; table-layout: fixed; }
         .sl-fsview__a table { width: 100% !important; table-layout: fixed; }
         .sl-fsview__h1 { font-size: 19px; color: var(--fs-green); margin: 18px 0 4px; font-weight: 700; }

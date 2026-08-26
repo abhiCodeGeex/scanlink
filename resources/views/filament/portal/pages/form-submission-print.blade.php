@@ -53,7 +53,9 @@
         }
         .a { flex: 1; min-width: 0; line-height: 1.5; overflow-wrap: break-word; }
         .a a { color: #008901; font-weight: 600; }
-        .a img { width: 100% !important; max-width: 100% !important; height: auto !important; border-radius: 6px; }
+        /* Natural-size thumbnails, never upscaled — the image links open the full file. */
+        .a img { width: auto !important; max-width: min(260px, 100%) !important; height: auto !important; border-radius: 6px; }
+        .a img[alt="Signature"] { max-width: min(340px, 100%) !important; }
         .a table { width: 100% !important; table-layout: fixed; }
         .section { padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
         .section:last-child { border-bottom: 0; }
@@ -67,7 +69,8 @@
         }
         .sec-body { line-height: 1.5; overflow-wrap: break-word; }
         .sec-body a { color: #008901; font-weight: 600; }
-        .sec-body img { width: 100% !important; max-width: 100% !important; height: auto !important; border-radius: 6px; }
+        .sec-body img { width: auto !important; max-width: min(260px, 100%) !important; height: auto !important; border-radius: 6px; }
+        .sec-body img[alt="Signature"] { max-width: min(340px, 100%) !important; }
         .sec-body table { width: 100% !important; table-layout: fixed; }
         .print-bar { max-width: 660px; margin: 0 auto 14px; text-align: right; }
         .print-btn {

@@ -735,7 +735,7 @@ class FormSubmissionPresenter
             if (preg_match('#^data:image/[a-z0-9.+-]+;base64,(.+)$#i', $src, $b)
                 && ($bin = base64_decode($b[1], true)) !== false
                 && @imagecreatefromstring($bin) !== false) {
-                $img = '<img src="'.htmlspecialchars($src, ENT_QUOTES).'" width="340">';
+                $img = '<img src="'.htmlspecialchars($src, ENT_QUOTES).'" width="'.self::pdfImageWidth($bin, 260).'">';
             } else {
                 $img = '[signature image]';
             }
@@ -774,6 +774,20 @@ class FormSubmissionPresenter
     }
 
     /**
+     * Display width (pt) for an embedded PDF image: natural size (px -> pt), capped —
+     * never upscaled, so small photos and QR codes stay thumbnail-sized.
+     */
+    protected static function pdfImageWidth(string $bin, int $cap): int
+    {
+        $size = @getimagesizefromstring($bin);
+        $naturalPt = ($size !== false && (int) ($size[0] ?? 0) > 0)
+            ? (int) round($size[0] * 0.75)
+            : $cap;
+
+        return max(40, min($naturalPt, $cap));
+    }
+
+    /**
      * One stored upload for the PDF: images embedded from the local disk (validated),
      * anything else a clickable link with the filename.
      */
@@ -792,7 +806,7 @@ class FormSubmissionPresenter
                         && ($bin = @file_get_contents($abs)) !== false && $bin !== '') {
                         $mime = $info['mime'] ?? 'image/png';
 
-                        return '<img src="data:'.$mime.';base64,'.base64_encode($bin).'" width="340">';
+                        return '<img src="data:'.$mime.';base64,'.base64_encode($bin).'" width="'.self::pdfImageWidth($bin, 260).'">';
                     }
                 }
             } catch (\Throwable) {
@@ -824,7 +838,7 @@ class FormSubmissionPresenter
         if (preg_match('#^data:image/[a-z0-9.+-]+;base64,(.+)$#i', $src, $imgMatch)
             && ($imgBin = base64_decode($imgMatch[1], true)) !== false
             && @imagecreatefromstring($imgBin) !== false) {
-            $html = '<img src="'.htmlspecialchars($src, ENT_QUOTES).'" width="300">';
+            $html = '<img src="'.htmlspecialchars($src, ENT_QUOTES).'" width="'.self::pdfImageWidth($imgBin, 300).'">';
         } elseif (str_starts_with($src, 'data:image/')) {
             $html = '[signature image]';
         } else {
