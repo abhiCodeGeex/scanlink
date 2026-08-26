@@ -257,7 +257,7 @@ class FormSubmissions extends Page
         $pdf->SetTitle('Form Submissions — '.$profile->id);
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false);
-        $pdf->SetMargins(12, 12, 12);
+        $pdf->SetMargins(14, 12, 14);
         $pdf->SetAutoPageBreak(true, 12);
         // TCPDF ignores rem-based sizes and defaults tiny — set a readable base font.
         $pdf->SetFont('helvetica', '', 10);
@@ -292,13 +292,13 @@ class FormSubmissions extends Page
             }
 
             $rows = [];
-            foreach (\App\Support\FormSubmissionPresenter::rows($questions, $answerMap) as $presented) {
+            foreach (\App\Support\FormSubmissionPresenter::rows($questions, $answerMap, includeDisplayText: true) as $presented) {
                 $html = \App\Support\FormSubmissionPresenter::answerPdfHtml($presented);
                 if (trim(strip_tags($html)) === '' && ! str_contains($html, '<img')) {
                     $html = '&nbsp;';
                 }
 
-                $rows[] = ['label' => $presented['label'], 'html' => $html];
+                $rows[] = ['label' => $presented['label'], 'kind' => $presented['kind'], 'html' => $html];
             }
 
             if ($rows === []) {
@@ -392,9 +392,10 @@ class FormSubmissions extends Page
 
         // Shared presenter: form order, inline media, document links.
         $rows = [];
-        foreach (\App\Support\FormSubmissionPresenter::rows($questions, $answerMap) as $presented) {
+        foreach (\App\Support\FormSubmissionPresenter::rows($questions, $answerMap, includeDisplayText: true) as $presented) {
             $rows[] = [
                 'label' => $presented['label'],
+                'kind' => $presented['kind'],
                 'html' => \App\Support\FormSubmissionPresenter::answerHtml($presented)->toHtml(),
             ];
         }

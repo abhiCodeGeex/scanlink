@@ -234,6 +234,7 @@
 
 							html = html + '</div>';
 
+							html = html + '<div class="image-label">Control Measures</div>';
 							html = html + '<div class="hazard-class"><div class="text-box-black2"></div></div>';
 							html = html + '<div class="image-label">Risk Score (After)</div>';
 							html = html + '<div class="hazard-class"><div class="selector"><span style="width: 126px;">Select</span></div></div>';
@@ -1521,6 +1522,21 @@
 					alert("Please upload document");
 					return false;
 				}
+
+				// Each title needs its own uploaded file — otherwise the extra titles have no
+				// document to download on the visitor form.
+				var dm_title_cnt = 0, dm_title_arr = doc_title.split(",");
+				for (var dt = 0; dt < dm_title_arr.length; dt++) {
+					if (dm_title_arr[dt].split(" ").join("") != "") { dm_title_cnt++; }
+				}
+				var dm_file_cnt = 0, dm_file_arr = user_input.split(",");
+				for (var df = 0; df < dm_file_arr.length; df++) {
+					if (dm_file_arr[df].split(" ").join("") != "") { dm_file_cnt++; }
+				}
+				if (dm_title_cnt != dm_file_cnt) {
+					alert("You entered " + dm_title_cnt + " document title(s) but uploaded " + dm_file_cnt + " file(s). Please upload one document for each title.");
+					return false;
+				}
 				break;
 			case 25:
 
@@ -1879,7 +1895,15 @@
 
 				html = html + '<input type="hidden" id="textbox' + random_id + '" name="textbox' + random_id + '" value="' + ele_val + '">'; // existing filename
 				html = html + '<div class="image-label">Image Title</div><input type="text" id="image_title' + random_id + '" name="image_title' + random_id + '" value="' + image_title + '">';
-				html = html + '<div class="image-label">Select File<span class="hint-info">(File type JPG, JPEG, PNG, GIF)</span><input id="uploaded_file" type="hidden" value="1" name="uploaded_file"></div>';
+
+				// Show the currently selected image so editing does not look like it was lost.
+				if (ele_val != '') {
+					html = html + '<div class="image-label">Current image</div>';
+					html = html + '<div class="fb-image-preview"><a target="_blank" class="image-doc-link" href="<?php echo rtrim(url('/'), '/'); ?>/images/form_builder_uploaded_images/' + ele_val + '">';
+					html = html + '<img src="<?php echo rtrim(url('/'), '/'); ?>/images/form_builder_uploaded_images/' + ele_val + '" width="100" style="display:block;margin-bottom:2px;">' + ele_val + '</a></div>';
+				}
+
+				html = html + '<div class="image-label">' + (ele_val != '' ? 'Replace File' : 'Select File') + '<span class="hint-info">(File type JPG, JPEG, PNG, GIF)</span><input id="uploaded_file" type="hidden" value="1" name="uploaded_file"></div>';
 
 				html = html + '<iframe src="<?php echo url('/test/temp_image_upload'); ?>?profile_id=<?php echo $profile_id; ?>&random_id=' + random_id + '" id="logoUpload" scrolling="no" frameborder="0" width="94%" style="padding-left:10px" height="70"></iframe>';
 				html = html + '<div class="image-label">Alignment :&nbsp;';
@@ -1961,7 +1985,14 @@
 
 				html = html + '<input type="hidden" id="textbox' + random_id + '" name="textbox' + random_id + '" value="' + ele_val + '">'; // existing filename
 				html = html + '<div class="image-label">Document Title</div><input type="text" id="doc_title' + random_id + '" name="doc_title' + random_id + '" value="' + doc_title + '"  placeholder="Enter Your Text">';
-				html = html + '<div class="image-label">Select File<span class="hint-info">(File type  DOC, DOCX, PDF, JPG, GIF, JPEG)</span><input id="uploaded_doc' + random_id + '" type="hidden" value="1" name="uploaded_doc"></div>';
+
+				// Show the currently selected document so editing does not look like it was lost.
+				if (ele_val != '') {
+					html = html + '<div class="image-label">Current document</div>';
+					html = html + '<a target="_blank" class="image-doc-link" href="<?php echo rtrim(url('/'), '/'); ?>/images/formbuilder_upload/' + ele_val + '">' + ele_val + '</a>';
+				}
+
+				html = html + '<div class="image-label">' + (ele_val != '' ? 'Replace File' : 'Select File') + '<span class="hint-info">(File type  DOC, DOCX, PDF, JPG, GIF, JPEG)</span><input id="uploaded_doc' + random_id + '" type="hidden" value="1" name="uploaded_doc"></div>';
 				html = html + '<iframe src="<?php echo url('/test/temp_doc_upload'); ?>?profile_id=<?php echo $profile_id; ?>&random_id=' + random_id + '" id="docUpload" scrolling="no" frameborder="0" width="94%" style="padding-left:10px" height="70"></iframe>';
 				html = html + '<input type="text" class="btn_colour color" id="doc_color' + random_id + '" name="doc_color' + random_id + '" onclick="show_color_picker(this)"  maxlength="6" value="' + button_colour + '" style="background-color:#' + button_colour + '" >';
 				break;
@@ -1993,18 +2024,21 @@
 
 				html = html + '<input type="hidden" id="textbox' + random_id + '" value="' + ele_val + '" name="textbox' + random_id + '" >'; // dummy textbox
 				html = html + '<div class="image-label">Document Title <small>(Please separate each title with a comma)</small></div><input type="text" id="doc_title' + random_id + '" name="doc_title' + random_id + '" value="' + doc_title + '" placeholder="Enter Your Text">';
-				html = html + '<div class="image-label">Select File<span class="hint-info">(File type  DOC, DOCX, PDF, JPG, GIF)</span><input id="uploaded_doc' + random_id + '" type="hidden" value="1" name="uploaded_doc"></div>';
+
+				// Show the currently selected documents so editing does not look like they were lost.
+				if (doc_uploaded == "" && ele_val != "") {
+					html = html + '<div class="image-label">Current documents</div>';
+					var cur_docs = ele_val.split(",");
+					for (var cd = 0; cd < cur_docs.length; cd++) {
+						html = html + '<a target="_blank" class="image-doc-link" href="<?php echo rtrim(url('/'), '/').'/images/formbuilder_upload/'; ?>' + cur_docs[cd] + '">' + cur_docs[cd] + '</a><br>';
+					}
+				}
+
+				html = html + '<div class="image-label">' + (ele_val != '' ? 'Replace File' : 'Select File') + '<span class="hint-info">(File type  DOC, DOCX, PDF, JPG, GIF)</span><input id="uploaded_doc' + random_id + '" type="hidden" value="1" name="uploaded_doc"></div>';
 				html = html + '<iframe src="<?php echo url('/test/temp_doc_multi_upload'); ?>?profile_id=<?php echo $profile_id; ?>&random_id=' + random_id + '" id="docUpload" scrolling="no" frameborder="0" width="94%" style="padding-left:10px" height="70"></iframe>';
 
-				if (doc_uploaded == "") {
-					var mystr = ele_val;
-					var myarr = mystr.split(",");
-
-					for (var i = 0; i < myarr.length; i++) {
-						html = html + '<a target="_blank" class="image-doc-link" href="<?php echo rtrim(url('/'), '/').'/images/formbuilder_upload/'; ?>' + myarr[i] + '">' + myarr[i] + '</a><br>';
-					}
-					html = html + '<br>';
-				} else {
+				// Freshly uploaded (this session) filenames echo below the uploader, as before.
+				if (doc_uploaded != "") {
 					html = html + doc_uploaded;
 				}
 

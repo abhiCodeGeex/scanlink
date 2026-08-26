@@ -28,10 +28,12 @@ class FormSubmissionPresenter
     /**
      * @param  Collection<int, FormBuilderQuestion>|iterable<FormBuilderQuestion>  $questions
      * @param  array<int|string, string>  $savedAnswers  question_id => answer
+     * @param  bool  $includeDisplayText  also emit display-only Text/Heading blocks (types 2/10/12)
+     *                                    as 'display' rows so print/PDF match the on-screen view
      * @return list<array{
      *     label: string,
      *     type_id: int,
-     *     kind: 'text'|'signature'|'list'|'fields',
+     *     kind: 'text'|'signature'|'list'|'fields'|'display',
      *     value: string,
      *     items: list<string>,
      *     fields: list<array{label: string, value: string}>,
@@ -39,7 +41,7 @@ class FormSubmissionPresenter
      *     signature_meta: string,
      * }>
      */
-    public static function rows(iterable $questions, array $savedAnswers): array
+    public static function rows(iterable $questions, array $savedAnswers, bool $includeDisplayText = false): array
     {
         $byId = $questions instanceof Collection
             ? $questions
@@ -62,6 +64,29 @@ class FormSubmissionPresenter
             $answer = $savedAnswers[$qid] ?? $savedAnswers[(string) $qid] ?? null;
             $raw = trim((string) ($answer ?? ''));
 
+            // Display Text / Heading / Sub-heading blocks: context the visitor saw on the form.
+            // Included on print/PDF (matching the on-screen submission view) when requested.
+            if ($includeDisplayText && $raw === '' && in_array((int) $question->question_type_id, [2, 10, 12], true)) {
+                $used[$qid] = true;
+                $text = trim((string) $question->question_text);
+
+                if ($text !== '') {
+                    $rows[] = [
+                        'label' => '',
+                        'type_id' => (int) $question->question_type_id,
+                        'kind' => 'display',
+                        'value' => $text,
+                        'items' => [],
+                        'fields' => [],
+                        'instances' => [],
+                        'signature_src' => '',
+                        'signature_meta' => '',
+                    ];
+                }
+
+                continue;
+            }
+
             // Document Button (21): the element's document IS the content — the visitor never
             // "answers" it, so render its clickable link in the report/email/PDF.
             if ((int) $question->question_type_id === 21 && $raw === '') {
@@ -80,7 +105,9 @@ class FormSubmissionPresenter
                         'signature_src' => '',
                         'signature_meta' => '',
                         'href' => (string) $href,
-                        'name' => basename((string) (parse_url((string) $href, PHP_URL_PATH) ?: 'document')),
+                        // Link text: the human title, not the internal filename.
+                        'name' => trim((string) ($question->doc_title ?: ''))
+                            ?: basename((string) (parse_url((string) $href, PHP_URL_PATH) ?: 'document')),
                     ];
                 }
 
@@ -294,6 +321,16 @@ class FormSubmissionPresenter
 
         $typeId = (int) $question->question_type_id;
 
+        // Document Menu (23): question_text holds the internal upload filename(s) — never
+        // show those. Label with the document titles the builder entered instead.
+        if ($typeId === 23) {
+            $docTitle = trim((string) ($question->doc_title ?? ''));
+
+            return $docTitle !== ''
+                ? implode(', ', array_filter(array_map('trim', explode(',', $docTitle))))
+                : self::typeFallbackLabel($typeId);
+        }
+
         if (in_array($typeId, [3, 4, 5], true)) {
             $choiceLabel = FormBuilderMedia::choiceLabel($question);
             if ($choiceLabel !== '') {
@@ -322,6 +359,12 @@ class FormSubmissionPresenter
             return self::typeFallbackLabel($typeId);
         }
 
+        // Internal builder filenames (fb_doc_* / fb_img_*) stored as question_text are
+        // implementation detail, not a label.
+        if ($text !== '' && preg_match('/^fb_(doc|img)_/i', $text)) {
+            return self::typeFallbackLabel($typeId);
+        }
+
         if ($text !== '') {
             return $text;
         }
@@ -333,6 +376,7 @@ class FormSubmissionPresenter
     {
         return match ($typeId) {
             1 => 'Text field',
+            2 => 'Text',
             3 => 'Multiple choice',
             4 => 'Checkbox',
             5 => 'Dropdown',
@@ -340,13 +384,18 @@ class FormSubmissionPresenter
             7 => 'Grid',
             8 => 'Date',
             9 => 'Time',
+            10 => 'Heading',
+            11 => 'Image',
+            12 => 'Sub heading',
             15 => 'Comments',
             16 => 'Signature',
             17 => 'Upload',
             18 => 'Participant',
             19 => 'Location',
+            20 => 'Web link',
+            21 => 'Document',
             22 => 'SWMS hazard / risk',
-            23 => 'Document',
+            23 => 'Document menu',
             24 => 'Additional recipient',
             25 => 'Check-in',
             default => 'Response',
@@ -488,6 +537,7 @@ class FormSubmissionPresenter
     public static function answerHtml(array $row): HtmlString
     {
         return match ($row['kind']) {
+            'display' => self::displayHtml($row),
             'signature' => self::signatureHtml($row),
             'swms' => self::swmsHtml($row),
             'sigrows' => self::sigHtml($row),
@@ -505,10 +555,10 @@ class FormSubmissionPresenter
                 .'</ul>'
             ),
             'fields' => new HtmlString(
-                '<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;">'
+                '<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;table-layout:fixed;border-collapse:collapse;">'
                 .collect($row['fields'])->map(static function (array $field): string {
-                    return '<tr>'
-                        .'<td style="padding:4px 12px 4px 0;color:#6b7280;font-size:13px;width:38%;vertical-align:top;">'
+                    return '<tr nobr="true">'
+                        .'<td style="padding:4px 12px 4px 0;color:#6b7280;font-size:13px;width:24%;vertical-align:top;">'
                         .e($field['label'])
                         .'</td>'
                         .'<td style="padding:4px 0;color:#111827;font-size:14px;vertical-align:top;">'
@@ -528,21 +578,23 @@ class FormSubmissionPresenter
     public static function answerPdfHtml(array $row): string
     {
         return match ($row['kind']) {
+            'display' => self::displayPdfHtml($row),
             'signature' => self::signaturePdfHtml($row),
             'swms' => self::swmsPdfHtml($row),
             'sigrows' => self::sigPdfHtml($row),
             'file_link' => '<a href="'.e((string) ($row['href'] ?? '#')).'">'
                 .e((string) ($row['name'] ?: 'Document')).'</a>',
-            'list' => '<ul>'
-                .collect($row['items'])->map(
-                    static fn (string $item): string => '<li>'.self::pdfText($item).'</li>'
-                )->implode('')
-                .'</ul>',
-            'fields' => '<table cellpadding="3" cellspacing="0" border="0" width="100%">'
+            // Plain <br>-joined lines: <ul> inside a table cell breaks TCPDF's layout.
+            'list' => collect($row['items'])->map(
+                static fn (string $item): string => '- '.self::pdfText($item)
+            )->implode('<br>'),
+            // Full-width top-level table (the PDF template renders 'fields' outside the
+            // main rows table — TCPDF cannot nest tables).
+            'fields' => '<table cellpadding="4" cellspacing="0" border="0" width="100%">'
                 .collect($row['fields'])->map(static function (array $field): string {
-                    return '<tr>'
-                        .'<td width="40%" style="color:#4b5563;"><b>'.e($field['label']).'</b></td>'
-                        .'<td width="60%">'.self::pdfText((string) $field['value']).'</td>'
+                    return '<tr nobr="true">'
+                        .'<td width="24%" style="color:#6b7280;font-size:9pt;"><b>'.e($field['label']).'</b></td>'
+                        .'<td width="76%" style="font-size:10pt;color:#111827;">'.self::pdfText((string) $field['value']).'</td>'
                         .'</tr>';
                 })->implode('')
                 .'</table>',
@@ -572,8 +624,8 @@ class FormSubmissionPresenter
             $heading = '<div style="font-size:13px;font-weight:bold;color:#065f06;margin:0 0 6px;">SWMS #'.($i + 1).'</div>';
 
             $rows = collect($fields)->map(static function (array $field): string {
-                return '<tr>'
-                    .'<td style="padding:3px 12px 3px 0;color:#6b7280;font-size:13px;width:42%;vertical-align:top;">'
+                return '<tr nobr="true">'
+                    .'<td style="padding:3px 12px 3px 0;color:#6b7280;font-size:13px;width:24%;vertical-align:top;">'
                     .e($field['label'])
                     .'</td>'
                     .'<td style="padding:3px 0;color:#111827;font-size:14px;vertical-align:top;">'
@@ -583,7 +635,7 @@ class FormSubmissionPresenter
             })->implode('');
 
             return $divider.$heading
-                .'<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;">'
+                .'<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;table-layout:fixed;border-collapse:collapse;">'
                 .$rows
                 .'</table>';
         })->implode('');
@@ -625,7 +677,7 @@ class FormSubmissionPresenter
                     return '<div style="margin:4px 0;">'
                         .'<div style="color:#6b7280;font-size:13px;margin:0 0 2px;">'.e($field['label']).'</div>'
                         .'<img src="'.e($src).'" alt="Signature" '
-                        .'style="max-width:280px;height:auto;border:1px solid #e5e7eb;border-radius:4px;background:#fff;">'
+                        .'style="max-width:340px;height:auto;border:1px solid #e5e7eb;border-radius:4px;background:#fff;">'
                         .'</div>';
                 }
 
@@ -642,7 +694,37 @@ class FormSubmissionPresenter
     }
 
     /**
-     * TCPDF-safe repeatable-signature markup: blocks divided by a rule, signature embedded inline.
+     * Screen HTML for a display-only Text/Heading block (form context shown to the visitor).
+     */
+    protected static function displayHtml(array $row): HtmlString
+    {
+        $value = (string) ($row['value'] ?? '');
+
+        return match ((int) ($row['type_id'] ?? 0)) {
+            10 => new HtmlString('<div style="font-size:18px;font-weight:700;color:#008901;margin:4px 0;">'.e(strip_tags($value)).'</div>'),
+            12 => new HtmlString('<div style="font-size:15px;font-weight:700;color:#111827;margin:4px 0;">'.e(strip_tags($value)).'</div>'),
+            default => new HtmlString('<div style="font-size:14px;line-height:1.5;">'.$value.'</div>'),
+        };
+    }
+
+    /**
+     * TCPDF-safe markup for a display-only Text/Heading block.
+     */
+    protected static function displayPdfHtml(array $row): string
+    {
+        $value = (string) ($row['value'] ?? '');
+
+        return match ((int) ($row['type_id'] ?? 0)) {
+            10 => '<span style="font-size:13pt;color:#008901;"><b>'.e(strip_tags($value)).'</b></span>',
+            12 => '<span style="font-size:11pt;color:#111827;"><b>'.e(strip_tags($value)).'</b></span>',
+            default => '<span style="font-size:10pt;color:#111827;">'.$value.'</span>',
+        };
+    }
+
+    /**
+     * TCPDF-safe repeatable-signature markup. Rendered by the PDF template as a full-width
+     * section (NEVER inside another table — TCPDF cannot nest tables): one top-level
+     * 28/72 table per entry, green "Signature #n" micro-heading when there are several.
      */
     protected static function sigPdfHtml(array $row): string
     {
@@ -655,23 +737,33 @@ class FormSubmissionPresenter
         $multi = count($instances) > 1;
 
         return collect($instances)->map(static function (array $fields, int $i) use ($multi): string {
-            $divider = $i > 0 ? '<hr>' : '';
-            $heading = $multi ? '<p><b>Signature #'.($i + 1).'</b></p>' : '';
+            $divider = $i > 0 ? '<br>' : '';
+            $heading = $multi
+                ? '<table cellpadding="2" cellspacing="0" border="0" width="100%"><tr>'
+                    .'<td style="color:#008901;font-size:9pt;"><b>Signature #'.($i + 1).'</b></td>'
+                    .'</tr></table>'
+                : '';
 
             $rows = collect($fields)->map(static function (array $field): string {
-                if (! empty($field['is_signature'])) {
-                    return '<p><b>'.e($field['label']).':</b><br>'.self::pdfText((string) $field['value']).'</p>';
-                }
+                $value = ! empty($field['is_signature'])
+                    ? self::pdfText((string) $field['value'])
+                    : nl2br(e((string) $field['value']));
 
-                return '<p><b>'.e($field['label']).':</b> '.nl2br(e((string) $field['value'])).'</p>';
+                return '<tr nobr="true">'
+                    .'<td width="24%" style="color:#6b7280;font-size:9pt;"><b>'.e($field['label']).'</b></td>'
+                    .'<td width="76%" style="font-size:10pt;color:#111827;">'.$value.'</td>'
+                    .'</tr>';
             })->implode('');
 
-            return $divider.$heading.$rows;
+            return $divider.$heading
+                .'<table cellpadding="4" cellspacing="0" border="0" width="100%">'.$rows.'</table>';
         })->implode('');
     }
 
     /**
-     * TCPDF-friendly SWMS markup: titled blocks divided by a rule, simple tags only.
+     * TCPDF-safe SWMS markup. Rendered by the PDF template as a full-width section
+     * (NEVER inside another table — TCPDF cannot nest tables): one top-level 28/72
+     * table per hazard row, green "SWMS #n" micro-heading when there are several.
      */
     protected static function swmsPdfHtml(array $row): string
     {
@@ -681,23 +773,29 @@ class FormSubmissionPresenter
             return '&nbsp;';
         }
 
-        return collect($instances)->map(static function (array $fields, int $i): string {
-            $divider = $i > 0 ? '<hr>' : '';
-            $heading = '<p><b>SWMS #'.($i + 1).'</b></p>';
+        $multi = count($instances) > 1;
+
+        return collect($instances)->map(static function (array $fields, int $i) use ($multi): string {
+            $divider = $i > 0 ? '<br>' : '';
+            $heading = $multi
+                ? '<table cellpadding="2" cellspacing="0" border="0" width="100%"><tr>'
+                    .'<td style="color:#008901;font-size:9pt;"><b>SWMS #'.($i + 1).'</b></td>'
+                    .'</tr></table>'
+                : '';
 
             $rows = collect($fields)->map(static function (array $field): string {
                 $value = $field['is_file']
                     ? self::pdfText((string) $field['value'])
                     : nl2br(e((string) $field['value']));
 
-                return '<tr>'
-                    .'<td width="40%" style="color:#4b5563;"><b>'.e($field['label']).'</b></td>'
-                    .'<td width="60%">'.$value.'</td>'
+                return '<tr nobr="true">'
+                    .'<td width="24%" style="color:#6b7280;font-size:9pt;"><b>'.e($field['label']).'</b></td>'
+                    .'<td width="76%" style="font-size:10pt;color:#111827;">'.$value.'</td>'
                     .'</tr>';
             })->implode('');
 
             return $divider.$heading
-                .'<table cellpadding="3" cellspacing="0" border="0" width="100%">'.$rows.'</table>';
+                .'<table cellpadding="4" cellspacing="0" border="0" width="100%">'.$rows.'</table>';
         })->implode('');
     }
 
@@ -716,7 +814,7 @@ class FormSubmissionPresenter
             if (preg_match('#^data:image/[a-z0-9.+-]+;base64,(.+)$#i', $src, $b)
                 && ($bin = base64_decode($b[1], true)) !== false
                 && @imagecreatefromstring($bin) !== false) {
-                $img = '<img src="'.htmlspecialchars($src, ENT_QUOTES).'" width="200">';
+                $img = '<img src="'.htmlspecialchars($src, ENT_QUOTES).'" width="'.self::pdfImageWidth($bin, 260).'">';
             } else {
                 $img = '[signature image]';
             }
@@ -755,6 +853,20 @@ class FormSubmissionPresenter
     }
 
     /**
+     * Display width (pt) for an embedded PDF image: natural size (px -> pt), capped —
+     * never upscaled, so small photos and QR codes stay thumbnail-sized.
+     */
+    protected static function pdfImageWidth(string $bin, int $cap): int
+    {
+        $size = @getimagesizefromstring($bin);
+        $naturalPt = ($size !== false && (int) ($size[0] ?? 0) > 0)
+            ? (int) round($size[0] * 0.75)
+            : $cap;
+
+        return max(40, min($naturalPt, $cap));
+    }
+
+    /**
      * One stored upload for the PDF: images embedded from the local disk (validated),
      * anything else a clickable link with the filename.
      */
@@ -773,7 +885,7 @@ class FormSubmissionPresenter
                         && ($bin = @file_get_contents($abs)) !== false && $bin !== '') {
                         $mime = $info['mime'] ?? 'image/png';
 
-                        return '<img src="data:'.$mime.';base64,'.base64_encode($bin).'" width="200">';
+                        return '<img src="data:'.$mime.';base64,'.base64_encode($bin).'" width="'.self::pdfImageWidth($bin, 260).'">';
                     }
                 }
             } catch (\Throwable) {
@@ -786,7 +898,7 @@ class FormSubmissionPresenter
 
     protected static function signatureHtml(array $row): HtmlString
     {
-        $html = '<img src="'.e($row['signature_src']).'" alt="Signature" style="max-width:280px;height:auto;border:1px solid #e5e7eb;border-radius:4px;background:#fff;">';
+        $html = '<img src="'.e($row['signature_src']).'" alt="Signature" style="max-width:340px;height:auto;border:1px solid #e5e7eb;border-radius:4px;background:#fff;">';
 
         if (filled($row['signature_meta'])) {
             $html .= '<div style="margin-top:6px;color:#4b5563;font-size:13px;">'
@@ -805,7 +917,7 @@ class FormSubmissionPresenter
         if (preg_match('#^data:image/[a-z0-9.+-]+;base64,(.+)$#i', $src, $imgMatch)
             && ($imgBin = base64_decode($imgMatch[1], true)) !== false
             && @imagecreatefromstring($imgBin) !== false) {
-            $html = '<img src="'.htmlspecialchars($src, ENT_QUOTES).'" width="200">';
+            $html = '<img src="'.htmlspecialchars($src, ENT_QUOTES).'" width="'.self::pdfImageWidth($imgBin, 300).'">';
         } elseif (str_starts_with($src, 'data:image/')) {
             $html = '[signature image]';
         } else {

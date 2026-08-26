@@ -28,12 +28,12 @@
             font-size: 13px;
             font-weight: 700;
             color: #111827;
-            margin: 16px 0 6px;
+            margin: 8px 0 4px;
             text-transform: none;
             letter-spacing: 0;
         }
         .top-part .rounded {
-            margin: 0 0 6px;
+            margin: 0 0 2px;
             background: none;
             border: 0;
             padding: 0;
@@ -49,11 +49,11 @@
             flex: 1 1 auto;
             width: auto;
             min-width: 0;
-            height: 42px;
-            padding: 0 13px;
+            height: 36px;
+            padding: 0 12px;
             box-sizing: border-box;
             border: 1px solid #d1d5db;
-            border-radius: 9px;
+            border-radius: 8px;
             font-size: 14px;
             background: #fff;
             color: #111827;
@@ -67,10 +67,21 @@
             box-shadow: 0 0 0 3px rgba(0, 140, 0, 0.15);
         }
         .top-part .parent_content { position: relative; }
-        .top-part #remove_ele { margin: 2px 0 4px; }
-        .top-part #remove_ele a { color: #dc2626; font-size: 12px; font-weight: 600; text-decoration: none; }
+        .top-part #remove_ele { margin: 0; }
+        .top-part #remove_ele a { color: #dc2626; font-size: 11.5px; font-weight: 600; text-decoration: none; }
         .top-part #remove_ele a:hover { text-decoration: underline; }
-        .top-part .add-another { text-align: right; margin: 2px 0 8px; }
+        .top-part .add-another { text-align: right; margin: 2px 0 4px; }
+        /* "Remove" (left, inside the preceding recipient row) and "Add Another" (right)
+           share one line instead of stacking — saves a full row per recipient block.
+           position:relative lifts the overlay above the positioned .parent_content, and
+           pointer-events keep ONLY the link clickable so the underlying Remove still works. */
+        .top-part .parent_content + .add-another {
+            margin-top: -20px;
+            position: relative;
+            pointer-events: none;
+        }
+        .top-part .parent_content + .add-another a { pointer-events: auto; }
+        .top-part #remove_ele { display: inline-block; }
         .top-part .add-another a { color: #008C00; font-weight: 600; font-size: 13px; text-decoration: none; }
         .top-part .add-another a:hover { text-decoration: underline; }
         .from-box .green-btn {
@@ -80,11 +91,12 @@
             background: #008C00;
             color: #fff;
             border: 0;
-            border-radius: 9px;
-            height: 42px;
-            padding: 0 20px;
+            border-radius: 8px;
+            height: 36px;
+            margin-top: 4px;
+            padding: 0 16px;
             font-weight: 700;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(0, 140, 0, 0.22);
             transition: background 0.15s ease;
@@ -197,7 +209,7 @@
             background: none !important;
             border: 0 !important;
         }
-        #div_drop_area div.selector span { display: none !important; }
+        #div_drop_area div.selector:has(select) span { display: none !important; }
         #div_drop_area div.selector select {
             opacity: 1 !important;
             position: static !important;
@@ -316,6 +328,309 @@
                 box-sizing: border-box;
             }
         }
+        /* ============ Edit-box (dropped element) redesign  ============ */
+
+        /* Box shells: full-width, single palette-coloured border, rounded, clipped corners. */
+        #div_drop_area .green-box, #div_drop_area .orange-box, #div_drop_area .blue-box {
+            width: 100% !important;
+            display: block;
+            box-sizing: border-box;
+            margin: 8px 0 14px !important;
+            padding: 0 !important;
+        }
+        #div_drop_area .green-bx, #div_drop_area .orange-bx, #div_drop_area .blue-bx {
+            display: block !important;
+            width: 100% !important;
+            box-sizing: border-box;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #fff;
+            padding: 0 12px 12px !important;
+            margin: 0 !important;
+        }
+        #div_drop_area .green-bx  { border: 1px solid #86e08a !important; }
+        #div_drop_area .orange-bx { border: 1px solid #f3b06c !important; }
+        #div_drop_area .blue-bx   { border: 1px solid #92bdf7 !important; }
+
+        /* Header bar: title left, mandatory + SAVE pill right, close X far right. */
+        #div_drop_area .green-first-box, #div_drop_area .orange-first-box, #div_drop_area .blue-first-box {
+            display: flex !important;
+            align-items: center;
+            gap: 10px;
+            width: calc(100% + 24px) !important;
+            margin: 0 -12px 10px !important;
+            padding: 9px 14px !important;
+            box-sizing: border-box;
+            line-height: normal !important;
+        }
+        #div_drop_area .green-first-box  { background-color: #d9f5db !important; }
+        #div_drop_area .orange-first-box { background-color: #fde8d2 !important; }
+        #div_drop_area .blue-first-box   { background-color: #dbeafe !important; }
+        #div_drop_area .green-first-box h1, #div_drop_area .orange-first-box h1, #div_drop_area .blue-first-box h1 {
+            float: none !important;
+            order: 1;
+            flex: 1 1 auto;
+            margin: 0 !important;
+            padding: 0 !important;
+            font-size: 13px !important;
+            font-weight: 700;
+            color: #1f2937 !important;
+        }
+        #div_drop_area .green-first-box h2, #div_drop_area .orange-first-box h2, #div_drop_area .blue-first-box h2 {
+            float: none !important;
+            order: 2;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin: 0 !important;
+            padding: 0 !important;
+            font-size: 12px !important;
+            font-weight: 600;
+            color: #374151 !important;
+            text-transform: none !important;
+            white-space: nowrap;
+        }
+        #div_drop_area .green-first-box h2 span, #div_drop_area .orange-first-box h2 span, #div_drop_area .blue-first-box h2 span {
+            float: none !important;
+            text-transform: none !important;
+        }
+        #div_drop_area .green-first-box h2 a, #div_drop_area .orange-first-box h2 a, #div_drop_area .blue-first-box h2 a {
+            display: inline-block;
+            background: #008C00;
+            color: #fff !important;
+            border-radius: 6px;
+            padding: 4px 14px;
+            font-size: 11.5px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            text-decoration: none !important;
+        }
+        #div_drop_area .green-first-box h2 a:hover, #div_drop_area .orange-first-box h2 a:hover, #div_drop_area .blue-first-box h2 a:hover {
+            background: #00a300;
+        }
+        #div_drop_area .green-first-box > a, #div_drop_area .orange-first-box > a, #div_drop_area .blue-first-box > a {
+            order: 3;
+            display: inline-flex;
+            align-items: center;
+        }
+        #div_drop_area .green-first-box img, #div_drop_area .orange-first-box img, #div_drop_area .blue-first-box img {
+            float: none !important;
+            margin: 0 !important;
+            width: 15px;
+            height: 15px;
+            opacity: 0.85;
+        }
+
+        /* Pointless readonly dummy inputs (Text Field / Date / Time / Comments / dividers):
+           hide them and collapse their wrapper so the box stays compact. */
+        #div_drop_area input[id^="textbox"][readonly] { display: none !important; }
+        #div_drop_area p:has(> input[id^="textbox"][readonly]) { margin: 0 !important; padding: 0 !important; }
+
+        /* Body rhythm inside edit boxes. */
+        #div_drop_area .green-bx p, #div_drop_area .orange-bx p, #div_drop_area .blue-bx p {
+            margin: 6px 0 !important;
+            padding: 0 !important;
+            border: 0 !important;
+        }
+        /* "Record entry on Form Submission Log" row (inline margin-top:50px in legacy JS). */
+        #div_drop_area p[style*="margin-top"] {
+            margin: 2px 0 6px !important;
+            padding: 6px 0 !important;
+            gap: 6px;
+            font-size: 12.5px;
+            color: #374151;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        #div_drop_area p[style*="margin-top"] img { width: 22px !important; height: auto !important; float: none !important; }
+
+        /* Selector previews: legacy uniform markup is a DIV + SPAN with no real select.
+           Show it as a proper disabled-select lookalike with a caret. */
+        #div_drop_area div.selector:not(:has(select)) {
+            display: block !important;
+            position: relative !important;
+            width: 100% !important;
+            height: 36px !important;
+            box-sizing: border-box;
+            padding: 0 30px 0 12px !important;
+            margin: 4px 0 10px !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 8px;
+            background: #fff !important;
+        }
+        #div_drop_area div.selector:not(:has(select)) span {
+            display: block !important;
+            width: auto !important;
+            float: none !important;
+            line-height: 34px;
+            font-size: 13px;
+            color: #6b7280;
+            overflow: hidden;
+            text-align: left;
+        }
+        #div_drop_area div.selector:not(:has(select))::after {
+            content: '';
+            position: absolute;
+            right: 12px;
+            top: 15px;
+            border: 5px solid transparent;
+            border-top-color: #9ca3af;
+        }
+
+        /* Colour swatch inputs (Web Link / Document Button / Covid colours): legacy pins them
+           to 10px tall x 55px — restore a real field; jscolor paints the background inline. */
+        #div_drop_area input.btn_colour, #div_drop_area input.color, #div_drop_area input.text-fi {
+            display: block;
+            height: 36px !important;
+            width: 140px !important;
+            box-sizing: border-box !important;
+            margin: 4px 0 10px !important;
+            padding: 0 12px !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 8px !important;
+            font: 700 13px/34px Arial, Helvetica, sans-serif !important;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            float: none !important;
+        }
+
+        /* hazard-class wrappers: kill the legacy 5px/10px inset that misaligned nested fields. */
+        #div_drop_area .hazard-class {
+            padding: 0 !important;
+            margin: 0 !important;
+            font-size: 13px;
+            color: #374151;
+        }
+        /* Checkbox rows (Include Name / Employer / Email / Phone / Signature). */
+        #div_drop_area .hazard-class > div { padding: 4px 0; }
+
+        /* Covid check-in colour pickers + Date/Time: true two-column rows. */
+        #div_drop_area .row { display: flex !important; gap: 12px; }
+        #div_drop_area .col { flex: 1 1 0; min-width: 0; }
+        #div_drop_area .image-label.text-center { text-align: left !important; }
+
+        /* Display-only mini fields (SWMS / Covid preview boxes): same geometry as real inputs. */
+        #div_drop_area .text-box-black2 {
+            box-sizing: border-box !important;
+            display: block;
+            width: 100% !important;
+            height: auto !important;
+            min-height: 36px !important;
+            padding: 0 12px !important;
+            margin: 2px 0 8px !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 8px;
+            background: #fff;
+        }
+
+        /* SWMS "Risk Score (Before)" row: fluid width + centered camera hint. */
+        #div_drop_area .orange-bx div[style*="347px"] { width: 100% !important; align-items: center !important; }
+        #div_drop_area .orange-bx div[style*="347px"] .selector { margin-bottom: 4px !important; }
+
+        /* Number-scale From/To on one line with compact fields. */
+        #div_drop_area .scale {
+            display: flex !important;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 0 !important;
+            margin: 0 !important;
+            font-size: 13px;
+            color: #374151;
+            clear: both;
+        }
+        #div_drop_area .scale input[type="text"] {
+            display: inline-block !important;
+            width: 90px !important;
+            flex: 0 0 auto;
+            margin: 0 !important;
+        }
+
+        /* Add Another / Add Row / Add Column links: brand green, right-aligned, breathing room. */
+        #div_drop_area .add-other-option, #div_drop_area .add-other-row, #div_drop_area .add-other-column, #div_drop_area .add-another {
+            text-align: right;
+            padding: 0 !important;
+            margin: 2px 0 8px !important;
+            background: none !important;
+            border: 0 !important;
+        }
+        #div_drop_area .add-other-option a, #div_drop_area .add-other-row a, #div_drop_area .add-other-column a, #div_drop_area .add-another a {
+            color: #008C00 !important;
+            font-weight: 700;
+            font-size: 12.5px;
+            text-decoration: none !important;
+        }
+        #div_drop_area .add-other-option a:hover, #div_drop_area .add-other-row a:hover, #div_drop_area .add-other-column a:hover, #div_drop_area .add-another a:hover {
+            text-decoration: underline !important;
+        }
+        #div_drop_area #grid_row, #div_drop_area #grid_column { background: none !important; border: 0 !important; padding: 0 !important; }
+
+        /* File-type hints: quiet gray instead of alarm orange. */
+        #div_drop_area .image-label .hint-info, #div_drop_area .image-label small {
+            color: #9ca3af !important;
+            font-weight: 400 !important;
+            font-size: 11px !important;
+            margin-left: 6px;
+        }
+
+        /* Upload iframes: full width, rounded, no stray inline padding. */
+        #div_drop_area iframe {
+            display: block;
+            width: 100% !important;
+            box-sizing: border-box;
+            padding: 0 !important;
+            margin: 4px 0 8px !important;
+            border-radius: 8px;
+            background: #f1f1f1;
+        }
+
+        /* Saved question previews: readable rhythm + a quiet hover hint that they're editable. */
+        #div_drop_area .text-black {
+            width: 100% !important;
+            box-sizing: border-box;
+            min-height: 20px;
+            padding: 6px 10px !important;
+            margin: 0 0 2px !important;
+            border: 1px dashed transparent;
+            border-radius: 8px;
+            font-size: 13.5px;
+            color: #374151;
+            line-height: 1.7;
+        }
+        /* The legacy preview markup sprinkles trailing <br>s after every field — the blocks
+           already carry their own margins, so the extra line-boxes only doubled the gaps.
+           (Blank Space stays selectable through the block's min-height.) */
+        #div_drop_area .text-black > br { display: none; }
+        #div_drop_area .text-black h1 { margin: 4px 0 !important; }
+        #div_drop_area .text-black h3 { margin: 3px 0 !important; }
+        #div_drop_area .text-black .text-box-black { margin: 2px 0 6px !important; }
+        #div_drop_area .text-black div.selector:not(:has(select)) { margin: 2px 0 6px !important; }
+        /* Current-file preview link shown when re-editing Image / Document elements. */
+        #div_drop_area .image-doc-link {
+            display: inline-block;
+            margin: 2px 0 8px;
+            color: #008C00;
+            font-weight: 600;
+            font-size: 12.5px;
+            text-decoration: none;
+            word-break: break-all;
+        }
+        #div_drop_area .image-doc-link:hover { text-decoration: underline; }
+        #div_drop_area .text-black:hover { border-color: #d1d5db; background: #fafafa; }
+        #div_drop_area .text-black table { border-spacing: 10px 6px !important; font-size: 13px; color: #374151; }
+
+        /* Covid check-in: its save-h2 is nested in an extra header div — keep it right of the title. */
+        #div_drop_area .green-first-box > div, #div_drop_area .orange-first-box > div, #div_drop_area .blue-first-box > div {
+            order: 2;
+            display: flex;
+            align-items: center;
+        }
+
+        /* Legacy uniform sprite on the selector span draws stray carets/squares — remove it. */
+        #div_drop_area div.selector:not(:has(select)) span { background: none !important; }
+
+        /* Web Link Button: the <br> between stacked inputs doubles the gap. */
+        #div_drop_area .orange-bx > br { display: none !important; }
     </style>
 </head>
 <body>
