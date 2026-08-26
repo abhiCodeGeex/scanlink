@@ -28,12 +28,12 @@
             font-size: 13px;
             font-weight: 700;
             color: #111827;
-            margin: 16px 0 6px;
+            margin: 8px 0 4px;
             text-transform: none;
             letter-spacing: 0;
         }
         .top-part .rounded {
-            margin: 0 0 6px;
+            margin: 0 0 2px;
             background: none;
             border: 0;
             padding: 0;
@@ -49,11 +49,11 @@
             flex: 1 1 auto;
             width: auto;
             min-width: 0;
-            height: 42px;
-            padding: 0 13px;
+            height: 36px;
+            padding: 0 12px;
             box-sizing: border-box;
             border: 1px solid #d1d5db;
-            border-radius: 9px;
+            border-radius: 8px;
             font-size: 14px;
             background: #fff;
             color: #111827;
@@ -67,10 +67,21 @@
             box-shadow: 0 0 0 3px rgba(0, 140, 0, 0.15);
         }
         .top-part .parent_content { position: relative; }
-        .top-part #remove_ele { margin: 2px 0 4px; }
-        .top-part #remove_ele a { color: #dc2626; font-size: 12px; font-weight: 600; text-decoration: none; }
+        .top-part #remove_ele { margin: 0; }
+        .top-part #remove_ele a { color: #dc2626; font-size: 11.5px; font-weight: 600; text-decoration: none; }
         .top-part #remove_ele a:hover { text-decoration: underline; }
-        .top-part .add-another { text-align: right; margin: 2px 0 8px; }
+        .top-part .add-another { text-align: right; margin: 2px 0 4px; }
+        /* "Remove" (left, inside the preceding recipient row) and "Add Another" (right)
+           share one line instead of stacking — saves a full row per recipient block.
+           position:relative lifts the overlay above the positioned .parent_content, and
+           pointer-events keep ONLY the link clickable so the underlying Remove still works. */
+        .top-part .parent_content + .add-another {
+            margin-top: -20px;
+            position: relative;
+            pointer-events: none;
+        }
+        .top-part .parent_content + .add-another a { pointer-events: auto; }
+        .top-part #remove_ele { display: inline-block; }
         .top-part .add-another a { color: #008C00; font-weight: 600; font-size: 13px; text-decoration: none; }
         .top-part .add-another a:hover { text-decoration: underline; }
         .from-box .green-btn {
@@ -80,11 +91,12 @@
             background: #008C00;
             color: #fff;
             border: 0;
-            border-radius: 9px;
-            height: 42px;
-            padding: 0 20px;
+            border-radius: 8px;
+            height: 36px;
+            margin-top: 4px;
+            padding: 0 16px;
             font-weight: 700;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(0, 140, 0, 0.22);
             transition: background 0.15s ease;

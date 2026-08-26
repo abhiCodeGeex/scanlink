@@ -85,7 +85,7 @@
         display: flex;
         align-items: flex-start;
         gap: 8px;
-        margin: 0 0 10px;
+        margin: 0 0 6px;
         padding: 0;
         font-size: 13px;
         color: #374151;
@@ -122,9 +122,9 @@
         display: flex !important;
         flex-direction: column !important;
         align-items: stretch !important;
-        gap: 10px !important;
-        margin: 4px 0 12px !important;
-        padding: 14px 16px !important;
+        gap: 6px !important;
+        margin: 2px 0 8px !important;
+        padding: 9px 12px !important;
         background: #f3f4f6 !important;
         border: 1px solid #e5e7eb !important;
         border-radius: 8px !important;
@@ -141,7 +141,7 @@
     .sl-form-builder-panel .existing-item__options {
         display: flex !important;
         flex-direction: column !important;
-        gap: 8px !important;
+        gap: 4px !important;
         margin: 0 !important;
         padding: 0 !important;
     }
