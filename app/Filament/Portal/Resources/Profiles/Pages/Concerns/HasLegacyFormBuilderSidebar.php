@@ -951,14 +951,18 @@ trait HasLegacyFormBuilderSidebar
             return;
         }
 
-        // Legacy parity (location/edit.php:1001-1021): a configured participant list
-        // (any participant rows or notification recipients) requires a Participant Name
-        // element (question_type_id 18) on the form, otherwise submissions can never be
-        // matched back to a participant. Block the save with the legacy message.
+        // Legacy parity (location/edit.php:1001-1021): a configured participant list —
+        // participant rows, or notification recipients with a NON-EMPTY email (legacy
+        // trims and skips blanks) — requires a Participant Name element (type 18) on the
+        // form, otherwise submissions can never be matched back to a participant.
         $hasParticipantList = (\Illuminate\Support\Facades\Schema::hasTable('participant')
                 && \App\Models\Participant::query()->where('profile_id', $profile->id)->exists())
             || (\Illuminate\Support\Facades\Schema::hasTable('participant_recipient')
-                && \App\Models\ParticipantRecipient::query()->where('profile_id', $profile->id)->exists());
+                && \App\Models\ParticipantRecipient::query()
+                    ->where('profile_id', $profile->id)
+                    ->whereNotNull('email')
+                    ->where('email', '!=', '')
+                    ->exists());
 
         if ($hasParticipantList) {
             $hasParticipantNameField = \App\Models\FormBuilderQuestion::query()
