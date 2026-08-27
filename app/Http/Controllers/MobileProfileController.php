@@ -488,6 +488,10 @@ class MobileProfileController extends Controller
             }
         }
 
+        // Collect EVERY missing mandatory question (keyed per question) so the form can
+        // highlight the exact fields and scroll to the first one — never fail silently.
+        $missingMandatory = [];
+
         foreach ($questions as $question) {
             if (! $question->is_mandatory) {
                 continue;
@@ -516,15 +520,29 @@ class MobileProfileController extends Controller
                 }
 
                 if (! $hasValue) {
-                    return back()->withErrors(['form' => 'Please complete all mandatory fields.'])->withInput();
+                    $missingMandatory[(int) $questionId] = \App\Support\FormSubmissionPresenter::label($question);
                 }
 
                 continue;
             }
 
             if (! filled($answer)) {
-                return back()->withErrors(['form' => 'Please complete all mandatory fields.'])->withInput();
+                $missingMandatory[(int) $questionId] = \App\Support\FormSubmissionPresenter::label($question);
             }
+        }
+
+        if ($missingMandatory !== []) {
+            $names = array_values($missingMandatory);
+            $summary = 'Please complete the highlighted mandatory field'.(count($names) === 1 ? '' : 's').': '
+                .implode(', ', array_slice($names, 0, 5))
+                .(count($names) > 5 ? ' and '.(count($names) - 5).' more' : '').'.';
+
+            $errors = ['form' => $summary];
+            foreach ($missingMandatory as $qid => $label) {
+                $errors['q_'.$qid] = 'This field is required.';
+            }
+
+            return back()->withErrors($errors)->withInput();
         }
 
         $savedAnswers = [];
