@@ -649,6 +649,23 @@
     include resource_path('views/legacy/formbuilder/index.php');
 @endphp
 <script>
+    // Route every legacy alert() in the builder through the portal's themed dialog
+    // (defined on the parent page) instead of the raw browser alert. Alerts here are
+    // fire-and-forget, so the async themed dialog is a drop-in replacement.
+    (function () {
+        var nativeAlert = window.alert.bind(window);
+        window.alert = function (message) {
+            try {
+                if (window.parent && window.parent.slAlert) {
+                    window.parent.slAlert(message);
+
+                    return;
+                }
+            } catch (e) {}
+            nativeAlert(message);
+        };
+    })();
+
     // jQuery-UI drag/sort only ignores real form elements by default; uniform.js spans,
     // labels and links inside a question box would start a drag instead of clicking.
     // Extend the cancel list on every sortable/draggable, and keep re-applying it because

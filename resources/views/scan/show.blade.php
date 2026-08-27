@@ -71,6 +71,22 @@
         .shareNav-mob a.shareFB { background-image: url('{{ asset('images/facebook-icon.jpg') }}'); }
         .shareNav-mob a.shareTWT { background-image: url('{{ asset('images/twitter-icon.jpg') }}'); }
         .shareNav-mob a.shareEML { background-image: url('{{ asset('images/email-grn-icon.jpg') }}'); }
+        /* Themed dialog (shared slAlert/slConfirm look — same as the portal). */
+        .sl-dialog-overlay {
+            position: fixed; inset: 0; z-index: 10060; display: flex; align-items: center;
+            justify-content: center; padding: 24px 16px; background: rgba(17, 24, 39, 0.55);
+            backdrop-filter: blur(2px); box-sizing: border-box;
+        }
+        .sl-dialog-overlay[hidden] { display: none !important; }
+        .sl-dialog {
+            width: min(400px, 100%); background: #fff; border-radius: 14px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3); padding: 22px 22px 18px; box-sizing: border-box;
+        }
+        .sl-dialog-msg { margin: 0 0 18px; font-size: 14.5px; line-height: 1.5; color: #1f2937; }
+        .sl-dialog-actions { display: flex; justify-content: flex-end; gap: 10px; }
+        .sl-dialog-btn { border: 0; border-radius: 9px; padding: 9px 20px; cursor: pointer; font-size: 13px; font-weight: 700; }
+        .sl-dialog-btn--ghost { background: #f3f4f6; color: #374151; }
+        .sl-dialog-btn--primary { background: #008C00; color: #fff; }
         /* Validation feedback: banner + per-question highlight (submission must never fail silently). */
         .sl-form-errors {
             background: #fef2f2;
@@ -1170,7 +1186,7 @@
                             if (!input) { return; }
                             // Browsers only allow geolocation on secure (https) origins.
                             if (!navigator.geolocation || (!window.isSecureContext && location.hostname !== 'localhost')) {
-                                alert('Location requires a secure (https) connection. Please type your location instead.');
+                                (window.slAlert || alert)('Location requires a secure (https) connection. Please type your location instead.');
                                 return;
                             }
                             var restore = btn.innerHTML;
@@ -1184,7 +1200,7 @@
                                 btn.disabled = false;
                                 btn.innerHTML = restore;
                                 // Tell the visitor why nothing happened instead of failing silently.
-                                alert(err && err.code === 1
+                                (window.slAlert || alert)(err && err.code === 1
                                     ? 'Location permission was denied. Please allow location access, or type your location.'
                                     : 'Unable to get your location. Please type it instead.');
                             }, { enableHighAccuracy: true, timeout: 8000 });
@@ -1533,5 +1549,7 @@
         })();
     </script>
 @endif
+{{-- Themed slAlert/slConfirm (same dialog as the portal) for the visitor page. --}}
+@include('filament.hooks.themed-dialog')
 </body>
 </html>
