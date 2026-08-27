@@ -479,9 +479,25 @@
         }
 
         /* Colour swatch inputs (Web Link / Document Button / Covid colours): legacy pins them
-           to 10px tall x 55px — restore a real field; jscolor paints the background inline. */
+           to 10px tall x 55px — restore a real field; jscolor paints the background inline.
+           A live round swatch (added by JS below) previews the current colour, matching the
+           Filament ColorPicker look. */
+        .sl-color-swatch {
+            display: inline-block !important;
+            float: none !important;
+            position: static !important;
+            width: 18px !important;
+            height: 18px !important;
+            border-radius: 999px;
+            border: 1px solid #d1d5db;
+            vertical-align: middle;
+            margin: 0 0 6px 8px !important;
+            padding: 0 !important;
+            background: #ffffff;
+        }
         #div_drop_area input.btn_colour, #div_drop_area input.color, #div_drop_area input.text-fi {
-            display: block;
+            display: inline-block;
+            vertical-align: middle;
             height: 36px !important;
             width: 140px !important;
             box-sizing: border-box !important;
@@ -692,11 +708,35 @@
                 });
             } catch (e) {}
         }
+        // Live colour swatch next to every colour-code input (Web Link / Document Button /
+        // Covid colours) — previews the current hex like the Filament ColorPicker does.
+        // Values are synced on a timer too because jscolor writes them programmatically.
+        function slSyncColorSwatches() {
+            try {
+                $('#div_drop_area input.btn_colour, #div_drop_area input.color, #div_drop_area input.text-fi').each(function () {
+                    var $input = $(this);
+                    var $swatch = $input.data('slSwatch');
+
+                    if (! $swatch || ! $swatch.length || ! $.contains(document.documentElement, $swatch[0])) {
+                        $swatch = $('<span class="sl-color-swatch" title="Current colour"></span>');
+                        $input.after($swatch);
+                        $input.data('slSwatch', $swatch);
+                        $input.on('input change keyup', slSyncColorSwatches);
+                    }
+
+                    var value = String($input.val() || '').replace(/^#/, '');
+                    if (/^[0-9a-f]{3}([0-9a-f]{3})?$/i.test(value)) {
+                        $swatch.css('background-color', '#' + value);
+                    }
+                });
+            } catch (e) {}
+        }
         $(function () {
             relaxDragCancel();
             stripUniformInCanvas();
-            setInterval(function () { relaxDragCancel(); stripUniformInCanvas(); }, 1000);
-            $(document).ajaxComplete(function () { setTimeout(function () { relaxDragCancel(); stripUniformInCanvas(); }, 100); });
+            slSyncColorSwatches();
+            setInterval(function () { relaxDragCancel(); stripUniformInCanvas(); slSyncColorSwatches(); }, 1000);
+            $(document).ajaxComplete(function () { setTimeout(function () { relaxDragCancel(); stripUniformInCanvas(); slSyncColorSwatches(); }, 100); });
         });
     })();
 </script>

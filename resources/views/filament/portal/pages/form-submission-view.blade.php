@@ -100,6 +100,20 @@
             .sl-fsview__row { flex-direction: column; gap: 4px; }
             .sl-fsview__q { flex: none; max-width: none; }
         }
+        /* Dark mode: the presenter emits INLINE colors (#111827 values, #6b7280 labels,
+           #008901 headings) that vanish on the dark card — override them by matching the
+           inline style attribute (CSS !important beats non-important inline styles). */
+        html.dark .sl-fsview__a [style*="#111827"],
+        html.dark .sl-fsview__sec-body [style*="#111827"] { color: rgb(229 231 235) !important; }
+        html.dark .sl-fsview__a [style*="#6b7280"],
+        html.dark .sl-fsview__sec-body [style*="#6b7280"] { color: rgb(156 163 175) !important; }
+        html.dark .sl-fsview__a [style*="#008901"],
+        html.dark .sl-fsview__sec-body [style*="#008901"],
+        html.dark .sl-fsview__a [style*="#065f06"],
+        html.dark .sl-fsview__sec-body [style*="#065f06"] { color: rgb(74 222 128) !important; }
+        html.dark .sl-fsview__a [style*="#4b5563"],
+        html.dark .sl-fsview__sec-body [style*="#4b5563"] { color: rgb(156 163 175) !important; }
+        html.dark .sl-fsview__sec-body { color: rgb(229 231 235); }
         html.dark .sl-fsview { background: rgb(17 24 39); border-color: rgb(55 65 81); }
         html.dark .sl-fsview__head { background: rgb(24 33 47); border-color: rgb(55 65 81); }
         html.dark .sl-fsview__foot { background: rgb(24 33 47); border-color: rgb(55 65 81); }
