@@ -858,8 +858,9 @@ class MobileProfileController extends Controller
             }
         });
 
-        // Build readable rows (clean labels, structured ::: answers) for the email.
-        $rows = \App\Support\FormSubmissionPresenter::rows($questions, $savedAnswers);
+        // Build readable rows (clean labels, structured ::: answers) for the email —
+        // including the display Text/Heading blocks so the email mirrors the print/PDF.
+        $rows = \App\Support\FormSubmissionPresenter::rows($questions, $savedAnswers, includeDisplayText: true);
 
         // Use the profile's own company logo in the email header when it has one; otherwise the
         // layout falls back to the ScanLink logo.

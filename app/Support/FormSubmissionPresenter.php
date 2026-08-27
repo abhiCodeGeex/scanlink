@@ -703,8 +703,20 @@ class FormSubmissionPresenter
         return match ((int) ($row['type_id'] ?? 0)) {
             10 => new HtmlString('<div style="font-size:18px;font-weight:700;color:#008901;margin:4px 0;">'.e(strip_tags($value)).'</div>'),
             12 => new HtmlString('<div style="font-size:15px;font-weight:700;color:#111827;margin:4px 0;">'.e(strip_tags($value)).'</div>'),
-            default => new HtmlString('<div style="font-size:14px;line-height:1.5;">'.$value.'</div>'),
+            default => new HtmlString('<div style="font-size:14px;line-height:1.5;">'.self::tameScreenRichText($value).'</div>'),
         };
+    }
+
+    /**
+     * CKEditor Text blocks may contain <h1>-<h6>, which render enormous in the email /
+     * print / view contexts. Convert them to compact bold lines.
+     */
+    protected static function tameScreenRichText(string $html): string
+    {
+        $html = (string) preg_replace('/<h[1-6][^>]*>/i', '<div style="font-size:15px;font-weight:700;margin:6px 0 2px;">', $html);
+        $html = (string) preg_replace('/<\/h[1-6]>/i', '</div>', $html);
+
+        return $html;
     }
 
     /**
