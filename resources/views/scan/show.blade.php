@@ -71,6 +71,25 @@
         .shareNav-mob a.shareFB { background-image: url('{{ asset('images/facebook-icon.jpg') }}'); }
         .shareNav-mob a.shareTWT { background-image: url('{{ asset('images/twitter-icon.jpg') }}'); }
         .shareNav-mob a.shareEML { background-image: url('{{ asset('images/email-grn-icon.jpg') }}'); }
+        /* Validation feedback: banner + per-question highlight (submission must never fail silently). */
+        .sl-form-errors {
+            background: #fef2f2;
+            border: 1px solid #fca5a5;
+            border-left: 4px solid #dc2626;
+            border-radius: 8px;
+            color: #991b1b;
+            padding: .7rem .85rem;
+            margin: 0 0 .9rem;
+            font-size: .92rem;
+        }
+        .sl-form-errors__hint { font-weight: 400; font-size: .8rem; margin-top: .25rem; color: #b45309; }
+        .fb-q-error {
+            border-left: 3px solid #dc2626;
+            background: #fef7f7;
+            border-radius: 6px;
+            padding: .4rem .6rem .5rem;
+        }
+        .fb-q-error-msg { color: #dc2626; font-size: .8rem; font-weight: 700; margin-bottom: .1rem; }
         /* Form Submit: solid brand-green button, consistent with the rest of the form. */
         .frm_builder .submit-btn {
             display: inline-block;
@@ -452,6 +471,13 @@
         @if (($profile->form_is_enable || $profile->form_active) && $questions->isNotEmpty())
             <form method="post" action="{{ route('scan.form', [$clientUrl, $profile->id]) }}" enctype="multipart/form-data" class="frm_builder" style="margin-top:.75rem;">
                 @csrf
+                @if ($errors->any())
+                    {{-- Never fail silently: name the problem, highlight the fields, scroll to the first one. --}}
+                    <div class="sl-form-errors" id="sl-form-errors">
+                        <strong>{{ $errors->first('form') ?: $errors->first() }}</strong>
+                        <div class="sl-form-errors__hint">Your answers below have been kept — signatures, photos and file uploads need to be re-added.</div>
+                    </div>
+                @endif
                 {{-- Legacy does not print form_title as a form section heading. --}}
                 @foreach ($questions as $question)
                     @php
@@ -461,12 +487,16 @@
                         $required = $question->is_mandatory ? 'required' : '';
                         // Red mandatory marker, used inline on every required element's label.
                         $star = $question->is_mandatory ? ' <span class="mandatory_field">*</span>' : '';
+                        $hasError = $errors->has('q_'.$qid);
                     @endphp
-                    <div style="margin-bottom:.5rem;">
+                    <div id="fb-q-{{ $qid }}" class="{{ $hasError ? 'fb-q-error' : '' }}" style="margin-bottom:.5rem;">
+                        @if ($hasError)
+                            <div class="fb-q-error-msg">This field is required.</div>
+                        @endif
                         @switch($tid)
                             @case(1)
                                 <label>{{ $question->question_text ?: 'Text field' }}{!! $star !!}</label>
-                                <input type="text" name="answers[{{ $qid }}]" {{ $required }}>
+                                <input type="text" name="answers[{{ $qid }}]" value="{{ old('answers.'.$qid) }}" {{ $required }}>
                                 @break
 
                             @case(2)
@@ -532,7 +562,7 @@
                                 <div class="field-choice">
                                     @foreach ($choiceOptions as $optionName)
                                         <label>
-                                            <input type="radio" name="answers[{{ $qid }}]" value="{{ $optionName }}" {{ $required }}>
+                                            <input type="radio" name="answers[{{ $qid }}]" value="{{ $optionName }}" @checked(old('answers.'.$qid) === $optionName) {{ $required }}>
                                             <span class="choice-label">{{ $optionName }}</span>
                                         </label>
                                     @endforeach
@@ -548,7 +578,7 @@
                                 <div class="field-choice">
                                     @foreach ($choiceOptions as $optionName)
                                         <label>
-                                            <input type="checkbox" name="answers[{{ $qid }}][]" value="{{ $optionName }}">
+                                            <input type="checkbox" name="answers[{{ $qid }}][]" value="{{ $optionName }}" @checked(in_array($optionName, (array) old('answers.'.$qid, []), true))>
                                             <span class="choice-label">{{ $optionName }}</span>
                                         </label>
                                     @endforeach
@@ -564,7 +594,7 @@
                                 <select name="answers[{{ $qid }}]" {{ $required }}>
                                     <option value="">Select…</option>
                                     @foreach ($choiceOptions as $optionName)
-                                        <option value="{{ $optionName }}">{{ $optionName }}</option>
+                                        <option value="{{ $optionName }}" @selected(old('answers.'.$qid) === $optionName)>{{ $optionName }}</option>
                                     @endforeach
                                 </select>
                                 @break
@@ -579,7 +609,7 @@
                                 <select name="answers[{{ $qid }}]" {{ $required }}>
                                     <option value="">Select…</option>
                                     @for ($i = $scaleFrom; $i <= $scaleTo; $i++)
-                                        <option value="{{ $i }}">{{ $i }}</option>
+                                        <option value="{{ $i }}" @selected(old('answers.'.$qid) == $i)>{{ $i }}</option>
                                     @endfor
                                 </select>
                                 @break
@@ -590,6 +620,7 @@
                                     $cols = $options->where('question_option_type_id', 6);
                                 @endphp
                                 <label>{{ $question->question_text ?: 'Grid' }}{!! $star !!}</label>
+                                @php $oldGrid = (array) old('answers.'.$qid, []); @endphp
                                 @if ($rows->isNotEmpty() && $cols->isNotEmpty())
                                     <table class="field-grid">
                                         <thead>
@@ -606,7 +637,7 @@
                                                     <th style="text-align:left;">{{ $row->option_name }}</th>
                                                     @foreach ($cols as $col)
                                                         <td>
-                                                            <input type="radio" name="answers[{{ $qid }}][{{ $row->option_name }}]" value="{{ $col->option_name }}">
+                                                            <input type="radio" name="answers[{{ $qid }}][{{ $row->option_name }}]" value="{{ $col->option_name }}" @checked(($oldGrid[$row->option_name] ?? null) === $col->option_name)>
                                                         </td>
                                                     @endforeach
                                                 </tr>
@@ -614,18 +645,18 @@
                                         </tbody>
                                     </table>
                                 @else
-                                    <textarea name="answers[{{ $qid }}]" rows="2" {{ $required }}></textarea>
+                                    <textarea name="answers[{{ $qid }}]" rows="2" {{ $required }}>{{ is_string(old('answers.'.$qid)) ? old('answers.'.$qid) : '' }}</textarea>
                                 @endif
                                 @break
 
                             @case(8)
                                 <label>{{ $question->question_text ?: 'Date' }}{!! $star !!}</label>
-                                <input type="date" name="answers[{{ $qid }}]" {{ $required }}>
+                                <input type="date" name="answers[{{ $qid }}]" value="{{ old('answers.'.$qid) }}" {{ $required }}>
                                 @break
 
                             @case(9)
                                 <label>{{ $question->question_text ?: 'Time' }}{!! $star !!}</label>
-                                <input type="time" name="answers[{{ $qid }}]" {{ $required }}>
+                                <input type="time" name="answers[{{ $qid }}]" value="{{ old('answers.'.$qid) }}" {{ $required }}>
                                 @break
 
                             @case(11)
@@ -648,7 +679,7 @@
 
                             @case(15)
                                 <label>{{ $question->question_text ?: 'Comments' }}{!! $star !!}</label>
-                                <textarea name="answers[{{ $qid }}]" rows="3" {{ $required }}></textarea>
+                                <textarea name="answers[{{ $qid }}]" rows="3" {{ $required }}>{{ old('answers.'.$qid) }}</textarea>
                                 @break
 
                             @case(16)
@@ -657,19 +688,19 @@
                                     <div class="sl-repeat-item">
                                         @if ($question->include_name)
                                             <label>Name{!! $star !!}</label>
-                                            <input type="text" name="answers_meta[{{ $qid }}][name][]" {{ $required }}>
+                                            <input type="text" name="answers_meta[{{ $qid }}][name][]" value="{{ old('answers_meta.'.$qid.'.name.0') }}" {{ $required }}>
                                         @endif
                                         @if ($question->include_employer)
                                             <label>Employer</label>
-                                            <input type="text" name="answers_meta[{{ $qid }}][employer][]">
+                                            <input type="text" name="answers_meta[{{ $qid }}][employer][]" value="{{ old('answers_meta.'.$qid.'.employer.0') }}">
                                         @endif
                                         @if ($question->include_email)
                                             <label>Email</label>
-                                            <input type="email" name="answers_meta[{{ $qid }}][email][]">
+                                            <input type="email" name="answers_meta[{{ $qid }}][email][]" value="{{ old('answers_meta.'.$qid.'.email.0') }}">
                                         @endif
                                         @if ($question->include_phone)
                                             <label>Phone</label>
-                                            <input type="text" name="answers_meta[{{ $qid }}][phone][]">
+                                            <input type="text" name="answers_meta[{{ $qid }}][phone][]" value="{{ old('answers_meta.'.$qid.'.phone.0') }}">
                                         @endif
                                         <label>{{ $question->question_text }}{!! $star !!}</label>
                                         <div class="signature-wrap">
@@ -693,10 +724,10 @@
                                 <label>{{ $question->question_text ?: 'Participant name' }}{!! $star !!}</label>
                                 @if ($question->participant_include_signature)
                                     {{-- With a signature pad this stays single-instance (one canvas). --}}
-                                    <input type="text" name="answers[{{ $qid }}]" placeholder="Full name" {{ $required }}>
+                                    <input type="text" name="answers[{{ $qid }}]" value="{{ is_string(old('answers.'.$qid)) ? old('answers.'.$qid) : '' }}" placeholder="Full name" {{ $required }}>
                                     @if ($question->participant_include_employer)
                                         <label>Employer / company</label>
-                                        <input type="text" name="answers_meta[{{ $qid }}][employer]">
+                                        <input type="text" name="answers_meta[{{ $qid }}][employer]" value="{{ old('answers_meta.'.$qid.'.employer') }}">
                                     @endif
                                     <div class="signature-wrap">
                                         <canvas id="sig-{{ $qid }}" width="320" height="120"></canvas>
@@ -707,9 +738,9 @@
                                     {{-- Legacy "Add another": collect multiple participants in one submission. --}}
                                     <div class="sl-repeat" data-sl-repeat>
                                         <div class="sl-repeat-item">
-                                            <input type="text" name="answers[{{ $qid }}][]" placeholder="Full name" {{ $required }}>
+                                            <input type="text" name="answers[{{ $qid }}][]" value="{{ old('answers.'.$qid.'.0') }}" placeholder="Full name" {{ $required }}>
                                             @if ($question->participant_include_employer)
-                                                <input type="text" name="answers_meta[{{ $qid }}][employer][]" placeholder="Employer / company" style="margin-top:.35rem;">
+                                                <input type="text" name="answers_meta[{{ $qid }}][employer][]" value="{{ old('answers_meta.'.$qid.'.employer.0') }}" placeholder="Employer / company" style="margin-top:.35rem;">
                                             @endif
                                         </div>
                                         <a href="javascript:;" class="sl-add-another" style="display:inline-block;margin-top:.4rem;font-size:.9rem;color:#008C00;font-weight:600;">+ Add another</a>
@@ -720,7 +751,7 @@
                             @case(19)
                                 <label>{{ $question->question_text ?: 'Location' }}{!! $star !!}</label>
                                 <div class="sl-loc-row">
-                                    <input type="text" name="answers[{{ $qid }}]" id="sl-loc-{{ $qid }}" class="sl-loc-input" placeholder="Location" {{ $required }}>
+                                    <input type="text" name="answers[{{ $qid }}]" id="sl-loc-{{ $qid }}" class="sl-loc-input" value="{{ old('answers.'.$qid) }}" placeholder="Location" {{ $required }}>
                                     <button type="button" class="sl-loc-btn" data-loc-target="sl-loc-{{ $qid }}">
                                         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4.5 8-11a8 8 0 1 0-16 0c0 6.5 8 11 8 11z"/><circle cx="12" cy="11" r="3"/></svg>
                                         Locate me
@@ -734,31 +765,27 @@
                                 <div class="sl-repeat" data-sl-repeat>
                                     <div class="sl-repeat-item">
                                         <label>Task | Activity{!! $star !!}</label>
-                                        <textarea name="answers_meta[{{ $qid }}][task][]" rows="1" {{ $required }}></textarea>
+                                        <textarea name="answers_meta[{{ $qid }}][task][]" rows="1" {{ $required }}>{{ old('answers_meta.'.$qid.'.task.0') }}</textarea>
                                         <label>Potential Hazards{!! $star !!}</label>
-                                        <textarea name="answers_meta[{{ $qid }}][potential_hazards][]" rows="1" {{ $required }}></textarea>
+                                        <textarea name="answers_meta[{{ $qid }}][potential_hazards][]" rows="1" {{ $required }}>{{ old('answers_meta.'.$qid.'.potential_hazards.0') }}</textarea>
                                         <label>Risk Score (Before){!! $star !!}</label>
                                         <select name="answers_meta[{{ $qid }}][risk_score_before][]" style="width:150px;max-width:100%;" {{ $required }}>
                                             <option value="">Select</option>
-                                            <option value="1">1</option>
-                                            <option value="2">2</option>
-                                            <option value="3">3</option>
-                                            <option value="4">4</option>
-                                            <option value="5">5</option>
+                                            @for ($rs = 1; $rs <= 5; $rs++)
+                                                <option value="{{ $rs }}" @selected(old('answers_meta.'.$qid.'.risk_score_before.0') == $rs)>{{ $rs }}</option>
+                                            @endfor
                                         </select>
                                         <label>Photo (optional)</label>
                                         {{-- Legacy SWMS photo input is `multiple`; names are re-indexed per row by the Add-another JS. --}}
                                         <input type="file" name="answers_file[{{ $qid }}][0][]" multiple accept="image/*" class="sl-multi-upload">
                                         <label>Control Measures{!! $star !!}</label>
-                                        <textarea name="answers_meta[{{ $qid }}][control_measures][]" rows="1" {{ $required }}></textarea>
+                                        <textarea name="answers_meta[{{ $qid }}][control_measures][]" rows="1" {{ $required }}>{{ old('answers_meta.'.$qid.'.control_measures.0') }}</textarea>
                                         <label>Risk Score (After){!! $star !!}</label>
                                         <select name="answers_meta[{{ $qid }}][risk_score_after][]" style="width:150px;max-width:100%;" {{ $required }}>
                                             <option value="">Select</option>
-                                            <option value="1">1</option>
-                                            <option value="2">2</option>
-                                            <option value="3">3</option>
-                                            <option value="4">4</option>
-                                            <option value="5">5</option>
+                                            @for ($rs = 1; $rs <= 5; $rs++)
+                                                <option value="{{ $rs }}" @selected(old('answers_meta.'.$qid.'.risk_score_after.0') == $rs)>{{ $rs }}</option>
+                                            @endfor
                                         </select>
                                     </div>
                                     {{-- Legacy add_another_hazard: appends another full SWMS hazard row. --}}
@@ -771,7 +798,7 @@
                                 {{-- Legacy "Add another": multiple additional recipient emails. --}}
                                 <div class="sl-repeat" data-sl-repeat>
                                     <div class="sl-repeat-item">
-                                        <input type="email" name="answers[{{ $qid }}][]" {{ $required }}>
+                                        <input type="email" name="answers[{{ $qid }}][]" value="{{ old('answers.'.$qid.'.0') }}" {{ $required }}>
                                     </div>
                                     <a href="javascript:;" class="sl-add-another" style="display:inline-block;margin-top:.4rem;font-size:.9rem;color:#008C00;font-weight:600;">+ Add another</a>
                                 </div>
@@ -796,27 +823,27 @@
 
                                     <p>
                                         <span style="color:{{ $fg }};">Visitor name <span style="color:red">*</span></span><br>
-                                        <input class="input-field" type="text" name="answers_meta[{{ $qid }}][visitor_name]" required {{ $required }}>
+                                        <input class="input-field" type="text" name="answers_meta[{{ $qid }}][visitor_name]" value="{{ old('answers_meta.'.$qid.'.visitor_name') }}" required {{ $required }}>
                                     </p>
                                     <p>
                                         <span style="color:{{ $fg }};">Visitor phone <span style="color:red">*</span></span><br>
-                                        <input class="input-field" type="text" inputmode="numeric" name="answers_meta[{{ $qid }}][visitor_phone]" required>
+                                        <input class="input-field" type="text" inputmode="numeric" name="answers_meta[{{ $qid }}][visitor_phone]" value="{{ old('answers_meta.'.$qid.'.visitor_phone') }}" required>
                                     </p>
                                     <p>
                                         <span style="color:{{ $fg }};">Date <span style="color:red">*</span></span><br>
-                                        <input class="input-field" type="date" name="answers_meta[{{ $qid }}][checkin_date]" required>
+                                        <input class="input-field" type="date" name="answers_meta[{{ $qid }}][checkin_date]" value="{{ old('answers_meta.'.$qid.'.checkin_date') }}" required>
                                     </p>
                                     <p>
                                         <span style="color:{{ $fg }};">Time <span style="color:red">*</span></span><br>
-                                        <input class="input-field" type="time" name="answers_meta[{{ $qid }}][checkin_time]" required>
+                                        <input class="input-field" type="time" name="answers_meta[{{ $qid }}][checkin_time]" value="{{ old('answers_meta.'.$qid.'.checkin_time') }}" required>
                                     </p>
                                     <p>
                                         <span style="color:{{ $fg }};">Venue name <span style="color:red">*</span></span><br>
-                                        <input class="input-field" type="text" name="answers_meta[{{ $qid }}][venue_name]" required>
+                                        <input class="input-field" type="text" name="answers_meta[{{ $qid }}][venue_name]" value="{{ old('answers_meta.'.$qid.'.venue_name') }}" required>
                                     </p>
                                     <p>
                                         <span style="color:{{ $fg }};">Venue Address <span style="color:red">*</span></span><br>
-                                        <input class="input-field" type="text" name="answers_meta[{{ $qid }}][venue_address]" required>
+                                        <input class="input-field" type="text" name="answers_meta[{{ $qid }}][venue_address]" value="{{ old('answers_meta.'.$qid.'.venue_address') }}" required>
                                     </p>
                                     <p>
                                         <span style="color:{{ $fg }};">Location Description/Type <span style="color:red">*</span></span><br>
@@ -828,7 +855,7 @@
                                         >
                                             <option value="">Select</option>
                                             @foreach ($locationTypes as $locationType)
-                                                <option value="{{ $locationType }}">{{ $locationType }}</option>
+                                                <option value="{{ $locationType }}" @selected(old('answers_meta.'.$qid.'.location_type') === $locationType)>{{ $locationType }}</option>
                                             @endforeach
                                         </select>
                                     </p>
@@ -843,6 +870,19 @@
                     </div>
                 @endforeach
                 <p style="margin-top:.5rem;"><input class="submit-btn" type="submit" value="Submit"></p>
+                @if ($errors->any())
+                    <script>
+                        // Bring the visitor straight to the problem after the redirect back.
+                        document.addEventListener('DOMContentLoaded', function () {
+                            var target = document.querySelector('.fb-q-error') || document.getElementById('sl-form-errors');
+                            if (target) {
+                                setTimeout(function () {
+                                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                }, 150);
+                            }
+                        });
+                    </script>
+                @endif
             </form>
             <script>
                 window.slCovidLocationChange = function (value, questionId, labelColor) {

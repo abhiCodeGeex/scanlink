@@ -56,21 +56,19 @@
 <br>
 
 @foreach ($sessions as $i => $s)
-    @if ($i > 0)
-        <br>
-        <table cellpadding="0" cellspacing="0" width="100%">
-            <tr><td style="background-color:#e5e7eb;font-size:0.6pt;">&nbsp;</td></tr>
-        </table>
-        <br>
-    @endif
-
+    {{-- Multi-submission report: every submission opens with an unmissable solid green
+         banner (number + date) after clear whitespace, so submissions never blur together. --}}
     @if (count($sessions) > 1)
-        <table cellpadding="4" cellspacing="0" width="100%">
-            <tr>
-                <td style="font-size:9pt;"><span style="color:#008901;"><b>SUBMISSION {{ $i + 1 }}</b></span>
-                    <span style="color:#9ca3af;">&nbsp;-&nbsp; {{ $s['submittedAt'] }}</span></td>
+        @if ($i > 0)
+            <br><br>
+        @endif
+        <table cellpadding="9" cellspacing="0" width="100%">
+            <tr nobr="true">
+                <td width="70%" style="background-color:#008901;color:#ffffff;font-size:11.5pt;"><b>SUBMISSION {{ $i + 1 }} OF {{ count($sessions) }}</b></td>
+                <td width="30%" align="right" style="background-color:#008901;color:#d8f5d8;font-size:9pt;">Submitted {{ $s['submittedAt'] }}</td>
             </tr>
         </table>
+        <br>
     @endif
 
     @foreach ($segment($s['rows']) as $si => $seg)

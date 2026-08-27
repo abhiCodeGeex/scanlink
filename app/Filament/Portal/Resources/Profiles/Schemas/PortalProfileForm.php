@@ -1362,25 +1362,11 @@ class PortalProfileForm
                 ->maxSize(102400)
                 ->visible(fn (Get $get): bool => $allowUpload && $get('video_source') === 'upload')
                 ->required(fn (Get $get): bool => $allowUpload && $get('video_source') === 'upload'),
-            Select::make('existing_video_id')
+            // Legacy "Select From Existing": a paginated table of the client's video
+            // library with per-row Watch + Remove, radio-picking into existing_video_id.
+            \Filament\Forms\Components\ViewField::make('existing_video_id')
                 ->label('Your existing videos')
-                ->options(function (): array {
-                    $clientId = \App\Filament\Portal\Concerns\InteractsWithClientMembership::portalMembership()?->client_id;
-
-                    if (! $clientId) {
-                        return [];
-                    }
-
-                    return \App\Models\Video::query()
-                        ->where('client_id', $clientId)
-                        ->orderByDesc('id')
-                        ->get()
-                        ->mapWithKeys(fn (\App\Models\Video $v): array => [
-                            (int) $v->id => trim((string) ($v->title ?: $v->video_name)).' — Profile #'.$v->profile_id,
-                        ])
-                        ->all();
-                })
-                ->searchable()
+                ->view('filament.portal.profiles.existing-videos-picker')
                 ->visible(fn (Get $get): bool => $get('video_source') === 'existing')
                 ->required(fn (Get $get): bool => $get('video_source') === 'existing'),
         ];

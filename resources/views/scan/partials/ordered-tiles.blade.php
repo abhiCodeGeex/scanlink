@@ -44,11 +44,23 @@
             @php $vids = $profile->videos->where('is_extra', $tileId === 14); @endphp
             @if ($vids->isNotEmpty())
                 @foreach ($vids as $video)
-                    @php $embed = $youtubeEmbedUrl((string) $video->video_name); @endphp
+                    @php
+                        $embed = $youtubeEmbedUrl((string) $video->video_name);
+                        $vName = (string) $video->video_name;
+                        // Legacy: a video_name that is a file (has a video extension) is an uploaded clip —
+                        // play it inline from public storage like the YouTube embeds, never link the raw name.
+                        $vFileUrl = preg_match('/\.(mp4|m4v|mov|webm|ogg)$/i', $vName)
+                            ? $publicMediaUrl(str_contains($vName, '/') ? $vName : 'images/video/'.$vName)
+                            : null;
+                    @endphp
                     @if ($embed)
                         <div class="video-wrap"><iframe src="{{ $embed }}" allowfullscreen loading="lazy" title="{{ $video->title ?: 'YouTube video' }}"></iframe></div>
-                    @elseif (filled($video->video_name))
-                        <a class="btn" href="{{ $video->video_name }}" target="_blank" rel="noopener">{{ $video->title ?: 'Watch video' }}</a>
+                    @elseif ($vFileUrl)
+                        <div class="video-wrap">
+                            <video controls playsinline preload="metadata" style="position:absolute;top:0;left:0;width:100%;height:100%;background:#000;" title="{{ $video->title ?: 'Video' }}"><source src="{{ $vFileUrl }}"></video>
+                        </div>
+                    @elseif (filled($vName))
+                        <a class="btn" href="{{ $vName }}" target="_blank" rel="noopener">{{ $video->title ?: 'Watch video' }}</a>
                     @endif
                 @endforeach
             @endif

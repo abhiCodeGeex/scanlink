@@ -488,6 +488,10 @@ class MobileProfileController extends Controller
             }
         }
 
+        // Collect EVERY missing mandatory question (keyed per question) so the form can
+        // highlight the exact fields and scroll to the first one — never fail silently.
+        $missingMandatory = [];
+
         foreach ($questions as $question) {
             if (! $question->is_mandatory) {
                 continue;
@@ -516,15 +520,29 @@ class MobileProfileController extends Controller
                 }
 
                 if (! $hasValue) {
-                    return back()->withErrors(['form' => 'Please complete all mandatory fields.'])->withInput();
+                    $missingMandatory[(int) $questionId] = \App\Support\FormSubmissionPresenter::label($question);
                 }
 
                 continue;
             }
 
             if (! filled($answer)) {
-                return back()->withErrors(['form' => 'Please complete all mandatory fields.'])->withInput();
+                $missingMandatory[(int) $questionId] = \App\Support\FormSubmissionPresenter::label($question);
             }
+        }
+
+        if ($missingMandatory !== []) {
+            $names = array_values($missingMandatory);
+            $summary = 'Please complete the highlighted mandatory field'.(count($names) === 1 ? '' : 's').': '
+                .implode(', ', array_slice($names, 0, 5))
+                .(count($names) > 5 ? ' and '.(count($names) - 5).' more' : '').'.';
+
+            $errors = ['form' => $summary];
+            foreach ($missingMandatory as $qid => $label) {
+                $errors['q_'.$qid] = 'This field is required.';
+            }
+
+            return back()->withErrors($errors)->withInput();
         }
 
         $savedAnswers = [];
@@ -874,10 +892,28 @@ class MobileProfileController extends Controller
             ];
         }
 
+        // Email clients often cannot (or refuse to) fetch images from the app URL, which
+        // breaks the logo and signature <img> tags. Embed every local image inline (CID)
+        // so they render regardless of where the email is opened.
+        $embeddableImages = [];
+        preg_match_all('/<img[^>]+src="([^"]+)"/i', $html, $imgMatches);
+        foreach (array_unique($imgMatches[1] ?? []) as $imgSrc) {
+            $localPath = $this->localPathForImageSrc((string) $imgSrc);
+            if ($localPath !== null) {
+                $embeddableImages[(string) $imgSrc] = $localPath;
+            }
+        }
+
         foreach ($recipients as $email) {
             try {
-                Mail::html($html, function ($message) use ($email, $subject, $pdfContent, $attachments): void {
-                    $message->to($email)->subject($subject);
+                Mail::send([], [], function ($message) use ($html, $embeddableImages, $email, $subject, $pdfContent, $attachments): void {
+                    $body = $html;
+                    foreach ($embeddableImages as $src => $path) {
+                        $cid = $message->embed($path);
+                        $body = str_replace('src="'.$src.'"', 'src="'.$cid.'"', $body);
+                    }
+
+                    $message->to($email)->subject($subject)->html($body);
 
                     if ($pdfContent !== null) {
                         $message->attachData($pdfContent, 'form-submission.pdf', ['mime' => 'application/pdf']);
@@ -895,6 +931,40 @@ class MobileProfileController extends Controller
                 ]);
             }
         }
+    }
+
+    /**
+     * Resolve an <img src> from the submission email to a local file we can CID-embed:
+     * /storage/… (public disk) and /images/… (public folder) URLs of THIS app only.
+     */
+    protected function localPathForImageSrc(string $src): ?string
+    {
+        if (str_starts_with($src, 'data:') || str_starts_with($src, 'cid:')) {
+            return null;
+        }
+
+        $path = (string) (parse_url($src, PHP_URL_PATH) ?? '');
+        $path = rawurldecode($path);
+
+        if ($path === '' || str_contains($path, '..')) {
+            return null;
+        }
+
+        if (str_starts_with($path, '/storage/')) {
+            $rel = substr($path, strlen('/storage/'));
+            if (Storage::disk('public')->exists($rel)) {
+                return Storage::disk('public')->path($rel);
+            }
+        }
+
+        if (str_starts_with($path, '/images/')) {
+            $abs = public_path(ltrim($path, '/'));
+            if (is_file($abs)) {
+                return $abs;
+            }
+        }
+
+        return null;
     }
 
     /**

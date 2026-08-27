@@ -5181,3 +5181,51 @@ html.dark .sl-sa__popup-row span { color: #222 !important; }
     .sl-survey-form-builder,
     .sl-profile-editor--survey .sl-survey-form-builder { max-width: 100% !important; }
 }
+
+/* ===== Pictures: uploaded preview shows the IMAGE TILE only (like the Logo preview) —
+   no full-width black panel around it. Applies to Pictures / Pictures #2 / VOC pictures. ===== */
+.fi-page:has(.sl-profile-editor) .sl-pictures-repeater .filepond--root:has(.filepond--item) {
+    width: 128px !important;
+    max-width: 128px !important;
+    min-width: 128px !important;
+    height: 96px !important;
+    min-height: 96px !important;
+    max-height: 96px !important;
+    overflow: hidden !important;
+    border-radius: 8px;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-pictures-repeater .filepond--root:has(.filepond--item) .filepond--panel-root {
+    background-color: #f3f4f6 !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-pictures-repeater .filepond--root:has(.filepond--item) .filepond--image-preview-wrapper,
+.fi-page:has(.sl-profile-editor) .sl-pictures-repeater .filepond--root:has(.filepond--item) .filepond--image-preview {
+    height: 96px !important;
+    min-height: 96px !important;
+    max-height: 96px !important;
+    background-color: #f3f4f6 !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-pictures-repeater .filepond--root:has(.filepond--item) .filepond--file-info,
+.fi-page:has(.sl-profile-editor) .sl-pictures-repeater .filepond--root:has(.filepond--item) .filepond--file-status {
+    display: none !important;
+}
+
+.fi-page:has(.sl-profile-editor) .sl-pictures-repeater .filepond--action-remove-item {
+    width: 22px !important;
+    height: 22px !important;
+    box-shadow: none !important;
+    background-color: #fff !important;
+    color: #6b7280 !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 999px !important;
+}
+
+/* Safety net: never show FilePond's dark letterbox behind image previews anywhere
+   in the profile editor. */
+.fi-page:has(.sl-profile-editor) .filepond--image-preview,
+.fi-page:has(.sl-profile-editor) .filepond--image-preview-overlay-idle {
+    background-color: #f3f4f6 !important;
+    color: #f3f4f6 !important;
+}

@@ -81,12 +81,23 @@
         }
         .sl-fslog__btn:hover { background: #00a001; }
         .sl-fslog__btn--wide { min-width: 115px; text-align: center; }
+        /* Wide logs scroll horizontally inside the card instead of pushing the page sideways. */
+        .sl-fslog__table-scroll {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            max-width: 100%;
+        }
         .sl-fslog table.listing-table {
-            width: 100%;
+            width: max-content;
+            min-width: 100%;
             border-collapse: collapse;
             background: #fff;
             font-size: 13px;
         }
+        /* Neutralise the legacy width="8%"-style attributes: percentages of a max-content
+           table blow single columns up to thousands of pixels of empty space. */
+        .sl-fslog table.listing-table th { white-space: nowrap; width: auto !important; }
+        .sl-fslog table.listing-table td { max-width: 240px; min-width: 70px; }
         .sl-fslog table.listing-table th {
             background: #e8e8e8;
             color: #333;
@@ -186,6 +197,9 @@
                     <a class="sl-fslog__btn" href="{{ $this->returnToListUrl() }}">RETURN TO LIST</a>
                 </div>
 
+                {{-- Wide logs (many columns) scroll inside this container instead of
+                     overflowing the card / scrolling the whole page sideways. --}}
+                <div class="sl-fslog__table-scroll">
                 <table class="listing-table" width="100%" cellspacing="0" cellpadding="0">
                     <thead>
                         <tr>
@@ -259,6 +273,7 @@
                         @endif
                     </tbody>
                 </table>
+                </div>
 
                 @if ($sessions && $sessions->hasPages())
                     <div class="sl-fslog__paging">
