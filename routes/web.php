@@ -139,6 +139,21 @@ Route::middleware(['web', 'auth'])->group(function (): void {
     Route::match(['get', 'post'], '/portal/legacy-form-builder/update-enable-form', [LegacyFormBuilderController::class, 'updateEnableForm'])
         ->name('portal.legacy-form-builder.enable');
 
+    // Remove a video from the client's library (the existing-videos picker table).
+    Route::post('/portal/videos/{video}/remove', function (\App\Models\Video $video) {
+        $member = \App\Models\ClientUser::query()
+            ->where('auth_user_id', \Illuminate\Support\Facades\Auth::id())
+            ->where('client_id', $video->client_id)
+            ->active()
+            ->first();
+
+        abort_unless($member !== null, 403);
+
+        $video->delete();
+
+        return response()->json(['ok' => true]);
+    })->name('portal.videos.remove');
+
     Route::get('/test/temp_image_upload', [FormBuilderUploadController::class, 'imageForm']);
     Route::get('/test/temp_doc_upload', [FormBuilderUploadController::class, 'docForm']);
     Route::get('/test/temp_doc_multi_upload', [FormBuilderUploadController::class, 'docMultiForm']);

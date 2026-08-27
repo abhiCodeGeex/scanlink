@@ -717,8 +717,23 @@ class FormSubmissionPresenter
         return match ((int) ($row['type_id'] ?? 0)) {
             10 => '<span style="font-size:13pt;color:#008901;"><b>'.e(strip_tags($value)).'</b></span>',
             12 => '<span style="font-size:11pt;color:#111827;"><b>'.e(strip_tags($value)).'</b></span>',
-            default => '<span style="font-size:10pt;color:#111827;">'.$value.'</span>',
+            default => '<span style="font-size:10pt;color:#111827;">'.self::tamePdfRichText($value).'</span>',
         };
+    }
+
+    /**
+     * CKEditor Text blocks may contain <h1>-<h6> — TCPDF renders those at enormous default
+     * sizes with negative margins that overlap following rows. Convert them to compact
+     * bold lines and drop font-size inline styles so nothing explodes the layout.
+     */
+    protected static function tamePdfRichText(string $html): string
+    {
+        $html = (string) preg_replace('/<h[1-6][^>]*>/i', '<br><span style="font-size:11pt;"><b>', $html);
+        $html = (string) preg_replace('/<\/h[1-6]>/i', '</b></span><br>', $html);
+        // Cap runaway inline font sizes (e.g. pasted 36px text) to the body size.
+        $html = (string) preg_replace('/font-size\s*:\s*[^;"\']+/i', 'font-size:10pt', $html);
+
+        return $html;
     }
 
     /**

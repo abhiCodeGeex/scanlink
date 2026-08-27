@@ -88,14 +88,16 @@
             max-width: 100%;
         }
         .sl-fslog table.listing-table {
-            width: 100%;
-            min-width: max-content;
+            width: max-content;
+            min-width: 100%;
             border-collapse: collapse;
             background: #fff;
             font-size: 13px;
         }
-        .sl-fslog table.listing-table th { white-space: nowrap; }
-        .sl-fslog table.listing-table td { max-width: 260px; }
+        /* Neutralise the legacy width="8%"-style attributes: percentages of a max-content
+           table blow single columns up to thousands of pixels of empty space. */
+        .sl-fslog table.listing-table th { white-space: nowrap; width: auto !important; }
+        .sl-fslog table.listing-table td { max-width: 240px; min-width: 70px; }
         .sl-fslog table.listing-table th {
             background: #e8e8e8;
             color: #333;
