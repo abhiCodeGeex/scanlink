@@ -527,7 +527,7 @@ class FormSubmissions extends Page
      * normalized the same way the scan page resolves it, with legacy public/ locations and the
      * bundled ScanLink logo as fallbacks. Returns null when no usable image exists.
      */
-    protected function profilePdfLogoSrc(Profile $profile): ?string
+    public static function profilePdfLogoSrc(Profile $profile): ?string
     {
         $logo = \App\Models\Logo::query()->where('profile_id', $profile->id)->orderBy('id')->first();
         $name = trim((string) ($logo?->logo_name ?? ''));

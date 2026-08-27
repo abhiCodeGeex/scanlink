@@ -38,7 +38,7 @@
                     @if (($row['kind'] ?? '') === 'display')
                         {{-- Form context (Text / Heading blocks the visitor saw). --}}
                         <tr>
-                            <td colspan="2" style="padding:11px 16px;border-bottom:1px solid #f3f4f6;font-size:14px;line-height:1.5;color:#111827;">
+                            <td colspan="2" style="padding:11px 16px;border-bottom:1px solid #f3f4f6;font-size:13.5px;line-height:1.5;color:#111827;">
                                 {!! \App\Support\FormSubmissionPresenter::answerHtml($row) !!}
                             </td>
                         </tr>
@@ -46,25 +46,25 @@
                         {{-- Complex answers (SWMS / signatures / field groups) span the full width. --}}
                         <tr>
                             <td colspan="2" style="padding:12px 16px;border-bottom:1px solid #f3f4f6;">
-                                <div style="font-size:11px;font-weight:bold;letter-spacing:0.04em;text-transform:uppercase;color:#6b7280;margin:0 0 8px;">{{ $row['label'] }}</div>
-                                <div style="font-size:14px;line-height:1.5;color:#111827;">
+                                <div style="font-size:12.5px;font-weight:bold;letter-spacing:0.02em;text-transform:uppercase;color:#6b7280;margin:0 0 8px;">{{ $row['label'] }}</div>
+                                <div style="font-size:13.5px;line-height:1.5;color:#111827;">
                                     {!! \App\Support\FormSubmissionPresenter::answerHtml($row) !!}
                                 </div>
                             </td>
                         </tr>
                     @else
                         <tr>
-                            <td width="30%" style="padding:10px 12px 10px 16px;border-bottom:1px solid #f3f4f6;font-size:11px;font-weight:bold;letter-spacing:0.04em;text-transform:uppercase;color:#6b7280;vertical-align:top;">
+                            <td width="30%" style="padding:10px 12px 10px 16px;border-bottom:1px solid #f3f4f6;font-size:12.5px;font-weight:bold;letter-spacing:0.02em;text-transform:uppercase;color:#6b7280;vertical-align:top;">
                                 {{ $row['label'] }}
                             </td>
-                            <td style="padding:10px 16px 10px 0;border-bottom:1px solid #f3f4f6;font-size:14px;line-height:1.5;color:#111827;vertical-align:top;">
+                            <td style="padding:10px 16px 10px 0;border-bottom:1px solid #f3f4f6;font-size:13.5px;line-height:1.5;color:#111827;vertical-align:top;">
                                 {!! \App\Support\FormSubmissionPresenter::answerHtml($row) !!}
                             </td>
                         </tr>
                     @endif
                 @empty
                     <tr>
-                        <td style="padding:18px;color:#6b7280;font-size:14px;text-align:center;">No answers were submitted.</td>
+                        <td style="padding:18px;color:#6b7280;font-size:13.5px;text-align:center;">No answers were submitted.</td>
                     </tr>
                 @endforelse
             </table>
