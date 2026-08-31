@@ -101,8 +101,17 @@
                         accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                         class="sl-plist__file"
                     >
-                    <button type="button" class="sl-plist__btn sl-plist__btn--primary" wire:click="importUpload" wire:loading.attr="disabled">
-                        Upload
+                    {{-- Targeted at the transfer as well as the import: clicking Upload while
+                         the file is still on its way left uploadFile null server-side. --}}
+                    <button
+                        type="button"
+                        class="sl-plist__btn sl-plist__btn--primary"
+                        wire:click="importUpload"
+                        wire:target="uploadFile,importUpload"
+                        wire:loading.attr="disabled"
+                    >
+                        <span wire:loading.remove wire:target="uploadFile">Upload</span>
+                        <span wire:loading wire:target="uploadFile">Uploading…</span>
                     </button>
                 </div>
                 <span class="sl-plist__hint">.xlsx only</span>

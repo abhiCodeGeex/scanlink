@@ -43,8 +43,14 @@ class SwmsFormSubmissionTest extends TestCase
             'is_mandatory' => false,
         ]);
 
-        $photo0 = UploadedFile::fake()->image('swms-row0.jpg');
-        $photo1 = UploadedFile::fake()->image('swms-row1.jpg');
+        // Distinct dimensions => distinct byte sizes, which is how each row's photo is
+        // identified below. store() randomises the filename, so the original name never
+        // survives into the stored path and cannot be asserted on.
+        $photo0 = UploadedFile::fake()->image('swms-row0.jpg', 24, 24);
+        $photo1 = UploadedFile::fake()->image('swms-row1.jpg', 96, 96);
+        $size0 = $photo0->getSize();
+        $size1 = $photo1->getSize();
+        $this->assertNotSame($size0, $size1, 'The two fixtures must be distinguishable by size.');
 
         $this->post("/{$client->url}/{$profile->id}/form", [
             'answers_meta' => [
@@ -75,8 +81,27 @@ class SwmsFormSubmissionTest extends TestCase
         $this->assertCount(2, $instances);
         $this->assertStringContainsString('photo=', $instances[0]);
         $this->assertStringContainsString('photo=', $instances[1]);
-        $this->assertStringContainsString('swms-row0.jpg', $instances[0]);
-        $this->assertStringContainsString('swms-row1.jpg', $instances[1]);
+
+        // Each row must carry ITS OWN photo. The row index once collapsed to 0, so both
+        // photos landed on hazard #1 and hazard #2 showed none.
+        $this->assertSame($size0, $this->storedPhotoSize($instances[0]));
+        $this->assertSame($size1, $this->storedPhotoSize($instances[1]));
+    }
+
+    /**
+     * Byte size of the single photo stored against one SWMS instance, used to prove WHICH
+     * uploaded file landed on that hazard row.
+     */
+    protected function storedPhotoSize(string $instance): int
+    {
+        $this->assertMatchesRegularExpression('/photo=[^@]+/', $instance);
+        preg_match('/photo=([^@]+)/', $instance, $m);
+
+        $paths = array_values(array_filter(array_map('trim', explode(',', $m[1]))));
+        $this->assertCount(1, $paths, 'Expected exactly one photo on this hazard row.');
+        $this->assertTrue(Storage::disk('public')->exists($paths[0]), "Missing stored file {$paths[0]}");
+
+        return Storage::disk('public')->size($paths[0]);
     }
 
     #[Test]
@@ -96,7 +121,8 @@ class SwmsFormSubmissionTest extends TestCase
             'is_mandatory' => false,
         ]);
 
-        $photo1 = UploadedFile::fake()->image('swms-row1-only.jpg');
+        $photo1 = UploadedFile::fake()->image('swms-row1-only.jpg', 48, 48);
+        $size1 = $photo1->getSize();
 
         $this->post("/{$client->url}/{$profile->id}/form", [
             'answers_meta' => [
@@ -123,7 +149,8 @@ class SwmsFormSubmissionTest extends TestCase
         $this->assertCount(2, $instances);
         $this->assertStringNotContainsString('photo=', $instances[0]);
         $this->assertStringContainsString('photo=', $instances[1]);
-        $this->assertStringContainsString('swms-row1-only.jpg', $instances[1]);
+        // The lone photo belongs to hazard #2, not hazard #1.
+        $this->assertSame($size1, $this->storedPhotoSize($instances[1]));
     }
 
     /**
@@ -180,10 +207,12 @@ class SwmsFormSubmissionTest extends TestCase
         ]);
 
         $photos = [
-            UploadedFile::fake()->image('swms-a.jpg'),
-            UploadedFile::fake()->image('swms-b.jpg'),
-            UploadedFile::fake()->image('swms-c.jpg'),
+            UploadedFile::fake()->image('swms-a.jpg', 24, 24),
+            UploadedFile::fake()->image('swms-b.jpg', 64, 64),
+            UploadedFile::fake()->image('swms-c.jpg', 128, 128),
         ];
+        $sizes = array_map(fn (UploadedFile $p): int => $p->getSize(), $photos);
+        $this->assertSame($sizes, array_unique($sizes), 'Fixtures must be distinguishable by size.');
 
         $this->post("/{$client->url}/{$profile->id}/form", [
             'answers_meta' => [
@@ -210,8 +239,9 @@ class SwmsFormSubmissionTest extends TestCase
 
         $instances = explode('@@SWMS@@', (string) $stored);
         $this->assertCount(3, $instances);
-        $this->assertStringContainsString('photo=', $instances[0]);
-        $this->assertStringContainsString('photo=', $instances[1]);
-        $this->assertStringContainsString('photo=', $instances[2]);
+        // Every hazard row keeps its own photo — none of them collapse onto row 0.
+        $this->assertSame($sizes[0], $this->storedPhotoSize($instances[0]));
+        $this->assertSame($sizes[1], $this->storedPhotoSize($instances[1]));
+        $this->assertSame($sizes[2], $this->storedPhotoSize($instances[2]));
     }
 }

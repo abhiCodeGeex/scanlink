@@ -225,6 +225,15 @@ class ManageParticipants extends Page
 
     public function importUpload(): void
     {
+        // No file yet: either nothing was chosen, or the visitor hit Upload while Livewire
+        // was still transferring it. A bare validate() here throws a ValidationException the
+        // popup has nowhere to render, so the click looked like it did nothing at all.
+        if (! $this->uploadFile instanceof TemporaryUploadedFile) {
+            $this->js('alert('.json_encode('Choose an .xlsx file first, and wait for it to finish uploading.').')');
+
+            return;
+        }
+
         $this->validate([
             'uploadFile' => ['required', 'file', 'max:5120'],
         ]);
@@ -244,6 +253,7 @@ class ManageParticipants extends Page
         $reader->open($path);
 
         $imported = 0;
+        $skipped = 0;
 
         foreach ($reader->getSheetIterator() as $sheet) {
             foreach ($sheet->getRowIterator() as $row) {
@@ -257,6 +267,8 @@ class ManageParticipants extends Page
 
                 $dueDate = $this->parseImportDueDate($dueRaw);
                 if ($dueDate === null) {
+                    $skipped++;
+
                     continue;
                 }
 
@@ -277,9 +289,26 @@ class ManageParticipants extends Page
         $this->uploadFile = null;
         $this->loadParticipants();
 
+        // Say what happened either way. "0 added" used to be indistinguishable from the
+        // button doing nothing at all.
+        if ($imported === 0) {
+            Notification::make()
+                ->title('Nothing imported')
+                ->body($skipped > 0
+                    ? "No rows could be read. Expected column A = Name and column B = Response Due By (DD/MM/YYYY). {$skipped} row(s) skipped."
+                    : 'The spreadsheet had no rows. Expected column A = Name and column B = Response Due By (DD/MM/YYYY).')
+                ->warning()
+                ->persistent()
+                ->send();
+
+            return;
+        }
+
         Notification::make()
             ->title('Upload complete')
-            ->body("{$imported} participant(s) added.")
+            ->body($skipped > 0
+                ? "{$imported} participant(s) added, {$skipped} row(s) skipped (no valid due date)."
+                : "{$imported} participant(s) added.")
             ->success()
             ->send();
     }
@@ -514,7 +543,25 @@ class ManageParticipants extends Page
         }
     }
 
+    /**
+     * A due date from a spreadsheet, or null when the cell is not usably a date.
+     *
+     * Numeric cells are read as Excel serials, so an unrelated spreadsheet (a "Qty" column
+     * of 12 and 3) used to import silently as participants due 11/01/1900. A due date that
+     * far in the past is never real input, so those rows are rejected and reported instead.
+     */
     protected function parseImportDueDate(mixed $value): ?string
+    {
+        $date = $this->resolveImportDueDate($value);
+
+        if ($date === null) {
+            return null;
+        }
+
+        return $date >= '2000-01-01' ? $date : null;
+    }
+
+    protected function resolveImportDueDate(mixed $value): ?string
     {
         if ($value instanceof \DateTimeInterface) {
             return Carbon::instance(\DateTimeImmutable::createFromInterface($value))->toDateString();
