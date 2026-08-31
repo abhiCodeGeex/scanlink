@@ -1034,11 +1034,12 @@
                             c.removeAttribute('data-sl-sig-init');
                             try { c.getContext('2d').clearRect(0, 0, c.width, c.height); } catch (err) {}
                         });
-                        // Cloned dropzones/previews lose their listeners — strip them and let
-                        // slInitDropzones build fresh ones for the new row.
-                        clone.querySelectorAll('.sl-dropzone, .sl-file-preview').forEach(function (el) { el.remove(); });
+                        // Cloned dropzones/previews/camera UI lose their listeners — strip them and
+                        // let slInitDropzones + slInitMobileCamera build fresh ones for the new row.
+                        clone.querySelectorAll('.sl-dropzone, .sl-file-preview, .sl-take-photo-btn, .sl-cam-input').forEach(function (el) { el.remove(); });
                         clone.querySelectorAll('input[type="file"]').forEach(function (fi) {
                             fi.removeAttribute('data-sl-dz');
+                            fi.removeAttribute('data-sl-cam');
                             fi.style.display = '';
                         });
                         if (!clone.querySelector('.sl-remove-section')) {
@@ -1054,13 +1055,14 @@
                         // row keeps its own photo set.
                         var rows = wrap.querySelectorAll('.sl-repeat-item');
                         rows.forEach(function (row, idx) {
-                            row.querySelectorAll('input[type="file"]').forEach(function (fi) {
+                            row.querySelectorAll('input[type="file"]:not(.sl-cam-input)').forEach(function (fi) {
                                 if (/\[\d+\]\[\]$/.test(fi.name)) {
                                     fi.name = fi.name.replace(/\[\d+\]\[\]$/, '[' + idx + '][]');
                                 }
                             });
                         });
                         if (window.slInitDropzones) { window.slInitDropzones(); }
+                        if (window.slInitMobileCamera) { window.slInitMobileCamera(); }
                         if (window.slInitSignatures) { window.slInitSignatures(); }
                     });
                 })();
@@ -1113,13 +1115,35 @@
                 // Every file input shows a live preview of what was chosen — image thumbnails
                 // or a document chip — each with a ✕ to remove that file before submitting.
                 (function () {
+                    function uploadHost(input) {
+                        return input.closest('.sl-repeat-item') || input.parentElement;
+                    }
+                    function findPreviewWrap(input) {
+                        var host = uploadHost(input);
+                        return host ? host.querySelector('.sl-file-preview') : null;
+                    }
+                    function previewAnchor(input) {
+                        var host = uploadHost(input);
+                        return (host && host.querySelector('.sl-cam-input'))
+                            || (host && host.querySelector('.sl-take-photo-btn'))
+                            || input;
+                    }
+                    function findUploadInput(wrap) {
+                        var el = wrap.previousElementSibling;
+                        while (el) {
+                            if (el.type === 'file' && !el.classList.contains('sl-cam-input')) { return el; }
+                            el = el.previousElementSibling;
+                        }
+                        return null;
+                    }
                     function renderFilePreview(input) {
-                        var wrap = input.nextElementSibling;
-                        if (!wrap || !wrap.classList || !wrap.classList.contains('sl-file-preview')) {
+                        if (input.classList.contains('sl-cam-input')) return;
+                        var wrap = findPreviewWrap(input);
+                        if (!wrap) {
                             wrap = document.createElement('div');
                             wrap.className = 'sl-file-preview';
                             wrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 2px;';
-                            input.insertAdjacentElement('afterend', wrap);
+                            previewAnchor(input).insertAdjacentElement('afterend', wrap);
                         }
                         wrap.innerHTML = '';
                         Array.prototype.forEach.call(input.files || [], function (f, idx) {
@@ -1150,7 +1174,7 @@
                     }
 
                     document.addEventListener('change', function (e) {
-                        if (e.target && e.target.matches && e.target.matches('form input[type="file"]')) {
+                        if (e.target && e.target.matches && e.target.matches('form input[type="file"]:not(.sl-cam-input)')) {
                             renderFilePreview(e.target);
                         }
                     });
@@ -1160,8 +1184,8 @@
                         if (!rm) return;
                         e.preventDefault();
                         var wrap = rm.closest('.sl-file-preview');
-                        var input = wrap && wrap.previousElementSibling;
-                        if (!input || input.type !== 'file') return;
+                        var input = wrap && findUploadInput(wrap);
+                        if (!input) return;
                         var idx = parseInt(rm.getAttribute('data-idx'), 10);
                         try {
                             var dt = new DataTransfer();
@@ -1237,10 +1261,9 @@
                             && window.matchMedia('(pointer: coarse)').matches
                             && window.matchMedia('(hover: none)').matches;
                     }
-                    if (!isMobileOrTablet()) return;
 
-                    document.querySelectorAll('form input[type="file"]').forEach(function (input) {
-                        if (input.dataset.slCam) return;
+                    function enhanceFileInput(input) {
+                        if (input.dataset.slCam === '1' || input.classList.contains('sl-cam-input')) return;
                         input.dataset.slCam = '1';
 
                         // Hidden input whose `capture` hint opens the rear camera directly.
@@ -1248,11 +1271,12 @@
                         cam.type = 'file';
                         cam.accept = 'image/*';
                         cam.setAttribute('capture', 'environment');
+                        cam.className = 'sl-cam-input';
                         cam.style.display = 'none';
 
                         var btn = document.createElement('button');
                         btn.type = 'button';
-                        btn.className = 'btn btn-outline';
+                        btn.className = 'btn btn-outline sl-take-photo-btn';
                         btn.style.marginTop = '.4rem';
                         btn.innerHTML = '📷 Take photo';
 
@@ -1272,13 +1296,21 @@
                                 for (var j = 0; j < cam.files.length; j++) dt.items.add(cam.files[j]);
                                 input.files = dt.files;
                                 input.dispatchEvent(new Event('change', { bubbles: true }));
+                                cam.value = '';
                             } catch (e) {
                                 // Old browsers without DataTransfer: submit the camera input directly.
                                 cam.name = input.name;
                                 cam.style.display = '';
                             }
                         });
-                    });
+                    }
+
+                    window.slInitMobileCamera = function () {
+                        if (!isMobileOrTablet()) return;
+                        document.querySelectorAll('form input[type="file"]:not(.sl-cam-input)').forEach(enhanceFileInput);
+                    };
+
+                    window.slInitMobileCamera();
                 })();
             </script>
         @endif
