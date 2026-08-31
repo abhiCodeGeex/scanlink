@@ -94,25 +94,25 @@
                     <div class="sl-plist__card-title">Upload list</div>
                     <p class="sl-plist__card-hint">Import participants from an Excel spreadsheet.</p>
                 </div>
-                <div class="sl-plist__upload-controls">
+                {{-- Deliberately NO wire:model on the file input. wire:model uploads the
+                     moment a file is chosen, which made the field flash "uploading" and then
+                     clear itself before Upload was ever pressed. The input stays a plain
+                     one — keeping the chosen filename on screen — and nothing is sent until
+                     the button is clicked, which then uploads and imports in one go. --}}
+                <div class="sl-plist__upload-controls" x-data="slPlistUpload()">
                     <input
                         type="file"
-                        wire:model="uploadFile"
+                        x-ref="file"
                         accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                         class="sl-plist__file"
                     >
-                    {{-- Targeted at the transfer as well as the import: clicking Upload while
-                         the file is still on its way left uploadFile null server-side. --}}
                     <button
                         type="button"
                         class="sl-plist__btn sl-plist__btn--primary"
-                        wire:click="importUpload"
-                        wire:target="uploadFile,importUpload"
-                        wire:loading.attr="disabled"
-                    >
-                        <span wire:loading.remove wire:target="uploadFile">Upload</span>
-                        <span wire:loading wire:target="uploadFile">Uploading…</span>
-                    </button>
+                        x-on:click="submit()"
+                        x-bind:disabled="busy"
+                        x-text="busy ? 'Uploading…' : 'Upload'"
+                    >Upload</button>
                 </div>
                 <span class="sl-plist__hint">.xlsx only</span>
                 <button type="button" class="sl-plist__text-btn" wire:click="downloadSample">
@@ -628,6 +628,49 @@
         }
         return Livewire.find(root.getAttribute('wire:id'));
     }
+
+    // "Upload list": hold the file locally until the button is pressed, then transfer it
+    // and run the import as one action.
+    window.slPlistUpload = function () {
+        return {
+            busy: false,
+            submit: function () {
+                var input = this.$refs.file;
+                var file = input && input.files && input.files[0];
+                var say = window.slAlert || function (m) { alert(m); };
+
+                if (! file) {
+                    say('Choose an .xlsx file first.');
+
+                    return;
+                }
+                if (! /\.xlsx$/i.test(file.name || '')) {
+                    say('Upload .xlsx file only');
+
+                    return;
+                }
+
+                var self = this;
+                this.busy = true;
+
+                this.$wire.upload(
+                    'uploadFile',
+                    file,
+                    function () {
+                        self.$wire.call('importUpload').then(function () {
+                            input.value = '';
+                        }).finally(function () {
+                            self.busy = false;
+                        });
+                    },
+                    function () {
+                        self.busy = false;
+                        say('Could not upload the file. Please try again.');
+                    },
+                );
+            },
+        };
+    };
 
     window.slPlistConfirmDelete = function (participantId) {
         var confirmFn = window.slConfirm || function (message) {

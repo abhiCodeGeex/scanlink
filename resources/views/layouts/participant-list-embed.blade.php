@@ -43,10 +43,10 @@
 </head>
 <body>
     {{ $slot }}
-    {{-- Without this the page dispatches `notificationsSent` into a void: every
-         Notification::make()->send() (upload succeeded / nothing imported) is silently
-         dropped, which is why "Upload" looked like it did nothing. --}}
-    @livewire('notifications')
+    {{-- Deliberately NO @livewire('notifications') here. Filament's notification styles are
+         not part of this standalone layout, so the component rendered as a full-width
+         unstyled icon stacked under the table. Everything in this popup reports through
+         the themed dialog below instead. --}}
     @include('filament.hooks.themed-dialog')
     @livewireScripts
     @filamentScripts

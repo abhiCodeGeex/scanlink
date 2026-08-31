@@ -289,28 +289,27 @@ class ManageParticipants extends Page
         $this->uploadFile = null;
         $this->loadParticipants();
 
-        // Say what happened either way. "0 added" used to be indistinguishable from the
-        // button doing nothing at all.
+        // Say what happened either way — "0 added" is otherwise indistinguishable from the
+        // button doing nothing. Reported through the popup's own dialog, like every other
+        // message on this page: Filament's notification component has no styling inside the
+        // participant-list iframe and renders as a full-width unstyled icon.
         if ($imported === 0) {
-            Notification::make()
-                ->title('Nothing imported')
-                ->body($skipped > 0
-                    ? "No rows could be read. Expected column A = Name and column B = Response Due By (DD/MM/YYYY). {$skipped} row(s) skipped."
-                    : 'The spreadsheet had no rows. Expected column A = Name and column B = Response Due By (DD/MM/YYYY).')
-                ->warning()
-                ->persistent()
-                ->send();
+            $this->say($skipped > 0
+                ? "Nothing imported. Expected column A = Name and column B = Response Due By (DD/MM/YYYY). {$skipped} row(s) skipped."
+                : 'Nothing imported — the spreadsheet had no rows. Expected column A = Name and column B = Response Due By (DD/MM/YYYY).');
 
             return;
         }
 
-        Notification::make()
-            ->title('Upload complete')
-            ->body($skipped > 0
-                ? "{$imported} participant(s) added, {$skipped} row(s) skipped (no valid due date)."
-                : "{$imported} participant(s) added.")
-            ->success()
-            ->send();
+        $this->say($skipped > 0
+            ? "{$imported} participant(s) added. {$skipped} row(s) skipped (no valid due date)."
+            : "{$imported} participant(s) added.");
+    }
+
+    /** Show a message in the popup's themed dialog, falling back to a plain alert. */
+    protected function say(string $message): void
+    {
+        $this->js('(window.slAlert || alert)('.json_encode($message).')');
     }
 
     public function downloadList(): StreamedResponse
