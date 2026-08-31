@@ -1000,21 +1000,26 @@
                                 window.slPrepareRepeatFileInputsForSubmit(form);
                             }
 
-                            var needsFetch = false;
+                            // Whenever the visitor attached anything, POST through
+                            // FormData.append. That is the only upload path that behaves the
+                            // same in every mobile browser — a native submit can only send
+                            // what lives in input.files, which is exactly what phones fail to
+                            // let us populate.
+                            var hasFiles = false;
                             form.querySelectorAll('input[type="file"]').forEach(function (input) {
-                                if (input.classList.contains('sl-cam-input') && !input.name) {
+                                if (input.classList.contains('sl-cam-input')) {
                                     return;
                                 }
                                 if (!input.name) {
                                     return;
                                 }
                                 var stored = window.slGetStoredFiles ? window.slGetStoredFiles(input) : [];
-                                if (stored.length && (!input.files || !input.files.length)) {
-                                    needsFetch = true;
+                                if (stored.length) {
+                                    hasFiles = true;
                                 }
                             });
 
-                            if (needsFetch && window.slSubmitFormWithFiles) {
+                            if (hasFiles && window.slSubmitFormWithFiles && window.fetch && window.FormData) {
                                 e.preventDefault();
                                 e.stopImmediatePropagation();
                                 window.slSubmitFormWithFiles(form, {
@@ -1161,23 +1166,56 @@
                 // POST via FormData.append so every row/browser submits photos correctly.
                 (function () {
                     var store = new WeakMap();
+                    // Set while we dispatch our own synthetic `change`, so the sync listener
+                    // below does not overwrite the store with an input.files we just failed
+                    // to write.
+                    var suppressSync = false;
 
-                    window.slRememberFiles = function (input) {
+                    function toArray(list) {
+                        return Array.prototype.slice.call(list || []);
+                    }
+
+                    // `files` is AUTHORITATIVE when passed (camera capture, drag & drop, a
+                    // removal). It must be used instead of input.files: writing input.files
+                    // is only possible through DataTransfer, and several mobile browsers
+                    // accept `new DataTransfer()` but silently ignore items.add(), leaving
+                    // input.files empty. Deriving the store from input.files after such a
+                    // write loses the visitor's photo with no error anywhere.
+                    window.slRememberFiles = function (input, files) {
                         if (!input || input.type !== 'file') {
                             return;
                         }
                         if (input.classList.contains('sl-cam-input') && !input.name) {
                             return;
                         }
-                        store.set(input, Array.prototype.slice.call(input.files || []));
+                        store.set(input, files ? toArray(files) : toArray(input.files));
                     };
 
                     window.slGetStoredFiles = function (input) {
                         var saved = store.get(input);
-                        if (saved && saved.length) {
+                        if (saved) {
                             return saved;
                         }
-                        return Array.prototype.slice.call(input.files || []);
+                        return toArray(input.files);
+                    };
+
+                    // Attach files to a field: the JS store is updated first and is what
+                    // actually gets submitted; input.files is a best-effort mirror so the
+                    // browser's own `required` check and native submit keep working.
+                    window.slAddFiles = function (input, files) {
+                        var incoming = toArray(files);
+                        if (!input || !incoming.length) {
+                            return;
+                        }
+                        var current = input.multiple ? window.slGetStoredFiles(input) : [];
+                        store.set(input, current.concat(incoming));
+                        window.slApplyStoredFiles(input);
+                        suppressSync = true;
+                        try {
+                            input.dispatchEvent(new Event('change', { bubbles: true }));
+                        } finally {
+                            suppressSync = false;
+                        }
                     };
 
                     window.slApplyStoredFiles = function (input) {
@@ -1188,7 +1226,11 @@
                         try {
                             var dt = new DataTransfer();
                             files.forEach(function (f) { dt.items.add(f); });
-                            input.files = dt.files;
+                            // Only write back a list that actually round-tripped — assigning
+                            // a short/empty FileList here would destroy the real selection.
+                            if (dt.files && dt.files.length === files.length) {
+                                input.files = dt.files;
+                            }
                         } catch (err) {}
                     };
 
@@ -1280,9 +1322,20 @@
                         });
                     };
 
+                    // A real pick through the native file dialog replaces the selection.
+                    // A change carrying no files never clears the store — on mobile that is
+                    // usually our own failed input.files write, not the visitor.
                     document.addEventListener('change', function (e) {
-                        if (e.target && e.target.matches && e.target.matches('form input[type="file"]:not(.sl-cam-input)')) {
-                            window.slRememberFiles(e.target);
+                        if (suppressSync) {
+                            return;
+                        }
+                        var target = e.target;
+                        if (!target || !target.matches || !target.matches('form input[type="file"]:not(.sl-cam-input)')) {
+                            return;
+                        }
+                        var live = toArray(target.files);
+                        if (live.length || !window.slGetStoredFiles(target).length) {
+                            window.slRememberFiles(target, live);
                         }
                     });
                 })();
@@ -1386,18 +1439,11 @@
                 // the input and feed the existing preview strip.
                 (function () {
                     function mergeFiles(input, newFiles) {
-                        try {
-                            var dt = new DataTransfer();
-                            Array.prototype.forEach.call(input.files || [], function (f) { dt.items.add(f); });
-                            Array.prototype.forEach.call(newFiles || [], function (f) {
-                                if (!input.accept || input.accept.indexOf('image') === -1 || /^image\//.test(f.type)) {
-                                    dt.items.add(f);
-                                }
-                            });
-                            input.files = dt.files;
-                            input.dispatchEvent(new Event('change', { bubbles: true }));
-                            if (window.slRememberFiles) { window.slRememberFiles(input); }
-                        } catch (e) {}
+                        var accepted = Array.prototype.filter.call(newFiles || [], function (f) {
+                            return !input.accept || input.accept.indexOf('image') === -1 || /^image\//.test(f.type);
+                        });
+                        if (!accepted.length || !window.slAddFiles) { return; }
+                        window.slAddFiles(input, accepted);
                     }
                     function initDropzone(input) {
                         if (input.dataset.slDz === '1') return;
@@ -1460,7 +1506,12 @@
                             previewAnchor(input).insertAdjacentElement('afterend', wrap);
                         }
                         wrap.innerHTML = '';
-                        Array.prototype.forEach.call(input.files || [], function (f, idx) {
+                        // Render what will be SUBMITTED (the JS store), not input.files —
+                        // on mobile the two can differ.
+                        var previewFiles = window.slGetStoredFiles
+                            ? window.slGetStoredFiles(input)
+                            : Array.prototype.slice.call(input.files || []);
+                        previewFiles.forEach(function (f, idx) {
                             var item = document.createElement('div');
                             item.style.cssText = 'position:relative;border:1px solid #d1d5db;border-radius:8px;background:#fff;padding:4px;max-width:130px;';
                             if (/^image\//.test(f.type)) {
@@ -1501,16 +1552,16 @@
                         var input = wrap && findUploadInput(wrap);
                         if (!input) return;
                         var idx = parseInt(rm.getAttribute('data-idx'), 10);
-                        try {
-                            var dt = new DataTransfer();
-                            Array.prototype.forEach.call(input.files || [], function (f, i) {
-                                if (i !== idx) { dt.items.add(f); }
-                            });
-                            input.files = dt.files;
-                        } catch (err) {
-                            input.value = '';
+                        var current = window.slGetStoredFiles
+                            ? window.slGetStoredFiles(input)
+                            : Array.prototype.slice.call(input.files || []);
+                        var kept = current.filter(function (f, i) { return i !== idx; });
+                        // The store is the source of truth for what gets submitted.
+                        if (window.slRememberFiles) { window.slRememberFiles(input, kept); }
+                        input.value = '';
+                        if (kept.length && window.slApplyStoredFiles) {
+                            window.slApplyStoredFiles(input);
                         }
-                        if (window.slRememberFiles) { window.slRememberFiles(input); }
                         renderFilePreview(input);
                     });
                 })();
@@ -1600,26 +1651,16 @@
 
                         btn.addEventListener('click', function () { cam.click(); });
                         cam.addEventListener('change', function () {
-                            if (!cam.files || !cam.files.length) return;
-                            try {
-                                // Merge the captured photo into the real field so it submits under
-                                // the field's own name (keeps `multiple`/required/preview intact).
-                                var dt = new DataTransfer();
-                                if (input.multiple && input.files) {
-                                    for (var i = 0; i < input.files.length; i++) dt.items.add(input.files[i]);
-                                }
-                                for (var j = 0; j < cam.files.length; j++) dt.items.add(cam.files[j]);
-                                input.files = dt.files;
-                                input.dispatchEvent(new Event('change', { bubbles: true }));
-                                if (window.slRememberFiles) { window.slRememberFiles(input); }
-                                cam.value = '';
-                            } catch (e) {
-                                // Old browsers without DataTransfer: submit the camera input directly.
-                                var fieldName = input.name || input.dataset.slFileName || '';
-                                input.removeAttribute('name');
-                                cam.name = fieldName;
-                                if (window.slRememberFiles) { window.slRememberFiles(cam); }
+                            // Take our own reference to the captured photo BEFORE anything
+                            // else: File objects stay valid after cam.value is cleared, and
+                            // this reference is what actually gets submitted. Handing the
+                            // photo to the real field via DataTransfer is best-effort only.
+                            var captured = Array.prototype.slice.call(cam.files || []);
+                            if (!captured.length) return;
+                            if (window.slAddFiles) {
+                                window.slAddFiles(input, captured);
                             }
+                            cam.value = '';
                         });
                     }
 
