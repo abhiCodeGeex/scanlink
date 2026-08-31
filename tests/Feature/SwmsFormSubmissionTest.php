@@ -126,6 +126,42 @@ class SwmsFormSubmissionTest extends TestCase
         $this->assertStringContainsString('swms-row1-only.jpg', $instances[1]);
     }
 
+    /**
+     * The Add-another JS re-indexes each hazard row's photo input on every submit. It once
+     * rebuilt the name as `match[1] + '[' + idx + ']' + match[2]` where match[2] captured
+     * "][]" — emitting `answers_file[7][0]][]`. PHP's multipart parser does not merely
+     * truncate that name, it DISCARDS the file: $_FILES comes back empty, Laravel sees no
+     * upload, and the photo vanishes with no error to report to the visitor.
+     */
+    #[Test]
+    public function the_swms_photo_field_name_stays_well_formed_when_rows_are_reindexed(): void
+    {
+        $blade = file_get_contents(resource_path('views/scan/show.blade.php'));
+
+        $this->assertIsString($blade);
+        $this->assertStringContainsString(
+            "fi.name = match[1] + '[' + idx + '][]';",
+            $blade,
+            'The row re-indexer must rebuild the whole "[idx][]" suffix. Appending a captured '
+                .'"][]" after its own "]" produces answers_file[q][0]][], which PHP drops.',
+        );
+
+        // The name that re-indexer produces must parse as a LIST of files per row — the shape
+        // swmsUploadedFilesByRow() reads. The malformed variant does not.
+        parse_str('answers_file[215686][1][]=photo.jpg', $wellFormed);
+        $this->assertSame(
+            ['answers_file' => [215686 => [1 => ['photo.jpg']]]],
+            $wellFormed,
+        );
+
+        parse_str('answers_file[215686][1]][]=photo.jpg', $malformed);
+        $this->assertNotSame(
+            $wellFormed,
+            $malformed,
+            'Sanity check: the stray bracket really does change how the field is parsed.',
+        );
+    }
+
     #[Test]
     public function it_stores_photos_for_three_swms_rows(): void
     {

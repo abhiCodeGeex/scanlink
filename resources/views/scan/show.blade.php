@@ -1424,12 +1424,24 @@
                 // aligned with answers_meta[...][] arrays — on add/remove AND on submit.
                 (function () {
                     window.slReindexRepeatFileInputs = function (root) {
-                        (root || document).querySelectorAll('[data-sl-repeat]').forEach(function (wrap) {
+                        root = root || document;
+                        // querySelectorAll never matches the root itself, so a call passing the
+                        // wrapper (add / remove another) would otherwise reindex nothing.
+                        var wraps = Array.prototype.slice.call(root.querySelectorAll('[data-sl-repeat]'));
+                        if (root.matches && root.matches('[data-sl-repeat]')) {
+                            wraps.unshift(root);
+                        }
+                        wraps.forEach(function (wrap) {
                             wrap.querySelectorAll('.sl-repeat-item').forEach(function (row, idx) {
                                 row.querySelectorAll('input[type="file"]:not(.sl-cam-input)').forEach(function (fi) {
-                                    var match = fi.name.match(/^(answers_file\[\d+\])\[\d+(\]\[\])$/);
+                                    // Rebuild the WHOLE trailing "[idx][]" — the row index and the
+                                    // "[]" that makes it a list. Carrying a captured "][]" over and
+                                    // adding our own "]" produced "answers_file[7][0]][]", a name
+                                    // PHP's multipart parser rejects outright: the photo is dropped
+                                    // before Laravel sees it, with no upload error to report.
+                                    var match = fi.name.match(/^(answers_file\[\d+\])\[\d+\]\[\]$/);
                                     if (match) {
-                                        fi.name = match[1] + '[' + idx + ']' + match[2];
+                                        fi.name = match[1] + '[' + idx + '][]';
                                         fi.dataset.slFileName = fi.name;
                                     }
                                 });
