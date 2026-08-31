@@ -740,9 +740,14 @@ class MobileProfileController extends Controller
 
         foreach ($bucket as $key => $item) {
             if ($item instanceof UploadedFile) {
-                $index = is_int($key) || (is_string($key) && ctype_digit($key))
+                // A row index handed down by the parent ALWAYS wins. One level down (inside
+                // answers_file[qid][row][]) the numeric key is the file's position within that
+                // row — it is 0 for every row when each row carries a single photo, so letting
+                // it win filed every row's photo under row 0 and every SWMS photo showed up
+                // against hazard #1.
+                $index = $rowIndex ?? (is_int($key) || (is_string($key) && ctype_digit($key))
                     ? (int) $key
-                    : ($rowIndex ?? count($byRow));
+                    : count($byRow));
                 $byRow[$index] ??= [];
                 $byRow[$index][] = $item;
 
