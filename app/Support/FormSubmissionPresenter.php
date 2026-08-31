@@ -558,10 +558,10 @@ class FormSubmissionPresenter
                 '<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;table-layout:fixed;border-collapse:collapse;">'
                 .collect($row['fields'])->map(static function (array $field): string {
                     return '<tr nobr="true">'
-                        .'<td style="padding:4px 12px 4px 0;color:#6b7280;font-size:13px;width:24%;vertical-align:top;">'
+                        .'<td style="padding:4px 12px 4px 0;color:#6b7280;font-size:12.5px;width:24%;vertical-align:top;">'
                         .e($field['label'])
                         .'</td>'
-                        .'<td style="padding:4px 0;color:#111827;font-size:14px;vertical-align:top;">'
+                        .'<td style="padding:4px 0;color:#111827;font-size:13.5px;vertical-align:top;">'
                         .FormAnswerHtml::text($field['value'])->toHtml()
                         .'</td>'
                         .'</tr>';
@@ -621,14 +621,14 @@ class FormSubmissionPresenter
                 ? '<div style="border-top:2px solid #d1d5db;margin:14px 0 12px;"></div>'
                 : '';
 
-            $heading = '<div style="font-size:13px;font-weight:bold;color:#065f06;margin:0 0 6px;">SWMS #'.($i + 1).'</div>';
+            $heading = '<div style="font-size:12.5px;font-weight:bold;color:#065f06;margin:0 0 6px;">SWMS #'.($i + 1).'</div>';
 
             $rows = collect($fields)->map(static function (array $field): string {
                 return '<tr nobr="true">'
-                    .'<td style="padding:3px 12px 3px 0;color:#6b7280;font-size:13px;width:24%;vertical-align:top;">'
+                    .'<td style="padding:3px 12px 3px 0;color:#6b7280;font-size:12.5px;width:24%;vertical-align:top;">'
                     .e($field['label'])
                     .'</td>'
-                    .'<td style="padding:3px 0;color:#111827;font-size:14px;vertical-align:top;">'
+                    .'<td style="padding:3px 0;color:#111827;font-size:13.5px;vertical-align:top;">'
                     .FormAnswerHtml::text((string) $field['value'])->toHtml()
                     .'</td>'
                     .'</tr>';
@@ -663,7 +663,7 @@ class FormSubmissionPresenter
                 : '';
 
             $heading = $multi
-                ? '<div style="font-size:13px;font-weight:bold;color:#065f06;margin:0 0 6px;">Signature #'.($i + 1).'</div>'
+                ? '<div style="font-size:12.5px;font-weight:bold;color:#065f06;margin:0 0 6px;">Signature #'.($i + 1).'</div>'
                 : '';
 
             $rows = collect($fields)->map(static function (array $field): string {
@@ -675,14 +675,14 @@ class FormSubmissionPresenter
                         : asset('storage/'.ltrim($value, '/'));
 
                     return '<div style="margin:4px 0;">'
-                        .'<div style="color:#6b7280;font-size:13px;margin:0 0 2px;">'.e($field['label']).'</div>'
+                        .'<div style="color:#6b7280;font-size:12.5px;margin:0 0 2px;">'.e($field['label']).'</div>'
                         .'<img src="'.e($src).'" alt="Signature" '
                         .'style="max-width:340px;height:auto;border:1px solid #e5e7eb;border-radius:4px;background:#fff;">'
                         .'</div>';
                 }
 
                 return '<div style="margin:2px 0;">'
-                    .'<span style="color:#6b7280;font-size:13px;">'.e($field['label']).':</span> '
+                    .'<span style="color:#6b7280;font-size:12.5px;">'.e($field['label']).':</span> '
                     .FormAnswerHtml::text((string) $field['value'])->toHtml()
                     .'</div>';
             })->implode('');
@@ -703,8 +703,20 @@ class FormSubmissionPresenter
         return match ((int) ($row['type_id'] ?? 0)) {
             10 => new HtmlString('<div style="font-size:18px;font-weight:700;color:#008901;margin:4px 0;">'.e(strip_tags($value)).'</div>'),
             12 => new HtmlString('<div style="font-size:15px;font-weight:700;color:#111827;margin:4px 0;">'.e(strip_tags($value)).'</div>'),
-            default => new HtmlString('<div style="font-size:14px;line-height:1.5;">'.$value.'</div>'),
+            default => new HtmlString('<div style="font-size:13.5px;line-height:1.5;">'.self::tameScreenRichText($value).'</div>'),
         };
+    }
+
+    /**
+     * CKEditor Text blocks may contain <h1>-<h6>, which render enormous in the email /
+     * print / view contexts. Convert them to compact bold lines.
+     */
+    protected static function tameScreenRichText(string $html): string
+    {
+        $html = (string) preg_replace('/<h[1-6][^>]*>/i', '<div style="font-size:15px;font-weight:700;margin:6px 0 2px;">', $html);
+        $html = (string) preg_replace('/<\/h[1-6]>/i', '</div>', $html);
+
+        return $html;
     }
 
     /**
@@ -916,7 +928,7 @@ class FormSubmissionPresenter
         $html = '<img src="'.e($row['signature_src']).'" alt="Signature" style="max-width:340px;height:auto;border:1px solid #e5e7eb;border-radius:4px;background:#fff;">';
 
         if (filled($row['signature_meta'])) {
-            $html .= '<div style="margin-top:6px;color:#4b5563;font-size:13px;">'
+            $html .= '<div style="margin-top:6px;color:#4b5563;font-size:12.5px;">'
                 .FormAnswerHtml::text($row['signature_meta'])->toHtml()
                 .'</div>';
         }

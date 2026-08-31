@@ -12,7 +12,7 @@
             padding: 28px 16px;
             background: #f3f4f6;
             color: #111827;
-            font-size: 14px;
+            font-size: 13.5px;
         }
         .sheet {
             max-width: 660px;
@@ -43,7 +43,7 @@
         .q {
             flex: 0 0 26%;
             max-width: 26%;
-            font-size: 12px;
+            font-size: 12.5px;
             font-weight: 700;
             letter-spacing: 0.02em;
             text-transform: uppercase;
@@ -60,7 +60,7 @@
         .section { padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
         .section:last-child { border-bottom: 0; }
         .sec-label {
-            font-size: 12px;
+            font-size: 12.5px;
             font-weight: 700;
             letter-spacing: 0.02em;
             text-transform: uppercase;

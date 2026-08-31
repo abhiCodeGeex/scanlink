@@ -71,6 +71,22 @@
         .shareNav-mob a.shareFB { background-image: url('{{ asset('images/facebook-icon.jpg') }}'); }
         .shareNav-mob a.shareTWT { background-image: url('{{ asset('images/twitter-icon.jpg') }}'); }
         .shareNav-mob a.shareEML { background-image: url('{{ asset('images/email-grn-icon.jpg') }}'); }
+        /* Themed dialog (shared slAlert/slConfirm look — same as the portal). */
+        .sl-dialog-overlay {
+            position: fixed; inset: 0; z-index: 10060; display: flex; align-items: center;
+            justify-content: center; padding: 24px 16px; background: rgba(17, 24, 39, 0.55);
+            backdrop-filter: blur(2px); box-sizing: border-box;
+        }
+        .sl-dialog-overlay[hidden] { display: none !important; }
+        .sl-dialog {
+            width: min(400px, 100%); background: #fff; border-radius: 14px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3); padding: 22px 22px 18px; box-sizing: border-box;
+        }
+        .sl-dialog-msg { margin: 0 0 18px; font-size: 14.5px; line-height: 1.5; color: #1f2937; }
+        .sl-dialog-actions { display: flex; justify-content: flex-end; gap: 10px; }
+        .sl-dialog-btn { border: 0; border-radius: 9px; padding: 9px 20px; cursor: pointer; font-size: 13px; font-weight: 700; }
+        .sl-dialog-btn--ghost { background: #f3f4f6; color: #374151; }
+        .sl-dialog-btn--primary { background: #008C00; color: #fff; }
         /* Validation feedback: banner + per-question highlight (submission must never fail silently). */
         .sl-form-errors {
             background: #fef2f2;
@@ -495,7 +511,7 @@
                         @endif
                         @switch($tid)
                             @case(1)
-                                <label>{{ $question->question_text ?: 'Text field' }}{!! $star !!}</label>
+                                @if ($question->is_mandatory)<span class="mandatory_field" style="display:inline;">*</span>@endif
                                 <input type="text" name="answers[{{ $qid }}]" value="{{ old('answers.'.$qid) }}" {{ $required }}>
                                 @break
 
@@ -537,7 +553,7 @@
                                     && ! preg_match('/^fb_(doc|img)_/i', $question->question_text))
                                     <p style="font-weight:600;margin-bottom:.35rem;">{{ $question->question_text }}</p>
                                 @endif
-                                <label>{{ $question->doc_title ?: 'Select documents' }}{!! $star !!}</label>
+                                @if ($question->is_mandatory)<span class="mandatory_field" style="display:inline;">*</span>@endif
                                 <div class="field-choice">
                                     @foreach ($docChoices as $doc)
                                         <div style="margin-bottom:.35rem;">
@@ -558,7 +574,7 @@
                                     $choiceLabel = \App\Support\FormBuilderMedia::choiceLabel($question);
                                     $choiceOptions = \App\Support\FormBuilderMedia::choiceOptions($question);
                                 @endphp
-                                <label>{{ $choiceLabel !== '' ? $choiceLabel : 'Multiple choice' }}{!! $star !!}</label>
+                                @if ($question->is_mandatory)<span class="mandatory_field" style="display:inline;">*</span>@endif
                                 <div class="field-choice">
                                     @foreach ($choiceOptions as $optionName)
                                         <label>
@@ -574,7 +590,7 @@
                                     $choiceLabel = \App\Support\FormBuilderMedia::choiceLabel($question);
                                     $choiceOptions = \App\Support\FormBuilderMedia::choiceOptions($question);
                                 @endphp
-                                <label>{{ $choiceLabel !== '' ? $choiceLabel : 'Checkbox' }}{!! $star !!}</label>
+                                @if ($question->is_mandatory)<span class="mandatory_field" style="display:inline;">*</span>@endif
                                 <div class="field-choice">
                                     @foreach ($choiceOptions as $optionName)
                                         <label>
@@ -590,7 +606,7 @@
                                     $choiceLabel = \App\Support\FormBuilderMedia::choiceLabel($question);
                                     $choiceOptions = \App\Support\FormBuilderMedia::choiceOptions($question);
                                 @endphp
-                                <label>{{ $choiceLabel !== '' ? $choiceLabel : 'Dropdown' }}{!! $star !!}</label>
+                                @if ($question->is_mandatory)<span class="mandatory_field" style="display:inline;">*</span>@endif
                                 <select name="answers[{{ $qid }}]" {{ $required }}>
                                     <option value="">Select…</option>
                                     @foreach ($choiceOptions as $optionName)
@@ -605,7 +621,7 @@
                                     $scaleTo = (int) ($options->firstWhere('question_option_type_id', 2)?->option_name ?? 5);
                                     if ($scaleFrom > $scaleTo) { [$scaleFrom, $scaleTo] = [$scaleTo, $scaleFrom]; }
                                 @endphp
-                                <label>{{ $question->question_text ?: 'Number scale' }}{!! $star !!}</label>
+                                @if ($question->is_mandatory)<span class="mandatory_field" style="display:inline;">*</span>@endif
                                 <select name="answers[{{ $qid }}]" {{ $required }}>
                                     <option value="">Select…</option>
                                     @for ($i = $scaleFrom; $i <= $scaleTo; $i++)
@@ -619,7 +635,7 @@
                                     $rows = $options->where('question_option_type_id', 5);
                                     $cols = $options->where('question_option_type_id', 6);
                                 @endphp
-                                <label>{{ $question->question_text ?: 'Grid' }}{!! $star !!}</label>
+                                @if ($question->is_mandatory)<span class="mandatory_field" style="display:inline;">*</span>@endif
                                 @php $oldGrid = (array) old('answers.'.$qid, []); @endphp
                                 @if ($rows->isNotEmpty() && $cols->isNotEmpty())
                                     <table class="field-grid">
@@ -650,12 +666,12 @@
                                 @break
 
                             @case(8)
-                                <label>{{ $question->question_text ?: 'Date' }}{!! $star !!}</label>
+                                @if ($question->is_mandatory)<span class="mandatory_field" style="display:inline;">*</span>@endif
                                 <input type="date" name="answers[{{ $qid }}]" value="{{ old('answers.'.$qid) }}" {{ $required }}>
                                 @break
 
                             @case(9)
-                                <label>{{ $question->question_text ?: 'Time' }}{!! $star !!}</label>
+                                @if ($question->is_mandatory)<span class="mandatory_field" style="display:inline;">*</span>@endif
                                 <input type="time" name="answers[{{ $qid }}]" value="{{ old('answers.'.$qid) }}" {{ $required }}>
                                 @break
 
@@ -678,7 +694,7 @@
                                 @break
 
                             @case(15)
-                                <label>{{ $question->question_text ?: 'Comments' }}{!! $star !!}</label>
+                                @if ($question->is_mandatory)<span class="mandatory_field" style="display:inline;">*</span>@endif
                                 <textarea name="answers[{{ $qid }}]" rows="3" {{ $required }}>{{ old('answers.'.$qid) }}</textarea>
                                 @break
 
@@ -715,13 +731,13 @@
                                 @break
 
                             @case(17)
-                                <label>{{ $question->question_text }}{!! $star !!}</label>
+                                @if (filled($question->question_text))<label>{{ $question->question_text }}{!! $star !!}</label>@else{!! $question->is_mandatory ? '<span class="mandatory_field" style="display:inline;">*</span>' : '' !!}@endif
                                 {{-- Legacy "Add another": native multi-file selection. --}}
                                 <input type="file" name="answers_file[{{ $qid }}][]" multiple class="sl-multi-upload" {{ $required }}>
                                 @break
 
                             @case(18)
-                                <label>{{ $question->question_text ?: 'Participant name' }}{!! $star !!}</label>
+                                <label>{{ $question->question_text ?: 'Name' }}{!! $star !!}</label>
                                 @if ($question->participant_include_signature)
                                     {{-- With a signature pad this stays single-instance (one canvas). --}}
                                     <input type="text" name="answers[{{ $qid }}]" value="{{ is_string(old('answers.'.$qid)) ? old('answers.'.$qid) : '' }}" placeholder="Full name" {{ $required }}>
@@ -749,7 +765,7 @@
                                 @break
 
                             @case(19)
-                                <label>{{ $question->question_text ?: 'Location' }}{!! $star !!}</label>
+                                @if (filled($question->question_text))<label>{{ $question->question_text }}{!! $star !!}</label>@else{!! $question->is_mandatory ? '<span class="mandatory_field" style="display:inline;">*</span>' : '' !!}@endif
                                 <div class="sl-loc-row">
                                     <input type="text" name="answers[{{ $qid }}]" id="sl-loc-{{ $qid }}" class="sl-loc-input" value="{{ old('answers.'.$qid) }}" placeholder="Location" {{ $required }}>
                                     <button type="button" class="sl-loc-btn" data-loc-target="sl-loc-{{ $qid }}">
@@ -761,7 +777,7 @@
                                 @break
 
                             @case(22)
-                                <label>{{ $question->question_text ?: 'SWMS Hazard / Risk' }}{!! $star !!}</label>
+                                @if (filled($question->question_text))<label>{{ $question->question_text }}{!! $star !!}</label>@endif
                                 <div class="sl-repeat" data-sl-repeat>
                                     <div class="sl-repeat-item">
                                         <label>Task | Activity{!! $star !!}</label>
@@ -794,7 +810,7 @@
                                 @break
 
                             @case(24)
-                                <label>{{ $question->question_text ?: 'Additional recipient email' }}{!! $star !!}</label>
+                                <label>{{ $question->question_text ?: 'Send email notifications to' }}{!! $star !!}</label>
                                 {{-- Legacy "Add another": multiple additional recipient emails. --}}
                                 <div class="sl-repeat" data-sl-repeat>
                                     <div class="sl-repeat-item">
@@ -1170,7 +1186,7 @@
                             if (!input) { return; }
                             // Browsers only allow geolocation on secure (https) origins.
                             if (!navigator.geolocation || (!window.isSecureContext && location.hostname !== 'localhost')) {
-                                alert('Location requires a secure (https) connection. Please type your location instead.');
+                                (window.slAlert || alert)('Location requires a secure (https) connection. Please type your location instead.');
                                 return;
                             }
                             var restore = btn.innerHTML;
@@ -1184,7 +1200,7 @@
                                 btn.disabled = false;
                                 btn.innerHTML = restore;
                                 // Tell the visitor why nothing happened instead of failing silently.
-                                alert(err && err.code === 1
+                                (window.slAlert || alert)(err && err.code === 1
                                     ? 'Location permission was denied. Please allow location access, or type your location.'
                                     : 'Unable to get your location. Please type it instead.');
                             }, { enableHighAccuracy: true, timeout: 8000 });
@@ -1533,5 +1549,7 @@
         })();
     </script>
 @endif
+{{-- Themed slAlert/slConfirm (same dialog as the portal) for the visitor page. --}}
+@include('filament.hooks.themed-dialog')
 </body>
 </html>

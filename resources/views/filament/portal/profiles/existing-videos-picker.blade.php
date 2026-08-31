@@ -39,7 +39,9 @@
         get pages() { return Math.max(1, Math.ceil(this.videos.length / this.perPage)) },
         get slice() { return this.videos.slice((this.page - 1) * this.perPage, this.page * this.perPage) },
         async removeVideo(id) {
-            if (! confirm('Remove this video from your library? Profiles using it will lose it.')) return;
+            const msg = 'Remove this video from your library? Profiles using it will lose it.';
+            const ok = window.slConfirm ? await window.slConfirm(msg) : confirm(msg);
+            if (! ok) return;
             this.removingId = id;
             try {
                 const res = await fetch('{{ url('/portal/videos') }}/' + id + '/remove', {
@@ -51,9 +53,9 @@
                     if (this.state == id) this.state = null;
                     if (this.page > this.pages) this.page = this.pages;
                 } else {
-                    alert('Could not remove the video.');
+                    (window.slAlert || alert)('Could not remove the video.');
                 }
-            } catch (e) { alert('Could not remove the video.'); }
+            } catch (e) { (window.slAlert || alert)('Could not remove the video.'); }
             this.removingId = null;
         },
     }"

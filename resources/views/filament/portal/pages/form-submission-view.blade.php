@@ -36,7 +36,7 @@
         .sl-fsview__q {
             flex: 0 0 26%;
             max-width: 26%;
-            font-size: 12px;
+            font-size: 12.5px;
             font-weight: 700;
             letter-spacing: 0.02em;
             text-transform: uppercase;
@@ -44,7 +44,7 @@
             padding-top: 2px;
             word-break: break-word;
         }
-        .sl-fsview__a { flex: 1; min-width: 0; font-size: 14px; line-height: 1.5; overflow-wrap: break-word; }
+        .sl-fsview__a { flex: 1; min-width: 0; font-size: 13.5px; line-height: 1.5; overflow-wrap: break-word; }
         .sl-fsview__a a { color: var(--fs-green); font-weight: 600; }
         /* Natural-size thumbnails, never upscaled — the image links open the full file. */
         .sl-fsview__a img { width: auto !important; max-width: min(260px, 100%) !important; height: auto !important; border-radius: 6px; }
@@ -52,14 +52,14 @@
         .sl-fsview__section { padding: 13px 0; border-bottom: 1px solid #f3f4f6; }
         .sl-fsview__section:last-child { border-bottom: 0; }
         .sl-fsview__sec-label {
-            font-size: 12px;
+            font-size: 12.5px;
             font-weight: 700;
             letter-spacing: 0.02em;
             text-transform: uppercase;
             color: var(--fs-muted);
             margin: 0 0 10px;
         }
-        .sl-fsview__sec-body { font-size: 14px; line-height: 1.5; overflow-wrap: break-word; }
+        .sl-fsview__sec-body { font-size: 13.5px; line-height: 1.5; overflow-wrap: break-word; }
         .sl-fsview__sec-body a { color: var(--fs-green); font-weight: 600; }
         .sl-fsview__sec-body img { width: auto !important; max-width: min(260px, 100%) !important; height: auto !important; border-radius: 6px; }
         .sl-fsview__sec-body img[alt="Signature"] { max-width: min(340px, 100%) !important; }
@@ -67,7 +67,7 @@
         .sl-fsview__a table { width: 100% !important; table-layout: fixed; }
         .sl-fsview__h1 { font-size: 19px; color: var(--fs-green); margin: 18px 0 4px; font-weight: 700; }
         .sl-fsview__h3 { font-size: 15px; color: var(--fs-text); margin: 14px 0 2px; font-weight: 700; }
-        .sl-fsview__html { padding: 10px 0; font-size: 14px; color: var(--fs-text); line-height: 1.5; }
+        .sl-fsview__html { padding: 10px 0; font-size: 13.5px; color: var(--fs-text); line-height: 1.5; }
         .sl-fsview__foot {
             display: flex;
             flex-wrap: wrap;
@@ -100,6 +100,20 @@
             .sl-fsview__row { flex-direction: column; gap: 4px; }
             .sl-fsview__q { flex: none; max-width: none; }
         }
+        /* Dark mode: the presenter emits INLINE colors (#111827 values, #6b7280 labels,
+           #008901 headings) that vanish on the dark card — override them by matching the
+           inline style attribute (CSS !important beats non-important inline styles). */
+        html.dark .sl-fsview__a [style*="#111827"],
+        html.dark .sl-fsview__sec-body [style*="#111827"] { color: rgb(229 231 235) !important; }
+        html.dark .sl-fsview__a [style*="#6b7280"],
+        html.dark .sl-fsview__sec-body [style*="#6b7280"] { color: rgb(156 163 175) !important; }
+        html.dark .sl-fsview__a [style*="#008901"],
+        html.dark .sl-fsview__sec-body [style*="#008901"],
+        html.dark .sl-fsview__a [style*="#065f06"],
+        html.dark .sl-fsview__sec-body [style*="#065f06"] { color: rgb(74 222 128) !important; }
+        html.dark .sl-fsview__a [style*="#4b5563"],
+        html.dark .sl-fsview__sec-body [style*="#4b5563"] { color: rgb(156 163 175) !important; }
+        html.dark .sl-fsview__sec-body { color: rgb(229 231 235); }
         html.dark .sl-fsview { background: rgb(17 24 39); border-color: rgb(55 65 81); }
         html.dark .sl-fsview__head { background: rgb(24 33 47); border-color: rgb(55 65 81); }
         html.dark .sl-fsview__foot { background: rgb(24 33 47); border-color: rgb(55 65 81); }

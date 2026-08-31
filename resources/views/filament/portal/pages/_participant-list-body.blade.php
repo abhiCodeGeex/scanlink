@@ -588,6 +588,13 @@
     // parent Form Builder page but NOT inside this (embedded) participant iframe — so without a
     // fallback the call throws and the action never runs. Provide a native-confirm fallback.
     window.slConfirm = window.slConfirm || function (message) {
+        // Prefer the parent page's themed dialog; native confirm only as a last resort.
+        try {
+            if (window.parent && window.parent.slConfirm) {
+                return window.parent.slConfirm(message);
+            }
+        } catch (e) {}
+
         return Promise.resolve(window.confirm(message));
     };
 

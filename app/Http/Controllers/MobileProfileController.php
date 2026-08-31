@@ -858,8 +858,9 @@ class MobileProfileController extends Controller
             }
         });
 
-        // Build readable rows (clean labels, structured ::: answers) for the email.
-        $rows = \App\Support\FormSubmissionPresenter::rows($questions, $savedAnswers);
+        // Build readable rows (clean labels, structured ::: answers) for the email —
+        // including the display Text/Heading blocks so the email mirrors the print/PDF.
+        $rows = \App\Support\FormSubmissionPresenter::rows($questions, $savedAnswers, includeDisplayText: true);
 
         // Use the profile's own company logo in the email header when it has one; otherwise the
         // layout falls back to the ScanLink logo.
@@ -978,52 +979,44 @@ class MobileProfileController extends Controller
         array $savedAnswers,
     ): ?string {
         try {
-            $pdf = new \TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+            // Render through the SAME template + fonts as the portal "Download" /
+            // "Download All" PDFs so every submission PDF looks identical.
+            $pdf = new \TCPDF;
             $pdf->SetCreator('ScanLink');
             $pdf->SetAuthor((string) $profile->name);
             $pdf->SetTitle('Form submission — '.$profile->name);
             $pdf->setPrintHeader(false);
             $pdf->setPrintFooter(false);
-            $pdf->SetMargins(14, 14, 14);
-            $pdf->SetAutoPageBreak(true, 16);
+            $pdf->SetMargins(14, 12, 14);
+            $pdf->SetAutoPageBreak(true, 12);
+            $pdf->SetFont('helvetica', '', 10);
             $pdf->AddPage();
 
-            // Company logo (same one shown on the mobile page + email), if resolvable AND
-            // a valid image — TCPDF aborts the whole PDF on an undecodable image.
-            $profile->loadMissing('logos');
-            $logoTag = '';
-            $logoName = (string) ($profile->logos->first()?->logo_name ?? '');
-            if ($logoName !== ''
-                && ($logoAbs = $this->resolveLocalMediaPath($logoName)) !== null
-                && @getimagesize($logoAbs) !== false) {
-                $logoTag = '<img src="'.htmlspecialchars($logoAbs, ENT_QUOTES).'" height="46">';
-            }
+            // Company logo as a base64 data URI (shared resolver, ScanLink logo fallback) —
+            // identical to the portal Download / Download All PDFs.
+            $logoUrl = \App\Filament\Portal\Pages\FormSubmissions::profilePdfLogoSrc($profile);
 
-            $profileName = trim((string) ($profile->code_profile_name ?: $profile->name ?: ''));
-            $submittedAt = now()->format('d/m/Y H:i');
-
-            $presented = \App\Support\FormSubmissionPresenter::rows($questions, $savedAnswers);
-            $rowsHtml = '';
-            foreach ($presented as $row) {
-                $label = htmlspecialchars((string) $row['label'], ENT_QUOTES);
-                $answerCell = \App\Support\FormSubmissionPresenter::answerPdfHtml($row);
-                if (trim(strip_tags($answerCell)) === '') {
-                    $answerCell = '&nbsp;';
+            $rows = [];
+            foreach (\App\Support\FormSubmissionPresenter::rows($questions, $savedAnswers, includeDisplayText: true) as $presented) {
+                $html = \App\Support\FormSubmissionPresenter::answerPdfHtml($presented);
+                if (trim(strip_tags($html)) === '' && ! str_contains($html, '<img')) {
+                    $html = '&nbsp;';
                 }
 
-                $rowsHtml .= '<tr>'
-                    .'<td width="38%" style="background-color:#f3f4f6;color:#374151;"><b>'.$label.'</b></td>'
-                    .'<td width="62%" style="color:#111827;">'.$answerCell.'</td>'
-                    .'</tr>';
+                $rows[] = ['label' => $presented['label'], 'kind' => $presented['kind'], 'html' => $html];
             }
 
-            $html = '<table cellpadding="0"><tr>'
-                .'<td width="62%" style="vertical-align:middle;">'.$logoTag.'</td>'
-                .'<td width="38%" style="text-align:right;vertical-align:middle;"><span style="font-size:16pt;color:#008C00;"><b>Form Submission</b></span></td>'
-                .'</tr></table>'
-                .'<p style="font-size:9pt;color:#6b7280;"><b>Profile:</b> '.htmlspecialchars($profileName, ENT_QUOTES).' &nbsp;&nbsp; <b>Profile No.:</b> '.$profile->id.'<br>'
-                .'<b>Submitted:</b> '.$submittedAt.' &nbsp;&nbsp; <b>Reference:</b> '.htmlspecialchars($sessionId, ENT_QUOTES).'</p>'
-                .'<table cellpadding="6" cellspacing="0" border="1" style="border-collapse:collapse;font-size:10pt;">'.$rowsHtml.'</table>';
+            $html = view('filament.portal.pages.form-submissions-pdf', [
+                'profile' => $profile,
+                'profileName' => trim((string) ($profile->code_profile_name ?: ($profile->name ?: $profile->form_title))),
+                'logoUrl' => $logoUrl,
+                'sessions' => [[
+                    'sessionId' => $sessionId,
+                    'submittedAt' => now()->format('d M Y H:i'),
+                    'rows' => $rows,
+                ]],
+                'generatedAt' => now()->format('d M Y H:i'),
+            ])->render();
 
             $pdf->writeHTML($html, true, false, true, false, '');
 
