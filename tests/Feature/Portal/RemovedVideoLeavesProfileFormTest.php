@@ -79,6 +79,21 @@ class RemovedVideoLeavesProfileFormTest extends TestCase
 
         $after = collect($component->get('data.video_titles'))->pluck('title')->all();
         $this->assertSame(['video 4'], array_values($after), 'The deleted video must leave the form.');
+
+        // The removal must go through the Repeater COMPONENT, so read it back from there
+        // rather than from the page's data array.
+        $repeater = $component->instance()->getSchemaComponent('form.video_titles', withHidden: true);
+        $this->assertSame(
+            ['video 4'],
+            collect($repeater->getRawState())->pluck('title')->values()->all(),
+        );
+
+        // NOTE: these assertions cannot tell the two implementations apart. An earlier fix
+        // that rewrote $this->data satisfied every one of them and still left the deleted
+        // video rendered on screen, because a repeater renders from child schemas it caches
+        // and only rawState() on the component flushes those. Livewire's test harness
+        // rebuilds those schemas from state on each access, so it never reproduces the
+        // stale render. That half is verified in a browser, not here.
     }
 
     #[Test]
