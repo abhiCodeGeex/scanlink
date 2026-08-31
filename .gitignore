@@ -80,3 +80,10 @@ Homestead.yaml
 # --- Docker / local runtime leftovers ---
 docker-compose.override.yml
 *.pid
+
+# --- Local AI assistant working docs (not part of the app) ---
+/CLAUDE.md
+/PROJECT_HISTORY.md
+/.claude/
+/.cursor/
+/.playwright-mcp/
