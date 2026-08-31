@@ -122,6 +122,34 @@
             transition: background .15s ease;
         }
         .frm_builder .submit-btn:hover { background: #00a300; }
+        .frm_builder .submit-btn:disabled {
+            opacity: .65;
+            cursor: not-allowed;
+            background: #6b7280;
+        }
+        /* Legacy mobile form submit progress (matches public/styles/style.css #progressbar). */
+        #sl-form-progressbar {
+            display: none;
+            position: fixed;
+            left: 50%;
+            top: 45%;
+            transform: translateX(-50%);
+            z-index: 100050;
+            width: min(290px, calc(100vw - 32px));
+            box-sizing: border-box;
+            background-color: #000;
+            border-radius: 10px;
+            color: #fff;
+            opacity: .85;
+            padding: 20px;
+            text-align: center;
+            line-height: 1.4;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, .35);
+        }
+        #sl-form-progressbar img { vertical-align: middle; margin-right: 6px; }
+        body.sl-form-submitting { cursor: wait; }
         /* Legacy form rhythm is tight (.frm_builder 14px/25px, labels are inline text + <br>). */
         label { display: block; margin-top: .4rem; font-weight: 600; }
         input, textarea, select { width: 100%; padding: .4rem .5rem; margin-top: .2rem; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
@@ -318,9 +346,9 @@
              exhibit/voc render Words / Profile Information via the ordered-tiles partial. --}}
         @unless (in_array($profile->typeSlug(), $slOrderedTileTypes, true))
         <div class="MobileBottomText">
-            {{-- Asset "Words" checkboxes hide the WHOLE block (heading + value), not just the heading. --}}
+            {{-- Asset Words checkboxes only control whether the mobile heading is shown; content always displays when filled. --}}
             @php $slAsset = $profile->typeSlug() === 'asset'; @endphp
-            @if (filled($profile->name) && (! $slAsset || $profile->show_name))
+            @if (filled($profile->name))
                 @if (! empty($nameHeading))
                     <h3>{{ $nameHeading }}</h3>
                 @endif
@@ -348,7 +376,7 @@
                 <p>{{ $profile->serial_no }}</p>
             @endif
 
-            @if ($profile->description && (! $slAsset || $profile->show_description))
+            @if ($profile->description)
                 @php
                     $descPlain = trim(str_replace('&nbsp;', '', strip_tags((string) $profile->description)));
                     $slug = $profile->typeSlug();
@@ -407,8 +435,10 @@
                 @endforeach
             @endif
 
-            @if ($profile->address && $profile->typeSlug() !== 'voc' && (! $slAsset || $profile->show_address))
-                <h3>Address</h3>
+            @if ($profile->address && $profile->typeSlug() !== 'voc')
+                @if (! $slAsset || $profile->show_address)
+                    <h3>Address</h3>
+                @endif
                 <p>{{ $profile->address }}</p>
                 @if (in_array($profile->typeSlug(), ['location', 'asset'], true))
                     <p>&nbsp;<a class="gray-mob-btn" href="https://maps.google.com?q={{ urlencode($profile->address) }}" target="_blank" rel="noopener">View Map</a></p>
@@ -427,23 +457,31 @@
                 <p>{{ $profile->name_company }}</p>
             @endif
 
-            @if ($profile->telephone && $profile->typeSlug() !== 'voc' && (! $slAsset || $profile->show_telephone))
-                <h3>Telephone</h3>
+            @if ($profile->telephone && $profile->typeSlug() !== 'voc')
+                @if (! $slAsset || $profile->show_telephone)
+                    <h3>Telephone</h3>
+                @endif
                 <p><a href="tel:{{ $profile->telephone }}">{{ $profile->telephone }}</a></p>
             @endif
 
-            @if (filled($profile->mobile) && (! $slAsset || $profile->show_mobile))
-                <h3>Mobile</h3>
+            @if (filled($profile->mobile))
+                @if (! $slAsset || $profile->show_mobile)
+                    <h3>Mobile</h3>
+                @endif
                 <p><a href="tel:{{ $profile->mobile }}">{{ $profile->mobile }}</a></p>
             @endif
 
-            @if (filled($profile->email) && (! $slAsset || $profile->show_email))
-                <h3>Email</h3>
+            @if (filled($profile->email))
+                @if (! $slAsset || $profile->show_email)
+                    <h3>Email</h3>
+                @endif
                 <p><a href="mailto:{{ $profile->email }}">{{ $profile->email }}</a></p>
             @endif
 
-            @if (filled($profile->url) && $profile->typeSlug() !== 'code' && (! $slAsset || $profile->show_url))
-                <h3>Website</h3>
+            @if (filled($profile->url) && $profile->typeSlug() !== 'code')
+                @if (! $slAsset || $profile->show_url)
+                    <h3>Website</h3>
+                @endif
                 <p><a href="{{ $profile->url }}" target="_blank" rel="noopener">{{ $profile->url }}</a></p>
             @endif
 
@@ -900,6 +938,70 @@
                     </script>
                 @endif
             </form>
+            <div id="sl-form-progressbar" aria-live="polite" aria-busy="false" hidden>
+                <img align="absmiddle" src="{{ asset('images/spinner_gray.gif') }}" alt=""> Please Wait&hellip;
+            </div>
+            <script>
+                (function () {
+                    var form = document.querySelector('form.frm_builder');
+                    if (!form) return;
+                    var bar = document.getElementById('sl-form-progressbar');
+                    var btn = form.querySelector('.submit-btn');
+                    var submitting = false;
+                    var submitLabel = btn ? btn.value : 'Submit';
+
+                    function resetSubmitUi() {
+                        submitting = false;
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.value = submitLabel;
+                        }
+                        if (bar) {
+                            bar.hidden = true;
+                            bar.setAttribute('aria-busy', 'false');
+                        }
+                        document.body.classList.remove('sl-form-submitting');
+                    }
+
+                    function lockSubmitUi() {
+                        submitting = true;
+                        if (btn) {
+                            btn.disabled = true;
+                            btn.value = 'Submitting…';
+                        }
+                        if (bar) {
+                            bar.hidden = false;
+                            bar.setAttribute('aria-busy', 'true');
+                        }
+                        document.body.classList.add('sl-form-submitting');
+                    }
+
+                    form.addEventListener('submit', function (e) {
+                        if (submitting) {
+                            e.preventDefault();
+                            e.stopImmediatePropagation();
+                            return;
+                        }
+                        lockSubmitUi();
+                    }, true);
+
+                    if (btn) {
+                        btn.addEventListener('click', function (e) {
+                            if (submitting) {
+                                e.preventDefault();
+                                e.stopImmediatePropagation();
+                            }
+                        }, true);
+                    }
+
+                    // Browser back/forward cache: re-enable if the visitor returns mid-submit.
+                    window.addEventListener('pageshow', function (e) {
+                        if (e.persisted) {
+                            resetSubmitUi();
+                        }
+                    });
+                })();
+            </script>
             <script>
                 window.slCovidLocationChange = function (value, questionId, labelColor) {
                     const host = document.getElementById('vehicle_no_' + questionId);

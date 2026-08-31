@@ -72,10 +72,35 @@ class ProfileResource extends Resource
      * default getEloquentQuery() now does — would make /profiles/create 404.
      * Client scoping is preserved so a portal user cannot bind another client's
      * record.
+     *
+     * Sub-users may only see selected profiles in lists, but create binds a fresh
+     * open slot that is not yet in that selection — include their own open drafts
+     * when they have Add Code permission.
      */
     public static function getRecordRouteBindingEloquentQuery(): Builder
     {
-        return static::baseClientQuery();
+        $member = static::currentMembership();
+        $clientId = $member?->client_id;
+
+        $query = parent::getEloquentQuery()
+            ->with(['contacts', 'equipmentType'])
+            ->when($clientId, fn (Builder $q): Builder => $q->where('client_id', $clientId))
+            ->active();
+
+        $allowed = $member?->allowedProfileIds();
+        if ($allowed !== null) {
+            $query->where(function (Builder $q) use ($allowed, $member): void {
+                $q->whereIn('id', $allowed);
+
+                if ($member && (bool) $member->access_addcode) {
+                    $q->orWhere(function (Builder $draft) use ($member): void {
+                        $draft->openSlot()->where('user_id', $member->id);
+                    });
+                }
+            });
+        }
+
+        return $query;
     }
 
     protected static function baseClientQuery(): Builder
