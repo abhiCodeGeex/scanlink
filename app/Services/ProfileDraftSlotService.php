@@ -158,8 +158,16 @@ class ProfileDraftSlotService
      * Resume path: scrub polluted drafts so /create never shows prior profile data.
      * Keeps the slot open until Save (update_or_not = 0).
      */
-    public function scrubIfPollutedCreateDraft(Profile $profile): Profile
+    public function scrubIfPollutedCreateDraft(Profile $profile, ?int $userId = null): Profile
     {
+        // Claim ownership, exactly as claimForCreate/claimSpecific do. A sub-user only sees
+        // open slots stamped with their own user_id, so reusing a session draft still owned
+        // by whoever bought the codes made the slot invisible to them and "Add a New Code"
+        // 404'd on record resolution.
+        if ($userId && (int) $profile->user_id !== $userId) {
+            $profile->forceFill(['user_id' => $userId])->save();
+        }
+
         if (! $this->hasLeftoverCreateContent($profile)) {
             // Ensure abandoned create drafts stay in Code Balance until Save.
             if ($profile->update_or_not) {

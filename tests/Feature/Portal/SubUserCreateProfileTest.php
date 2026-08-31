@@ -21,7 +21,11 @@ class SubUserCreateProfileTest extends TestCase
     public function test_sub_user_with_add_code_can_open_create_profile_page(): void
     {
         $client = Client::factory()->create();
-        $locationType = EquipmentType::factory()->create(['slag' => 'location', 'name' => 'Location']);
+        // 'location' ships in the seeder — a blind factory insert violates the unique slag.
+        $locationType = EquipmentType::query()->firstOrCreate(
+            ['slag' => 'location'],
+            ['name' => 'Location'],
+        );
 
         $subMember = ClientUser::factory()->subUser()->create([
             'client_id' => $client->id,

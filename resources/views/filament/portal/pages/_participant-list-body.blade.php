@@ -538,8 +538,16 @@
         background: var(--sl-surface);
     }
 
-    /* Flatpickr — ScanLink green theme, above modal content */
+    /* Flatpickr — ScanLink green theme, above modal content.
+       The calendar is appended to <body>, OUTSIDE .sl-plist, so the palette declared on
+       .sl-plist never reached it: var(--sl-green) resolved to nothing, the background
+       declaration was dropped as invalid, and the surviving `color:#fff` rendered the
+       selected day white-on-white — invisible. Redeclare the palette here and state the
+       day colours literally so this cannot silently break again. */
     .flatpickr-calendar {
+        --sl-green: #008901;
+        --sl-green-dark: #006b01;
+        --sl-green-soft: #e8f6e8;
         z-index: 100001 !important;
         border: 1px solid var(--sl-border) !important;
         border-radius: 10px !important;
@@ -554,22 +562,33 @@
     }
     .flatpickr-months .flatpickr-prev-month:hover svg,
     .flatpickr-months .flatpickr-next-month:hover svg { fill: var(--sl-green) !important; }
+    /* The chosen date reads as a solid green box, so it is obvious at a glance which day
+       is currently selected. */
     .flatpickr-day.selected,
     .flatpickr-day.startRange,
     .flatpickr-day.endRange,
     .flatpickr-day.selected:hover,
     .flatpickr-day.startRange:hover,
-    .flatpickr-day.endRange:hover {
-        background: var(--sl-green) !important;
-        border-color: var(--sl-green) !important;
+    .flatpickr-day.endRange:hover,
+    .flatpickr-day.selected:focus {
+        background: #008901 !important;
+        background-color: #008901 !important;
+        border-color: #006b01 !important;
         color: #fff !important;
+        font-weight: 700 !important;
+        border-radius: 6px !important;
+        box-shadow: 0 0 0 2px rgba(0, 137, 1, 0.25) !important;
     }
-    .flatpickr-day.today {
-        border-color: var(--sl-green) !important;
+    /* Today, when it is not the selection, gets an outlined box rather than a filled one. */
+    .flatpickr-day.today:not(.selected) {
+        border-color: #008901 !important;
+        color: #008901 !important;
+        font-weight: 700 !important;
     }
-    .flatpickr-day:hover {
-        background: var(--sl-green-soft) !important;
-        border-color: var(--sl-green-soft) !important;
+    .flatpickr-day:hover:not(.selected) {
+        background: #e8f6e8 !important;
+        border-color: #e8f6e8 !important;
+        color: #111827 !important;
     }
 
     @media (max-width: 720px) {
