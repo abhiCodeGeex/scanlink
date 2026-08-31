@@ -125,7 +125,11 @@
                 ? 'https://www.youtube.com/embed/CfLEhcgvgrA?rel=0'
                 : 'https://www.youtube.com/embed/cYQnzxkp528?rel=0',
         ])
-        {{-- Legacy Colorbox trigger target for Add/Edit Participant List --}}
+    @endif
+
+    {{-- Legacy formbuilder_participant_list: parent-page Colorbox target for every form-enabled
+         profile type. Survey Form Builder lives in the left column but still opens this host. --}}
+    @if (filled($participantsUrl))
         <div
             id="sl-participant-list-host"
             data-participants-url="{{ $participantsUrl }}"
