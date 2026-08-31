@@ -601,7 +601,12 @@ class MobileProfileController extends Controller
             }
         }
 
-        $this->markParticipatedParticipants($profile, $questions, $rawAnswers);
+        $this->markParticipatedParticipants(
+            $profile,
+            $questions,
+            $rawAnswers,
+            $validated['answers_meta'] ?? [],
+        );
         $this->notifyFormSubmissionRecipients($profile, $sessionId, $questions, $savedAnswers, $additionalRecipients, $uploadedFilePaths);
 
         return redirect()
@@ -817,9 +822,14 @@ class MobileProfileController extends Controller
     /**
      * @param  Collection<int, FormBuilderQuestion>  $questions
      * @param  array<int|string, mixed>  $savedAnswers
+     * @param  array<int|string, mixed>  $answersMeta
      */
-    protected function markParticipatedParticipants(Profile $profile, Collection $questions, array $savedAnswers): void
-    {
+    protected function markParticipatedParticipants(
+        Profile $profile,
+        Collection $questions,
+        array $savedAnswers,
+        array $answersMeta = [],
+    ): void {
         $participantQuestions = $questions->filter(
             fn (FormBuilderQuestion $question): bool => (int) $question->question_type_id === 18
         );
@@ -829,16 +839,25 @@ class MobileProfileController extends Controller
         }
 
         foreach ($participantQuestions as $question) {
-            $raw = $savedAnswers[$question->question_id] ?? $savedAnswers[(string) $question->question_id] ?? '';
+            $qid = $question->question_id;
+            $raw = $savedAnswers[$qid] ?? $savedAnswers[(string) $qid] ?? '';
             // "Add another" submits multiple participant names as an array — mark every one.
             $names = is_array($raw) ? $raw : [$raw];
 
-            foreach ($names as $rawName) {
+            $meta = $answersMeta[$qid] ?? $answersMeta[(string) $qid] ?? [];
+            $employersRaw = is_array($meta) ? ($meta['employer'] ?? '') : '';
+            $employers = is_array($employersRaw) ? $employersRaw : [$employersRaw];
+
+            foreach ($names as $index => $rawName) {
                 $name = trim((string) $rawName);
 
                 if ($name === '') {
                     continue;
                 }
+
+                $employer = $question->participant_include_employer
+                    ? trim((string) ($employers[$index] ?? ''))
+                    : '';
 
                 Participant::query()
                     ->where('profile_id', $profile->id)
@@ -847,6 +866,7 @@ class MobileProfileController extends Controller
                     ->update([
                         'is_participated' => true,
                         'participated_date' => now()->toDateString(),
+                        'employer_cmp' => $employer,
                     ]);
 
                 // Legacy update_participant_status: a walk-up participant whose name is not yet
@@ -861,7 +881,7 @@ class MobileProfileController extends Controller
                     Participant::query()->create([
                         'profile_id' => $profile->id,
                         'name' => $name,
-                        'employer_cmp' => '',
+                        'employer_cmp' => $employer,
                         'due_date' => now()->toDateString(),
                         'participated_date' => now()->toDateString(),
                         'is_participated' => true,
