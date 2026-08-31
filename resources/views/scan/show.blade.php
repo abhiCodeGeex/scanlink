@@ -291,6 +291,20 @@
             </div>
         @endif
 
+        {{-- An attachment the server refused (PHP upload limit, unreadable file, disk error)
+             is reported here. A submission must never look complete when a photo was lost. --}}
+        @if (session('form_upload_warning'))
+            <div style="padding:.9rem 1rem;margin-bottom:1rem;border:1px solid #f0c36d;background:#fff8e6;border-radius:8px;color:#7a5200;">
+                <strong style="display:block;margin-bottom:.25rem;">Some attachments were not saved</strong>
+                <ul style="margin:.2rem 0 .4rem 1.1rem;padding:0;font-size:.9rem;">
+                    @foreach ((array) session('form_upload_warning') as $slUploadIssue)
+                        <li>{{ $slUploadIssue }}</li>
+                    @endforeach
+                </ul>
+                <span style="font-size:.85rem;">Everything else was submitted. Please re-submit the missing photos.</span>
+            </div>
+        @endif
+
         {{-- Legacy tiles_order: exhibit/voc render their content tiles in the user-saved order. --}}
         @php $slOrderedTileTypes = ['exhibit', 'voc']; @endphp
 
@@ -1019,7 +1033,39 @@
                                 }
                             });
 
-                            if (hasFiles && window.slSubmitFormWithFiles && window.fetch && window.FormData) {
+                            if (hasFiles) {
+                                // A native submit can only send input.files, which is exactly
+                                // what phones fail to let us populate. Rather than post a form
+                                // that quietly drops the photos, stop and say so.
+                                if (!window.slSubmitFormWithFiles || !window.fetch || !window.FormData) {
+                                    e.preventDefault();
+                                    e.stopImmediatePropagation();
+                                    resetSubmitUi();
+                                    (window.slAlert || alert)('This browser cannot upload attachments. Please try a different browser so your photos are not lost.');
+                                    return;
+                                }
+
+                                // Bigger than the server will accept in one request: say so
+                                // here rather than letting PHP discard the whole body.
+                                var totalBytes = 0;
+                                form.querySelectorAll('input[type="file"]').forEach(function (input) {
+                                    if (input.classList.contains('sl-cam-input') || !input.name) {
+                                        return;
+                                    }
+                                    (window.slGetStoredFiles ? window.slGetStoredFiles(input) : []).forEach(function (f) {
+                                        totalBytes += (f && f.size) || 0;
+                                    });
+                                });
+                                if (totalBytes > 50 * 1024 * 1024) {
+                                    e.preventDefault();
+                                    e.stopImmediatePropagation();
+                                    resetSubmitUi();
+                                    (window.slAlert || alert)('Your attachments add up to '
+                                        + Math.round(totalBytes / 1048576) + 'MB, which is too large to send. '
+                                        + 'Please remove some photos and try again.');
+                                    return;
+                                }
+
                                 e.preventDefault();
                                 e.stopImmediatePropagation();
                                 window.slSubmitFormWithFiles(form, {
@@ -1238,6 +1284,8 @@
                         var supportsDelete = typeof FormData.prototype.has === 'function'
                             && typeof FormData.prototype.delete === 'function';
                         var fd = new FormData(form);
+                        var appended = 0;
+                        var expected = 0;
 
                         form.querySelectorAll('input[type="file"]').forEach(function (input) {
                             if (input.classList.contains('sl-cam-input') && !input.name) {
@@ -1246,6 +1294,7 @@
                             if (!input.name) {
                                 return;
                             }
+                            expected += window.slGetStoredFiles(input).length;
                             var files = window.slGetStoredFiles(input);
                             if (supportsDelete) {
                                 while (fd.has(input.name)) {
@@ -1256,9 +1305,20 @@
                                 return;
                             }
                             files.forEach(function (file) {
+                                if (!file || typeof file.size !== 'number' || file.size === 0) {
+                                    // An unreadable pick (revoked temp file, empty capture).
+                                    // Throwing is deliberate: the caller alerts the visitor
+                                    // instead of posting a submission with the photo missing.
+                                    throw new Error('unreadable file');
+                                }
                                 fd.append(input.name, file, file.name || 'upload.jpg');
+                                appended++;
                             });
                         });
+
+                        if (expected > 0 && appended !== expected) {
+                            throw new Error('attachments incomplete');
+                        }
 
                         return fd;
                     };
@@ -1279,15 +1339,34 @@
                             controller.abort();
                         }, 120000) : null;
 
+                        // The scan page this POST redirects back to. Derived from the form
+                        // action so it is exact even inside the portal preview.
+                        var returnUrl = form.action.replace(/\/form(\?.*)?$/, '');
+
                         fetch(form.action, {
                             method: 'POST',
                             body: body,
                             credentials: 'same-origin',
-                            redirect: 'follow',
+                            // MUST be 'manual', never 'follow'. The controller answers with a
+                            // 302 carrying Laravel's ONE-REQUEST flash data (form_submitted,
+                            // or validation errors). With 'follow', fetch's own GET consumes
+                            // and clears that flash, the HTML is thrown away, and the page the
+                            // visitor is then sent to shows neither the success popup nor the
+                            // errors -- the submission saves but looks like nothing happened.
+                            redirect: 'manual',
                             signal: controller ? controller.signal : undefined,
                         }).then(function (response) {
                             if (timeoutId) {
                                 clearTimeout(timeoutId);
+                            }
+                            // A 302 under redirect:'manual' arrives as an opaque response
+                            // (type 'opaqueredirect', status 0). That is the success path:
+                            // navigate for real so the flash is rendered by the browser.
+                            if (response.type === 'opaqueredirect'
+                                || response.status === 0
+                                || (response.status >= 300 && response.status < 400)) {
+                                window.location.replace(returnUrl);
+                                return;
                             }
                             if (response.status === 419) {
                                 ui.resetSubmitUi();
@@ -1299,13 +1378,13 @@
                                 (window.slAlert || alert)('Upload too large. Please use smaller photos and try again.');
                                 return;
                             }
-                            if (!response.ok && response.status >= 400) {
+                            if (response.status >= 400) {
                                 ui.resetSubmitUi();
                                 (window.slAlert || alert)('Submit failed (' + response.status + '). Please try again.');
                                 return;
                             }
-                            if (response.url) {
-                                window.location.replace(response.url);
+                            if (response.status >= 200 && response.status < 300) {
+                                window.location.replace(returnUrl);
                                 return;
                             }
                             ui.resetSubmitUi();

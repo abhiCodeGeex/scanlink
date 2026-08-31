@@ -30,6 +30,9 @@ use Illuminate\View\View;
 
 class MobileProfileController extends Controller
 {
+    /** Largest single visitor upload the app will store (PHP's own limits apply first). */
+    protected const MAX_UPLOAD_BYTES = 10240 * 1024;
+
     public function show(Request $request, string $clientUrl, int $profileId, ProfileQrService $qrService, AnalyticsApiService $analytics, MobileProfileViewResolver $views): View|RedirectResponse
     {
         $profile = $this->resolveProfile($clientUrl, $profileId, eager: true);
@@ -226,6 +229,9 @@ class MobileProfileController extends Controller
         $answerMap = $validated['answers'] ?? [];
         $rawAnswers = $answerMap;
         $uploadedFilePaths = [];
+        // Reasons any attachment could NOT be stored. Never dropped on the floor: a photo
+        // that does not make it must be reported back to the visitor.
+        $uploadIssues = [];
 
         foreach ($validated['answers_sig_text'] ?? [] as $questionId => $sigText) {
             if (filled($sigText) && empty($answerMap[$questionId])) {
@@ -326,10 +332,8 @@ class MobileProfileController extends Controller
             $storedPaths = [];
 
             foreach ($fileList as $singleFile) {
-                if ($singleFile instanceof UploadedFile
-                    && $singleFile->isValid()
-                    && $singleFile->getSize() <= 10240 * 1024) {
-                    $stored = $singleFile->store('form-uploads/'.$profile->id, 'public');
+                $stored = $this->storeFormUpload($singleFile, (int) $profile->id, $uploadIssues);
+                if ($stored !== null) {
                     $storedPaths[] = $stored;
                     $uploadedFilePaths[] = $stored;
                 }
@@ -377,10 +381,8 @@ class MobileProfileController extends Controller
                 $storedRow = [];
 
                 foreach ($fileList as $singleFile) {
-                    if ($singleFile instanceof UploadedFile
-                        && $singleFile->isValid()
-                        && $singleFile->getSize() <= 10240 * 1024) {
-                        $stored = $singleFile->store('form-uploads/'.$profile->id, 'public');
+                    $stored = $this->storeFormUpload($singleFile, (int) $profile->id, $uploadIssues);
+                    if ($stored !== null) {
                         $storedRow[] = $stored;
                         $uploadedFilePaths[] = $stored;
                     }
@@ -609,9 +611,61 @@ class MobileProfileController extends Controller
         );
         $this->notifyFormSubmissionRecipients($profile, $sessionId, $questions, $savedAnswers, $additionalRecipients, $uploadedFilePaths);
 
-        return redirect()
+        $response = redirect()
             ->route('scan.show', [$clientUrl, $profileId])
             ->with('form_submitted', true);
+
+        if ($uploadIssues !== []) {
+            $response->with('form_upload_warning', array_values(array_unique($uploadIssues)));
+        }
+
+        return $response;
+    }
+
+    /**
+     * Store one visitor upload, or record WHY it could not be stored.
+     *
+     * This must never fail quietly. PHP rejects anything over upload_max_filesize before
+     * the application sees it (UPLOAD_ERR_INI_SIZE) and hands over an invalid file — which
+     * is how photos taken on a phone used to vanish while the typed answers saved fine.
+     *
+     * @param  list<string>  $issues
+     */
+    protected function storeFormUpload(mixed $file, int $profileId, array &$issues): ?string
+    {
+        if (! $file instanceof UploadedFile) {
+            return null;
+        }
+
+        $name = trim((string) $file->getClientOriginalName());
+        $name = $name !== '' ? $name : 'photo';
+
+        if (! $file->isValid()) {
+            $issues[] = $name.' - '.$file->getErrorMessage();
+
+            return null;
+        }
+
+        if ($file->getSize() > self::MAX_UPLOAD_BYTES) {
+            $issues[] = $name.' - larger than '.(int) (self::MAX_UPLOAD_BYTES / 1048576).'MB';
+
+            return null;
+        }
+
+        try {
+            $stored = $file->store('form-uploads/'.$profileId, 'public');
+        } catch (\Throwable $e) {
+            report($e);
+            $stored = false;
+        }
+
+        if (! is_string($stored) || $stored === '') {
+            $issues[] = $name.' - could not be saved on the server';
+
+            return null;
+        }
+
+        return $stored;
     }
 
     public function checkChecklistItem(Request $request, string $clientUrl, int $profileId, int $itemId): RedirectResponse
