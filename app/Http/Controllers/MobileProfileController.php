@@ -803,6 +803,7 @@ class MobileProfileController extends Controller
                 'logosExtra',
                 'pictures',
                 'picturesExtra',
+                'vocProfileImages',
                 'documents',
                 'videos',
                 'weblinks',

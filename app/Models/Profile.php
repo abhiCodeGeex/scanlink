@@ -279,6 +279,17 @@ class Profile extends Model
         return $this->hasMany(PictureExtra::class);
     }
 
+    /**
+     * Legacy-stored VOCC card photos. New uploads land in `pictures`; these are the ones that
+     * came across in the import and would otherwise never be displayed.
+     */
+    public function vocProfileImages(): HasMany
+    {
+        return $this->hasMany(VocProfileImage::class, 'profile_id')
+            ->where('is_temp', '0')
+            ->orderByDesc('voc_profile_image_id');
+    }
+
     public function documents(): HasMany
     {
         // Legacy parity: documents display in their saved drag-order (sort_order),

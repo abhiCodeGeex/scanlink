@@ -178,6 +178,7 @@ class ClientPortalPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
                 EnsurePortalPasswordChanged::class,
+                \App\Http\Middleware\ConfineVocCardHolder::class,
             ]);
     }
 }

@@ -67,6 +67,17 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
         return $this->hasOne(ClientUser::class, 'auth_user_id')->where('role', 5);
     }
 
+    /**
+     * A VOCC card holder: someone who signs in through their own card's login rather than
+     * as a member of the client. They see their card and nothing else — legacy bounced them
+     * out of every dashboard action.
+     */
+    public function isVocCardHolder(): bool
+    {
+        return $this->user_type === UserType::Voc
+            && ! $this->clientMemberships()->active()->exists();
+    }
+
     public function canAccessPanel(Panel $panel): bool
     {
         if ($panel->getId() === 'portal') {
