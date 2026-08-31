@@ -991,43 +991,46 @@
                             e.stopImmediatePropagation();
                             return;
                         }
-                        e.preventDefault();
-                        e.stopImmediatePropagation();
 
-                        if (window.slReindexRepeatFileInputs) {
-                            window.slReindexRepeatFileInputs(form);
-                        }
-                        if (window.slPrepareRepeatFileInputsForSubmit) {
-                            window.slPrepareRepeatFileInputsForSubmit(form);
-                        }
+                        try {
+                            if (window.slReindexRepeatFileInputs) {
+                                window.slReindexRepeatFileInputs(form);
+                            }
+                            if (window.slPrepareRepeatFileInputsForSubmit) {
+                                window.slPrepareRepeatFileInputsForSubmit(form);
+                            }
 
-                        lockSubmitUi();
+                            var needsFetch = false;
+                            form.querySelectorAll('input[type="file"]').forEach(function (input) {
+                                if (input.classList.contains('sl-cam-input') && !input.name) {
+                                    return;
+                                }
+                                if (!input.name) {
+                                    return;
+                                }
+                                var stored = window.slGetStoredFiles ? window.slGetStoredFiles(input) : [];
+                                if (stored.length && (!input.files || !input.files.length)) {
+                                    needsFetch = true;
+                                }
+                            });
 
-                        var body = window.slBuildFormDataWithFiles
-                            ? window.slBuildFormDataWithFiles(form)
-                            : new FormData(form);
-
-                        fetch(form.action, {
-                            method: (form.method || 'POST').toUpperCase(),
-                            body: body,
-                            credentials: 'same-origin',
-                            redirect: 'follow',
-                            headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                        }).then(function (response) {
-                            if (response.redirected) {
-                                window.location.href = response.url;
+                            if (needsFetch && window.slSubmitFormWithFiles) {
+                                e.preventDefault();
+                                e.stopImmediatePropagation();
+                                window.slSubmitFormWithFiles(form, {
+                                    lockSubmitUi: lockSubmitUi,
+                                    resetSubmitUi: resetSubmitUi,
+                                });
                                 return;
                             }
-                            if (response.ok) {
-                                window.location.reload();
-                                return;
-                            }
+
+                            lockSubmitUi();
+                        } catch (err) {
+                            e.preventDefault();
+                            e.stopImmediatePropagation();
                             resetSubmitUi();
-                            (window.slAlert || alert)('Submit failed. Please try again.');
-                        }).catch(function () {
-                            resetSubmitUi();
-                            (window.slAlert || alert)('Submit failed. Please check your connection and try again.');
-                        });
+                            (window.slAlert || alert)('Could not prepare your submission. Please try again.');
+                        }
                     }, true);
 
                     if (btn) {
@@ -1190,6 +1193,8 @@
                     };
 
                     window.slBuildFormDataWithFiles = function (form) {
+                        var supportsDelete = typeof FormData.prototype.has === 'function'
+                            && typeof FormData.prototype.delete === 'function';
                         var fd = new FormData(form);
 
                         form.querySelectorAll('input[type="file"]').forEach(function (input) {
@@ -1200,8 +1205,10 @@
                                 return;
                             }
                             var files = window.slGetStoredFiles(input);
-                            while (fd.has(input.name)) {
-                                fd.delete(input.name);
+                            if (supportsDelete) {
+                                while (fd.has(input.name)) {
+                                    fd.delete(input.name);
+                                }
                             }
                             if (!files.length) {
                                 return;
@@ -1212,6 +1219,65 @@
                         });
 
                         return fd;
+                    };
+
+                    window.slSubmitFormWithFiles = function (form, ui) {
+                        ui.lockSubmitUi();
+                        var body;
+                        try {
+                            body = window.slBuildFormDataWithFiles(form);
+                        } catch (err) {
+                            ui.resetSubmitUi();
+                            (window.slAlert || alert)('Could not attach uploaded files. Please re-select your photos and try again.');
+                            return;
+                        }
+
+                        var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                        var timeoutId = controller ? setTimeout(function () {
+                            controller.abort();
+                        }, 120000) : null;
+
+                        fetch(form.action, {
+                            method: 'POST',
+                            body: body,
+                            credentials: 'same-origin',
+                            redirect: 'follow',
+                            signal: controller ? controller.signal : undefined,
+                        }).then(function (response) {
+                            if (timeoutId) {
+                                clearTimeout(timeoutId);
+                            }
+                            if (response.status === 419) {
+                                ui.resetSubmitUi();
+                                (window.slAlert || alert)('Your session expired. Please refresh the page and try again.');
+                                return;
+                            }
+                            if (response.status === 413) {
+                                ui.resetSubmitUi();
+                                (window.slAlert || alert)('Upload too large. Please use smaller photos and try again.');
+                                return;
+                            }
+                            if (!response.ok && response.status >= 400) {
+                                ui.resetSubmitUi();
+                                (window.slAlert || alert)('Submit failed (' + response.status + '). Please try again.');
+                                return;
+                            }
+                            if (response.url) {
+                                window.location.replace(response.url);
+                                return;
+                            }
+                            ui.resetSubmitUi();
+                            (window.slAlert || alert)('Submit failed (unexpected response). Please try again.');
+                        }).catch(function (err) {
+                            if (timeoutId) {
+                                clearTimeout(timeoutId);
+                            }
+                            ui.resetSubmitUi();
+                            var msg = err && err.name === 'AbortError'
+                                ? 'Submit timed out. Please check your connection and try again.'
+                                : 'Submit failed. Please check your connection and try again.';
+                            (window.slAlert || alert)(msg);
+                        });
                     };
 
                     document.addEventListener('change', function (e) {
