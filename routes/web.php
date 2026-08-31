@@ -149,9 +149,16 @@ Route::middleware(['web', 'auth'])->group(function (): void {
 
         abort_unless($member !== null, 403);
 
+        // Report WHAT was deleted: the open profile form still lists this video in its
+        // Videos repeater, and has to drop that row at the same time.
+        $removed = [
+            'video_name' => (string) $video->video_name,
+            'title' => (string) $video->title,
+        ];
+
         $video->delete();
 
-        return response()->json(['ok' => true]);
+        return response()->json(['ok' => true, 'removed' => $removed]);
     })->name('portal.videos.remove');
 
     Route::get('/test/temp_image_upload', [FormBuilderUploadController::class, 'imageForm']);
