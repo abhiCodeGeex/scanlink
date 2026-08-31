@@ -130,14 +130,11 @@
         /* Keep file inputs submittable across browsers (display:none + programmatic files can fail). */
         .sl-file-input-hidden {
             position: absolute;
+            left: -9999px;
             width: 1px;
             height: 1px;
-            padding: 0;
-            margin: -1px;
+            opacity: 0.01;
             overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border: 0;
         }
         /* Legacy mobile form submit progress (matches public/styles/style.css #progressbar). */
         #sl-form-progressbar {
@@ -994,13 +991,43 @@
                             e.stopImmediatePropagation();
                             return;
                         }
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
+
                         if (window.slReindexRepeatFileInputs) {
                             window.slReindexRepeatFileInputs(form);
                         }
                         if (window.slPrepareRepeatFileInputsForSubmit) {
                             window.slPrepareRepeatFileInputsForSubmit(form);
                         }
+
                         lockSubmitUi();
+
+                        var body = window.slBuildFormDataWithFiles
+                            ? window.slBuildFormDataWithFiles(form)
+                            : new FormData(form);
+
+                        fetch(form.action, {
+                            method: (form.method || 'POST').toUpperCase(),
+                            body: body,
+                            credentials: 'same-origin',
+                            redirect: 'follow',
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        }).then(function (response) {
+                            if (response.redirected) {
+                                window.location.href = response.url;
+                                return;
+                            }
+                            if (response.ok) {
+                                window.location.reload();
+                                return;
+                            }
+                            resetSubmitUi();
+                            (window.slAlert || alert)('Submit failed. Please try again.');
+                        }).catch(function () {
+                            resetSubmitUi();
+                            (window.slAlert || alert)('Submit failed. Please check your connection and try again.');
+                        });
                     }, true);
 
                     if (btn) {
@@ -1126,6 +1153,75 @@
                 })();
             </script>
             <script>
+                // Reliable file uploads (SWMS photos, multi-upload): mobile camera + DataTransfer
+                // can show a preview while input.files is empty at submit — keep a JS copy and
+                // POST via FormData.append so every row/browser submits photos correctly.
+                (function () {
+                    var store = new WeakMap();
+
+                    window.slRememberFiles = function (input) {
+                        if (!input || input.type !== 'file') {
+                            return;
+                        }
+                        if (input.classList.contains('sl-cam-input') && !input.name) {
+                            return;
+                        }
+                        store.set(input, Array.prototype.slice.call(input.files || []));
+                    };
+
+                    window.slGetStoredFiles = function (input) {
+                        var saved = store.get(input);
+                        if (saved && saved.length) {
+                            return saved;
+                        }
+                        return Array.prototype.slice.call(input.files || []);
+                    };
+
+                    window.slApplyStoredFiles = function (input) {
+                        var files = window.slGetStoredFiles(input);
+                        if (!files.length) {
+                            return;
+                        }
+                        try {
+                            var dt = new DataTransfer();
+                            files.forEach(function (f) { dt.items.add(f); });
+                            input.files = dt.files;
+                        } catch (err) {}
+                    };
+
+                    window.slBuildFormDataWithFiles = function (form) {
+                        var fd = new FormData(form);
+
+                        form.querySelectorAll('input[type="file"]').forEach(function (input) {
+                            if (input.classList.contains('sl-cam-input') && !input.name) {
+                                return;
+                            }
+                            if (!input.name) {
+                                return;
+                            }
+                            var files = window.slGetStoredFiles(input);
+                            while (fd.has(input.name)) {
+                                fd.delete(input.name);
+                            }
+                            if (!files.length) {
+                                return;
+                            }
+                            files.forEach(function (file) {
+                                fd.append(input.name, file, file.name || 'upload.jpg');
+                            });
+                        });
+
+                        return fd;
+                    };
+
+                    document.addEventListener('change', function (e) {
+                        if (e.target && e.target.matches && e.target.matches('form input[type="file"]:not(.sl-cam-input)')) {
+                            window.slRememberFiles(e.target);
+                        }
+                    });
+                })();
+            </script>
+            <script>
                 // SWMS (and any repeat row with answers_file[qid][row][]): keep row indices
                 // aligned with answers_meta[...][] arrays — on add/remove AND on submit.
                 (function () {
@@ -1149,7 +1245,10 @@
                             fi.disabled = true;
                         });
                         (root || document).querySelectorAll('form input[type="file"]:not(.sl-cam-input)').forEach(function (fi) {
-                            fi.disabled = !(fi.files && fi.files.length);
+                            fi.disabled = false;
+                            if (window.slApplyStoredFiles) {
+                                window.slApplyStoredFiles(fi);
+                            }
                         });
                     };
                 })();
@@ -1231,6 +1330,7 @@
                             });
                             input.files = dt.files;
                             input.dispatchEvent(new Event('change', { bubbles: true }));
+                            if (window.slRememberFiles) { window.slRememberFiles(input); }
                         } catch (e) {}
                     }
                     function initDropzone(input) {
@@ -1344,6 +1444,7 @@
                         } catch (err) {
                             input.value = '';
                         }
+                        if (window.slRememberFiles) { window.slRememberFiles(input); }
                         renderFilePreview(input);
                     });
                 })();
@@ -1444,12 +1545,14 @@
                                 for (var j = 0; j < cam.files.length; j++) dt.items.add(cam.files[j]);
                                 input.files = dt.files;
                                 input.dispatchEvent(new Event('change', { bubbles: true }));
+                                if (window.slRememberFiles) { window.slRememberFiles(input); }
                                 cam.value = '';
                             } catch (e) {
                                 // Old browsers without DataTransfer: submit the camera input directly.
                                 var fieldName = input.name || input.dataset.slFileName || '';
                                 input.removeAttribute('name');
                                 cam.name = fieldName;
+                                if (window.slRememberFiles) { window.slRememberFiles(cam); }
                             }
                         });
                     }

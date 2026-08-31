@@ -652,17 +652,13 @@ class MobileProfileController extends Controller
     {
         $byRow = [];
 
-        $candidates = [
-            $request->file('answers_file.'.$qid),
-            data_get($request->allFiles(), 'answers_file.'.$qid),
-            data_get($request->allFiles(), 'answers_file.'.(string) $qid),
-        ];
+        $bucket = $request->file('answers_file.'.$qid);
+        if ($bucket === null) {
+            $bucket = data_get($request->allFiles(), 'answers_file.'.$qid)
+                ?? data_get($request->allFiles(), 'answers_file.'.(string) $qid);
+        }
 
-        foreach ($candidates as $bucket) {
-            if ($bucket === null) {
-                continue;
-            }
-
+        if ($bucket !== null) {
             $this->accumulateSwmsFileBucket($byRow, $bucket);
         }
 

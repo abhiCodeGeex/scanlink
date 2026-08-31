@@ -125,4 +125,57 @@ class SwmsFormSubmissionTest extends TestCase
         $this->assertStringContainsString('photo=', $instances[1]);
         $this->assertStringContainsString('swms-row1-only.jpg', $instances[1]);
     }
+
+    #[Test]
+    public function it_stores_photos_for_three_swms_rows(): void
+    {
+        Storage::fake('public');
+
+        $client = Client::factory()->create(['url' => 'swms-three-client']);
+        $profile = Profile::factory()->create(['client_id' => $client->id]);
+
+        $question = FormBuilderQuestion::query()->create([
+            'question_id' => 503,
+            'profile_id' => $profile->id,
+            'form_id' => 1,
+            'question_type_id' => 22,
+            'question_text' => 'SWMS hazard',
+            'is_mandatory' => false,
+        ]);
+
+        $photos = [
+            UploadedFile::fake()->image('swms-a.jpg'),
+            UploadedFile::fake()->image('swms-b.jpg'),
+            UploadedFile::fake()->image('swms-c.jpg'),
+        ];
+
+        $this->post("/{$client->url}/{$profile->id}/form", [
+            'answers_meta' => [
+                $question->question_id => [
+                    'task' => ['A', 'B', 'C'],
+                    'potential_hazards' => ['A', 'B', 'C'],
+                    'risk_score_before' => ['1', '2', '3'],
+                    'control_measures' => ['A', 'B', 'C'],
+                    'risk_score_after' => ['1', '2', '3'],
+                ],
+            ],
+            'answers_file' => [
+                $question->question_id => [
+                    0 => [$photos[0]],
+                    1 => [$photos[1]],
+                    2 => [$photos[2]],
+                ],
+            ],
+        ])->assertRedirect();
+
+        $stored = FormBuilderAnswer::query()
+            ->where('question_id', $question->question_id)
+            ->value('question_answer');
+
+        $instances = explode('@@SWMS@@', (string) $stored);
+        $this->assertCount(3, $instances);
+        $this->assertStringContainsString('photo=', $instances[0]);
+        $this->assertStringContainsString('photo=', $instances[1]);
+        $this->assertStringContainsString('photo=', $instances[2]);
+    }
 }
