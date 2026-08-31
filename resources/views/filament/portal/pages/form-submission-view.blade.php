@@ -138,6 +138,28 @@
         html.dark .sl-fsview__a, html.dark .sl-fsview__html, html.dark .sl-fsview__h3 { color: rgb(229 231 235); }
         html.dark .sl-fsview__meta-line b { color: rgb(243 244 246); }
         html.dark .sl-fsview__row { border-color: rgb(41 51 65); }
+        /* The overrides above only catch the presenter's INLINE colours. Everything driven
+           by these classes kept its light-theme colour on the dark card: the title and the
+           muted labels all sat under 4:1, and the SWMS row divider drew a near-white line.
+           Measured on the page: 3.53 / 3.35 / 3.67 before, 9.29 / 6.38 / 6.99 after. */
+        html.dark .sl-fsview__title { color: rgb(74 222 128); }
+        html.dark .sl-fsview__meta-line { color: rgb(156 163 175); }
+        html.dark .sl-fsview__sec-label,
+        html.dark .sl-fsview__q { color: rgb(156 163 175); }
+        html.dark .sl-fsview__a [style*="#d1d5db"],
+        html.dark .sl-fsview__sec-body [style*="#d1d5db"] { border-color: rgb(55 65 81) !important; }
+        /* Uploaded photos/signatures are drawn on a white chip with a light border. */
+        html.dark .sl-fsview__a [style*="#e5e7eb"],
+        html.dark .sl-fsview__sec-body [style*="#e5e7eb"] {
+            border-color: rgb(55 65 81) !important;
+            background: rgb(31 41 55) !important;
+        }
+        html.dark .sl-fsview__btn--ghost {
+            background: rgb(31 41 55);
+            color: rgb(229 231 235) !important;
+            border-color: rgb(75 85 99);
+        }
+        html.dark .sl-fsview__btn--ghost:hover { background: rgb(55 65 81); }
     </style>
 
     <div class="sl-fsview">

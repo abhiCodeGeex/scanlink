@@ -1245,6 +1245,66 @@
                         return toArray(input.files);
                     };
 
+                    // Shrink a camera photo in the BROWSER before it is ever sent. A modern
+                    // phone shoots 8-12MP (often 4-8MB) which blows straight past PHP's
+                    // upload_max_filesize; the visitor is on site and cannot go and change
+                    // php.ini. Resizing here means any photo, from any phone, submits — and
+                    // 2560px is still far more detail than a SWMS hazard record needs.
+                    var SL_MAX_IMAGE_DIM = 2560;
+                    var SL_JPEG_QUALITY = 0.85;
+                    // Below this a photo is already small enough to leave untouched.
+                    var SL_KEEP_AS_IS_BYTES = 1024 * 1024;
+
+                    window.slDownscaleImage = function (file) {
+                        // Anything not a raster photo (documents, GIF/SVG) passes through.
+                        if (! file || ! /^image\/(jpeg|jpg|png|webp|heic|heif)$/i.test(file.type || '')) {
+                            return Promise.resolve(file);
+                        }
+                        if (typeof createImageBitmap !== 'function' || ! document.createElement('canvas').getContext) {
+                            return Promise.resolve(file);
+                        }
+
+                        return createImageBitmap(file).then(function (bmp) {
+                            var scale = Math.min(1, SL_MAX_IMAGE_DIM / Math.max(bmp.width, bmp.height));
+
+                            if (scale >= 1 && file.size <= SL_KEEP_AS_IS_BYTES) {
+                                if (bmp.close) bmp.close();
+
+                                return file;
+                            }
+
+                            var canvas = document.createElement('canvas');
+                            canvas.width = Math.max(1, Math.round(bmp.width * scale));
+                            canvas.height = Math.max(1, Math.round(bmp.height * scale));
+                            canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height);
+                            if (bmp.close) bmp.close();
+
+                            return new Promise(function (resolve) {
+                                canvas.toBlob(function (blob) {
+                                    // Never hand back something BIGGER than we were given.
+                                    if (! blob || blob.size >= file.size) {
+                                        resolve(file);
+
+                                        return;
+                                    }
+                                    var base = String(file.name || 'photo').replace(/\.[^.]+$/, '');
+                                    resolve(new File([blob], base + '.jpg', {
+                                        type: 'image/jpeg',
+                                        lastModified: file.lastModified || Date.now(),
+                                    }));
+                                }, 'image/jpeg', SL_JPEG_QUALITY);
+                            });
+                        }).catch(function () {
+                            // Undecodable (an exotic HEIC, a revoked temp file) — submit the
+                            // original rather than losing the visitor's photo.
+                            return file;
+                        });
+                    };
+
+                    window.slDownscaleAll = function (files) {
+                        return Promise.all(toArray(files).map(window.slDownscaleImage));
+                    };
+
                     // Attach files to a field: the JS store is updated first and is what
                     // actually gets submitted; input.files is a best-effort mirror so the
                     // browser's own `required` check and native submit keep working.
@@ -1253,15 +1313,17 @@
                         if (!input || !incoming.length) {
                             return;
                         }
-                        var current = input.multiple ? window.slGetStoredFiles(input) : [];
-                        store.set(input, current.concat(incoming));
-                        window.slApplyStoredFiles(input);
-                        suppressSync = true;
-                        try {
-                            input.dispatchEvent(new Event('change', { bubbles: true }));
-                        } finally {
-                            suppressSync = false;
-                        }
+                        window.slDownscaleAll(incoming).then(function (processed) {
+                            var current = input.multiple ? window.slGetStoredFiles(input) : [];
+                            store.set(input, current.concat(processed));
+                            window.slApplyStoredFiles(input);
+                            suppressSync = true;
+                            try {
+                                input.dispatchEvent(new Event('change', { bubbles: true }));
+                            } finally {
+                                suppressSync = false;
+                            }
+                        });
                     };
 
                     window.slApplyStoredFiles = function (input) {
@@ -1413,7 +1475,25 @@
                             return;
                         }
                         var live = toArray(target.files);
-                        if (live.length || !window.slGetStoredFiles(target).length) {
+
+                        // A real pick goes through the same downscale as a camera capture,
+                        // so browsing to a 6MB photo submits just as reliably.
+                        if (live.length) {
+                            window.slDownscaleAll(live).then(function (processed) {
+                                window.slRememberFiles(target, processed);
+                                window.slApplyStoredFiles(target);
+                                suppressSync = true;
+                                try {
+                                    target.dispatchEvent(new Event('change', { bubbles: true }));
+                                } finally {
+                                    suppressSync = false;
+                                }
+                            });
+
+                            return;
+                        }
+
+                        if (! window.slGetStoredFiles(target).length) {
                             window.slRememberFiles(target, live);
                         }
                     });

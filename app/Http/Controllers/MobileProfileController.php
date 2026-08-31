@@ -31,7 +31,10 @@ use Illuminate\View\View;
 class MobileProfileController extends Controller
 {
     /** Largest single visitor upload the app will store (PHP's own limits apply first). */
-    protected const MAX_UPLOAD_BYTES = 10240 * 1024;
+    // Matches upload_max_filesize in docker/php/conf.d/zz-performance.ini. Photos are
+    // downscaled in the browser before they are sent, so this is a backstop against a
+    // genuinely huge file rather than a limit visitors are expected to meet.
+    protected const MAX_UPLOAD_BYTES = 32 * 1024 * 1024;
 
     public function show(Request $request, string $clientUrl, int $profileId, ProfileQrService $qrService, AnalyticsApiService $analytics, MobileProfileViewResolver $views): View|RedirectResponse
     {
