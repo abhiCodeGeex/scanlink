@@ -106,6 +106,9 @@
                     </button>
                 </div>
                 <span class="sl-plist__hint">.xlsx only</span>
+                <button type="button" class="sl-plist__text-btn" wire:click="downloadSample">
+                    Download sample
+                </button>
             </div>
             <div class="sl-plist__legend">
                 <span class="sl-plist__legend-item">
@@ -151,7 +154,7 @@
                                         type="button"
                                         class="sl-plist__icon-btn"
                                         title="Delete participant"
-                                        x-on:click="window.slConfirm('Are you sure you want to delete this Participant?').then(ok => ok && $wire.deleteParticipant({{ $participant->participant_id }}))"
+                                        x-on:click="window.slPlistConfirmDelete({{ $participant->participant_id }})"
                                     >
                                         <img src="{{ asset('images/delete2.png') }}" width="17" alt="Delete">
                                     </button>
@@ -214,7 +217,7 @@
         <button
             type="button"
             class="sl-plist__btn sl-plist__btn--muted"
-            x-on:click="window.slConfirm('Are you sure you want to delete all participants?').then(ok => ok && $wire.clearList())"
+            x-on:click="window.slPlistConfirmClearList()"
         >
             Clear list
         </button>
@@ -584,18 +587,48 @@
 </style>
 
 <script>
-    // "Clear list" and the row delete buttons call window.slConfirm(), which is defined on the
-    // parent Form Builder page but NOT inside this (embedded) participant iframe — so without a
-    // fallback the call throws and the action never runs. Provide a native-confirm fallback.
-    window.slConfirm = window.slConfirm || function (message) {
-        // Prefer the parent page's themed dialog; native confirm only as a last resort.
-        try {
-            if (window.parent && window.parent.slConfirm) {
-                return window.parent.slConfirm(message);
-            }
-        } catch (e) {}
+    window.slPlistComponentId = @js($this->getId());
 
-        return Promise.resolve(window.confirm(message));
+    function slPlistLivewireComponent() {
+        if (window.slPlistComponentId && window.Livewire) {
+            return Livewire.find(window.slPlistComponentId);
+        }
+        var host = document.querySelector('.sl-plist');
+        var root = host && host.closest('[wire\\:id]');
+        if (!root || !window.Livewire) {
+            return null;
+        }
+        return Livewire.find(root.getAttribute('wire:id'));
+    }
+
+    window.slPlistConfirmDelete = function (participantId) {
+        var confirmFn = window.slConfirm || function (message) {
+            return Promise.resolve(window.confirm(message == null ? '' : String(message)));
+        };
+        confirmFn('Are you sure you want to delete this Participant?').then(function (ok) {
+            if (!ok) {
+                return;
+            }
+            var component = slPlistLivewireComponent();
+            if (component) {
+                component.call('deleteParticipant', participantId);
+            }
+        });
+    };
+
+    window.slPlistConfirmClearList = function () {
+        var confirmFn = window.slConfirm || function (message) {
+            return Promise.resolve(window.confirm(message == null ? '' : String(message)));
+        };
+        confirmFn('Are you sure you want to delete all participants?').then(function (ok) {
+            if (!ok) {
+                return;
+            }
+            var component = slPlistLivewireComponent();
+            if (component) {
+                component.call('clearList');
+            }
+        });
     };
 
     window.slPlistDatePicker = function (config) {

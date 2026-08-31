@@ -325,6 +325,24 @@ class ManageParticipants extends Page
         ]);
     }
 
+    public function downloadSample(): StreamedResponse
+    {
+        // Legacy import reads column A = Name, column B = Response Due By (DD/MM/YYYY or Excel date).
+        $filename = 'participant_list_sample.xlsx';
+
+        return response()->streamDownload(function (): void {
+            $writer = new XlsxWriter;
+            $writer->openToFile('php://output');
+            $writer->addRow(Row::fromValues(['Name', 'Response Due By']));
+            $writer->addRow(Row::fromValues(['John Smith', '15/09/2026']));
+            $writer->addRow(Row::fromValues(['Jane Doe', '30/09/2026']));
+            $writer->addRow(Row::fromValues(['Acme Pty Ltd', '01/10/2026']));
+            $writer->close();
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
     public function saveAndExit(): void
     {
         $this->assertProfileOwned($this->profileId);

@@ -7,6 +7,7 @@
     <title>{{ $title ?? 'Participant List' }}</title>
     @filamentStyles
     @livewireStyles
+    <link rel="stylesheet" href="{{ asset('css/filament/scanlink-theme.css') }}?v=83">
     <style>
         html, body {
             margin: 0 !important;
@@ -42,6 +43,7 @@
 </head>
 <body>
     {{ $slot }}
+    @include('filament.hooks.themed-dialog')
     @livewireScripts
     @filamentScripts
 </body>

@@ -5102,7 +5102,8 @@ html.dark .sl-sa__popup-row span { color: #222 !important; }
 .sl-dialog-overlay {
     position: fixed;
     inset: 0;
-    z-index: 10060;
+    /* Above participant-list modal (100000), form-builder modal (10050), flatpickr (100001). */
+    z-index: 100010;
     display: flex;
     align-items: center;
     justify-content: center;
