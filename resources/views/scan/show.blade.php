@@ -127,6 +127,18 @@
             cursor: not-allowed;
             background: #6b7280;
         }
+        /* Keep file inputs submittable across browsers (display:none + programmatic files can fail). */
+        .sl-file-input-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
         /* Legacy mobile form submit progress (matches public/styles/style.css #progressbar). */
         #sl-form-progressbar {
             display: none;
@@ -982,6 +994,12 @@
                             e.stopImmediatePropagation();
                             return;
                         }
+                        if (window.slReindexRepeatFileInputs) {
+                            window.slReindexRepeatFileInputs(form);
+                        }
+                        if (window.slPrepareRepeatFileInputsForSubmit) {
+                            window.slPrepareRepeatFileInputsForSubmit(form);
+                        }
                         lockSubmitUi();
                     }, true);
 
@@ -1108,6 +1126,35 @@
                 })();
             </script>
             <script>
+                // SWMS (and any repeat row with answers_file[qid][row][]): keep row indices
+                // aligned with answers_meta[...][] arrays — on add/remove AND on submit.
+                (function () {
+                    window.slReindexRepeatFileInputs = function (root) {
+                        (root || document).querySelectorAll('[data-sl-repeat]').forEach(function (wrap) {
+                            wrap.querySelectorAll('.sl-repeat-item').forEach(function (row, idx) {
+                                row.querySelectorAll('input[type="file"]:not(.sl-cam-input)').forEach(function (fi) {
+                                    var match = fi.name.match(/^(answers_file\[\d+\])\[\d+(\]\[\])$/);
+                                    if (match) {
+                                        fi.name = match[1] + '[' + idx + ']' + match[2];
+                                        fi.dataset.slFileName = fi.name;
+                                    }
+                                });
+                            });
+                        });
+                    };
+
+                    window.slPrepareRepeatFileInputsForSubmit = function (root) {
+                        (root || document).querySelectorAll('input.sl-cam-input').forEach(function (fi) {
+                            fi.removeAttribute('name');
+                            fi.disabled = true;
+                        });
+                        (root || document).querySelectorAll('form input[type="file"]:not(.sl-cam-input)').forEach(function (fi) {
+                            fi.disabled = !(fi.files && fi.files.length);
+                        });
+                    };
+                })();
+            </script>
+            <script>
                 // Legacy "Add another": clone the last repeat item, clearing its inputs.
                 // Every ADDED section gets a "Remove" link (the original section never does),
                 // so only sections created on this page can be deleted.
@@ -1116,8 +1163,14 @@
                         var rm = e.target.closest('.sl-remove-section');
                         if (rm) {
                             e.preventDefault();
+                            var wrap = rm.closest('[data-sl-repeat]');
                             var item = rm.closest('.sl-repeat-item');
-                            if (item) { item.remove(); }
+                            if (item) {
+                                item.remove();
+                                if (wrap && window.slReindexRepeatFileInputs) {
+                                    window.slReindexRepeatFileInputs(wrap);
+                                }
+                            }
                             return;
                         }
                         var link = e.target.closest('.sl-add-another');
@@ -1142,7 +1195,7 @@
                         clone.querySelectorAll('input[type="file"]').forEach(function (fi) {
                             fi.removeAttribute('data-sl-dz');
                             fi.removeAttribute('data-sl-cam');
-                            fi.style.display = '';
+                            fi.classList.remove('sl-file-input-hidden');
                         });
                         if (!clone.querySelector('.sl-remove-section')) {
                             var del = document.createElement('a');
@@ -1153,16 +1206,9 @@
                             clone.appendChild(del);
                         }
                         wrap.insertBefore(clone, link);
-                        // Re-index per-row file inputs (answers_file[qid][row][]) so each SWMS
-                        // row keeps its own photo set.
-                        var rows = wrap.querySelectorAll('.sl-repeat-item');
-                        rows.forEach(function (row, idx) {
-                            row.querySelectorAll('input[type="file"]:not(.sl-cam-input)').forEach(function (fi) {
-                                if (/\[\d+\]\[\]$/.test(fi.name)) {
-                                    fi.name = fi.name.replace(/\[\d+\]\[\]$/, '[' + idx + '][]');
-                                }
-                            });
-                        });
+                        if (window.slReindexRepeatFileInputs) {
+                            window.slReindexRepeatFileInputs(wrap);
+                        }
                         if (window.slInitDropzones) { window.slInitDropzones(); }
                         if (window.slInitMobileCamera) { window.slInitMobileCamera(); }
                         if (window.slInitSignatures) { window.slInitSignatures(); }
@@ -1190,7 +1236,7 @@
                     function initDropzone(input) {
                         if (input.dataset.slDz === '1') return;
                         input.dataset.slDz = '1';
-                        input.style.display = 'none';
+                        input.classList.add('sl-file-input-hidden');
                         var box = document.createElement('div');
                         box.className = 'sl-dropzone';
                         box.innerHTML = '<span style="font-size:1.3rem;display:block;margin-bottom:2px;">&#128247;</span>'
@@ -1367,14 +1413,14 @@
                     function enhanceFileInput(input) {
                         if (input.dataset.slCam === '1' || input.classList.contains('sl-cam-input')) return;
                         input.dataset.slCam = '1';
+                        input.dataset.slFileName = input.name;
 
                         // Hidden input whose `capture` hint opens the rear camera directly.
                         var cam = document.createElement('input');
                         cam.type = 'file';
                         cam.accept = 'image/*';
                         cam.setAttribute('capture', 'environment');
-                        cam.className = 'sl-cam-input';
-                        cam.style.display = 'none';
+                        cam.className = 'sl-cam-input sl-file-input-hidden';
 
                         var btn = document.createElement('button');
                         btn.type = 'button';
@@ -1401,8 +1447,9 @@
                                 cam.value = '';
                             } catch (e) {
                                 // Old browsers without DataTransfer: submit the camera input directly.
-                                cam.name = input.name;
-                                cam.style.display = '';
+                                var fieldName = input.name || input.dataset.slFileName || '';
+                                input.removeAttribute('name');
+                                cam.name = fieldName;
                             }
                         });
                     }

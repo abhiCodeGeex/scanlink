@@ -373,25 +373,21 @@ class MobileProfileController extends Controller
             // row index for alignment. Rows arrive as answers_file[qid][rowIdx][] — but a
             // legacy-shaped flat answers_file[qid][] still works (one file per row).
             $swmsPhotos = [];
-            $swmsFiles = $request->file('answers_file.'.$qid);
-            if (is_array($swmsFiles)) {
-                foreach ($swmsFiles as $rowIndex => $fileOrList) {
-                    $list = is_array($fileOrList) ? $fileOrList : [$fileOrList];
-                    $storedRow = [];
+            foreach ($this->swmsUploadedFilesByRow($request, $qid) as $rowIndex => $fileList) {
+                $storedRow = [];
 
-                    foreach ($list as $singleFile) {
-                        if ($singleFile instanceof UploadedFile
-                            && $singleFile->isValid()
-                            && $singleFile->getSize() <= 10240 * 1024) {
-                            $stored = $singleFile->store('form-uploads/'.$profile->id, 'public');
-                            $storedRow[] = $stored;
-                            $uploadedFilePaths[] = $stored;
-                        }
+                foreach ($fileList as $singleFile) {
+                    if ($singleFile instanceof UploadedFile
+                        && $singleFile->isValid()
+                        && $singleFile->getSize() <= 10240 * 1024) {
+                        $stored = $singleFile->store('form-uploads/'.$profile->id, 'public');
+                        $storedRow[] = $stored;
+                        $uploadedFilePaths[] = $stored;
                     }
+                }
 
-                    if ($storedRow !== []) {
-                        $swmsPhotos[(int) $rowIndex] = implode(',', $storedRow);
-                    }
+                if ($storedRow !== []) {
+                    $swmsPhotos[(int) $rowIndex] = implode(',', $storedRow);
                 }
             }
 
@@ -637,6 +633,74 @@ class MobileProfileController extends Controller
             ->update(['datetime' => null]);
 
         return redirect()->route('scan.show', [$clientUrl, $profileId]);
+    }
+
+    /**
+     * Collect SWMS (type 22) hazard-row uploads keyed by row index.
+     *
+     * Accepts answers_file[qid][row][] (current), nested multi-file rows, and the legacy
+     * flat answers_file[qid][] shape (one file per row, in order).
+     *
+     * @return array<int, list<UploadedFile>>
+     */
+    protected function swmsUploadedFilesByRow(Request $request, int $qid): array
+    {
+        $byRow = [];
+
+        $candidates = [
+            $request->file('answers_file.'.$qid),
+            data_get($request->allFiles(), 'answers_file.'.$qid),
+            data_get($request->allFiles(), 'answers_file.'.(string) $qid),
+        ];
+
+        foreach ($candidates as $bucket) {
+            if ($bucket === null) {
+                continue;
+            }
+
+            $this->accumulateSwmsFileBucket($byRow, $bucket);
+        }
+
+        ksort($byRow);
+
+        return $byRow;
+    }
+
+    /**
+     * @param  array<int, list<UploadedFile>>  $byRow
+     */
+    protected function accumulateSwmsFileBucket(array &$byRow, mixed $bucket, ?int $rowIndex = null): void
+    {
+        if ($bucket instanceof UploadedFile) {
+            $index = $rowIndex ?? count($byRow);
+            $byRow[$index] ??= [];
+            $byRow[$index][] = $bucket;
+
+            return;
+        }
+
+        if (! is_array($bucket)) {
+            return;
+        }
+
+        foreach ($bucket as $key => $item) {
+            if ($item instanceof UploadedFile) {
+                $index = is_int($key) || (is_string($key) && ctype_digit($key))
+                    ? (int) $key
+                    : ($rowIndex ?? count($byRow));
+                $byRow[$index] ??= [];
+                $byRow[$index][] = $item;
+
+                continue;
+            }
+
+            if (is_array($item)) {
+                $index = is_int($key) || (is_string($key) && ctype_digit($key))
+                    ? (int) $key
+                    : $rowIndex;
+                $this->accumulateSwmsFileBucket($byRow, $item, $index);
+            }
+        }
     }
 
     /**
