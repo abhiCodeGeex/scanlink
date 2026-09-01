@@ -1,6 +1,0 @@
-- [Two diverged checkouts](scanlink-two-checkouts.md) — git/scanlink is the live one; CLAUDE.md points at the wrong path
-- [Staging server](scanlink-staging-server.md) — 13.237.243.130:8000, deployed by hand; localhost:8000 serves the other checkout
-- [Running the tests](scanlink-running-tests.md) — no vendor/ locally; copy the source into a container with the shared vendor volume
-- [Pre-existing test failures](scanlink-test-baseline.md) — 8 reds on develop that are not your fault
-- [Verify before committing](abhishek-verify-before-committing.md) — prove UI fixes in a real browser; the user doesn't want rework
-- [Credential in pushed history](scanlink-credential-in-pushed-history.md) — untracked but still readable in git history, unrotated

@@ -82,16 +82,8 @@ docker-compose.override.yml
 *.pid
 
 # --- Local AI assistant working docs (not part of the app) ---
-# CLAUDE.md and PROJECT_HISTORY.md stay untracked: they were committed unintentionally, and
-# PROJECT_HISTORY.md still carries a credential in pushed history. Both remain on disk.
 /CLAUDE.md
 /PROJECT_HISTORY.md
+/.claude/
 /.cursor/
 /.playwright-mcp/
-
-# .claude/ IS tracked — project knowledge and the work log, deliberately shared.
-# Machine-local settings inside it are not.
-/.claude/settings.local.json
-/.claude/*.local.json
-/.claude/cache/
-/.claude/tmp/
