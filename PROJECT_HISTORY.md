@@ -1,15 +1,9 @@
 # ScanLink Laravel — Project History & AI Handoff
 
-> Generated for continuing work in another AI tool.
->
-> **Scope warning.** This document reflects **July 2026**, and the commit it cites (`6751a86`)
-> is from the other checkout and does not exist in this repository. 117 of this repo's 128
-> commits landed in August, after this was written — so treat the architecture and flows below
-> as accurate in shape but the timeline as incomplete.
->
-> For what happened since: `.claude/COMMIT-HISTORY.md` (every commit, annotated) and
-> `.claude/WORK-LOG-2026-08-31.md` (the detailed account of 2026-08-31).
-> Current branch is `develop`, not `feature/client-portal-migration`.
+> Generated for continuing work in another AI tool.  
+> Branch: `feature/client-portal-migration`  
+> Latest useful commit: `6751a86` — *Align portal purchase, renew, create-slot, and admin reseller-code flows with legacy parity.*  
+> Date context: July 2026
 
 ---
 

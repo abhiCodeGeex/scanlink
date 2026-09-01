@@ -8,7 +8,6 @@ and are available to everyone, not just one machine.
 |---|---|
 | `memory/MEMORY.md` | Index of the facts below — read this first |
 | `memory/*.md` | One fact per file: environment gotchas, working preferences, open risks |
-| `COMMIT-HISTORY.md` | Every commit in the repo, oldest first, with vague ones annotated by what they touched |
 | `WORK-LOG-2026-08-31.md` | Full account of the 2026-08-31 session: every bug, root cause, fix and verification |
 
 ## Handing this over to another developer
@@ -28,7 +27,7 @@ What you still have to obtain out-of-band, because it is deliberately not in the
 First session checklist:
 
 1. Read `CLAUDE.md`, then `memory/MEMORY.md` (six short files).
-2. Skim `COMMIT-HISTORY.md` to see the shape of the project; read `WORK-LOG-2026-08-31.md` if you are touching form submissions, the participant list,
+2. Read `WORK-LOG-2026-08-31.md` if you are touching form submissions, the participant list,
    videos, dark mode or VOCC — it records why several fixes look the way they do.
 3. Run the suite using `memory/scanlink-running-tests.md` and confirm you reproduce the
    baseline in `memory/scanlink-test-baseline.md` before changing anything.
