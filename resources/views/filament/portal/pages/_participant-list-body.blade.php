@@ -94,18 +94,30 @@
                     <div class="sl-plist__card-title">Upload list</div>
                     <p class="sl-plist__card-hint">Import participants from an Excel spreadsheet.</p>
                 </div>
-                <div class="sl-plist__upload-controls">
+                {{-- Deliberately NO wire:model on the file input. wire:model uploads the
+                     moment a file is chosen, which made the field flash "uploading" and then
+                     clear itself before Upload was ever pressed. The input stays a plain
+                     one — keeping the chosen filename on screen — and nothing is sent until
+                     the button is clicked, which then uploads and imports in one go. --}}
+                <div class="sl-plist__upload-controls" x-data="slPlistUpload()">
                     <input
                         type="file"
-                        wire:model="uploadFile"
+                        x-ref="file"
                         accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                         class="sl-plist__file"
                     >
-                    <button type="button" class="sl-plist__btn sl-plist__btn--primary" wire:click="importUpload" wire:loading.attr="disabled">
-                        Upload
-                    </button>
+                    <button
+                        type="button"
+                        class="sl-plist__btn sl-plist__btn--primary"
+                        x-on:click="submit()"
+                        x-bind:disabled="busy"
+                        x-text="busy ? 'Uploading…' : 'Upload'"
+                    >Upload</button>
                 </div>
                 <span class="sl-plist__hint">.xlsx only</span>
+                <button type="button" class="sl-plist__text-btn" wire:click="downloadSample">
+                    Download sample
+                </button>
             </div>
             <div class="sl-plist__legend">
                 <span class="sl-plist__legend-item">
@@ -151,7 +163,7 @@
                                         type="button"
                                         class="sl-plist__icon-btn"
                                         title="Delete participant"
-                                        x-on:click="window.slConfirm('Are you sure you want to delete this Participant?').then(ok => ok && $wire.deleteParticipant({{ $participant->participant_id }}))"
+                                        x-on:click="window.slPlistConfirmDelete({{ $participant->participant_id }})"
                                     >
                                         <img src="{{ asset('images/delete2.png') }}" width="17" alt="Delete">
                                     </button>
@@ -214,7 +226,7 @@
         <button
             type="button"
             class="sl-plist__btn sl-plist__btn--muted"
-            x-on:click="window.slConfirm('Are you sure you want to delete all participants?').then(ok => ok && $wire.clearList())"
+            x-on:click="window.slPlistConfirmClearList()"
         >
             Clear list
         </button>
@@ -526,8 +538,16 @@
         background: var(--sl-surface);
     }
 
-    /* Flatpickr — ScanLink green theme, above modal content */
+    /* Flatpickr — ScanLink green theme, above modal content.
+       The calendar is appended to <body>, OUTSIDE .sl-plist, so the palette declared on
+       .sl-plist never reached it: var(--sl-green) resolved to nothing, the background
+       declaration was dropped as invalid, and the surviving `color:#fff` rendered the
+       selected day white-on-white — invisible. Redeclare the palette here and state the
+       day colours literally so this cannot silently break again. */
     .flatpickr-calendar {
+        --sl-green: #008901;
+        --sl-green-dark: #006b01;
+        --sl-green-soft: #e8f6e8;
         z-index: 100001 !important;
         border: 1px solid var(--sl-border) !important;
         border-radius: 10px !important;
@@ -542,22 +562,33 @@
     }
     .flatpickr-months .flatpickr-prev-month:hover svg,
     .flatpickr-months .flatpickr-next-month:hover svg { fill: var(--sl-green) !important; }
+    /* The chosen date reads as a solid green box, so it is obvious at a glance which day
+       is currently selected. */
     .flatpickr-day.selected,
     .flatpickr-day.startRange,
     .flatpickr-day.endRange,
     .flatpickr-day.selected:hover,
     .flatpickr-day.startRange:hover,
-    .flatpickr-day.endRange:hover {
-        background: var(--sl-green) !important;
-        border-color: var(--sl-green) !important;
+    .flatpickr-day.endRange:hover,
+    .flatpickr-day.selected:focus {
+        background: #008901 !important;
+        background-color: #008901 !important;
+        border-color: #006b01 !important;
         color: #fff !important;
+        font-weight: 700 !important;
+        border-radius: 6px !important;
+        box-shadow: 0 0 0 2px rgba(0, 137, 1, 0.25) !important;
     }
-    .flatpickr-day.today {
-        border-color: var(--sl-green) !important;
+    /* Today, when it is not the selection, gets an outlined box rather than a filled one. */
+    .flatpickr-day.today:not(.selected) {
+        border-color: #008901 !important;
+        color: #008901 !important;
+        font-weight: 700 !important;
     }
-    .flatpickr-day:hover {
-        background: var(--sl-green-soft) !important;
-        border-color: var(--sl-green-soft) !important;
+    .flatpickr-day:hover:not(.selected) {
+        background: #e8f6e8 !important;
+        border-color: #e8f6e8 !important;
+        color: #111827 !important;
     }
 
     @media (max-width: 720px) {
@@ -584,18 +615,91 @@
 </style>
 
 <script>
-    // "Clear list" and the row delete buttons call window.slConfirm(), which is defined on the
-    // parent Form Builder page but NOT inside this (embedded) participant iframe — so without a
-    // fallback the call throws and the action never runs. Provide a native-confirm fallback.
-    window.slConfirm = window.slConfirm || function (message) {
-        // Prefer the parent page's themed dialog; native confirm only as a last resort.
-        try {
-            if (window.parent && window.parent.slConfirm) {
-                return window.parent.slConfirm(message);
-            }
-        } catch (e) {}
+    window.slPlistComponentId = @js($this->getId());
 
-        return Promise.resolve(window.confirm(message));
+    function slPlistLivewireComponent() {
+        if (window.slPlistComponentId && window.Livewire) {
+            return Livewire.find(window.slPlistComponentId);
+        }
+        var host = document.querySelector('.sl-plist');
+        var root = host && host.closest('[wire\\:id]');
+        if (!root || !window.Livewire) {
+            return null;
+        }
+        return Livewire.find(root.getAttribute('wire:id'));
+    }
+
+    // "Upload list": hold the file locally until the button is pressed, then transfer it
+    // and run the import as one action.
+    window.slPlistUpload = function () {
+        return {
+            busy: false,
+            submit: function () {
+                var input = this.$refs.file;
+                var file = input && input.files && input.files[0];
+                var say = window.slAlert || function (m) { alert(m); };
+
+                if (! file) {
+                    say('Choose an .xlsx file first.');
+
+                    return;
+                }
+                if (! /\.xlsx$/i.test(file.name || '')) {
+                    say('Upload .xlsx file only');
+
+                    return;
+                }
+
+                var self = this;
+                this.busy = true;
+
+                this.$wire.upload(
+                    'uploadFile',
+                    file,
+                    function () {
+                        self.$wire.call('importUpload').then(function () {
+                            input.value = '';
+                        }).finally(function () {
+                            self.busy = false;
+                        });
+                    },
+                    function () {
+                        self.busy = false;
+                        say('Could not upload the file. Please try again.');
+                    },
+                );
+            },
+        };
+    };
+
+    window.slPlistConfirmDelete = function (participantId) {
+        var confirmFn = window.slConfirm || function (message) {
+            return Promise.resolve(window.confirm(message == null ? '' : String(message)));
+        };
+        confirmFn('Are you sure you want to delete this Participant?').then(function (ok) {
+            if (!ok) {
+                return;
+            }
+            var component = slPlistLivewireComponent();
+            if (component) {
+                component.call('deleteParticipant', participantId);
+            }
+        });
+    };
+
+    window.slPlistConfirmClearList = function () {
+        var confirmFn = window.slConfirm || function (message) {
+            return Promise.resolve(window.confirm(message == null ? '' : String(message)));
+        };
+        confirmFn('Are you sure you want to delete all participants?').then(function (ok) {
+            if (!ok) {
+                return;
+            }
+            var component = slPlistLivewireComponent();
+            if (component) {
+                component.call('clearList');
+            }
+        });
     };
 
     window.slPlistDatePicker = function (config) {

@@ -1153,3 +1153,44 @@ html.dark .fi-panel-portal .fi-page:has(.sl-profile-editor) .sl-logo-upload .fil
     border-color: var(--sl-dark-border-strong) !important;
     color: rgb(209 213 219) !important;
 }
+
+/* ===== Profile editor: text that kept its light-theme colour on the dark page =====
+   Measured with a contrast audit on /portal/profiles/{id}/edit in dark mode. Each of
+   these was under the 4.5:1 readability threshold; the QR URL block was #333 on a
+   near-black card at 1.4:1, i.e. effectively invisible. Ratios after, in comments. */
+
+/* 1.40 -> 14.33 */
+html.dark .fi-page:has(.sl-profile-editor) .sl-qr-url-block,
+html.dark .fi-page:has(.sl-profile-editor) .sl-qr-url-block * {
+    color: rgb(229 231 235) !important;
+}
+
+/* 3.20 -> 8.42. Selectors mirror the light rules in scanlink-theme.css, which are more
+   specific than a plain .sl-doc-title-link and would otherwise win. */
+html.dark .fi-page:has(.sl-profile-editor) .sl-documents-repeater a.sl-doc-title-link,
+html.dark .fi-page:has(.sl-profile-editor) .sl-videos-repeater a.sl-video-title-link {
+    color: rgb(74 222 128) !important;
+}
+
+/* 4.06 -> 10.18 */
+html.dark .fi-page:has(.sl-profile-editor) .shareFB,
+html.dark .fi-page:has(.sl-profile-editor) .shareTWT,
+html.dark .fi-page:has(.sl-profile-editor) .shareEML {
+    color: rgb(74 222 128) !important;
+}
+
+/* 3.89 -> 7.84 */
+html.dark .fi-page:has(.sl-profile-editor) .sl-add-form-left .set-activation-period {
+    color: rgb(251 146 60) !important;
+}
+
+/* 2.50 -> 10.63 — the amber "editing this form will not be possible" note. */
+html.dark .sl-form-builder-panel .existing-item small {
+    color: rgb(251 191 36) !important;
+}
+
+/* Applied-template chips: green text on a translucent green tint. */
+html.dark .fi-page:has(.sl-profile-editor) .sl-applied-chip__label,
+html.dark .fi-page:has(.sl-profile-editor) .sl-applied-chip__remove {
+    color: rgb(187 247 208) !important;
+}

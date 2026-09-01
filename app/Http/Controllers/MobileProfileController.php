@@ -30,6 +30,12 @@ use Illuminate\View\View;
 
 class MobileProfileController extends Controller
 {
+    /** Largest single visitor upload the app will store (PHP's own limits apply first). */
+    // Matches upload_max_filesize in docker/php/conf.d/zz-performance.ini. Photos are
+    // downscaled in the browser before they are sent, so this is a backstop against a
+    // genuinely huge file rather than a limit visitors are expected to meet.
+    protected const MAX_UPLOAD_BYTES = 32 * 1024 * 1024;
+
     public function show(Request $request, string $clientUrl, int $profileId, ProfileQrService $qrService, AnalyticsApiService $analytics, MobileProfileViewResolver $views): View|RedirectResponse
     {
         $profile = $this->resolveProfile($clientUrl, $profileId, eager: true);
@@ -226,6 +232,9 @@ class MobileProfileController extends Controller
         $answerMap = $validated['answers'] ?? [];
         $rawAnswers = $answerMap;
         $uploadedFilePaths = [];
+        // Reasons any attachment could NOT be stored. Never dropped on the floor: a photo
+        // that does not make it must be reported back to the visitor.
+        $uploadIssues = [];
 
         foreach ($validated['answers_sig_text'] ?? [] as $questionId => $sigText) {
             if (filled($sigText) && empty($answerMap[$questionId])) {
@@ -326,10 +335,8 @@ class MobileProfileController extends Controller
             $storedPaths = [];
 
             foreach ($fileList as $singleFile) {
-                if ($singleFile instanceof UploadedFile
-                    && $singleFile->isValid()
-                    && $singleFile->getSize() <= 10240 * 1024) {
-                    $stored = $singleFile->store('form-uploads/'.$profile->id, 'public');
+                $stored = $this->storeFormUpload($singleFile, (int) $profile->id, $uploadIssues);
+                if ($stored !== null) {
                     $storedPaths[] = $stored;
                     $uploadedFilePaths[] = $stored;
                 }
@@ -373,25 +380,19 @@ class MobileProfileController extends Controller
             // row index for alignment. Rows arrive as answers_file[qid][rowIdx][] — but a
             // legacy-shaped flat answers_file[qid][] still works (one file per row).
             $swmsPhotos = [];
-            $swmsFiles = $request->file('answers_file.'.$qid);
-            if (is_array($swmsFiles)) {
-                foreach ($swmsFiles as $rowIndex => $fileOrList) {
-                    $list = is_array($fileOrList) ? $fileOrList : [$fileOrList];
-                    $storedRow = [];
+            foreach ($this->swmsUploadedFilesByRow($request, $qid) as $rowIndex => $fileList) {
+                $storedRow = [];
 
-                    foreach ($list as $singleFile) {
-                        if ($singleFile instanceof UploadedFile
-                            && $singleFile->isValid()
-                            && $singleFile->getSize() <= 10240 * 1024) {
-                            $stored = $singleFile->store('form-uploads/'.$profile->id, 'public');
-                            $storedRow[] = $stored;
-                            $uploadedFilePaths[] = $stored;
-                        }
+                foreach ($fileList as $singleFile) {
+                    $stored = $this->storeFormUpload($singleFile, (int) $profile->id, $uploadIssues);
+                    if ($stored !== null) {
+                        $storedRow[] = $stored;
+                        $uploadedFilePaths[] = $stored;
                     }
+                }
 
-                    if ($storedRow !== []) {
-                        $swmsPhotos[(int) $rowIndex] = implode(',', $storedRow);
-                    }
+                if ($storedRow !== []) {
+                    $swmsPhotos[(int) $rowIndex] = implode(',', $storedRow);
                 }
             }
 
@@ -605,12 +606,69 @@ class MobileProfileController extends Controller
             }
         }
 
-        $this->markParticipatedParticipants($profile, $questions, $rawAnswers);
+        $this->markParticipatedParticipants(
+            $profile,
+            $questions,
+            $rawAnswers,
+            $validated['answers_meta'] ?? [],
+        );
         $this->notifyFormSubmissionRecipients($profile, $sessionId, $questions, $savedAnswers, $additionalRecipients, $uploadedFilePaths);
 
-        return redirect()
+        $response = redirect()
             ->route('scan.show', [$clientUrl, $profileId])
             ->with('form_submitted', true);
+
+        if ($uploadIssues !== []) {
+            $response->with('form_upload_warning', array_values(array_unique($uploadIssues)));
+        }
+
+        return $response;
+    }
+
+    /**
+     * Store one visitor upload, or record WHY it could not be stored.
+     *
+     * This must never fail quietly. PHP rejects anything over upload_max_filesize before
+     * the application sees it (UPLOAD_ERR_INI_SIZE) and hands over an invalid file — which
+     * is how photos taken on a phone used to vanish while the typed answers saved fine.
+     *
+     * @param  list<string>  $issues
+     */
+    protected function storeFormUpload(mixed $file, int $profileId, array &$issues): ?string
+    {
+        if (! $file instanceof UploadedFile) {
+            return null;
+        }
+
+        $name = trim((string) $file->getClientOriginalName());
+        $name = $name !== '' ? $name : 'photo';
+
+        if (! $file->isValid()) {
+            $issues[] = $name.' - '.$file->getErrorMessage();
+
+            return null;
+        }
+
+        if ($file->getSize() > self::MAX_UPLOAD_BYTES) {
+            $issues[] = $name.' - larger than '.(int) (self::MAX_UPLOAD_BYTES / 1048576).'MB';
+
+            return null;
+        }
+
+        try {
+            $stored = $file->store('form-uploads/'.$profileId, 'public');
+        } catch (\Throwable $e) {
+            report($e);
+            $stored = false;
+        }
+
+        if (! is_string($stored) || $stored === '') {
+            $issues[] = $name.' - could not be saved on the server';
+
+            return null;
+        }
+
+        return $stored;
     }
 
     public function checkChecklistItem(Request $request, string $clientUrl, int $profileId, int $itemId): RedirectResponse
@@ -637,6 +695,75 @@ class MobileProfileController extends Controller
             ->update(['datetime' => null]);
 
         return redirect()->route('scan.show', [$clientUrl, $profileId]);
+    }
+
+    /**
+     * Collect SWMS (type 22) hazard-row uploads keyed by row index.
+     *
+     * Accepts answers_file[qid][row][] (current), nested multi-file rows, and the legacy
+     * flat answers_file[qid][] shape (one file per row, in order).
+     *
+     * @return array<int, list<UploadedFile>>
+     */
+    protected function swmsUploadedFilesByRow(Request $request, int $qid): array
+    {
+        $byRow = [];
+
+        $bucket = $request->file('answers_file.'.$qid);
+        if ($bucket === null) {
+            $bucket = data_get($request->allFiles(), 'answers_file.'.$qid)
+                ?? data_get($request->allFiles(), 'answers_file.'.(string) $qid);
+        }
+
+        if ($bucket !== null) {
+            $this->accumulateSwmsFileBucket($byRow, $bucket);
+        }
+
+        ksort($byRow);
+
+        return $byRow;
+    }
+
+    /**
+     * @param  array<int, list<UploadedFile>>  $byRow
+     */
+    protected function accumulateSwmsFileBucket(array &$byRow, mixed $bucket, ?int $rowIndex = null): void
+    {
+        if ($bucket instanceof UploadedFile) {
+            $index = $rowIndex ?? count($byRow);
+            $byRow[$index] ??= [];
+            $byRow[$index][] = $bucket;
+
+            return;
+        }
+
+        if (! is_array($bucket)) {
+            return;
+        }
+
+        foreach ($bucket as $key => $item) {
+            if ($item instanceof UploadedFile) {
+                // A row index handed down by the parent ALWAYS wins. One level down (inside
+                // answers_file[qid][row][]) the numeric key is the file's position within that
+                // row — it is 0 for every row when each row carries a single photo, so letting
+                // it win filed every row's photo under row 0 and every SWMS photo showed up
+                // against hazard #1.
+                $index = $rowIndex ?? (is_int($key) || (is_string($key) && ctype_digit($key))
+                    ? (int) $key
+                    : count($byRow));
+                $byRow[$index] ??= [];
+                $byRow[$index][] = $item;
+
+                continue;
+            }
+
+            if (is_array($item)) {
+                $index = is_int($key) || (is_string($key) && ctype_digit($key))
+                    ? (int) $key
+                    : $rowIndex;
+                $this->accumulateSwmsFileBucket($byRow, $item, $index);
+            }
+        }
     }
 
     /**
@@ -676,6 +803,7 @@ class MobileProfileController extends Controller
                 'logosExtra',
                 'pictures',
                 'picturesExtra',
+                'vocProfileImages',
                 'documents',
                 'videos',
                 'weblinks',
@@ -753,9 +881,14 @@ class MobileProfileController extends Controller
     /**
      * @param  Collection<int, FormBuilderQuestion>  $questions
      * @param  array<int|string, mixed>  $savedAnswers
+     * @param  array<int|string, mixed>  $answersMeta
      */
-    protected function markParticipatedParticipants(Profile $profile, Collection $questions, array $savedAnswers): void
-    {
+    protected function markParticipatedParticipants(
+        Profile $profile,
+        Collection $questions,
+        array $savedAnswers,
+        array $answersMeta = [],
+    ): void {
         $participantQuestions = $questions->filter(
             fn (FormBuilderQuestion $question): bool => (int) $question->question_type_id === 18
         );
@@ -765,16 +898,25 @@ class MobileProfileController extends Controller
         }
 
         foreach ($participantQuestions as $question) {
-            $raw = $savedAnswers[$question->question_id] ?? $savedAnswers[(string) $question->question_id] ?? '';
+            $qid = $question->question_id;
+            $raw = $savedAnswers[$qid] ?? $savedAnswers[(string) $qid] ?? '';
             // "Add another" submits multiple participant names as an array — mark every one.
             $names = is_array($raw) ? $raw : [$raw];
 
-            foreach ($names as $rawName) {
+            $meta = $answersMeta[$qid] ?? $answersMeta[(string) $qid] ?? [];
+            $employersRaw = is_array($meta) ? ($meta['employer'] ?? '') : '';
+            $employers = is_array($employersRaw) ? $employersRaw : [$employersRaw];
+
+            foreach ($names as $index => $rawName) {
                 $name = trim((string) $rawName);
 
                 if ($name === '') {
                     continue;
                 }
+
+                $employer = $question->participant_include_employer
+                    ? trim((string) ($employers[$index] ?? ''))
+                    : '';
 
                 Participant::query()
                     ->where('profile_id', $profile->id)
@@ -783,6 +925,7 @@ class MobileProfileController extends Controller
                     ->update([
                         'is_participated' => true,
                         'participated_date' => now()->toDateString(),
+                        'employer_cmp' => $employer,
                     ]);
 
                 // Legacy update_participant_status: a walk-up participant whose name is not yet
@@ -797,7 +940,7 @@ class MobileProfileController extends Controller
                     Participant::query()->create([
                         'profile_id' => $profile->id,
                         'name' => $name,
-                        'employer_cmp' => '',
+                        'employer_cmp' => $employer,
                         'due_date' => now()->toDateString(),
                         'participated_date' => now()->toDateString(),
                         'is_participated' => true,

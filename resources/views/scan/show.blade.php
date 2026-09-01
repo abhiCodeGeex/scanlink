@@ -122,6 +122,43 @@
             transition: background .15s ease;
         }
         .frm_builder .submit-btn:hover { background: #00a300; }
+        .frm_builder .submit-btn:disabled {
+            opacity: .65;
+            cursor: not-allowed;
+            background: #6b7280;
+        }
+        /* Keep file inputs submittable across browsers (display:none + programmatic files can fail). */
+        .sl-file-input-hidden {
+            position: absolute;
+            left: -9999px;
+            width: 1px;
+            height: 1px;
+            opacity: 0.01;
+            overflow: hidden;
+        }
+        /* Legacy mobile form submit progress (matches public/styles/style.css #progressbar). */
+        #sl-form-progressbar {
+            display: none;
+            position: fixed;
+            left: 50%;
+            top: 45%;
+            transform: translateX(-50%);
+            z-index: 100050;
+            width: min(290px, calc(100vw - 32px));
+            box-sizing: border-box;
+            background-color: #000;
+            border-radius: 10px;
+            color: #fff;
+            opacity: .85;
+            padding: 20px;
+            text-align: center;
+            line-height: 1.4;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, .35);
+        }
+        #sl-form-progressbar img { vertical-align: middle; margin-right: 6px; }
+        body.sl-form-submitting { cursor: wait; }
         /* Legacy form rhythm is tight (.frm_builder 14px/25px, labels are inline text + <br>). */
         label { display: block; margin-top: .4rem; font-weight: 600; }
         input, textarea, select { width: 100%; padding: .4rem .5rem; margin-top: .2rem; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
@@ -254,6 +291,20 @@
             </div>
         @endif
 
+        {{-- An attachment the server refused (PHP upload limit, unreadable file, disk error)
+             is reported here. A submission must never look complete when a photo was lost. --}}
+        @if (session('form_upload_warning'))
+            <div style="padding:.9rem 1rem;margin-bottom:1rem;border:1px solid #f0c36d;background:#fff8e6;border-radius:8px;color:#7a5200;">
+                <strong style="display:block;margin-bottom:.25rem;">Some attachments were not saved</strong>
+                <ul style="margin:.2rem 0 .4rem 1.1rem;padding:0;font-size:.9rem;">
+                    @foreach ((array) session('form_upload_warning') as $slUploadIssue)
+                        <li>{{ $slUploadIssue }}</li>
+                    @endforeach
+                </ul>
+                <span style="font-size:.85rem;">Everything else was submitted. Please re-submit the missing photos.</span>
+            </div>
+        @endif
+
         {{-- Legacy tiles_order: exhibit/voc render their content tiles in the user-saved order. --}}
         @php $slOrderedTileTypes = ['exhibit', 'voc']; @endphp
 
@@ -318,9 +369,9 @@
              exhibit/voc render Words / Profile Information via the ordered-tiles partial. --}}
         @unless (in_array($profile->typeSlug(), $slOrderedTileTypes, true))
         <div class="MobileBottomText">
-            {{-- Asset "Words" checkboxes hide the WHOLE block (heading + value), not just the heading. --}}
+            {{-- Asset Words checkboxes only control whether the mobile heading is shown; content always displays when filled. --}}
             @php $slAsset = $profile->typeSlug() === 'asset'; @endphp
-            @if (filled($profile->name) && (! $slAsset || $profile->show_name))
+            @if (filled($profile->name))
                 @if (! empty($nameHeading))
                     <h3>{{ $nameHeading }}</h3>
                 @endif
@@ -348,7 +399,7 @@
                 <p>{{ $profile->serial_no }}</p>
             @endif
 
-            @if ($profile->description && (! $slAsset || $profile->show_description))
+            @if ($profile->description)
                 @php
                     $descPlain = trim(str_replace('&nbsp;', '', strip_tags((string) $profile->description)));
                     $slug = $profile->typeSlug();
@@ -407,8 +458,10 @@
                 @endforeach
             @endif
 
-            @if ($profile->address && $profile->typeSlug() !== 'voc' && (! $slAsset || $profile->show_address))
-                <h3>Address</h3>
+            @if ($profile->address && $profile->typeSlug() !== 'voc')
+                @if (! $slAsset || $profile->show_address)
+                    <h3>Address</h3>
+                @endif
                 <p>{{ $profile->address }}</p>
                 @if (in_array($profile->typeSlug(), ['location', 'asset'], true))
                     <p>&nbsp;<a class="gray-mob-btn" href="https://maps.google.com?q={{ urlencode($profile->address) }}" target="_blank" rel="noopener">View Map</a></p>
@@ -427,23 +480,31 @@
                 <p>{{ $profile->name_company }}</p>
             @endif
 
-            @if ($profile->telephone && $profile->typeSlug() !== 'voc' && (! $slAsset || $profile->show_telephone))
-                <h3>Telephone</h3>
+            @if ($profile->telephone && $profile->typeSlug() !== 'voc')
+                @if (! $slAsset || $profile->show_telephone)
+                    <h3>Telephone</h3>
+                @endif
                 <p><a href="tel:{{ $profile->telephone }}">{{ $profile->telephone }}</a></p>
             @endif
 
-            @if (filled($profile->mobile) && (! $slAsset || $profile->show_mobile))
-                <h3>Mobile</h3>
+            @if (filled($profile->mobile))
+                @if (! $slAsset || $profile->show_mobile)
+                    <h3>Mobile</h3>
+                @endif
                 <p><a href="tel:{{ $profile->mobile }}">{{ $profile->mobile }}</a></p>
             @endif
 
-            @if (filled($profile->email) && (! $slAsset || $profile->show_email))
-                <h3>Email</h3>
+            @if (filled($profile->email))
+                @if (! $slAsset || $profile->show_email)
+                    <h3>Email</h3>
+                @endif
                 <p><a href="mailto:{{ $profile->email }}">{{ $profile->email }}</a></p>
             @endif
 
-            @if (filled($profile->url) && $profile->typeSlug() !== 'code' && (! $slAsset || $profile->show_url))
-                <h3>Website</h3>
+            @if (filled($profile->url) && $profile->typeSlug() !== 'code')
+                @if (! $slAsset || $profile->show_url)
+                    <h3>Website</h3>
+                @endif
                 <p><a href="{{ $profile->url }}" target="_blank" rel="noopener">{{ $profile->url }}</a></p>
             @endif
 
@@ -900,6 +961,146 @@
                     </script>
                 @endif
             </form>
+            <div id="sl-form-progressbar" aria-live="polite" aria-busy="false" hidden>
+                <img align="absmiddle" src="{{ asset('images/spinner_gray.gif') }}" alt=""> Please Wait&hellip;
+            </div>
+            <script>
+                (function () {
+                    var form = document.querySelector('form.frm_builder');
+                    if (!form) return;
+                    var bar = document.getElementById('sl-form-progressbar');
+                    var btn = form.querySelector('.submit-btn');
+                    var submitting = false;
+                    var submitLabel = btn ? btn.value : 'Submit';
+
+                    function resetSubmitUi() {
+                        submitting = false;
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.value = submitLabel;
+                        }
+                        if (bar) {
+                            bar.hidden = true;
+                            bar.setAttribute('aria-busy', 'false');
+                        }
+                        document.body.classList.remove('sl-form-submitting');
+                    }
+
+                    function lockSubmitUi() {
+                        submitting = true;
+                        if (btn) {
+                            btn.disabled = true;
+                            btn.value = 'Submitting…';
+                        }
+                        if (bar) {
+                            bar.hidden = false;
+                            bar.setAttribute('aria-busy', 'true');
+                        }
+                        document.body.classList.add('sl-form-submitting');
+                    }
+
+                    form.addEventListener('submit', function (e) {
+                        if (submitting) {
+                            e.preventDefault();
+                            e.stopImmediatePropagation();
+                            return;
+                        }
+
+                        try {
+                            if (window.slReindexRepeatFileInputs) {
+                                window.slReindexRepeatFileInputs(form);
+                            }
+                            if (window.slPrepareRepeatFileInputsForSubmit) {
+                                window.slPrepareRepeatFileInputsForSubmit(form);
+                            }
+
+                            // Whenever the visitor attached anything, POST through
+                            // FormData.append. That is the only upload path that behaves the
+                            // same in every mobile browser — a native submit can only send
+                            // what lives in input.files, which is exactly what phones fail to
+                            // let us populate.
+                            var hasFiles = false;
+                            form.querySelectorAll('input[type="file"]').forEach(function (input) {
+                                if (input.classList.contains('sl-cam-input')) {
+                                    return;
+                                }
+                                if (!input.name) {
+                                    return;
+                                }
+                                var stored = window.slGetStoredFiles ? window.slGetStoredFiles(input) : [];
+                                if (stored.length) {
+                                    hasFiles = true;
+                                }
+                            });
+
+                            if (hasFiles) {
+                                // A native submit can only send input.files, which is exactly
+                                // what phones fail to let us populate. Rather than post a form
+                                // that quietly drops the photos, stop and say so.
+                                if (!window.slSubmitFormWithFiles || !window.fetch || !window.FormData) {
+                                    e.preventDefault();
+                                    e.stopImmediatePropagation();
+                                    resetSubmitUi();
+                                    (window.slAlert || alert)('This browser cannot upload attachments. Please try a different browser so your photos are not lost.');
+                                    return;
+                                }
+
+                                // Bigger than the server will accept in one request: say so
+                                // here rather than letting PHP discard the whole body.
+                                var totalBytes = 0;
+                                form.querySelectorAll('input[type="file"]').forEach(function (input) {
+                                    if (input.classList.contains('sl-cam-input') || !input.name) {
+                                        return;
+                                    }
+                                    (window.slGetStoredFiles ? window.slGetStoredFiles(input) : []).forEach(function (f) {
+                                        totalBytes += (f && f.size) || 0;
+                                    });
+                                });
+                                if (totalBytes > 50 * 1024 * 1024) {
+                                    e.preventDefault();
+                                    e.stopImmediatePropagation();
+                                    resetSubmitUi();
+                                    (window.slAlert || alert)('Your attachments add up to '
+                                        + Math.round(totalBytes / 1048576) + 'MB, which is too large to send. '
+                                        + 'Please remove some photos and try again.');
+                                    return;
+                                }
+
+                                e.preventDefault();
+                                e.stopImmediatePropagation();
+                                window.slSubmitFormWithFiles(form, {
+                                    lockSubmitUi: lockSubmitUi,
+                                    resetSubmitUi: resetSubmitUi,
+                                });
+                                return;
+                            }
+
+                            lockSubmitUi();
+                        } catch (err) {
+                            e.preventDefault();
+                            e.stopImmediatePropagation();
+                            resetSubmitUi();
+                            (window.slAlert || alert)('Could not prepare your submission. Please try again.');
+                        }
+                    }, true);
+
+                    if (btn) {
+                        btn.addEventListener('click', function (e) {
+                            if (submitting) {
+                                e.preventDefault();
+                                e.stopImmediatePropagation();
+                            }
+                        }, true);
+                    }
+
+                    // Browser back/forward cache: re-enable if the visitor returns mid-submit.
+                    window.addEventListener('pageshow', function (e) {
+                        if (e.persisted) {
+                            resetSubmitUi();
+                        }
+                    });
+                })();
+            </script>
             <script>
                 window.slCovidLocationChange = function (value, questionId, labelColor) {
                     const host = document.getElementById('vehicle_no_' + questionId);
@@ -1006,6 +1207,343 @@
                 })();
             </script>
             <script>
+                // Reliable file uploads (SWMS photos, multi-upload): mobile camera + DataTransfer
+                // can show a preview while input.files is empty at submit — keep a JS copy and
+                // POST via FormData.append so every row/browser submits photos correctly.
+                (function () {
+                    var store = new WeakMap();
+                    // Set while we dispatch our own synthetic `change`, so the sync listener
+                    // below does not overwrite the store with an input.files we just failed
+                    // to write.
+                    var suppressSync = false;
+
+                    function toArray(list) {
+                        return Array.prototype.slice.call(list || []);
+                    }
+
+                    // `files` is AUTHORITATIVE when passed (camera capture, drag & drop, a
+                    // removal). It must be used instead of input.files: writing input.files
+                    // is only possible through DataTransfer, and several mobile browsers
+                    // accept `new DataTransfer()` but silently ignore items.add(), leaving
+                    // input.files empty. Deriving the store from input.files after such a
+                    // write loses the visitor's photo with no error anywhere.
+                    window.slRememberFiles = function (input, files) {
+                        if (!input || input.type !== 'file') {
+                            return;
+                        }
+                        if (input.classList.contains('sl-cam-input') && !input.name) {
+                            return;
+                        }
+                        store.set(input, files ? toArray(files) : toArray(input.files));
+                    };
+
+                    window.slGetStoredFiles = function (input) {
+                        var saved = store.get(input);
+                        if (saved) {
+                            return saved;
+                        }
+                        return toArray(input.files);
+                    };
+
+                    // Shrink a camera photo in the BROWSER before it is ever sent. A modern
+                    // phone shoots 8-12MP (often 4-8MB) which blows straight past PHP's
+                    // upload_max_filesize; the visitor is on site and cannot go and change
+                    // php.ini. Resizing here means any photo, from any phone, submits — and
+                    // 2560px is still far more detail than a SWMS hazard record needs.
+                    var SL_MAX_IMAGE_DIM = 2560;
+                    var SL_JPEG_QUALITY = 0.85;
+                    // Below this a photo is already small enough to leave untouched.
+                    var SL_KEEP_AS_IS_BYTES = 1024 * 1024;
+
+                    window.slDownscaleImage = function (file) {
+                        // Anything not a raster photo (documents, GIF/SVG) passes through.
+                        if (! file || ! /^image\/(jpeg|jpg|png|webp|heic|heif)$/i.test(file.type || '')) {
+                            return Promise.resolve(file);
+                        }
+                        if (typeof createImageBitmap !== 'function' || ! document.createElement('canvas').getContext) {
+                            return Promise.resolve(file);
+                        }
+
+                        return createImageBitmap(file).then(function (bmp) {
+                            var scale = Math.min(1, SL_MAX_IMAGE_DIM / Math.max(bmp.width, bmp.height));
+
+                            if (scale >= 1 && file.size <= SL_KEEP_AS_IS_BYTES) {
+                                if (bmp.close) bmp.close();
+
+                                return file;
+                            }
+
+                            var canvas = document.createElement('canvas');
+                            canvas.width = Math.max(1, Math.round(bmp.width * scale));
+                            canvas.height = Math.max(1, Math.round(bmp.height * scale));
+                            canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height);
+                            if (bmp.close) bmp.close();
+
+                            return new Promise(function (resolve) {
+                                canvas.toBlob(function (blob) {
+                                    // Never hand back something BIGGER than we were given.
+                                    if (! blob || blob.size >= file.size) {
+                                        resolve(file);
+
+                                        return;
+                                    }
+                                    var base = String(file.name || 'photo').replace(/\.[^.]+$/, '');
+                                    resolve(new File([blob], base + '.jpg', {
+                                        type: 'image/jpeg',
+                                        lastModified: file.lastModified || Date.now(),
+                                    }));
+                                }, 'image/jpeg', SL_JPEG_QUALITY);
+                            });
+                        }).catch(function () {
+                            // Undecodable (an exotic HEIC, a revoked temp file) — submit the
+                            // original rather than losing the visitor's photo.
+                            return file;
+                        });
+                    };
+
+                    window.slDownscaleAll = function (files) {
+                        return Promise.all(toArray(files).map(window.slDownscaleImage));
+                    };
+
+                    // Attach files to a field: the JS store is updated first and is what
+                    // actually gets submitted; input.files is a best-effort mirror so the
+                    // browser's own `required` check and native submit keep working.
+                    window.slAddFiles = function (input, files) {
+                        var incoming = toArray(files);
+                        if (!input || !incoming.length) {
+                            return;
+                        }
+                        window.slDownscaleAll(incoming).then(function (processed) {
+                            var current = input.multiple ? window.slGetStoredFiles(input) : [];
+                            store.set(input, current.concat(processed));
+                            window.slApplyStoredFiles(input);
+                            suppressSync = true;
+                            try {
+                                input.dispatchEvent(new Event('change', { bubbles: true }));
+                            } finally {
+                                suppressSync = false;
+                            }
+                        });
+                    };
+
+                    window.slApplyStoredFiles = function (input) {
+                        var files = window.slGetStoredFiles(input);
+                        if (!files.length) {
+                            return;
+                        }
+                        try {
+                            var dt = new DataTransfer();
+                            files.forEach(function (f) { dt.items.add(f); });
+                            // Only write back a list that actually round-tripped — assigning
+                            // a short/empty FileList here would destroy the real selection.
+                            if (dt.files && dt.files.length === files.length) {
+                                input.files = dt.files;
+                            }
+                        } catch (err) {}
+                    };
+
+                    window.slBuildFormDataWithFiles = function (form) {
+                        var supportsDelete = typeof FormData.prototype.has === 'function'
+                            && typeof FormData.prototype.delete === 'function';
+                        var fd = new FormData(form);
+                        var appended = 0;
+                        var expected = 0;
+
+                        form.querySelectorAll('input[type="file"]').forEach(function (input) {
+                            if (input.classList.contains('sl-cam-input') && !input.name) {
+                                return;
+                            }
+                            if (!input.name) {
+                                return;
+                            }
+                            expected += window.slGetStoredFiles(input).length;
+                            var files = window.slGetStoredFiles(input);
+                            if (supportsDelete) {
+                                while (fd.has(input.name)) {
+                                    fd.delete(input.name);
+                                }
+                            }
+                            if (!files.length) {
+                                return;
+                            }
+                            files.forEach(function (file) {
+                                if (!file || typeof file.size !== 'number' || file.size === 0) {
+                                    // An unreadable pick (revoked temp file, empty capture).
+                                    // Throwing is deliberate: the caller alerts the visitor
+                                    // instead of posting a submission with the photo missing.
+                                    throw new Error('unreadable file');
+                                }
+                                fd.append(input.name, file, file.name || 'upload.jpg');
+                                appended++;
+                            });
+                        });
+
+                        if (expected > 0 && appended !== expected) {
+                            throw new Error('attachments incomplete');
+                        }
+
+                        return fd;
+                    };
+
+                    window.slSubmitFormWithFiles = function (form, ui) {
+                        ui.lockSubmitUi();
+                        var body;
+                        try {
+                            body = window.slBuildFormDataWithFiles(form);
+                        } catch (err) {
+                            ui.resetSubmitUi();
+                            (window.slAlert || alert)('Could not attach uploaded files. Please re-select your photos and try again.');
+                            return;
+                        }
+
+                        var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                        var timeoutId = controller ? setTimeout(function () {
+                            controller.abort();
+                        }, 120000) : null;
+
+                        // The scan page this POST redirects back to. Derived from the form
+                        // action so it is exact even inside the portal preview.
+                        var returnUrl = form.action.replace(/\/form(\?.*)?$/, '');
+
+                        fetch(form.action, {
+                            method: 'POST',
+                            body: body,
+                            credentials: 'same-origin',
+                            // MUST be 'manual', never 'follow'. The controller answers with a
+                            // 302 carrying Laravel's ONE-REQUEST flash data (form_submitted,
+                            // or validation errors). With 'follow', fetch's own GET consumes
+                            // and clears that flash, the HTML is thrown away, and the page the
+                            // visitor is then sent to shows neither the success popup nor the
+                            // errors -- the submission saves but looks like nothing happened.
+                            redirect: 'manual',
+                            signal: controller ? controller.signal : undefined,
+                        }).then(function (response) {
+                            if (timeoutId) {
+                                clearTimeout(timeoutId);
+                            }
+                            // A 302 under redirect:'manual' arrives as an opaque response
+                            // (type 'opaqueredirect', status 0). That is the success path:
+                            // navigate for real so the flash is rendered by the browser.
+                            if (response.type === 'opaqueredirect'
+                                || response.status === 0
+                                || (response.status >= 300 && response.status < 400)) {
+                                window.location.replace(returnUrl);
+                                return;
+                            }
+                            if (response.status === 419) {
+                                ui.resetSubmitUi();
+                                (window.slAlert || alert)('Your session expired. Please refresh the page and try again.');
+                                return;
+                            }
+                            if (response.status === 413) {
+                                ui.resetSubmitUi();
+                                (window.slAlert || alert)('Upload too large. Please use smaller photos and try again.');
+                                return;
+                            }
+                            if (response.status >= 400) {
+                                ui.resetSubmitUi();
+                                (window.slAlert || alert)('Submit failed (' + response.status + '). Please try again.');
+                                return;
+                            }
+                            if (response.status >= 200 && response.status < 300) {
+                                window.location.replace(returnUrl);
+                                return;
+                            }
+                            ui.resetSubmitUi();
+                            (window.slAlert || alert)('Submit failed (unexpected response). Please try again.');
+                        }).catch(function (err) {
+                            if (timeoutId) {
+                                clearTimeout(timeoutId);
+                            }
+                            ui.resetSubmitUi();
+                            var msg = err && err.name === 'AbortError'
+                                ? 'Submit timed out. Please check your connection and try again.'
+                                : 'Submit failed. Please check your connection and try again.';
+                            (window.slAlert || alert)(msg);
+                        });
+                    };
+
+                    // A real pick through the native file dialog replaces the selection.
+                    // A change carrying no files never clears the store — on mobile that is
+                    // usually our own failed input.files write, not the visitor.
+                    document.addEventListener('change', function (e) {
+                        if (suppressSync) {
+                            return;
+                        }
+                        var target = e.target;
+                        if (!target || !target.matches || !target.matches('form input[type="file"]:not(.sl-cam-input)')) {
+                            return;
+                        }
+                        var live = toArray(target.files);
+
+                        // A real pick goes through the same downscale as a camera capture,
+                        // so browsing to a 6MB photo submits just as reliably.
+                        if (live.length) {
+                            window.slDownscaleAll(live).then(function (processed) {
+                                window.slRememberFiles(target, processed);
+                                window.slApplyStoredFiles(target);
+                                suppressSync = true;
+                                try {
+                                    target.dispatchEvent(new Event('change', { bubbles: true }));
+                                } finally {
+                                    suppressSync = false;
+                                }
+                            });
+
+                            return;
+                        }
+
+                        if (! window.slGetStoredFiles(target).length) {
+                            window.slRememberFiles(target, live);
+                        }
+                    });
+                })();
+            </script>
+            <script>
+                // SWMS (and any repeat row with answers_file[qid][row][]): keep row indices
+                // aligned with answers_meta[...][] arrays — on add/remove AND on submit.
+                (function () {
+                    window.slReindexRepeatFileInputs = function (root) {
+                        root = root || document;
+                        // querySelectorAll never matches the root itself, so a call passing the
+                        // wrapper (add / remove another) would otherwise reindex nothing.
+                        var wraps = Array.prototype.slice.call(root.querySelectorAll('[data-sl-repeat]'));
+                        if (root.matches && root.matches('[data-sl-repeat]')) {
+                            wraps.unshift(root);
+                        }
+                        wraps.forEach(function (wrap) {
+                            wrap.querySelectorAll('.sl-repeat-item').forEach(function (row, idx) {
+                                row.querySelectorAll('input[type="file"]:not(.sl-cam-input)').forEach(function (fi) {
+                                    // Rebuild the WHOLE trailing "[idx][]" — the row index and the
+                                    // "[]" that makes it a list. Carrying a captured "][]" over and
+                                    // adding our own "]" produced "answers_file[7][0]][]", a name
+                                    // PHP's multipart parser rejects outright: the photo is dropped
+                                    // before Laravel sees it, with no upload error to report.
+                                    var match = fi.name.match(/^(answers_file\[\d+\])\[\d+\]\[\]$/);
+                                    if (match) {
+                                        fi.name = match[1] + '[' + idx + '][]';
+                                        fi.dataset.slFileName = fi.name;
+                                    }
+                                });
+                            });
+                        });
+                    };
+
+                    window.slPrepareRepeatFileInputsForSubmit = function (root) {
+                        (root || document).querySelectorAll('input.sl-cam-input').forEach(function (fi) {
+                            fi.removeAttribute('name');
+                            fi.disabled = true;
+                        });
+                        (root || document).querySelectorAll('form input[type="file"]:not(.sl-cam-input)').forEach(function (fi) {
+                            fi.disabled = false;
+                            if (window.slApplyStoredFiles) {
+                                window.slApplyStoredFiles(fi);
+                            }
+                        });
+                    };
+                })();
+            </script>
+            <script>
                 // Legacy "Add another": clone the last repeat item, clearing its inputs.
                 // Every ADDED section gets a "Remove" link (the original section never does),
                 // so only sections created on this page can be deleted.
@@ -1014,8 +1552,14 @@
                         var rm = e.target.closest('.sl-remove-section');
                         if (rm) {
                             e.preventDefault();
+                            var wrap = rm.closest('[data-sl-repeat]');
                             var item = rm.closest('.sl-repeat-item');
-                            if (item) { item.remove(); }
+                            if (item) {
+                                item.remove();
+                                if (wrap && window.slReindexRepeatFileInputs) {
+                                    window.slReindexRepeatFileInputs(wrap);
+                                }
+                            }
                             return;
                         }
                         var link = e.target.closest('.sl-add-another');
@@ -1034,12 +1578,13 @@
                             c.removeAttribute('data-sl-sig-init');
                             try { c.getContext('2d').clearRect(0, 0, c.width, c.height); } catch (err) {}
                         });
-                        // Cloned dropzones/previews lose their listeners — strip them and let
-                        // slInitDropzones build fresh ones for the new row.
-                        clone.querySelectorAll('.sl-dropzone, .sl-file-preview').forEach(function (el) { el.remove(); });
+                        // Cloned dropzones/previews/camera UI lose their listeners — strip them and
+                        // let slInitDropzones + slInitMobileCamera build fresh ones for the new row.
+                        clone.querySelectorAll('.sl-dropzone, .sl-file-preview, .sl-take-photo-btn, .sl-cam-input').forEach(function (el) { el.remove(); });
                         clone.querySelectorAll('input[type="file"]').forEach(function (fi) {
                             fi.removeAttribute('data-sl-dz');
-                            fi.style.display = '';
+                            fi.removeAttribute('data-sl-cam');
+                            fi.classList.remove('sl-file-input-hidden');
                         });
                         if (!clone.querySelector('.sl-remove-section')) {
                             var del = document.createElement('a');
@@ -1050,17 +1595,11 @@
                             clone.appendChild(del);
                         }
                         wrap.insertBefore(clone, link);
-                        // Re-index per-row file inputs (answers_file[qid][row][]) so each SWMS
-                        // row keeps its own photo set.
-                        var rows = wrap.querySelectorAll('.sl-repeat-item');
-                        rows.forEach(function (row, idx) {
-                            row.querySelectorAll('input[type="file"]').forEach(function (fi) {
-                                if (/\[\d+\]\[\]$/.test(fi.name)) {
-                                    fi.name = fi.name.replace(/\[\d+\]\[\]$/, '[' + idx + '][]');
-                                }
-                            });
-                        });
+                        if (window.slReindexRepeatFileInputs) {
+                            window.slReindexRepeatFileInputs(wrap);
+                        }
                         if (window.slInitDropzones) { window.slInitDropzones(); }
+                        if (window.slInitMobileCamera) { window.slInitMobileCamera(); }
                         if (window.slInitSignatures) { window.slInitSignatures(); }
                     });
                 })();
@@ -1071,22 +1610,16 @@
                 // the input and feed the existing preview strip.
                 (function () {
                     function mergeFiles(input, newFiles) {
-                        try {
-                            var dt = new DataTransfer();
-                            Array.prototype.forEach.call(input.files || [], function (f) { dt.items.add(f); });
-                            Array.prototype.forEach.call(newFiles || [], function (f) {
-                                if (!input.accept || input.accept.indexOf('image') === -1 || /^image\//.test(f.type)) {
-                                    dt.items.add(f);
-                                }
-                            });
-                            input.files = dt.files;
-                            input.dispatchEvent(new Event('change', { bubbles: true }));
-                        } catch (e) {}
+                        var accepted = Array.prototype.filter.call(newFiles || [], function (f) {
+                            return !input.accept || input.accept.indexOf('image') === -1 || /^image\//.test(f.type);
+                        });
+                        if (!accepted.length || !window.slAddFiles) { return; }
+                        window.slAddFiles(input, accepted);
                     }
                     function initDropzone(input) {
                         if (input.dataset.slDz === '1') return;
                         input.dataset.slDz = '1';
-                        input.style.display = 'none';
+                        input.classList.add('sl-file-input-hidden');
                         var box = document.createElement('div');
                         box.className = 'sl-dropzone';
                         box.innerHTML = '<span style="font-size:1.3rem;display:block;margin-bottom:2px;">&#128247;</span>'
@@ -1113,16 +1646,43 @@
                 // Every file input shows a live preview of what was chosen — image thumbnails
                 // or a document chip — each with a ✕ to remove that file before submitting.
                 (function () {
+                    function uploadHost(input) {
+                        return input.closest('.sl-repeat-item') || input.parentElement;
+                    }
+                    function findPreviewWrap(input) {
+                        var host = uploadHost(input);
+                        return host ? host.querySelector('.sl-file-preview') : null;
+                    }
+                    function previewAnchor(input) {
+                        var host = uploadHost(input);
+                        return (host && host.querySelector('.sl-cam-input'))
+                            || (host && host.querySelector('.sl-take-photo-btn'))
+                            || input;
+                    }
+                    function findUploadInput(wrap) {
+                        var el = wrap.previousElementSibling;
+                        while (el) {
+                            if (el.type === 'file' && !el.classList.contains('sl-cam-input')) { return el; }
+                            el = el.previousElementSibling;
+                        }
+                        return null;
+                    }
                     function renderFilePreview(input) {
-                        var wrap = input.nextElementSibling;
-                        if (!wrap || !wrap.classList || !wrap.classList.contains('sl-file-preview')) {
+                        if (input.classList.contains('sl-cam-input')) return;
+                        var wrap = findPreviewWrap(input);
+                        if (!wrap) {
                             wrap = document.createElement('div');
                             wrap.className = 'sl-file-preview';
                             wrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 2px;';
-                            input.insertAdjacentElement('afterend', wrap);
+                            previewAnchor(input).insertAdjacentElement('afterend', wrap);
                         }
                         wrap.innerHTML = '';
-                        Array.prototype.forEach.call(input.files || [], function (f, idx) {
+                        // Render what will be SUBMITTED (the JS store), not input.files —
+                        // on mobile the two can differ.
+                        var previewFiles = window.slGetStoredFiles
+                            ? window.slGetStoredFiles(input)
+                            : Array.prototype.slice.call(input.files || []);
+                        previewFiles.forEach(function (f, idx) {
                             var item = document.createElement('div');
                             item.style.cssText = 'position:relative;border:1px solid #d1d5db;border-radius:8px;background:#fff;padding:4px;max-width:130px;';
                             if (/^image\//.test(f.type)) {
@@ -1150,7 +1710,7 @@
                     }
 
                     document.addEventListener('change', function (e) {
-                        if (e.target && e.target.matches && e.target.matches('form input[type="file"]')) {
+                        if (e.target && e.target.matches && e.target.matches('form input[type="file"]:not(.sl-cam-input)')) {
                             renderFilePreview(e.target);
                         }
                     });
@@ -1160,17 +1720,18 @@
                         if (!rm) return;
                         e.preventDefault();
                         var wrap = rm.closest('.sl-file-preview');
-                        var input = wrap && wrap.previousElementSibling;
-                        if (!input || input.type !== 'file') return;
+                        var input = wrap && findUploadInput(wrap);
+                        if (!input) return;
                         var idx = parseInt(rm.getAttribute('data-idx'), 10);
-                        try {
-                            var dt = new DataTransfer();
-                            Array.prototype.forEach.call(input.files || [], function (f, i) {
-                                if (i !== idx) { dt.items.add(f); }
-                            });
-                            input.files = dt.files;
-                        } catch (err) {
-                            input.value = '';
+                        var current = window.slGetStoredFiles
+                            ? window.slGetStoredFiles(input)
+                            : Array.prototype.slice.call(input.files || []);
+                        var kept = current.filter(function (f, i) { return i !== idx; });
+                        // The store is the source of truth for what gets submitted.
+                        if (window.slRememberFiles) { window.slRememberFiles(input, kept); }
+                        input.value = '';
+                        if (kept.length && window.slApplyStoredFiles) {
+                            window.slApplyStoredFiles(input);
                         }
                         renderFilePreview(input);
                     });
@@ -1237,22 +1798,22 @@
                             && window.matchMedia('(pointer: coarse)').matches
                             && window.matchMedia('(hover: none)').matches;
                     }
-                    if (!isMobileOrTablet()) return;
 
-                    document.querySelectorAll('form input[type="file"]').forEach(function (input) {
-                        if (input.dataset.slCam) return;
+                    function enhanceFileInput(input) {
+                        if (input.dataset.slCam === '1' || input.classList.contains('sl-cam-input')) return;
                         input.dataset.slCam = '1';
+                        input.dataset.slFileName = input.name;
 
                         // Hidden input whose `capture` hint opens the rear camera directly.
                         var cam = document.createElement('input');
                         cam.type = 'file';
                         cam.accept = 'image/*';
                         cam.setAttribute('capture', 'environment');
-                        cam.style.display = 'none';
+                        cam.className = 'sl-cam-input sl-file-input-hidden';
 
                         var btn = document.createElement('button');
                         btn.type = 'button';
-                        btn.className = 'btn btn-outline';
+                        btn.className = 'btn btn-outline sl-take-photo-btn';
                         btn.style.marginTop = '.4rem';
                         btn.innerHTML = '📷 Take photo';
 
@@ -1261,24 +1822,25 @@
 
                         btn.addEventListener('click', function () { cam.click(); });
                         cam.addEventListener('change', function () {
-                            if (!cam.files || !cam.files.length) return;
-                            try {
-                                // Merge the captured photo into the real field so it submits under
-                                // the field's own name (keeps `multiple`/required/preview intact).
-                                var dt = new DataTransfer();
-                                if (input.multiple && input.files) {
-                                    for (var i = 0; i < input.files.length; i++) dt.items.add(input.files[i]);
-                                }
-                                for (var j = 0; j < cam.files.length; j++) dt.items.add(cam.files[j]);
-                                input.files = dt.files;
-                                input.dispatchEvent(new Event('change', { bubbles: true }));
-                            } catch (e) {
-                                // Old browsers without DataTransfer: submit the camera input directly.
-                                cam.name = input.name;
-                                cam.style.display = '';
+                            // Take our own reference to the captured photo BEFORE anything
+                            // else: File objects stay valid after cam.value is cleared, and
+                            // this reference is what actually gets submitted. Handing the
+                            // photo to the real field via DataTransfer is best-effort only.
+                            var captured = Array.prototype.slice.call(cam.files || []);
+                            if (!captured.length) return;
+                            if (window.slAddFiles) {
+                                window.slAddFiles(input, captured);
                             }
+                            cam.value = '';
                         });
-                    });
+                    }
+
+                    window.slInitMobileCamera = function () {
+                        if (!isMobileOrTablet()) return;
+                        document.querySelectorAll('form input[type="file"]:not(.sl-cam-input)').forEach(enhanceFileInput);
+                    };
+
+                    window.slInitMobileCamera();
                 })();
             </script>
         @endif

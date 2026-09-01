@@ -2497,6 +2497,14 @@ tr.sl-row-active {
     outline: none;
 }
 
+/* Remove (x) button sits top-RIGHT on every upload preview. FilePond defaults it to the
+   left, which put it over the top-left corner of picture previews while the logo uploads
+   showed it on the right — the same control in two different places. */
+.fi-page:has(.sl-profile-editor) .fi-fo-file-upload .filepond--action-remove-item {
+    left: auto !important;
+    right: 0.5em !important;
+}
+
 /* ===== Pictures repeater — compact rows (less padding, shorter preview) ===== */
 .fi-page:has(.sl-profile-editor) .sl-pictures-repeater.fi-fo-repeater,
 .fi-page:has(.sl-profile-editor) .sl-add-form-left .sl-pictures-repeater {
@@ -5102,7 +5110,8 @@ html.dark .sl-sa__popup-row span { color: #222 !important; }
 .sl-dialog-overlay {
     position: fixed;
     inset: 0;
-    z-index: 10060;
+    /* Above participant-list modal (100000), form-builder modal (10050), flatpickr (100001). */
+    z-index: 100010;
     display: flex;
     align-items: center;
     justify-content: center;

@@ -25,7 +25,7 @@
     @endphp
 
     <link rel="stylesheet" href="{{ asset('styles/style.css') }}?v=legacy-profile-39">
-    <link rel="stylesheet" href="{{ asset('css/filament/scanlink-theme.css') }}?v=legacy-profile-45">
+    <link rel="stylesheet" href="{{ asset('css/filament/scanlink-theme.css') }}?v=legacy-profile-47">
 
     @if ($isUrlLinkCode)
     {{-- URL Link (code) editor — create + edit must match. Inline so SPA re-applies. --}}

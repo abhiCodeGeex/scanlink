@@ -7,9 +7,12 @@ use App\Filament\Portal\Auth\Register;
 use App\Filament\Portal\Pages\FormSubmissions;
 use App\Filament\Portal\Pages\FormSubmissionView;
 use App\Filament\Portal\Pages\PortalDashboard;
+use App\Filament\Portal\Pages\VocDashboard;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Http\Middleware\EnsurePortalPasswordChanged;
+use App\Http\Middleware\RedirectVocCardHolderFromProfiles;
 use App\Models\HowToTutorial;
+use App\Models\User;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -69,8 +72,16 @@ class ClientPortalPanelProvider extends PanelProvider
             ->databaseNotifications()
             ->databaseNotificationsPolling('30s')
             ->profile(isSimple: false)
-            // Land on Master Code List (profiles) as the first page after login.
-            ->homeUrl(fn (): string => ProfileResource::getUrl('index'))
+            // Clients: Master Code List. VOCC card-holders: VOC dashboard (no membership).
+            ->homeUrl(function (): string {
+                $user = auth()->user();
+
+                if ($user instanceof User && $user->isVocCardHolder()) {
+                    return VocDashboard::getUrl();
+                }
+
+                return ProfileResource::getUrl('index');
+            })
             ->colors([
                 'primary' => Color::hex('#008C00'),
             ])
@@ -100,9 +111,17 @@ class ClientPortalPanelProvider extends PanelProvider
             ])
             ->navigationItems([
                 NavigationItem::make('Dashboard')
-                    ->url(fn (): string => ProfileResource::getUrl('index'))
+                    ->url(function (): string {
+                        $user = auth()->user();
+
+                        if ($user instanceof User && $user->isVocCardHolder()) {
+                            return VocDashboard::getUrl();
+                        }
+
+                        return ProfileResource::getUrl('index');
+                    })
                     ->icon(Heroicon::OutlinedHome)
-                    ->isActiveWhen(fn (): bool => request()->is('portal/profiles*'))
+                    ->isActiveWhen(fn (): bool => request()->is('portal/profiles*', 'portal/voc-dashboard*'))
                     ->sort(-30),
                 ...$howToItems,
             ])
@@ -178,6 +197,11 @@ class ClientPortalPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
                 EnsurePortalPasswordChanged::class,
+                RedirectVocCardHolderFromProfiles::class,
+                // Broader confinement: RedirectVocCardHolderFromProfiles only guards
+                // portal/profiles*, which left purchasing, team users and analytics reachable.
+                // Legacy bounced a card holder out of EVERY dashboard action.
+                \App\Http\Middleware\ConfineVocCardHolder::class,
             ]);
     }
 }

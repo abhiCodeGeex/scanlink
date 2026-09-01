@@ -7,6 +7,7 @@
     <title>{{ $title ?? 'Participant List' }}</title>
     @filamentStyles
     @livewireStyles
+    <link rel="stylesheet" href="{{ asset('css/filament/scanlink-theme.css') }}?v=83">
     <style>
         html, body {
             margin: 0 !important;
@@ -42,6 +43,11 @@
 </head>
 <body>
     {{ $slot }}
+    {{-- Deliberately NO @livewire('notifications') here. Filament's notification styles are
+         not part of this standalone layout, so the component rendered as a full-width
+         unstyled icon stacked under the table. Everything in this popup reports through
+         the themed dialog below instead. --}}
+    @include('filament.hooks.themed-dialog')
     @livewireScripts
     @filamentScripts
 </body>

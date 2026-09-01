@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Filament\Portal\Pages\VocDashboard;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Models\User;
 use Filament\Auth\Notifications\ResetPassword as ResetPasswordNotification;
@@ -59,16 +60,21 @@ class PortalAuthController extends Controller
 
         Filament::setCurrentPanel($panel);
 
-        // Always land in the portal on the Master Code List (profiles). Ignore stale
-        // "intended" URLs from admin (or other panels) — those cause 403 for portal-only
-        // users — and treat a bare "/portal" as "no intent" so it also lands on profiles.
-        $fallback = ProfileResource::getUrl('index', panel: 'portal');
+        // Portal clients land on Master Code List. VOCC card-holders have no client
+        // membership, so /portal/profiles 403s — send them to the VOC dashboard.
+        $fallback = $user->isVocCardHolder()
+            ? VocDashboard::getUrl(panel: 'portal')
+            : ProfileResource::getUrl('index', panel: 'portal');
         $intended = $request->session()->pull('url.intended');
 
         if (is_string($intended) && $intended !== '') {
             $path = parse_url($intended, PHP_URL_PATH) ?: $intended;
 
             if (str_starts_with($path, '/portal/')) {
+                if ($user->isVocCardHolder() && str_starts_with($path, '/portal/profiles')) {
+                    return redirect()->to($fallback);
+                }
+
                 return redirect()->to($intended);
             }
         }

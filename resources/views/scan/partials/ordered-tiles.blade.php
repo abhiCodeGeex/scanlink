@@ -176,10 +176,16 @@
             @break
 
         @case('voc-3')
-            @if ($profile->pictures->isNotEmpty())
+            {{-- Photos uploaded through the rebuilt editor live in `pictures`; photos that came
+                 across from the legacy app live in `voc_profile_image`. Show both, or an
+                 imported card renders with no picture of its holder at all. --}}
+            @if ($profile->pictures->isNotEmpty() || $profile->vocProfileImages->isNotEmpty())
                 <div class="gallery">
                     @foreach ($profile->pictures as $pic)
                         @if ($u = $publicMediaUrl($pic->picture_name))<figure><img src="{{ $u }}" alt="Profile picture" class="sl-gallery-img" style="cursor:pointer;" data-full="{{ $u }}" data-caption=""></figure>@endif
+                    @endforeach
+                    @foreach ($profile->vocProfileImages as $vocPic)
+                        @if ($u = $publicMediaUrl($vocPic->image_name))<figure><img src="{{ $u }}" alt="Profile picture" class="sl-gallery-img" style="cursor:pointer;" data-full="{{ $u }}" data-caption=""></figure>@endif
                     @endforeach
                 </div>
             @endif

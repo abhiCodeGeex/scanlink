@@ -67,6 +67,19 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
         return $this->hasOne(ClientUser::class, 'auth_user_id')->where('role', 5);
     }
 
+    /**
+     * A VOCC "Additional User Access Login" with no client_users row.
+     * These accounts may use the portal VOC dashboard, not Master Code List.
+     */
+    public function isVocCardHolder(): bool
+    {
+        if ($this->user_type !== UserType::Voc) {
+            return false;
+        }
+
+        return ! $this->clientMemberships()->active()->exists();
+    }
+
     public function canAccessPanel(Panel $panel): bool
     {
         if ($panel->getId() === 'portal') {

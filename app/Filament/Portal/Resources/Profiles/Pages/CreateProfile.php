@@ -4,6 +4,7 @@ namespace App\Filament\Portal\Resources\Profiles\Pages;
 
 use App\Filament\Concerns\HandlesDatabaseSaveFailures;
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
+use App\Filament\Portal\Resources\Profiles\Pages\Concerns\DropsRemovedVideosFromForm;
 use App\Filament\Portal\Resources\Profiles\Pages\Concerns\HasLegacyFormBuilderSidebar;
 use App\Filament\Portal\Resources\Profiles\Pages\Concerns\HasLegacyProfileEditorLayout;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
@@ -22,6 +23,7 @@ use Filament\Resources\Pages\EditRecord;
  */
 class CreateProfile extends EditRecord
 {
+    use DropsRemovedVideosFromForm;
     use HandlesDatabaseSaveFailures;
     use HasLegacyFormBuilderSidebar;
     use HasLegacyProfileEditorLayout;
@@ -52,8 +54,22 @@ class CreateProfile extends EditRecord
         return 'Add a New Code';
     }
 
+    /**
+     * "Add a New Code" is CREATE, even though it is built on EditRecord. EditRecord would
+     * authorise it with canEdit(), so a sub-user granted "Add code" but not "Edit" was
+     * refused with a 403 on a page they are entitled to use.
+     */
+    protected function authorizeAccess(): void
+    {
+        abort_unless(static::getResource()::canCreate(), 403);
+    }
+
     public function mount(int|string|null $record = null): void
     {
+        // Check entitlement before any slot is claimed, so an unentitled user gets a clean
+        // 403 rather than falling through to a bail-out that leaves $record uninitialised.
+        $this->authorizeAccess();
+
         // Livewire tests may pass an existing draft id; browser /create has none.
         if (filled($record)) {
             parent::mount($record);
@@ -115,7 +131,7 @@ class CreateProfile extends EditRecord
             if ($slot && ! $slot->update_or_not) {
                 $typeId = (int) EquipmentType::query()->where('slag', $typeSlag)->value('id');
                 if ((int) $slot->type_id === $typeId) {
-                    $slot = $drafts->scrubIfPollutedCreateDraft($slot);
+                    $slot = $drafts->scrubIfPollutedCreateDraft($slot, $member?->id);
                 } else {
                     $slot = $drafts->claimSpecific((int) $client->id, (int) $slot->id, (string) $typeSlag, $member?->id);
                 }

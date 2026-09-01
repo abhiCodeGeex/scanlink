@@ -4,6 +4,7 @@ namespace App\Filament\Portal\Resources\Profiles\Pages;
 
 use App\Filament\Concerns\HandlesDatabaseSaveFailures;
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
+use App\Filament\Portal\Resources\Profiles\Pages\Concerns\DropsRemovedVideosFromForm;
 use App\Filament\Portal\Resources\Profiles\Pages\Concerns\HasLegacyFormBuilderSidebar;
 use App\Filament\Portal\Resources\Profiles\Pages\Concerns\HasLegacyProfileEditorLayout;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
@@ -14,6 +15,7 @@ use Filament\Resources\Pages\EditRecord;
 
 class EditProfile extends EditRecord
 {
+    use DropsRemovedVideosFromForm;
     use HandlesDatabaseSaveFailures;
     use HasLegacyFormBuilderSidebar;
     use HasLegacyProfileEditorLayout;

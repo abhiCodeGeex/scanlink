@@ -49,7 +49,15 @@ Route::redirect('/termsnndcondition/index', '/terms', 301);
 Route::redirect('/termsandcondition/index', '/terms', 301);
 Route::redirect('/privacypolicy/index', '/privacy', 301);
 
-Route::get('/voclogin', fn () => redirect()->to(route('marketing.home').'#login'));
+// Legacy voclogin.php was its own branded sign-in screen — the address printed on cards and
+// handed out at induction. Keep that entry point rather than bouncing it to the generic home.
+Route::get('/voclogin', function () {
+    if (\Illuminate\Support\Facades\Auth::check()) {
+        return redirect()->to(\App\Filament\Portal\Pages\VocDashboard::getUrl(panel: 'portal'));
+    }
+
+    return view('marketing.voclogin');
+})->name('marketing.voclogin');
 
 Route::post('/notify/paypal', PayPalNotifyController::class);
 
@@ -149,9 +157,16 @@ Route::middleware(['web', 'auth'])->group(function (): void {
 
         abort_unless($member !== null, 403);
 
+        // Report WHAT was deleted: the open profile form still lists this video in its
+        // Videos repeater, and has to drop that row at the same time.
+        $removed = [
+            'video_name' => (string) $video->video_name,
+            'title' => (string) $video->title,
+        ];
+
         $video->delete();
 
-        return response()->json(['ok' => true]);
+        return response()->json(['ok' => true, 'removed' => $removed]);
     })->name('portal.videos.remove');
 
     Route::get('/test/temp_image_upload', [FormBuilderUploadController::class, 'imageForm']);

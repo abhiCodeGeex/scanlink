@@ -20,6 +20,7 @@
                 return [
                     'id' => (int) $v->id,
                     'title' => trim((string) ($v->title ?: $v->video_name)) ?: 'Video',
+                    'video_name' => $name,
                     'profile' => (int) $v->profile_id,
                     'url' => $url,
                 ];
@@ -49,9 +50,25 @@
                     headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ?? '{{ csrf_token() }}', 'Accept': 'application/json' },
                 });
                 if (res.ok) {
+                    const gone = this.videos.find(v => v.id === id);
                     this.videos = this.videos.filter(v => v.id !== id);
                     if (this.state == id) this.state = null;
                     if (this.page > this.pages) this.page = this.pages;
+
+                    // The video is gone from the library, so it must also leave the profile's
+                    // Videos list right now — otherwise the form keeps showing a row that no
+                    // longer exists and re-creates it on save.
+                    let payload = gone ? { videoName: gone.video_name, title: gone.title } : null;
+                    try {
+                        const body = await res.json();
+                        if (body && body.removed) {
+                            payload = { videoName: body.removed.video_name, title: body.removed.title };
+                        }
+                    } catch (e) { /* fall back to the row we already had */ }
+
+                    if (payload && payload.videoName && window.Livewire) {
+                        window.Livewire.dispatch('sl-video-removed', payload);
+                    }
                 } else {
                     (window.slAlert || alert)('Could not remove the video.');
                 }

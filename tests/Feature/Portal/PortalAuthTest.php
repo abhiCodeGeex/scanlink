@@ -5,7 +5,10 @@ namespace Tests\Feature\Portal;
 use App\Enums\UserType;
 use App\Models\Client;
 use App\Models\ClientUser;
+use App\Models\EquipmentType;
+use App\Models\Profile;
 use App\Models\User;
+use App\Models\VocUser;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -155,6 +158,36 @@ class PortalAuthTest extends TestCase
         $this->get('/voclogin')->assertRedirect('/#login');
     }
 
+    public function test_voc_card_holder_login_lands_on_voc_dashboard(): void
+    {
+        $user = $this->makeVocCardHolder('voc-login@example.com', 'Voc@12345');
+
+        $this->post('/portal-login', [
+            'email' => 'voc-login@example.com',
+            'password' => 'Voc@12345',
+        ])->assertRedirect('/portal/voc-dashboard');
+
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_voc_card_holder_is_redirected_from_master_code_list(): void
+    {
+        $user = $this->makeVocCardHolder('voc-profiles@example.com', 'Voc@12345');
+
+        $this->actingAs($user)
+            ->get('/portal/profiles')
+            ->assertRedirect('/portal/voc-dashboard');
+    }
+
+    public function test_voc_card_holder_can_open_voc_dashboard(): void
+    {
+        $user = $this->makeVocCardHolder('voc-dash@example.com', 'Voc@12345');
+
+        $this->actingAs($user)
+            ->get('/portal/voc-dashboard')
+            ->assertOk();
+    }
+
     public function test_portal_logout_redirects_to_marketing_home(): void
     {
         $client = Client::factory()->create();
@@ -228,5 +261,28 @@ class PortalAuthTest extends TestCase
         $this->actingAs($user->fresh())
             ->get('/portal/account')
             ->assertOk();
+    }
+
+    private function makeVocCardHolder(string $email, string $password): User
+    {
+        $typeId = (int) EquipmentType::query()->updateOrCreate(['slag' => 'voc'], ['name' => 'VOCC'])->id;
+        $client = Client::factory()->create();
+        $profile = Profile::factory()->create([
+            'client_id' => $client->id,
+            'type_id' => $typeId,
+            'code_profile_name' => 'VOC Card Holder Test',
+            'deleted' => 0,
+            'update_or_not' => true,
+        ]);
+
+        $nextId = ((int) VocUser::query()->max('voc_user_id')) + 1;
+        $vocUser = VocUser::create([
+            'voc_user_id' => $nextId,
+            'profile_id' => $profile->id,
+            'email' => $email,
+            'password' => $password,
+        ]);
+
+        return User::query()->findOrFail($vocUser->fresh()->auth_user_id);
     }
 }
