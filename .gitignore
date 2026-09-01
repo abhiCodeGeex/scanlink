@@ -81,7 +81,11 @@ Homestead.yaml
 docker-compose.override.yml
 *.pid
 
-# --- Local AI assistant scratch (not part of the app) ---
+# --- Local AI assistant working docs (not part of the app) ---
+# CLAUDE.md and PROJECT_HISTORY.md stay untracked: they were committed unintentionally, and
+# PROJECT_HISTORY.md still carries a credential in pushed history. Both remain on disk.
+/CLAUDE.md
+/PROJECT_HISTORY.md
 /.cursor/
 /.playwright-mcp/
 
