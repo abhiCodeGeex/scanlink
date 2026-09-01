@@ -569,14 +569,14 @@ class Profile extends Model
     }
 
     /**
-     * Legacy parity: the Form/Survey/Checklist ("survey") and VOC types have Form Builder
-     * inherent/free — legacy has no auto_save purchase bridge for them, so the form can be
-     * enabled without the $5 activation. Every other type must purchase (form_active).
+     * Whether this profile may use Form Builder (enable form, edit questions).
+     *
+     * Temporarily free for all profiles. To restore paid activation, revert to:
+     *   (bool) $this->form_active || in_array($this->typeSlug(), ['survey', 'voc'], true)
      */
     public function formBuilderEntitled(): bool
     {
-        return (bool) $this->form_active
-            || in_array($this->typeSlug(), ['survey', 'voc'], true);
+        return true;
     }
 
     /**

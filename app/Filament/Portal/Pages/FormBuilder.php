@@ -327,8 +327,8 @@ class FormBuilder extends Page
     public function saveSettings(): void
     {
         $profile = $this->resolveProfile();
-        $this->formActive = (bool) $profile->form_active;
-        $this->formIsEnable = (bool) $profile->form_active && $this->formIsEnable;
+        $this->formActive = $profile->formBuilderEntitled();
+        $this->formIsEnable = $profile->formBuilderEntitled() && $this->formIsEnable;
 
         $this->formBuilder->updateFormSettings($profile, [
             'form_title' => $this->formTitle,
@@ -801,7 +801,7 @@ class FormBuilder extends Page
         $this->formTitle = (string) ($profile->form_title ?? '');
         $this->formEmailTag = (string) ($profile->form_email_tag ?? '');
         $this->formIsEnable = (bool) $profile->form_is_enable;
-        $this->formActive = (bool) $profile->form_active;
+        $this->formActive = $profile->formBuilderEntitled();
         $this->formSubmissionFormat = (int) ($profile->form_submission_format ?? 0);
 
         $this->recipients = $this->formBuilder

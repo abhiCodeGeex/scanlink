@@ -4,7 +4,7 @@
         ?? 'https://www.youtube.com/embed/CfLEhcgvgrA?rel=0';
     $formBuilderPanelClass = $formBuilderPanelClass ?? '';
     $analyticsLocked = (bool) ($record?->enable_form_analytics ?? false);
-    $formBuilderPurchased = (bool) ($formBuilderPurchased ?? $record?->form_active);
+    $formBuilderPurchased = (bool) ($formBuilderPurchased ?? $record?->formBuilderEntitled());
     $canPurchaseFormBuilder = (bool) ($canPurchaseFormBuilder ?? false);
     $canAccessFormBuilder = (bool) ($canAccessFormBuilder ?? true);
     $settingsLocked = ! $formBuilderPurchased;
