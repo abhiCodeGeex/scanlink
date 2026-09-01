@@ -3,4 +3,4 @@
 - [Running the tests](scanlink-running-tests.md) — no vendor/ locally; copy the source into a container with the shared vendor volume
 - [Pre-existing test failures](scanlink-test-baseline.md) — 8 reds on develop that are not your fault
 - [Verify before committing](abhishek-verify-before-committing.md) — prove UI fixes in a real browser; the user doesn't want rework
-- [Credential in pushed history](scanlink-credential-in-pushed-history.md) — untracked but still readable in git history, unrotated
+- [Credential in pushed history](scanlink-credential-in-pushed-history.md) — removed from the working copy, still readable in history, unrotated
