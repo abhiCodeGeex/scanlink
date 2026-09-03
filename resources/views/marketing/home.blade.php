@@ -405,6 +405,9 @@
     <div class="mkt__modal">
         <button type="button" class="mkt__modal-close" data-close aria-label="Close login">&times;</button>
         <h2 id="mkt-login-title">Log in to ScanLink</h2>
+        {{-- Session-expiry and other non-field errors. Without this the CSRF redirect
+             reopened the modal with no explanation at all. --}}
+        @error('form')<span class="mkt__login-error">{{ $message }}</span>@enderror
         @error('email')<span class="mkt__login-error">{{ $message }}</span>@enderror
         @error('password')<span class="mkt__login-error">{{ $message }}</span>@enderror
         <form id="signin" method="post" action="{{ route('marketing.portal-login') }}">
