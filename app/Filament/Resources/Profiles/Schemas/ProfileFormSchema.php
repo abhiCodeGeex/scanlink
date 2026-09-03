@@ -12,6 +12,8 @@ use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
+use App\Filament\Forms\RichEditor\LegacyFormatting\LegacyFormattingPlugin;
+use App\Support\LegacyEditorToolbars;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -203,7 +205,8 @@ class ProfileFormSchema
                 // Rich text via Filament's native RichEditor (Livewire-first: reliable sync + instant load).
                 RichEditor::make('description')
                     ->hiddenLabel()
-                    ->toolbarButtons(['bold', 'italic', 'underline', 'bulletList', 'orderedList', 'link', 'undo', 'redo'])
+                    ->plugins([LegacyFormattingPlugin::make()])
+                    ->toolbarButtons(LegacyEditorToolbars::myToolbar())
                     ->columnSpanFull(),
                 Checkbox::make('show_address')->label('Address:')->inline()->default(false),
                 TextInput::make('address')
@@ -249,7 +252,8 @@ class ProfileFormSchema
                 TextInput::make('name')->label('Name:'),
                 RichEditor::make('description')
                     ->hiddenLabel()
-                    ->toolbarButtons(['bold', 'italic', 'underline', 'bulletList', 'orderedList', 'link', 'undo', 'redo'])
+                    ->plugins([LegacyFormattingPlugin::make()])
+                    ->toolbarButtons(LegacyEditorToolbars::myToolbar())
                     ->columnSpanFull(),
             ],
             'exhibit' => [
@@ -258,7 +262,8 @@ class ProfileFormSchema
                 TextInput::make('name')->hiddenLabel(),
                 RichEditor::make('description')
                     ->hiddenLabel()
-                    ->toolbarButtons(['bold', 'italic', 'underline', 'bulletList', 'orderedList', 'link', 'undo', 'redo'])
+                    ->plugins([LegacyFormattingPlugin::make()])
+                    ->toolbarButtons(LegacyEditorToolbars::myToolbar())
                     ->columnSpanFull(),
             ],
             'voc' => [

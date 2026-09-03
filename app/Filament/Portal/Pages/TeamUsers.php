@@ -51,7 +51,7 @@ class TeamUsers extends Page implements HasTable
         return $table
             ->query(fn (): Builder => ClientUser::query()
                 ->where('client_id', $this->requireClient()->id)
-                ->where('role', ClientUserRole::SubUser))
+                ->subUser())
             ->columns([
                 TextColumn::make('email')
                     ->label('Email')

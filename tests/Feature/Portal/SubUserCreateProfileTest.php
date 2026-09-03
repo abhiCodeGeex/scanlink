@@ -86,7 +86,16 @@ class SubUserCreateProfileTest extends TestCase
 
         $this->actingAs($user);
 
-        $this->get('/portal/profiles/create?type=location')
-            ->assertForbidden();
+        // Legacy location.php: no access_addcode sets "Oops! You have no access to add
+        // profile." and redirects to the code list rather than showing a 403.
+        $response = $this->get('/portal/profiles/create?type=location');
+
+        $response->assertRedirect('/portal/profiles');
+
+        $titles = collect(session('filament.notifications', []))
+            ->map(fn (array $notification): string => (string) ($notification['title'] ?? ''))
+            ->all();
+
+        $this->assertContains('Oops! You have no access to add profile.', $titles);
     }
 }

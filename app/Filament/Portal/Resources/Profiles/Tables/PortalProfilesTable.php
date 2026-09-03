@@ -271,7 +271,11 @@ class PortalProfilesTable
                     )),
             ])
             ->emptyStateHeading('No Profile Found..!')
-            ->emptyStateDescription('Use “Add a New Code” to create a code profile.'));
+            // Legacy prints the heading alone. Only point at "Add a New Code" when the
+            // member actually has that button (access_addcode / primary).
+            ->emptyStateDescription(fn (): ?string => ProfileResource::canCreate()
+                ? 'Use “Add a New Code” to create a code profile.'
+                : null));
     }
 
     /**

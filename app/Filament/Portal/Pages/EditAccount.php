@@ -139,41 +139,65 @@ class EditAccount extends Page implements HasTable
                 Section::make('Edit Profile')
                     ->columns(2)
                     ->schema([
+                        // Messages are verbatim from legacy editprofilevalidation()
+                        // (application/views/profile/index.php).
                         TextInput::make('first_name')
                             ->label('First name:')
                             ->required()
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->validationMessages(['required' => 'Enter a first name.']),
                         TextInput::make('last_name')
                             ->label('Last name:')
                             ->required()
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->validationMessages(['required' => 'Enter a last name.']),
                         TextInput::make('company_name')
                             ->label('Company name:')
                             ->required()
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->validationMessages(['required' => 'Enter a company name.']),
                         TextInput::make('billing_address')
                             ->label('Billing address:')
                             ->required()
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->validationMessages(['required' => 'Enter a billing address.']),
                         TextInput::make('email')
                             ->label('Email(this will also be your username):')
                             ->email()
                             ->required()
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->validationMessages([
+                                'required' => 'Enter a email.',
+                                'email' => 'Enter a valid email.',
+                            ]),
                         TextInput::make('town')
                             ->label('Town:')
                             ->required()
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->validationMessages(['required' => 'Enter a town.']),
+                        // NOT numeric(): users.phone is a varchar and Australian numbers
+                        // start with 0. type=number normalises "0399998888" to 399998888, so
+                        // every primary who opened this page and saved lost the leading zero.
+                        // Legacy uses a text input with an isNumberKey() keypress filter, and
+                        // registration validates with ctype_digit — match that.
                         TextInput::make('phone')
                             ->label('Telephone number:')
                             ->required()
-                            ->numeric()
-                            ->maxLength(50),
+                            ->rule('regex:/^[0-9]+$/')
+                            ->extraInputAttributes(['inputmode' => 'numeric'])
+                            ->maxLength(50)
+                            ->validationMessages([
+                                'required' => 'Enter a phone.',
+                                'regex' => 'Enter a valid telephone number.',
+                            ]),
                         TextInput::make('postal_code')
                             ->label('Postal code:')
                             ->required()
                             ->numeric()
-                            ->maxLength(20),
+                            ->maxLength(20)
+                            // Legacy JS names the field "postal_code"; profile.php's own
+                            // message reads "Enter a postal code." — use that one.
+                            ->validationMessages(['required' => 'Enter a postal code.']),
                         TextInput::make('shortcut_title')
                             ->label('Shortcut Title:')
                             ->maxLength(255)
@@ -181,6 +205,7 @@ class EditAccount extends Page implements HasTable
                         FileUpload::make('shortcut_image1')
                             ->label('Shortcut Image 1 (Please use a 180x180px dimension PNG image)')
                             ->image()
+                            ->validationMessages(['mimetypes' => 'Please use png image for Shortcut Image 1'])
                             ->acceptedFileTypes(['image/png'])
                             ->directory('touch_icons')
                             ->disk('public')
@@ -189,6 +214,7 @@ class EditAccount extends Page implements HasTable
                         FileUpload::make('shortcut_image2')
                             ->label('Shortcut Image 2 (Please use a 192x192px dimension PNG image)')
                             ->image()
+                            ->validationMessages(['mimetypes' => 'Please use png image for Shortcut Image 2'])
                             ->acceptedFileTypes(['image/png'])
                             ->directory('touch_icons')
                             ->disk('public')
@@ -217,24 +243,35 @@ class EditAccount extends Page implements HasTable
                 Section::make('Change Password')
                     ->columns(1)
                     ->schema([
+                        // Messages verbatim from legacy changepasswordValidation().
                         TextInput::make('txtpass')
                             ->label('Old password:')
                             ->password()
                             ->revealable()
-                            ->required(),
+                            ->required()
+                            ->validationMessages(['required' => 'Enter a old password.']),
                         TextInput::make('txtnewpass')
                             ->label('New password:')
                             ->password()
                             ->revealable()
                             ->required()
                             ->minLength(5)
-                            ->maxLength(12),
+                            ->maxLength(12)
+                            ->validationMessages([
+                                'required' => 'Enter a new password.',
+                                'min' => 'Password must between 5-12 character.',
+                                'max' => 'Password must between 5-12 character.',
+                            ]),
                         TextInput::make('txtconfirmpass')
                             ->label('Confirm new password:')
                             ->password()
                             ->revealable()
                             ->required()
-                            ->same('txtnewpass'),
+                            ->same('txtnewpass')
+                            ->validationMessages([
+                                'required' => 'Enter a confirm new password.',
+                                'same' => 'Confirm Password must be same as New Password.',
+                            ]),
                     ]),
             ]);
     }
@@ -247,17 +284,23 @@ class EditAccount extends Page implements HasTable
                 Section::make('Add new sub user')
                     ->columns(1)
                     ->schema([
+                        // Messages verbatim from legacy add_user_validation().
                         TextInput::make('txtemail')
                             ->label('Email:')
                             ->email()
                             ->required()
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->validationMessages([
+                                'required' => 'Enter a user email.',
+                                'email' => 'Enter a valid email.',
+                            ]),
                         TextInput::make('txtpass1')
                             ->label('Password:')
                             ->password()
                             ->revealable()
                             ->required()
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->validationMessages(['required' => 'Enter a user password.']),
                     ]),
             ]);
     }
@@ -289,7 +332,7 @@ class EditAccount extends Page implements HasTable
                     ->extraModalWindowAttributes(['class' => 'sl-edit-user-modal'])
                     ->mutateRecordDataUsing(fn (array $data, ClientUser $record): array => $this->fillEditUserForm($record, $data))
                     ->using(fn (ClientUser $record, array $data): ClientUser => $this->saveEditedUser($record, $data))
-                    ->successNotificationTitle('User details updated successfully.')
+                    ->successNotificationTitle('User details updated successfully..!')
                     ->schema($this->editUserFormSchema()),
                 Action::make('toggleBlock')
                     ->label('')
@@ -354,14 +397,29 @@ class EditAccount extends Page implements HasTable
             'footer_logo' => $this->storeBasename($data['footer_logo'] ?? null) ?? ($member->footer_logo ?: ''),
         ]);
 
-        $client->update([
+        $clientPayload = [
             'shortcut_title' => $data['shortcut_title'] ?? '',
             'shortcut_image1' => $this->storeBasename($data['shortcut_image1'] ?? null) ?? ($client->shortcut_image1 ?: ''),
             'shortcut_image2' => $this->storeBasename($data['shortcut_image2'] ?? null) ?? ($client->shortcut_image2 ?: ''),
-        ]);
+        ];
+
+        // Legacy profile/index mirrors the owner's details onto the clients row, but only
+        // when role == 5 (the account owner). An "Enable Admin Access" user is is_sub_user=0
+        // with role 1: they edit their own users row and leave the client record alone.
+        if ($member->role === ClientUserRole::Primary) {
+            $clientPayload += [
+                'client_name' => trim($data['first_name'].' '.$data['last_name']),
+                'address' => $data['billing_address'],
+                'telephone' => $data['phone'],
+                'contact_person' => $data['first_name'],
+                'email' => $data['email'],
+            ];
+        }
+
+        $client->update($clientPayload);
 
         Notification::make()
-            ->title('Profile updated successfully.')
+            ->title('Your profile has been updated successfully.')
             ->success()
             ->send();
     }
@@ -389,7 +447,7 @@ class EditAccount extends Page implements HasTable
         ]);
 
         Notification::make()
-            ->title('Password changed successfully.')
+            ->title('Your Password has been changed successfully.')
             ->success()
             ->send();
     }
@@ -406,7 +464,7 @@ class EditAccount extends Page implements HasTable
         if (ClientUser::query()->where('email', $email)->exists()
             || User::query()->where('email', $email)->exists()) {
             throw ValidationException::withMessages([
-                'subUserData.txtemail' => 'This email already exists.',
+                'subUserData.txtemail' => 'This email is already exists..!',
             ]);
         }
 
@@ -419,7 +477,9 @@ class EditAccount extends Page implements HasTable
             'is_sub_user' => true,
             'status' => true,
             'is_password_change' => true,
-            'video_upload' => true,
+            // Legacy adduser() does not set video_upload, so it stays at the column
+            // default (0). Do not grant video upload to a brand-new sub user.
+            'video_upload' => false,
             'expire_at' => now()->addYear(),
             'first_name' => '',
             'last_name' => '',
@@ -445,7 +505,7 @@ class EditAccount extends Page implements HasTable
         ]);
 
         Notification::make()
-            ->title('Sub user added successfully.')
+            ->title('User added successfully')
             ->success()
             ->send();
     }
@@ -516,9 +576,12 @@ class EditAccount extends Page implements HasTable
                     $this->permissionCheckbox('access_download', 'download.png', 'Download QR/DM code'),
                     $this->permissionCheckbox('access_label', 'order-label.png', 'Order Labels'),
                     $this->permissionCheckbox('access_log', 'visitor_log.png', 'View Visitor Log'),
-                    // Legacy edit_user.php shows all 8 permissions unconditionally — Delete
-                    // Profile included (it was wrongly gated behind Enable Admin Access here).
-                    $this->permissionCheckbox('access_delete', 'delete_profile.png', 'Delete Profile'),
+                    // Legacy edit_user.php hides the Delete Profile cell (display:none) until
+                    // Enable Admin Access is ticked, and action_edit_user hard-codes
+                    // access_delete = 0 for every non-admin save. Keep it hidden so the
+                    // checkbox is never one whose value is silently thrown away.
+                    $this->permissionCheckbox('access_delete', 'delete_profile.png', 'Delete Profile')
+                        ->visible(fn (Get $get): bool => (bool) $get('enable_admin_access')),
                 ]),
             ViewField::make('code_profile_ids')
                 ->label('')

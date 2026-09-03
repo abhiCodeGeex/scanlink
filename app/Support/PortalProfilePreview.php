@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Filament\Forms\RichEditor\LegacyFormatting\Marks\LegacyStyleMark;
 use App\Models\ClientUser;
 use App\Models\Profile;
 use App\Models\Weblink;
@@ -199,14 +200,19 @@ class PortalProfilePreview
 
             $children = is_array($node['content'] ?? null) ? self::tipTapNodes($node['content']) : '';
 
+            $align = self::tipTapAlignAttribute($node);
+
             $html .= match ($node['type'] ?? '') {
                 'text' => self::tipTapText($node),
-                'paragraph' => '<p>'.$children.'</p>',
-                'heading' => '<h3>'.$children.'</h3>',
+                'paragraph' => '<p'.$align.'>'.$children.'</p>',
+                // Honour the real heading level: the toolbar offers h1-h3, and collapsing
+                // them all to h3 made the preview disagree with the saved page.
+                'heading' => self::tipTapHeading($node, $children, $align),
                 'bulletList' => '<ul>'.$children.'</ul>',
                 'orderedList' => '<ol>'.$children.'</ol>',
                 'listItem' => '<li>'.$children.'</li>',
                 'hardBreak' => '<br>',
+                'horizontalRule' => '<hr>',
                 default => $children,
             };
         }
@@ -230,11 +236,63 @@ class PortalProfilePreview
                 'bold' => '<strong>'.$text.'</strong>',
                 'italic' => '<em>'.$text.'</em>',
                 'underline' => '<u>'.$text.'</u>',
+                'strike' => '<s>'.$text.'</s>',
+                // Legacy Font / Size / Colour. Without this the preview silently drops
+                // everything those three toolbar buttons apply.
+                'legacyStyle' => self::tipTapLegacyStyle($mark, $text),
                 'link' => '<a href="'.e((string) ($mark['attrs']['href'] ?? '#')).'" target="_blank" rel="noopener">'.$text.'</a>',
                 default => $text,
             };
         }
 
         return $text;
+    }
+
+    /**
+     * `text-align` set by the alignment buttons, as an inline style attribute (or '').
+     *
+     * @param  array<string, mixed>  $node
+     */
+    private static function tipTapAlignAttribute(array $node): string
+    {
+        $align = $node['attrs']['textAlign'] ?? null;
+
+        return in_array($align, ['left', 'center', 'right', 'justify'], true)
+            ? ' style="text-align:'.$align.'"'
+            : '';
+    }
+
+    /**
+     * @param  array<string, mixed>  $node
+     */
+    private static function tipTapHeading(array $node, string $children, string $align): string
+    {
+        $level = (int) ($node['attrs']['level'] ?? 3);
+        $level = max(1, min(6, $level));
+
+        return '<h'.$level.$align.'>'.$children.'</h'.$level.'>';
+    }
+
+    /**
+     * Font family / size / colour, rendered as the same inline-style span the editor and the
+     * scan page use. See App\Filament\Forms\RichEditor\LegacyFormatting\Marks\LegacyStyleMark.
+     *
+     * @param  array<string, mixed>  $mark
+     */
+    private static function tipTapLegacyStyle(array $mark, string $text): string
+    {
+        $declarations = [];
+
+        foreach (LegacyStyleMark::DECLARATIONS as $name => $property) {
+            $value = $mark['attrs'][$name] ?? null;
+
+            if (filled($value)) {
+                $declarations[] = $property.':'.$value;
+            }
+        }
+
+        return $declarations === []
+            ? $text
+            : '<span style="'.e(implode('; ', $declarations)).'">'.$text.'</span>';
     }
 }

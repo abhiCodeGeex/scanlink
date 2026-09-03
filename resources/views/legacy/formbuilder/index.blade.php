@@ -1,4 +1,73 @@
 <script>
+	/**
+	 * Attach CKEditor to a question textarea, safely.
+	 *
+	 * The two call sites below used to call CKEDITOR.replace() bare. Three ways that left the
+	 * user staring at a plain textarea:
+	 *
+	 *   1. ckeditor.js had not finished parsing yet, so CKEDITOR was undefined and the throw
+	 *      aborted the rest of the jQuery handler.
+	 *   2. An instance was already registered for that id (the panel re-mounts the iframe
+	 *      whenever formBuilderEmbedNonce changes), and replace() refuses to run twice.
+	 *   3. The textarea had not been inserted yet when the handler fired.
+	 *
+	 * Each is intermittent, which is exactly how it was reported: "sometimes the rich editor
+	 * loads and sometimes it shows a normal textarea".
+	 */
+	function slAttachCkEditor(elementId, options, initialData) {
+		var attempts = 0;
+
+		function attach() {
+			attempts++;
+
+			var ready = typeof CKEDITOR !== 'undefined' && CKEDITOR.status === 'loaded';
+			var element = document.getElementById(elementId);
+
+			// Give the script and the DOM up to ~5s, then give up quietly rather than
+			// leaving a half-initialised editor behind.
+			if ((!ready || !element) && attempts < 100) {
+				return window.setTimeout(attach, 50);
+			}
+
+			if (!ready || !element) {
+				return;
+			}
+
+			try {
+				// Resolved here, not at the call site: CKEDITOR.ENTER_BR is undefined until the
+				// script has loaded, and reading it early is itself one of the ways this broke.
+				var config = {};
+				for (var key in (options || {})) {
+					config[key] = options[key];
+				}
+				if (config.enterMode === 'BR') {
+					config.enterMode = CKEDITOR.ENTER_BR;
+				}
+
+				if (CKEDITOR.instances[elementId]) {
+					CKEDITOR.instances[elementId].destroy(true);
+				}
+
+				var editor = CKEDITOR.replace(elementId, config);
+
+				if (typeof initialData !== 'undefined' && initialData !== null) {
+					editor.on('instanceReady', function () {
+						editor.setData(initialData);
+					});
+				}
+			} catch (error) {
+				// Never let a failed editor stop the surrounding handler.
+				if (window.console && console.error) {
+					console.error('CKEditor attach failed for [' + elementId + ']:', error);
+				}
+			}
+		}
+
+		attach();
+	}
+</script>
+
+<script>
 	function show_color_picker(obj) {
 		new jscolor.init();
 		var col = new jscolor.color(obj);
@@ -289,9 +358,9 @@
 					}
 
 					if (question_type_id == "2" || question_type_id == '25') //enable ckeditor for text type
-						CKEDITOR.replace('textbox' + random_id, {
+						slAttachCkEditor('textbox' + random_id, {
 							toolbar: 'custom',
-							enterMode: CKEDITOR.ENTER_BR
+							enterMode: 'BR'
 						});
 
 					$('.first_ele').focus();
@@ -1991,11 +2060,10 @@
 
 		if (question_type_id == 2 || question_type_id == 25) //enable ckeditor for text type
 		{
-			CKEDITOR.replace('textbox' + random_id, {
+			slAttachCkEditor('textbox' + random_id, {
 				toolbar: 'custom',
-				enterMode: CKEDITOR.ENTER_BR
-			});
-			CKEDITOR.instances['textbox' + random_id].setData(ele_val_ori);
+				enterMode: 'BR'
+			}, ele_val_ori);
 
 		}
 

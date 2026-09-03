@@ -136,9 +136,44 @@ class ClientUser extends Model
         return $query->where('status', '1');
     }
 
+    /**
+     * Legacy authority for "is this a restricted account?" is users.is_sub_user, not
+     * users.role. Kohana gates every action with `$user_data["is_sub_user"] == 1` and
+     * builds the reduced My Account submenu from the same flag; `role` only marks the
+     * account owner (role 5 mirrors edits onto the clients row, drives customqr lookup).
+     *
+     * The two disagree in live data: "Enable Admin Access" clears is_sub_user without
+     * touching role, so those users are full users in Kohana and would be wrongly
+     * restricted if role were trusted here.
+     */
+    public function isSubUser(): bool
+    {
+        return (int) $this->is_sub_user === 1;
+    }
+
     public function isPrimary(): bool
     {
-        return $this->role === ClientUserRole::Primary;
+        return ! $this->isSubUser();
+    }
+
+    /**
+     * Unrestricted (non sub-user) memberships. Live schema stores INT 0/1.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<static>
+     */
+    public function scopeNotSubUser($query)
+    {
+        return $query->where('is_sub_user', '!=', 1);
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<static>
+     */
+    public function scopeSubUser($query)
+    {
+        return $query->where('is_sub_user', 1);
     }
 
     /**

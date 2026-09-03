@@ -33,8 +33,6 @@ class MultipleCodeRenewal extends Page implements HasTable
 
     protected static ?int $navigationSort = 5;
 
-    protected static bool $shouldRegisterNavigation = false;
-
     protected string $view = 'filament.portal.pages.multiple-code-renewal';
 
     public static function getNavigationGroup(): ?string

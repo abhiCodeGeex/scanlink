@@ -9,6 +9,7 @@ use App\Filament\Portal\Pages\FormSubmissionView;
 use App\Filament\Portal\Pages\PortalDashboard;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Http\Middleware\EnsurePortalPasswordChanged;
+use App\Http\Middleware\RedirectDeniedPortalActions;
 use App\Models\HowToTutorial;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -177,6 +178,7 @@ class ClientPortalPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                RedirectDeniedPortalActions::class,
                 EnsurePortalPasswordChanged::class,
                 \App\Http\Middleware\ConfineVocCardHolder::class,
             ]);

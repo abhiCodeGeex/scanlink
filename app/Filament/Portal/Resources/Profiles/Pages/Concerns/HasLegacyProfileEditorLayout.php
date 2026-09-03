@@ -317,6 +317,9 @@ trait HasLegacyProfileEditorLayout
         }
 
         // Nested Livewire "updated*" hooks already ran; debounce the iframe reload.
+        // The timer handle is shared with the capture-phase input listener in
+        // legacy-profile-page.blade.php, which pushes the same draft for edits Livewire does
+        // not see. One handle so a keystroke schedules one refresh, not two.
         $this->js(<<<'JS'
             clearTimeout(window.__slPhonePreviewTimer);
             window.__slPhonePreviewTimer = setTimeout(() => {

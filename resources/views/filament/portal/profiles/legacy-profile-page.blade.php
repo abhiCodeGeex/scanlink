@@ -663,8 +663,14 @@
             });
 
                 function scheduleDraftPush() {
+                    // Shares HasLegacyProfileEditorLayout::updated()'s timer handle on purpose.
+                    // That hook schedules the same pushPhonePreviewDraft() server-side on every
+                    // `data.*` change; with separate timers a single keystroke queued two full
+                    // schema re-renders 100ms apart. One handle means the later schedule simply
+                    // replaces the earlier one.
+                    clearTimeout(window.__slPhonePreviewTimer);
                     clearTimeout(timer);
-                    timer = setTimeout(function () {
+                    timer = window.__slPhonePreviewTimer = setTimeout(function () {
                         try {
                             (Livewire.all() || []).forEach(function (component) {
                                 try {

@@ -140,6 +140,17 @@ class ProfileResource extends Resource
         return $member->isPrimary() || (bool) $member->access_addcode;
     }
 
+    /**
+     * Legacy has no read-only profile page: the Master Code List row is plain text and
+     * only the tool icons link anywhere. Filament links the whole row to view/edit, so
+     * tie "view" to the same permission as "edit" — otherwise a sub-user without Edit
+     * Profile could open the full profile at /portal/profiles/{id}.
+     */
+    public static function canView($record): bool
+    {
+        return static::canEdit($record);
+    }
+
     public static function canEdit($record): bool
     {
         $member = static::currentMembership();
@@ -196,6 +207,7 @@ class ProfileResource extends Resource
 
         return $user->clientMemberships()
             ->active()
+            ->orderBy('is_sub_user')
             ->orderByDesc('role')
             ->first();
     }

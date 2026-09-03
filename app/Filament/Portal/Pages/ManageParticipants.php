@@ -69,6 +69,16 @@ class ManageParticipants extends Page
         return 'Forms';
     }
 
+    /**
+     * Legacy only reaches the participant list from inside the Form Builder, which is
+     * itself behind Edit Profile / Form Submissions. Without this a sub-user holding
+     * neither permission could open /portal/participants for an allowed profile.
+     */
+    public static function canAccess(): bool
+    {
+        return static::memberCanAccessFormBuilder(static::portalMembership());
+    }
+
     public function mount(): void
     {
         $this->embed = request()->boolean('embed');

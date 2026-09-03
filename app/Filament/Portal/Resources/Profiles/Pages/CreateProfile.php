@@ -85,26 +85,20 @@ class CreateProfile extends EditRecord
             ?? request()->route('type');
 
         if (! $client) {
-            Notification::make()
-                ->title('No active client account')
-                ->danger()
-                ->send();
-
-            $this->redirect(ProfileResource::getUrl('index', panel: 'portal'), navigate: false);
-
-            return;
+            $this->bailOut(
+                'No active client account',
+                null,
+                ProfileResource::getUrl('index', panel: 'portal'),
+            );
         }
 
         if (blank($typeSlag)) {
-            Notification::make()
-                ->title('Choose a code type first')
-                ->body('Use Add a New Code from the Master Code List (e.g. Location).')
-                ->warning()
-                ->send();
-
-            $this->redirect(ProfileResource::getUrl('index', panel: 'portal'), navigate: false);
-
-            return;
+            $this->bailOut(
+                'Choose a code type first',
+                'Use Add a New Code from the Master Code List (e.g. Location).',
+                ProfileResource::getUrl('index', panel: 'portal'),
+                danger: false,
+            );
         }
 
         $sessionKey = 'portal_create_draft_'.$client->id.'_'.$typeSlag;
@@ -146,36 +140,26 @@ class CreateProfile extends EditRecord
         }
 
         if (! $slot) {
-            Notification::make()
-                ->title($requestedSlotId > 0
+            $this->bailOut(
+                $requestedSlotId > 0
                     ? 'That code slot is not available'
-                    : 'No unused codes available')
-                ->body($requestedSlotId > 0
+                    : 'No unused codes available',
+                $requestedSlotId > 0
                     ? null
-                    : 'Purchase codes or activate a code from Code Balance first.')
-                ->danger()
-                ->send();
-
-            $this->redirect(
+                    : 'Purchase codes or activate a code from Code Balance first.',
                 $requestedSlotId > 0
                     ? \App\Filament\Portal\Pages\CodeBalance::getUrl(panel: 'portal')
                     : ProfileResource::getUrl('index', panel: 'portal'),
-                navigate: false,
             );
-
-            return;
         }
 
         // Legacy parity: cannot activate/create on an expired code slot.
         if ($slot->isExpired()) {
-            Notification::make()
-                ->title('You can not perform this action on expired profile.')
-                ->danger()
-                ->send();
-
-            $this->redirect(ProfileResource::getUrl('index', panel: 'portal'), navigate: false);
-
-            return;
+            $this->bailOut(
+                'You can not perform this action on expired profile.',
+                null,
+                ProfileResource::getUrl('index', panel: 'portal'),
+            );
         }
 
         session([$sessionKey => (int) $slot->getKey()]);
@@ -188,6 +172,33 @@ class CreateProfile extends EditRecord
         parent::mount($slot->getKey());
         $this->bootLegacyCreateEditor();
         $this->formBuilderEmbedNonce++;
+    }
+
+    /**
+     * Leave the page before anything renders.
+     *
+     * EditRecord::$record is a typed property, so returning from mount() without one and
+     * letting Livewire redirect on dehydrate() is too late: the render pass calls
+     * getRecord() first and dies with "must not be accessed before initialization" — a 500
+     * where the user should have seen the notification and landed back on the list.
+     */
+    protected function bailOut(string $title, ?string $body, string $url, bool $danger = true): never
+    {
+        $notification = Notification::make()->title($title);
+
+        if (filled($body)) {
+            $notification->body($body);
+        }
+
+        ($danger ? $notification->danger() : $notification->warning())->send();
+
+        // Register the redirect with Livewire (so the flashed notification survives), then
+        // abort out before render() can touch the uninitialised $record. A plain
+        // RedirectResponse is required: inside the component, redirect() resolves to
+        // Livewire's Redirector, which returns itself instead of a Response.
+        $this->redirect($url, navigate: false);
+
+        abort(new \Illuminate\Http\RedirectResponse($url));
     }
 
     protected function bootLegacyCreateEditor(): void

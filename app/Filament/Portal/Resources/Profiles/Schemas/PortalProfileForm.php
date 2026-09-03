@@ -16,6 +16,8 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Repeater;
+use App\Filament\Forms\RichEditor\LegacyFormatting\LegacyFormattingPlugin;
+use App\Support\LegacyEditorToolbars;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -150,7 +152,8 @@ class PortalProfileForm
                         RichEditor::make('voc_email_sign_line1')
                             ->label('Email Signature:')
                             ->helperText('The default signature is "ScanLink Support Team"')
-                            ->toolbarButtons(['bold', 'italic', 'underline', 'bulletList', 'orderedList', 'link', 'undo', 'redo'])
+                            ->plugins([LegacyFormattingPlugin::make()])
+                            ->toolbarButtons(LegacyEditorToolbars::custom())
                             ->columnSpanFull(),
                         // Legacy keeps a second signature line but hides it (display:none); the
                         // CKEditor rich-text line 1 supersedes it. Kept hidden for data round-trip.
@@ -269,7 +272,8 @@ class PortalProfileForm
                             // (Enable is ->live() so this re-evaluates when it's unticked.)
                             ->required(fn (Get $get): bool => (bool) $get('voc_title_bar_enable'))
                             ->validationMessages(['required' => 'Please enter title bar text.'])
-                            ->toolbarButtons(['bold', 'italic', 'underline', 'bulletList', 'orderedList', 'undo', 'redo'])
+                            ->plugins([LegacyFormattingPlugin::make()])
+                            ->toolbarButtons(LegacyEditorToolbars::custom1())
                             ->columnSpanFull(),
                         ColorPicker::make('voc_title_bar_colour')
                             ->label('Title Bar Background Colour:')
@@ -431,7 +435,8 @@ class PortalProfileForm
                         TextInput::make('name2')->hiddenLabel()->maxLength(255),
                         RichEditor::make('description2')
                             ->hiddenLabel()
-                            ->toolbarButtons(['bold', 'italic', 'underline', 'bulletList', 'orderedList', 'link', 'undo', 'redo'])
+                            ->plugins([LegacyFormattingPlugin::make()])
+                            ->toolbarButtons(LegacyEditorToolbars::myToolbar())
                             ->columnSpanFull(),
                     ])
                     ->visible(fn (Get $get): bool => self::slug($get('type_id')) === 'exhibit'),

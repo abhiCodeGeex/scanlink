@@ -20,8 +20,11 @@ trait InteractsWithClientMembership
             return null;
         }
 
+        // Prefer an unrestricted membership when an account somehow has both, so the
+        // legacy is_sub_user flag decides what the portal offers.
         return once(fn (): ?ClientUser => $user->clientMemberships()
             ->active()
+            ->orderBy('is_sub_user')
             ->orderByDesc('role')
             ->first());
     }
@@ -135,6 +138,7 @@ trait InteractsWithClientMembership
 
         return $user->clientMemberships()
             ->active()
+            ->orderBy('is_sub_user')
             ->orderByDesc('role')
             ->first();
     }

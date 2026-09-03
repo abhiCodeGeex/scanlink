@@ -230,7 +230,11 @@
                                 </div>
                             @else
                                 <div style="margin-bottom:.75rem;">
-                                    <label class="fb-label">{{ in_array($composingTypeId, [2], true) ? 'Rich content (HTML supported)' : 'Display HTML / content' }}</label>
+                                    {{-- Not a rich editor: nothing enriches .fb-rich-target, and the
+                                         old "Rich content" label made this read as the WYSIWYG
+                                         failing to load. The builder's own CKEditor is in the
+                                         legacy iframe; this composer takes HTML as text. --}}
+                                    <label class="fb-label">{{ in_array($composingTypeId, [2], true) ? 'Content (HTML supported)' : 'Display HTML / content' }}</label>
                                     <textarea
                                         wire:model="composerQuestionText"
                                         class="fb-textarea fb-rich-target"

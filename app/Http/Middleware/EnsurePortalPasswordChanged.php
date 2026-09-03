@@ -35,6 +35,7 @@ class EnsurePortalPasswordChanged
 
         $member = $user->clientMemberships()
             ->active()
+            ->orderBy('is_sub_user')
             ->orderByDesc('role')
             ->first();
 

@@ -4,7 +4,8 @@ namespace Tests\Feature\Portal;
 
 use App\Enums\UserType;
 use App\Filament\Portal\Auth\Register;
-use App\Mail\ScanlinkMail;
+use App\Mail\RegistrationWelcomeMail;
+use App\Models\Client;
 use App\Models\ClientUser;
 use App\Models\CodePurchase;
 use App\Models\User;
@@ -138,11 +139,10 @@ class PortalRegistrationTest extends TestCase
 
         $this->assertAuthenticated();
 
-        Mail::assertSent(ScanlinkMail::class, function (ScanlinkMail $mail) use ($email): bool {
+        Mail::assertSent(RegistrationWelcomeMail::class, function (RegistrationWelcomeMail $mail) use ($email): bool {
             return $mail->hasTo($email)
-                && $mail->subjectLine === 'Welcome to ScanLink'
-                && ($mail->mailData['first_name'] ?? null) === 'Jane'
-                && ($mail->mailData['last_name'] ?? null) === 'Client';
+                && $mail->firstName === 'Jane'
+                && $mail->lastName === 'Client';
         });
 
         $this->assertDatabaseHas('clients', [
@@ -186,6 +186,25 @@ class PortalRegistrationTest extends TestCase
             ->call('register')
             ->assertHasErrors(['data.captcha'])
             ->assertSet('wizardStep', 1);
+    }
+
+    public function test_portal_user_can_open_master_code_list(): void
+    {
+        $client = Client::factory()->create();
+        $member = ClientUser::factory()->primary()->create([
+            'client_id' => $client->id,
+            'email' => 'codes@example.com',
+            'status' => true,
+            'is_password_change' => true,
+        ]);
+        $member->refresh();
+
+        $user = User::query()->findOrFail($member->auth_user_id);
+        $user->update(['user_type' => UserType::Portal, 'admin_role' => null]);
+
+        $this->actingAs($user)
+            ->get('/portal/profiles')
+            ->assertOk();
     }
 
     /**

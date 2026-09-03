@@ -143,8 +143,17 @@
         html.dark .sl-lowbalance--empty { background: #3a2323; border-color: #7a3030; color: #f0b0b0; }
     </style>
 
+    @php
+        // Legacy never offers a sub-user a purchase prompt: "Purchase codes" is absent from
+        // their My Account submenu, and the "no codes available" popup only fires from the
+        // Add-a-new-code button, which is itself behind access_addcode. Showing this banner
+        // to a sub-user hands them a CTA that 403s.
+        $canPurchaseCodes = $canPurchaseCodes
+            ?? (bool) \App\Filament\Portal\Concerns\InteractsWithClientMembership::portalMembership()?->isPrimary();
+    @endphp
+
     {{-- Low code-balance warning (fewer than 5 unused codes remaining). --}}
-    @if (isset($codeBalance) && $codeBalance < 5)
+    @if ($canPurchaseCodes && isset($codeBalance) && $codeBalance < 5)
         <div class="sl-lowbalance {{ $codeBalance <= 0 ? 'sl-lowbalance--empty' : '' }}" role="status">
             <span class="sl-lowbalance__icon" aria-hidden="true">&#9888;</span>
             <span class="sl-lowbalance__text">
