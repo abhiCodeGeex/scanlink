@@ -202,6 +202,45 @@ class ClientUser extends Model
     }
 
     /**
+     * Add a profile this member just created to their own "Select Code Profile" list.
+     *
+     * That list is the whole entitlement for a sub-user, and nothing used to add a freshly
+     * created profile to it: CreateProfile lets them work on an open slot stamped with their
+     * user_id, but Save flips update_or_not to 1, that exception stops applying, and the
+     * profile they just made drops off their Master Code List.
+     *
+     * Only the default is set here. The primary can still tick or untick it afterwards in
+     * Manage User, and nothing else in the list is touched.
+     *
+     * Primary users are unrestricted (allowedProfileIds() returns null), so there is nothing
+     * to grant and writing a list could later be misread as a real restriction.
+     *
+     * @return bool whether the list changed
+     */
+    public function grantProfileVisibility(int $profileId): bool
+    {
+        if ($profileId <= 0 || ! $this->isSubUser()) {
+            return false;
+        }
+
+        $allowed = $this->allowedProfileIds() ?? [];
+
+        if (in_array($profileId, $allowed, true)) {
+            return false;
+        }
+
+        $allowed[] = $profileId;
+
+        // allowedProfileIds() has already dropped the legacy '' / '0' "nothing selected"
+        // sentinel, so it never survives into the stored list as an id.
+        $this->forceFill([
+            'show_code_profile_id_to_acc_user' => implode(',', $allowed),
+        ])->save();
+
+        return true;
+    }
+
+    /**
      * Password is stored only on Laravel users; keep local column empty.
      */
     protected function password(): Attribute

@@ -304,6 +304,12 @@ class CreateProfile extends EditRecord
     protected function afterSave(): void
     {
         app(ProfileDraftSlotService::class)->finalize($this->record);
+
+        // finalize() closes the slot, which ends the open-draft exception in
+        // ProfileResource::getRecordRouteBindingEloquentQuery() — without this the sub-user
+        // who just created the profile would lose sight of it. No-op for primary users.
+        $this->currentClientUser()?->grantProfileVisibility((int) $this->record->id);
+
         $this->syncProfileAssets();
         $this->syncFormBuilderSidebarSettings();
 
