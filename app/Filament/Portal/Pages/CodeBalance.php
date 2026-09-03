@@ -62,6 +62,12 @@ class CodeBalance extends Page
     public function mount(): void
     {
         $this->page = max(1, (int) request()->query('page', 1));
+
+        // Start every visit with an empty selection. Returning here with the browser Back
+        // button used to restore the previous tick-boxes, so the next "Renew Selected"
+        // quoted codes the user believed they had deselected. mount() covers a fresh load;
+        // the bfcache restore, where mount() never runs, is handled in the view.
+        $this->selected = [];
     }
 
     public function availabilityBalance(): int

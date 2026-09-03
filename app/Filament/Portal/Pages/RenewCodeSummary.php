@@ -17,6 +17,7 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 /**
  * Legacy /code/renewCode → /code/renewableCode order summary.
@@ -42,6 +43,14 @@ class RenewCodeSummary extends Page
     public bool $agreeTerms = false;
 
     /**
+     * Identifies the staged quote this page was opened for.
+     *
+     * Held as a property, not re-read from the query string, because a Livewire update posts
+     * to its own endpoint and carries no query string of its own.
+     */
+    public string $token = '';
+
+    /**
      * Legacy mastercode renew is available to primary and account sub-users.
      * (Multiple Code Renewal menu remains primary-only.)
      */
@@ -60,18 +69,27 @@ class RenewCodeSummary extends Page
         $service = app(CodeProfileRenewalService::class);
         $quote = $service->quote($profiles);
 
+        // Every staging gets its own token, carried in the URL. The summary only renders a
+        // quote whose token matches the one it was opened with, so a quote left in the
+        // session by an earlier selection can never be presented — or charged for — as if
+        // it were this one.
+        $token = Str::random(40);
+
         session([
             self::SESSION_RENEW => [
                 ...$quote,
                 'return_url' => $returnUrl,
+                'token' => $token,
             ],
         ]);
 
-        return static::getUrl(panel: 'portal');
+        return static::getUrl(['t' => $token], panel: 'portal');
     }
 
     public function mount(): void
     {
+        $this->token = (string) request()->query('t', '');
+
         if (! $this->hasRenewSession()) {
             Notification::make()
                 ->title('Please select code to be renew.')
@@ -100,6 +118,22 @@ class RenewCodeSummary extends Page
     public function totalAmount(): float
     {
         return (float) (session(self::SESSION_RENEW)['total'] ?? 0);
+    }
+
+    /**
+     * The profile numbers this quote covers.
+     *
+     * The summary used to show only a count and a total, so a selection that was not what the
+     * user intended looked identical to one that was — and pressing proceed raises an invoice.
+     *
+     * @return list<int>
+     */
+    public function profileNumbers(): array
+    {
+        return array_values(array_map(
+            'intval',
+            session(self::SESSION_RENEW)['profile_ids'] ?? [],
+        ));
     }
 
     /**
@@ -148,7 +182,9 @@ class RenewCodeSummary extends Page
         $renew = session(self::SESSION_RENEW, []);
         $profileIds = array_map('intval', $renew['profile_ids'] ?? []);
 
-        if ($profileIds === [] || (int) ($renew['quantity'] ?? 0) <= 0) {
+        // Re-check the token here too: the quote could have been replaced by a staging in
+        // another tab between opening this page and pressing proceed.
+        if (! $this->hasRenewSession()) {
             Notification::make()
                 ->title('Renew session expired. Please select codes again.')
                 ->danger()
@@ -376,8 +412,18 @@ class RenewCodeSummary extends Page
     {
         $renew = session(self::SESSION_RENEW);
 
-        return is_array($renew)
-            && (int) ($renew['quantity'] ?? 0) > 0
-            && ! empty($renew['profile_ids']);
+        if (! is_array($renew)
+            || (int) ($renew['quantity'] ?? 0) <= 0
+            || empty($renew['profile_ids'])) {
+            return false;
+        }
+
+        // The quote must be the one this page was opened for. Without this any leftover
+        // quote satisfied the guard, which is how a superseded selection could be renewed.
+        $staged = (string) ($renew['token'] ?? '');
+
+        return $staged !== ''
+            && $this->token !== ''
+            && hash_equals($staged, $this->token);
     }
 }

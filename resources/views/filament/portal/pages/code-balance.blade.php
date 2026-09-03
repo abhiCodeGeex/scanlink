@@ -166,4 +166,42 @@
             </div>
         </div>
     </div>
+
+    {{-- The Renew flow leaves this page with a hard redirect, so coming back uses the
+         browser's back/forward cache: the DOM and the live Livewire component are restored
+         exactly as they were, tick-boxes included, and mount() never runs. The next
+         "Renew Selected" then quotes codes the user thought were no longer selected.
+         Clear the selection whenever the page is shown from cache or re-entered via SPA
+         navigation. --}}
+    <script>
+        (function () {
+            function clearCodeBalanceSelection() {
+                var root = document.querySelector('[wire\:id]');
+                if (! root || ! window.Livewire) {
+                    return;
+                }
+
+                var component = window.Livewire.find(root.getAttribute('wire:id'));
+                if (! component || component.get('selected') === undefined) {
+                    return;
+                }
+
+                document.querySelectorAll('.sl-cb__check input[type="checkbox"]').forEach(function (box) {
+                    box.checked = false;
+                });
+
+                if ((component.get('selected') || []).length) {
+                    component.set('selected', []);
+                }
+            }
+
+            window.addEventListener('pageshow', function (event) {
+                if (event.persisted) {
+                    clearCodeBalanceSelection();
+                }
+            });
+
+            document.addEventListener('livewire:navigated', clearCodeBalanceSelection);
+        })();
+    </script>
 </x-filament-panels::page>

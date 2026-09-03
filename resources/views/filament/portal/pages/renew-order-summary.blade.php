@@ -3,6 +3,16 @@
         <link rel="stylesheet" href="{{ asset('styles/style.css') }}">
         <style>
             .fi-page-header { display: none !important; }
+            .legacy-purchase-page .renew-code-list {
+                display: inline-block;
+                margin-top: 6px;
+                color: #4b5563;
+                font-size: 12.5px;
+                line-height: 1.5;
+                word-break: break-word;
+            }
+            html.dark .legacy-purchase-page .renew-code-list { color: rgb(156 163 175); }
+
             .legacy-purchase-page .proceed-btn {
                 background: #008401 !important;
                 color: #fff !important;
@@ -34,6 +44,14 @@
                             @foreach ($this->amountLines() as $line)
                                 {{ $line }}<br>
                             @endforeach
+                            {{-- Name the codes. A count alone gave the user no way to notice
+                                 they were about to be invoiced for the wrong selection. --}}
+                            @if ($numbers = $this->profileNumbers())
+                                <span class="renew-code-list">
+                                    Code{{ count($numbers) === 1 ? '' : 's' }}:
+                                    {{ collect($numbers)->map(fn (int $id): string => '#'.$id)->implode(', ') }}
+                                </span>
+                            @endif
                         </div>
                     </li>
                     <li>
