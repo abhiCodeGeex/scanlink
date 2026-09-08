@@ -11,6 +11,7 @@ use App\Models\FormBuilderOrderDetail;
 use App\Models\Profile;
 use App\Support\PricingSettings;
 use App\Support\SystemNotifier;
+use App\Support\TransactionalMailer;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -185,16 +186,7 @@ class FormBuilderPurchaseService
 
     private function trySend(string $email, ScanlinkMail $mail): void
     {
-        $email = strtolower(trim($email));
-
-        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return;
-        }
-
-        try {
-            Mail::to($email)->send($mail);
-        } catch (\Throwable $exception) {
-            report($exception);
-        }
+        // Deduplicates per request; a failed send never breaks the purchase.
+        app(TransactionalMailer::class)->sendOnce($email, $mail);
     }
 }

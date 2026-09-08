@@ -9,6 +9,7 @@ use App\Models\ClientUser;
 use App\Models\Profile;
 use App\Services\LabelOrderService;
 use App\Support\SystemNotifier;
+use App\Support\TransactionalMailer;
 use App\Services\ProfileQrService;
 use App\Support\LegacyEquipmentTypeLabels;
 use App\Support\PricingSettings;
@@ -299,17 +300,8 @@ class OrderLabel extends Page
 
     protected function trySendMail(string $email, ScanlinkMail $mail): void
     {
-        $email = strtolower(trim($email));
-
-        if ($email === '' || ! str_contains($email, '@')) {
-            return;
-        }
-
-        try {
-            Mail::to($email)->send($mail);
-        } catch (\Throwable $e) {
-            report($e);
-        }
+        // Deduplicates per request; a failed send never breaks the order.
+        app(TransactionalMailer::class)->sendOnce($email, $mail);
     }
 
     public function returnToListUrl(): string

@@ -7,6 +7,12 @@
     <style>
         /* Legacy mobile page: plain white body, 12px #555755 base text. */
         body { font-family: Arial, Helvetica, sans-serif; margin: 0; background: #fff; color: #555755; font-size: 12px; line-height: 22px; }
+        /* Rich text authored before the font list was trimmed can still carry a face no phone
+           has. Comic Sans is on neither iOS nor Android and its `cursive` fallback resolves to
+           nothing dependable, so pin those runs to the page font. Matching the inline style is
+           the only way to reach them — an inline declaration outranks any ordinary rule. */
+        [style*="Comic Sans"], [style*="comic sans"],
+        [style*="Lucida Sans Unicode"] { font-family: Arial, Helvetica, sans-serif !important; }
         /* Legacy insets: .wrapper margin 0 10px + .content-container padding 10px = ~20px each side. */
         .wrap { max-width: 640px; margin: 0 auto; padding: 0 10px; }
         /* Legacy content sits on plain white (card shadow intentionally omitted for a flat look). */

@@ -26,16 +26,28 @@ class LegacyFormattingPlugin implements RichContentPlugin
     private const ASSET_VERSION = '7';
 
     /**
-     * Legacy CKEditor 4 default font list, so existing values map onto a dropdown entry.
+     * Legacy CKEditor 4 font list, minus the faces that do not survive a phone.
+     *
+     * What gets authored here is rendered on the scanned profile page, which is read almost
+     * entirely on mobile. Every entry below ends in a generic family (sans-serif / serif /
+     * monospace) that iOS and Android both resolve, so the worst case is a near neighbour
+     * rather than a surprise.
+     *
+     * Deliberately dropped:
+     *  - Comic Sans MS — ships on neither iOS nor Android, and its `cursive` fallback has no
+     *    reliable mobile face either, so the phone picks whatever it likes.
+     *  - Lucida Sans Unicode — absent from both mobile platforms; the menu entry promised a
+     *    face the reader would never see.
+     *
+     * Neither appears in any stored content, so no existing value loses its dropdown entry.
+     * Tahoma is kept: it is in live content, and it does fall back cleanly to sans-serif.
      *
      * @var array<string, string>
      */
     public const FONT_FAMILIES = [
         'Arial, Helvetica, sans-serif' => 'Arial',
-        'Comic Sans MS, cursive' => 'Comic Sans MS',
         'Courier New, Courier, monospace' => 'Courier New',
         'Georgia, serif' => 'Georgia',
-        'Lucida Sans Unicode, Lucida Grande, sans-serif' => 'Lucida Sans Unicode',
         'Tahoma, Geneva, sans-serif' => 'Tahoma',
         'Times New Roman, Times, serif' => 'Times New Roman',
         'Trebuchet MS, Helvetica, sans-serif' => 'Trebuchet MS',

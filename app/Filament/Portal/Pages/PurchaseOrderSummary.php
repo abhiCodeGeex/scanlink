@@ -11,13 +11,13 @@ use App\Models\CodePurchaseDetail;
 use App\Models\EquipmentType;
 use App\Models\Profile;
 use App\Support\SystemNotifier;
+use App\Support\TransactionalMailer;
 use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 
 class PurchaseOrderSummary extends Page
 {
@@ -236,33 +236,28 @@ class PurchaseOrderSummary extends Page
             'success',
         );
 
-        // When a reseller code was used, notify the reseller + admin.
+        // When a reseller code was used, notify the reseller.
         if ($reseller) {
             $resellerEmail = strtolower(trim((string) $reseller->reseller_email));
-            [$rFirst, $rLast] = $this->splitName((string) $reseller->client_name);
 
-            $this->trySendMail($resellerEmail, new ScanlinkMail('ScanLink order confirmation', 'emails.order-confirmation', [
-                'firstName' => (string) $reseller->client_name,
-                'lastName' => '',
-                'noOfCodes' => $qty,
-                'total' => $total,
-                'isReseller' => true,
-                'userEmail' => $buyerEmail,
-                'supportEmail' => $supportEmail,
-                'supportPhone' => $supportPhone,
-            ]));
+            // A client buying with their own reseller code is one person: they have already
+            // had the confirmation above and must not receive a second one.
+            if ($resellerEmail !== $buyerEmail) {
+                $this->trySendMail($resellerEmail, new ScanlinkMail('ScanLink order confirmation', 'emails.order-confirmation', [
+                    'firstName' => (string) $reseller->client_name,
+                    'lastName' => '',
+                    'noOfCodes' => $qty,
+                    'total' => $total,
+                    'isReseller' => true,
+                    'userEmail' => $buyerEmail,
+                    'supportEmail' => $supportEmail,
+                    'supportPhone' => $supportPhone,
+                ]));
+            }
 
-            $this->trySendMail($adminEmail, new ScanlinkMail('Scanlink Purchase Code', 'emails.admin-code', [
-                'title' => 'Scanlink Purchase Code',
-                'verb' => 'purchased',
-                'email' => $resellerEmail,
-                'firstName' => $rFirst,
-                'lastName' => $rLast,
-                'noOfCodes' => $qty,
-                'amountPerCode' => $perCodeFmt,
-                'total' => $total,
-                'resellerName' => '',
-            ]));
+            // No second admin email here. One purchase is one admin notification, and the one
+            // sent above already carries resellerName — this duplicate is what put two
+            // "Scanlink Purchase Code" messages in the admin inbox for a single order.
 
             // Notify the reseller account owner that their code was used.
             SystemNotifier::toClientPrimary(
@@ -275,36 +270,11 @@ class PurchaseOrderSummary extends Page
         }
     }
 
-    /**
-     * @return array{0: string, 1: string}
-     */
-    protected function splitName(string $name): array
-    {
-        $name = trim($name);
-
-        if ($name === '') {
-            return ['', ''];
-        }
-
-        $parts = explode(' ', $name, 2);
-
-        return [$parts[0], $parts[1] ?? ''];
-    }
-
     protected function trySendMail(string $email, ScanlinkMail $mail): void
     {
-        $email = strtolower(trim($email));
-
-        if ($email === '' || ! str_contains($email, '@')) {
-            return;
-        }
-
-        try {
-            Mail::to($email)->send($mail);
-        } catch (\Throwable $e) {
-            // Keep purchase flow successful even if outbound mail is unavailable.
-            report($e);
-        }
+        // Deduplicates per request and swallows outbound-mail failures, so the purchase
+        // still completes if the mail server is down.
+        app(TransactionalMailer::class)->sendOnce($email, $mail);
     }
 
     protected function hasCheckout(): bool

@@ -35,6 +35,10 @@ class AppServiceProvider extends ServiceProvider
             \App\Http\Responses\FilamentLogoutResponse::class,
         );
 
+        // One record of "already emailed" per request, so no recipient can be sent the same
+        // transactional message twice within a single purchase or renewal.
+        $this->app->singleton(\App\Support\TransactionalMailer::class);
+
         // Docker Desktop / shared volumes: Blade touch() on root-owned compiled
         // views under storage/framework/views causes php-fpm 500s. Prefer a
         // container-local path (also set via VIEW_COMPILED_PATH in compose).

@@ -6,6 +6,7 @@ use App\Filament\Portal\Concerns\InteractsWithClientMembership;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Mail\ScanlinkMail;
 use App\Support\SystemNotifier;
+use App\Support\TransactionalMailer;
 use App\Models\Client;
 use App\Models\ClientUser;
 use App\Models\Profile;
@@ -16,7 +17,6 @@ use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 /**
@@ -277,6 +277,22 @@ class RenewCodeSummary extends Page
             ->filter(fn (Profile $p): bool => $this->profileIsReseller($p))
             ->groupBy(fn (Profile $p): int => (int) $p->reseller_client_id);
 
+        // Exactly one admin notification per renewal, whatever mix of own and reseller codes
+        // it contains. It used to be sent once for the member's own codes and again for every
+        // reseller group, so a renewal spanning three resellers put four near-identical
+        // "Scanlink Renew Code" messages in the admin inbox for a single order.
+        $this->trySend($adminEmail, new ScanlinkMail('Scanlink Renew Code', 'emails.admin-code', [
+            'title' => 'Scanlink Renew Code',
+            'verb' => 'renewed',
+            'email' => $memberEmail,
+            'firstName' => (string) ($member->first_name ?? ''),
+            'lastName' => (string) ($member->last_name ?? ''),
+            'noOfCodes' => $ordered->count(),
+            'amountPerCode' => $amountPerCode,
+            'total' => $total,
+            'resellerName' => (string) ($client->resellerName() ?? ''),
+        ]));
+
         // Own (non-reseller) codes.
         if ($ownCount > 0) {
             $this->trySend($memberEmail, new ScanlinkMail('ScanLink order confirmation', 'emails.order-confirmation', [
@@ -288,18 +304,6 @@ class RenewCodeSummary extends Page
                 'userEmail' => $memberEmail,
                 'supportEmail' => $supportEmail,
                 'supportPhone' => $supportPhone,
-            ]));
-
-            $this->trySend($adminEmail, new ScanlinkMail('Scanlink Renew Code', 'emails.admin-code', [
-                'title' => 'Scanlink Renew Code',
-                'verb' => 'renewed',
-                'email' => $memberEmail,
-                'firstName' => (string) ($member->first_name ?? ''),
-                'lastName' => (string) ($member->last_name ?? ''),
-                'noOfCodes' => $ownCount,
-                'amountPerCode' => $amountPerCode,
-                'total' => $total,
-                'resellerName' => (string) ($client->resellerName() ?? ''),
             ]));
 
             SystemNotifier::toMember(
@@ -328,31 +332,24 @@ class RenewCodeSummary extends Page
 
             $resellerEmail = strtolower(trim((string) $reseller->reseller_email));
             $resellerName = (string) $reseller->client_name;
-            [$rFirst, $rLast] = $this->splitName($resellerName);
             $count = $group->count();
 
-            $this->trySend($resellerEmail, new ScanlinkMail('ScanLink order confirmation', 'emails.order-confirmation', [
-                'firstName' => $resellerName !== '' ? $resellerName : $resellerEmail,
-                'lastName' => '',
-                'noOfCodes' => $count,
-                'total' => $total,
-                'isReseller' => true,
-                'userEmail' => $memberEmail,
-                'supportEmail' => $supportEmail,
-                'supportPhone' => $supportPhone,
-            ]));
+            // A member renewing codes bought with their own reseller code is one person, and
+            // already had the confirmation above.
+            if ($resellerEmail !== $memberEmail) {
+                $this->trySend($resellerEmail, new ScanlinkMail('ScanLink order confirmation', 'emails.order-confirmation', [
+                    'firstName' => $resellerName !== '' ? $resellerName : $resellerEmail,
+                    'lastName' => '',
+                    'noOfCodes' => $count,
+                    'total' => $total,
+                    'isReseller' => true,
+                    'userEmail' => $memberEmail,
+                    'supportEmail' => $supportEmail,
+                    'supportPhone' => $supportPhone,
+                ]));
+            }
 
-            $this->trySend($adminEmail, new ScanlinkMail('Scanlink Renew Code', 'emails.admin-code', [
-                'title' => 'Scanlink Renew Code',
-                'verb' => 'renewed',
-                'email' => $resellerEmail,
-                'firstName' => $rFirst,
-                'lastName' => $rLast,
-                'noOfCodes' => $count,
-                'amountPerCode' => $amountPerCode,
-                'total' => $total,
-                'resellerName' => '',
-            ]));
+            // The admin notification for this renewal was already sent once, above.
 
             SystemNotifier::toClientPrimary(
                 $reseller,
@@ -376,36 +373,12 @@ class RenewCodeSummary extends Page
         return (bool) $profile->is_reseller_code && (int) $profile->reseller_client_id > 0;
     }
 
-    /**
-     * @return array{0: string, 1: string}
-     */
-    protected function splitName(string $name): array
-    {
-        $name = trim($name);
-
-        if ($name === '') {
-            return ['', ''];
-        }
-
-        $parts = explode(' ', $name, 2);
-
-        return [$parts[0], $parts[1] ?? ''];
-    }
 
     protected function trySend(string $email, ScanlinkMail $mail): void
     {
-        $email = strtolower(trim($email));
-
-        if ($email === '' || ! str_contains($email, '@')) {
-            return;
-        }
-
-        try {
-            Mail::to($email)->send($mail);
-        } catch (\Throwable $e) {
-            // Never fail the renewal because outbound mail is unavailable.
-            report($e);
-        }
+        // Deduplicates per request and swallows outbound-mail failures, so the renewal still
+        // completes if the mail server is down.
+        app(TransactionalMailer::class)->sendOnce($email, $mail);
     }
 
     protected function hasRenewSession(): bool

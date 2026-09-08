@@ -64,6 +64,9 @@ class ClientPortalPanelProvider extends PanelProvider
             ->id('portal')
             ->path('portal')
             ->spa()
+            // No global search in the portal topbar. ProfileResource declares a
+            // $recordTitleAttribute, which is what made Filament put the field there.
+            ->globalSearch(false)
             ->login(Login::class)
             ->registration(Register::class)
             ->passwordReset()

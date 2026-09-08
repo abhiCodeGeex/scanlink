@@ -6,6 +6,7 @@ use App\Mail\ScanlinkMail;
 use App\Models\ClientUser;
 use App\Models\Profile;
 use App\Support\SystemNotifier;
+use App\Support\TransactionalMailer;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Mail;
@@ -178,10 +179,8 @@ class SendExpiryNotifications extends Command
 
     protected function trySend(string $email, ScanlinkMail $mail): void
     {
-        try {
-            Mail::to($email)->send($mail);
-        } catch (\Throwable $e) {
-            report($e);
-        }
+        // Deduplicates within the run, so one command pass cannot mail the same person the
+        // same notice twice.
+        app(TransactionalMailer::class)->sendOnce($email, $mail);
     }
 }
