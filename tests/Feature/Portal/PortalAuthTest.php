@@ -164,9 +164,12 @@ class PortalAuthTest extends TestCase
 
     public function test_voc_card_holder_login_lands_on_voc_dashboard(): void
     {
+        // Through the VOCC address, not /portal-login: a card holder has no client standing, so
+        // the client door turns them away the way legacy's separate credential store did.
+        // VocLoginUrlTest covers both sides of that separation.
         $user = $this->makeVocCardHolder('voc-login@example.com', 'Voc@12345');
 
-        $this->post('/portal-login', [
+        $this->post('/voclogin', [
             'email' => 'voc-login@example.com',
             'password' => 'Voc@12345',
         ])->assertRedirect('/portal/voc-dashboard');

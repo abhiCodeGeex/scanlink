@@ -18,6 +18,12 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * This restores the legacy rule as an allowlist: anything not on a card holder's own set of
  * pages sends them back to the VOC dashboard.
+ *
+ * Who is fenced follows legacy too. Legacy keyed on the `voc_user_id` session value, which only
+ * voclogin ever set, so whoever came through that door saw the cut-down site — even if the
+ * same email also had a client account. Deriving it from the account instead let a dual-identity
+ * holder in through the VOCC door and straight out into the full portal, so the entrance is now
+ * recorded at sign-in (SESSION_KEY) and checked here.
  */
 class ConfineVocCardHolder
 {
@@ -36,15 +42,55 @@ class ConfineVocCardHolder
         'password-reset/*',
     ];
 
+    /**
+     * Session flag recording that this session signed in at the VOCC address.
+     *
+     * The legacy equivalent of `voc_user_id`: set by PortalAuthController::vocLogin(), cleared
+     * when a client signs in, and gone with the session on logout.
+     */
+    public const SESSION_KEY = 'voc_card_holder_login';
+
+    /** Is the current session confined to the card holder's own pages? */
+    public static function fences(?User $user): bool
+    {
+        if (! $user instanceof User) {
+            return false;
+        }
+
+        return session(self::SESSION_KEY) === true || $user->isVocCardHolder();
+    }
+
+    /**
+     * May a fenced session see this path? Shared with the login controller so the landing page
+     * and this middleware cannot disagree about what is reachable.
+     */
+    public static function allows(string $path): bool
+    {
+        $path = '/'.ltrim($path, '/');
+
+        foreach (self::ALLOWED as $allowed) {
+            if (fnmatch('/'.self::panelPath().'/'.$allowed, $path)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected static function panelPath(): string
+    {
+        return trim((string) config('filament.panels.portal.path', 'portal'), '/') ?: 'portal';
+    }
+
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
 
-        if (! $user instanceof User || ! $user->isVocCardHolder()) {
+        if (! self::fences($user)) {
             return $next($request);
         }
 
-        $panel = trim((string) config('filament.panels.portal.path', 'portal'), '/') ?: 'portal';
+        $panel = self::panelPath();
 
         // Not a portal page at all (scan pages, downloads) — none of this middleware's business.
         if (! $request->is($panel, $panel.'/*')) {

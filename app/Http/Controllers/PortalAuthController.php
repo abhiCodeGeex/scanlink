@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Filament\Portal\Pages\VocDashboard;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
+use App\Http\Middleware\ConfineVocCardHolder;
 use App\Models\User;
-use App\Models\VocUser;
 use Filament\Auth\Notifications\ResetPassword as ResetPasswordNotification;
 use Filament\Facades\Filament;
 use Illuminate\Contracts\Auth\CanResetPassword;
@@ -19,6 +19,10 @@ class PortalAuthController extends Controller
 {
     /**
      * Client / sub-client login (POST /portal-login) - the home page modal.
+     *
+     * Requires standing in a client. Legacy authenticated this door against `client_users`, so
+     * an "Additional User Access Login" could not use it at all; an email present in both
+     * tables could use either door, and that still holds.
      */
     public function login(Request $request): RedirectResponse
     {
@@ -80,12 +84,30 @@ class PortalAuthController extends Controller
             ]);
         }
 
-        if ($cardHolderEntrance && ! $this->hasCardHolderAccess($user)) {
+        if ($cardHolderEntrance && ! $user->hasVocCardHolderAccess()) {
             $this->abandonSession($request);
 
             throw ValidationException::withMessages([
                 'email' => 'This is the VOCC card holder login. Please use the main login instead.',
             ]);
+        }
+
+        // A card holder account has no client standing, so it cannot come in here - the rule
+        // that used to hold because legacy kept the two in separate tables.
+        if (! $cardHolderEntrance && ! $user->hasActiveClientMembership()) {
+            $this->abandonSession($request);
+
+            throw ValidationException::withMessages([
+                'email' => 'This account signs in at the VOCC card holder login: '.url('/voclogin'),
+            ]);
+        }
+
+        // Record which door was used, the way legacy's voc_user_id session value did. A client
+        // signing in clears it so a reused session cannot stay fenced.
+        if ($cardHolderEntrance) {
+            $request->session()->put(ConfineVocCardHolder::SESSION_KEY, true);
+        } else {
+            $request->session()->forget(ConfineVocCardHolder::SESSION_KEY);
         }
 
         Filament::setCurrentPanel($panel);
@@ -94,12 +116,13 @@ class PortalAuthController extends Controller
         // "intended" URLs from admin (or other panels) — those cause 403 for portal-only
         // users — and treat a bare "/portal" as "no intent" so it also lands on profiles.
         //
-        // A VOCC card holder has no client membership, so profiles is not theirs: land them
-        // straight on the VOC dashboard rather than leaning on ConfineVocCardHolder to bounce
-        // them there on the next request.
-        $isCardHolder = $user->isVocCardHolder();
+        // A fenced session sees only the card, so profiles is not theirs: land them straight on
+        // the VOC dashboard rather than leaning on ConfineVocCardHolder to bounce them there on
+        // the next request. Coming through the VOCC door is enough to fence the session, even
+        // for someone who also has a client account.
+        $fenced = ConfineVocCardHolder::fences($user);
 
-        $fallback = $isCardHolder
+        $fallback = $fenced
             ? VocDashboard::getUrl(panel: 'portal')
             : ProfileResource::getUrl('index', panel: 'portal');
 
@@ -109,7 +132,9 @@ class PortalAuthController extends Controller
             $path = parse_url($intended, PHP_URL_PATH) ?: $intended;
 
             if (str_starts_with($path, '/portal/')) {
-                if ($isCardHolder && str_starts_with($path, '/portal/profiles')) {
+                // Honouring a page the fence would only bounce is a redirect loop dressed up as
+                // a courtesy; ask the middleware rather than guessing at one path.
+                if ($fenced && ! ConfineVocCardHolder::allows($path)) {
                     return redirect()->to($fallback);
                 }
 
@@ -118,18 +143,6 @@ class PortalAuthController extends Controller
         }
 
         return redirect()->to($fallback);
-    }
-
-    /**
-     * Was this account issued VOCC card holder access?
-     *
-     * Deliberately not a `user_type` check: VocUserProvisioner::provision() links a voc row to
-     * an email that already signs in as a client or admin *without* changing its type, so a
-     * real card holder can be user_type = portal. The linked row is the fact that holds.
-     */
-    protected function hasCardHolderAccess(User $user): bool
-    {
-        return VocUser::query()->where('auth_user_id', $user->id)->exists();
     }
 
     /** Drop a session that authenticated but is not allowed through this entrance. */

@@ -19,6 +19,20 @@
         .dark .sl-doc-list li { border-color: rgb(55 65 81); }
         .sl-doc-list li:first-child { border-top: 0; padding-top: 0; }
         .sl-heading { margin: 0 0 1rem; font-size: 1.05rem; font-weight: 700; }
+        .sl-controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .75rem; padding: 1rem 1rem .9rem; }
+        .sl-controls label { display: block; font-size: .6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: rgb(75 85 99); margin-bottom: .25rem; }
+        .dark .sl-controls label { color: rgb(156 163 175); }
+        .sl-controls select, .sl-controls input {
+            padding: .4rem .55rem; border: 1px solid rgb(209 213 219); border-radius: 6px;
+            font-size: .875rem; background: #fff; color: rgb(17 24 39); min-height: 34px;
+        }
+        .dark .sl-controls select, .dark .sl-controls input { background: rgb(31 41 55); border-color: rgb(75 85 99); color: rgb(243 244 246); }
+        .sl-controls .sl-search { min-width: 14rem; flex: 1 1 14rem; }
+        /* Legacy showed two icons in a narrow trailing column: expired, then near-expiry. */
+        .sl-doc-flag { display: inline-flex; align-items: center; justify-content: center; min-width: 1.4rem; height: 1.4rem; padding: 0 .3rem; border-radius: .7rem; font-size: .7rem; font-weight: 800; line-height: 1; }
+        .sl-doc-flag--expired { background: #dc2626; color: #fff; }
+        .sl-doc-flag--near { background: #f59e0b; color: #1f2937; }
+        .sl-num { text-align: center; white-space: nowrap; }
     </style>
 
     <div style="display:grid; gap:1.25rem;">
@@ -32,23 +46,50 @@
 
         <div class="sl-card">
             @if ($profiles->isNotEmpty())
+                {{-- Legacy voc_user dashboard header: Sort By + Asc/Desc + Search. --}}
+                <div class="sl-controls">
+                    <div>
+                        <label for="voc-sort-on">Sort by</label>
+                        <select id="voc-sort-on" wire:model.live="sortOn">
+                            @foreach ($this->sortOptions() as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label for="voc-sort-dir">Order</label>
+                        <select id="voc-sort-dir" wire:model.live="sortDirection">
+                            <option value="asc">Asc</option>
+                            <option value="desc">Desc</option>
+                        </select>
+                    </div>
+                    <div class="sl-search">
+                        <label for="voc-search">Search</label>
+                        <input id="voc-search" type="search" wire:model.live.debounce.300ms="search" placeholder="Profile no. or name" style="width:100%;">
+                    </div>
+                </div>
+
+                @php($rows = $this->visibleProfiles())
+
                 <div style="overflow-x:auto;">
                     <table class="sl-table">
                         <thead>
                             <tr>
-                                <th>Profile</th>
-                                <th>Type</th>
-                                <th>Links</th>
+                                <th class="sl-num">Profile No.</th>
+                                <th>Code Profile Name</th>
+                                <th class="sl-num">Code Expiry Date</th>
+                                <th>Tools</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach ($profiles as $profile)
-                                <tr wire:key="voc-profile-{{ $profile->id }}">
-                                    <td>
-                                        <strong>#{{ $profile->id }}</strong>
-                                        — {{ $profile->displayLabel() }}
-                                    </td>
-                                    <td>{{ $profile->equipmentType?->name ?? 'Profile' }}</td>
+                            @forelse ($rows as $profile)
+                                @php($expiredDocs = $this->expiredDocumentCount($profile))
+                                @php($nearDocs = $this->nearExpiryDocumentCount($profile))
+                                <tr wire:key="voc-profile-{{ $profile->id }}" class="{{ $profile->expiryStatusClass() }}">
+                                    <td class="sl-num"><strong>{{ $profile->id }}</strong></td>
+                                    <td>{{ $profile->displayLabel() }}</td>
+                                    <td class="sl-num">{{ $this->codeExpiryLabel($profile) }}</td>
                                     <td>
                                         @if ($editUrl = $this->profileEditUrl($profile))
                                             <a href="{{ $editUrl }}" class="sl-link">Edit</a>
@@ -60,8 +101,24 @@
                                         @endif
                                         <a href="{{ $this->profileScanUrl($profile) }}" target="_blank" rel="noopener" class="sl-link">Public scan</a>
                                     </td>
+                                    <td class="sl-num">
+                                        @if ($expiredDocs > 0)
+                                            <span class="sl-doc-flag sl-doc-flag--expired"
+                                                  title="{{ $this->documentFlagTitle($expiredDocs, 'expired') }}"
+                                                  aria-label="{{ $this->documentFlagTitle($expiredDocs, 'expired') }}">!</span>
+                                        @endif
+                                        @if ($nearDocs > 0)
+                                            <span class="sl-doc-flag sl-doc-flag--near"
+                                                  title="{{ $this->documentFlagTitle($nearDocs, 'expiring within 30 days') }}"
+                                                  aria-label="{{ $this->documentFlagTitle($nearDocs, 'expiring within 30 days') }}">30</span>
+                                        @endif
+                                    </td>
                                 </tr>
-                            @endforeach
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="sl-empty">No profiles match that search.</td>
+                                </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>

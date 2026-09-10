@@ -75,7 +75,32 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     public function isVocCardHolder(): bool
     {
         return $this->user_type === UserType::Voc
-            && ! $this->clientMemberships()->active()->exists();
+            && ! $this->hasActiveClientMembership();
+    }
+
+    /**
+     * Standing to use the client portal: an active membership of some client.
+     *
+     * This is what the client login asks for. Legacy authenticated that door against
+     * `client_users`, so an "Additional User Access Login" - which exists only in `voc_users`
+     * - could not use it, while an email present in both tables could use either door. This
+     * predicate reproduces both halves of that.
+     */
+    public function hasActiveClientMembership(): bool
+    {
+        return $this->clientMemberships()->active()->exists();
+    }
+
+    /**
+     * Standing to use the VOCC login: a `voc_users` row points at this identity.
+     *
+     * Deliberately not a `user_type` check. VocUserProvisioner::provision() links a voc row to
+     * an email that already signs in as a client or admin *without* changing its type, so a
+     * real card holder can be user_type = portal; live data already has that shape.
+     */
+    public function hasVocCardHolderAccess(): bool
+    {
+        return VocUser::query()->where('auth_user_id', $this->id)->exists();
     }
 
     public function canAccessPanel(Panel $panel): bool

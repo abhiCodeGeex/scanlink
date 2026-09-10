@@ -42,6 +42,22 @@ class VocDashboard extends Page
 
     public bool $isVocUser = false;
 
+    /** Legacy voc_user dashboard had a Search box and a Sort By / Asc-Desc pair. */
+    public string $search = '';
+
+    public string $sortOn = 'name';
+
+    public string $sortDirection = 'asc';
+
+    /**
+     * @var array<string, string>
+     */
+    public const SORT_OPTIONS = [
+        'id' => 'Profile No.',
+        'name' => 'Code Profile Name',
+        'expiry' => 'Code Expiry Date',
+    ];
+
     public static function canAccess(): bool
     {
         $user = auth()->user();
@@ -90,6 +106,139 @@ class VocDashboard extends Page
         }
     }
 
+    /**
+     * @return array<string, string>
+     */
+    public function sortOptions(): array
+    {
+        return self::SORT_OPTIONS;
+    }
+
+    /** Tooltip for a document flag, e.g. "2 documents expired". */
+    public function documentFlagTitle(int $count, string $state): string
+    {
+        return $count.' '.($count === 1 ? 'document' : 'documents').' '.$state;
+    }
+
+    /**
+     * The rows to paint: the loaded set narrowed by the search box and ordered by the
+     * Sort By pair. Small enough to do in memory - a card holder has a handful of profiles.
+     *
+     * @return Collection<int, Profile>
+     */
+    public function visibleProfiles(): Collection
+    {
+        $needle = trim($this->search);
+
+        $rows = $needle === ''
+            ? $this->profiles
+            : $this->profiles->filter(function (Profile $profile) use ($needle): bool {
+                // Profile No., the label as shown, and code_profile_name - the column legacy
+                // searched, which is not always what displayLabel() ends up printing.
+                $haystacks = [
+                    (string) $profile->id,
+                    $profile->displayLabel(),
+                    (string) $profile->code_profile_name,
+                ];
+
+                foreach ($haystacks as $haystack) {
+                    if ($haystack !== '' && stripos($haystack, $needle) !== false) {
+                        return true;
+                    }
+                }
+
+                return false;
+            });
+
+        $rows = $rows->sortBy(
+            fn (Profile $profile): string|int => match ($this->sortOn) {
+                'id' => (int) $profile->id,
+                // Sort on the raw date, not the printed one; a null expiry sorts last.
+                'expiry' => $profile->expired_at?->format('Y-m-d') ?? '9999-12-31',
+                default => strtolower($profile->displayLabel()),
+            },
+            SORT_NATURAL,
+            $this->sortDirection === 'desc',
+        );
+
+        return $rows->values();
+    }
+
+    /**
+     * Legacy printed "N/A" for a free code that is not flagged for renewal, and d/m/Y
+     * otherwise.
+     */
+    public function codeExpiryLabel(Profile $profile): string
+    {
+        if (! $profile->isExpiryManaged()) {
+            return 'N/A';
+        }
+
+        return $profile->expired_at?->format('d/m/Y') ?? '—';
+    }
+
+    /** Documents already past their expiry date: legacy DATEDIFF(expiry, today) <= 0. */
+    public function expiredDocumentCount(Profile $profile): int
+    {
+        return $this->countDocuments($profile, fn (\Illuminate\Support\Carbon $expiry, \Illuminate\Support\Carbon $today): bool => $expiry->lte($today));
+    }
+
+    /** Documents due inside 30 days but not yet expired: legacy DATEDIFF <= 30 AND > 0. */
+    public function nearExpiryDocumentCount(Profile $profile): int
+    {
+        return $this->countDocuments(
+            $profile,
+            fn (\Illuminate\Support\Carbon $expiry, \Illuminate\Support\Carbon $today): bool => $expiry->gt($today)
+                && $expiry->lte($today->copy()->addDays(30)),
+        );
+    }
+
+    /**
+     * @param  \Closure(\Illuminate\Support\Carbon, \Illuminate\Support\Carbon): bool  $matches
+     */
+    protected function countDocuments(Profile $profile, \Closure $matches): int
+    {
+        $today = \Illuminate\Support\Carbon::today();
+        $count = 0;
+
+        foreach ($profile->vocDocuments as $document) {
+            $expiry = $this->documentExpiry($document);
+
+            if ($expiry && $matches($expiry, $today)) {
+                $count++;
+            }
+        }
+
+        return $count;
+    }
+
+    /**
+     * A usable expiry date, or null. The live dump stores "no date" as a zero date or the
+     * 1970 sentinel, and neither means "expired in 1970".
+     */
+    protected function documentExpiry(VocDocument $document): ?\Illuminate\Support\Carbon
+    {
+        $raw = $document->getRawOriginal('expiry_date');
+
+        if (blank($raw)) {
+            return null;
+        }
+
+        // The value arrives as a bare date from the live dump and as a datetime from sqlite,
+        // so compare the date part rather than the whole string.
+        $date = substr((string) $raw, 0, 10);
+
+        if (in_array($date, ['1970-01-01', '0000-00-00'], true)) {
+            return null;
+        }
+
+        try {
+            return \Illuminate\Support\Carbon::parse($date)->startOfDay();
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
     public function profileScanUrl(Profile $profile): string
     {
         return app(ProfileQrService::class)->profileUrl($profile);
@@ -101,7 +250,7 @@ class VocDashboard extends Page
             return null;
         }
 
-        return ProfileResource::getUrl('view', ['record' => $profile]);
+        return ProfileResource::getUrl('view', ['record' => $profile], panel: 'portal');
     }
 
     /**
@@ -114,7 +263,9 @@ class VocDashboard extends Page
             return null;
         }
 
-        return EditVocProfile::getUrl(['profile' => $profile->id]);
+        // Pin the panel: getUrl() otherwise resolves against whichever panel is current,
+        // which is not the portal outside a portal request.
+        return EditVocProfile::getUrl(['profile' => $profile->id], panel: 'portal');
     }
 
     /**
@@ -152,15 +303,9 @@ class VocDashboard extends Page
         $rows = [];
 
         foreach ($this->documents as $document) {
-            $raw = $document->getRawOriginal('expiry_date');
+            $expiry = $this->documentExpiry($document);
 
-            if (blank($raw) || in_array((string) $raw, ['1970-01-01', '0000-00-00'], true)) {
-                continue;
-            }
-
-            try {
-                $expiry = \Illuminate\Support\Carbon::parse($raw)->startOfDay();
-            } catch (\Throwable $e) {
+            if (! $expiry) {
                 continue;
             }
 
@@ -184,16 +329,29 @@ class VocDashboard extends Page
 
     protected function loadVocUserProfiles(User $user): void
     {
-        $vocUsers = VocUser::query()
-            ->where('auth_user_id', $user->id)
-            ->with(['profile.client', 'profile.equipmentType', 'profile.vocDocuments'])
-            ->get();
+        // Legacy passed deleted:0 and type_id:12 to its listing endpoint. Following the
+        // voc_users row on its own showed a deleted card, and any non-VOCC profile a row
+        // happened to point at.
+        $vocTypeIds = EquipmentType::query()->where('slag', 'voc')->pluck('id');
 
-        $this->profiles = $vocUsers
-            ->map(fn (VocUser $vocUser): ?Profile => $vocUser->profile)
-            ->filter()
-            ->unique('id')
-            ->values();
+        $linked = VocUser::query()
+            ->where('auth_user_id', $user->id)
+            ->whereNotNull('profile_id')
+            ->pluck('profile_id')
+            ->unique();
+
+        if ($linked->isEmpty()) {
+            return;
+        }
+
+        $this->profiles = Profile::query()
+            ->whereIn('id', $linked)
+            ->active()
+            // Guarded: a missing type row must not blank the dashboard entirely.
+            ->when($vocTypeIds->isNotEmpty(), fn ($query) => $query->whereIn('type_id', $vocTypeIds))
+            ->with(['client', 'equipmentType', 'vocDocuments'])
+            ->orderBy('code_profile_name')
+            ->get();
 
         $this->documents = $this->profiles
             ->flatMap(fn (Profile $profile): Collection => $profile->vocDocuments)

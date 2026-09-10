@@ -8,6 +8,7 @@ use App\Models\ClientUser;
 use App\Models\EquipmentType;
 use App\Models\Profile;
 use App\Models\User;
+use App\Http\Middleware\ConfineVocCardHolder;
 use App\Models\VocUser;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -20,8 +21,14 @@ use Tests\TestCase;
  * card holders all signed in through one endpoint under one policy. The page now posts to
  * POST /voclogin, and that endpoint admits card holders only.
  *
- * The client login is deliberately left permissive: a card holder who has always used the home
- * page modal keeps working. Only the VOCC address is restricted.
+ * The doors are separated in both directions, the way legacy's two credential stores made them:
+ * the client login wants standing in a client (which an "Additional User Access Login" has
+ * none of), and the VOCC login wants a linked voc_users row. An email present on both sides can
+ * still use either door, as it could in legacy.
+ *
+ * Confinement follows the door, not the account. Legacy keyed on the voc_user_id session value
+ * that only voclogin set, so a dual-identity holder coming through the VOCC door saw the
+ * cut-down site; deriving it from the account let them out into the full portal instead.
  */
 class VocLoginUrlTest extends TestCase
 {
@@ -132,6 +139,90 @@ class VocLoginUrlTest extends TestCase
             ->assertSessionHasErrors('email');
 
         $this->assertGuest();
+    }
+
+    /** A client member who was later issued card holder access: both doors are theirs. */
+    protected function dualIdentity(string $email, string $password): User
+    {
+        $user = $this->member($email, $password);
+
+        VocUser::query()->create([
+            'voc_user_id' => ((int) VocUser::query()->max('voc_user_id')) + 1,
+            'profile_id' => $this->profile()->id,
+            'email' => $email,
+            'password' => $password,
+        ])->forceFill(['auth_user_id' => $user->id])->save();
+
+        return $user->refresh();
+    }
+
+    #[Test]
+    public function a_card_holder_cannot_use_the_client_login(): void
+    {
+        // Legacy authenticated that door against client_users, where this account does not
+        // exist. The message names the address on their card.
+        $this->cardHolder('holder@example.com', 'Holder@12345');
+
+        $this->from('/')
+            ->post('/portal-login', [
+                'email' => 'holder@example.com',
+                'password' => 'Holder@12345',
+            ])
+            ->assertSessionHasErrors(['email' => 'This account signs in at the VOCC card holder login: '.url('/voclogin')]);
+
+        $this->assertGuest();
+    }
+
+    #[Test]
+    public function the_vocc_door_fences_the_session_even_for_a_client_member(): void
+    {
+        $user = $this->dualIdentity('dual@example.com', 'Portal@12345');
+        $this->assertFalse($user->isVocCardHolder(), 'has a client membership, so not a pure card holder');
+
+        $this->post('/voclogin', [
+            'email' => 'dual@example.com',
+            'password' => 'Portal@12345',
+        ])->assertRedirect('/portal/voc-dashboard');
+
+        $this->assertTrue(session(ConfineVocCardHolder::SESSION_KEY));
+    }
+
+    #[Test]
+    public function a_fenced_session_cannot_reach_the_rest_of_the_portal(): void
+    {
+        // The hole this closes: signing in at /voclogin used to land a dual-identity holder on
+        // /portal/profiles with the whole site open to them.
+        $user = $this->dualIdentity('dual@example.com', 'Portal@12345');
+
+        $this->withSession([ConfineVocCardHolder::SESSION_KEY => true])
+            ->actingAs($user)
+            ->get('/portal/purchase-codes')
+            ->assertRedirect('/portal/voc-dashboard');
+    }
+
+    #[Test]
+    public function the_same_person_still_gets_the_full_portal_through_the_client_door(): void
+    {
+        // No lockout: an email on both sides could use either door in legacy, and still can.
+        $this->dualIdentity('dual@example.com', 'Portal@12345');
+
+        $this->post('/portal-login', [
+            'email' => 'dual@example.com',
+            'password' => 'Portal@12345',
+        ])->assertRedirect('/portal/profiles');
+
+        $this->assertNull(session(ConfineVocCardHolder::SESSION_KEY), 'the client door clears a stale fence');
+    }
+
+    #[Test]
+    public function a_fenced_session_keeps_the_pages_that_are_its_own(): void
+    {
+        $holder = $this->cardHolder('holder@example.com', 'Holder@12345');
+
+        $this->withSession([ConfineVocCardHolder::SESSION_KEY => true])
+            ->actingAs($holder)
+            ->get('/portal/voc-dashboard')
+            ->assertSuccessful();
     }
 
     #[Test]
