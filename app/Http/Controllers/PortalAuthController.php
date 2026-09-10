@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Filament\Portal\Pages\VocDashboard;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Models\User;
+use App\Models\VocUser;
 use Filament\Auth\Notifications\ResetPassword as ResetPasswordNotification;
 use Filament\Facades\Filament;
 use Illuminate\Contracts\Auth\CanResetPassword;
@@ -16,7 +17,30 @@ use Illuminate\Validation\ValidationException;
 
 class PortalAuthController extends Controller
 {
+    /**
+     * Client / sub-client login (POST /portal-login) - the home page modal.
+     */
     public function login(Request $request): RedirectResponse
+    {
+        return $this->authenticate($request, cardHolderEntrance: false);
+    }
+
+    /**
+     * VOCC card holder login (POST /voclogin).
+     *
+     * The address printed on the cards and handed out at induction. Same credential store as
+     * the client login, but its own URL, and only accounts that were actually issued card
+     * holder access get through - the two audiences no longer share one door.
+     */
+    public function vocLogin(Request $request): RedirectResponse
+    {
+        return $this->authenticate($request, cardHolderEntrance: true);
+    }
+
+    /**
+     * @param  bool  $cardHolderEntrance  True when the attempt arrived at the VOCC address.
+     */
+    protected function authenticate(Request $request, bool $cardHolderEntrance): RedirectResponse
     {
         $credentials = $request->validate([
             'email' => ['required', 'email'],
@@ -49,12 +73,18 @@ class PortalAuthController extends Controller
         $panel = Filament::getPanel('portal');
 
         if (! $user->canAccessPanel($panel)) {
-            Auth::logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
+            $this->abandonSession($request);
 
             throw ValidationException::withMessages([
                 'email' => 'This account cannot access the client portal.',
+            ]);
+        }
+
+        if ($cardHolderEntrance && ! $this->hasCardHolderAccess($user)) {
+            $this->abandonSession($request);
+
+            throw ValidationException::withMessages([
+                'email' => 'This is the VOCC card holder login. Please use the main login instead.',
             ]);
         }
 
@@ -88,6 +118,26 @@ class PortalAuthController extends Controller
         }
 
         return redirect()->to($fallback);
+    }
+
+    /**
+     * Was this account issued VOCC card holder access?
+     *
+     * Deliberately not a `user_type` check: VocUserProvisioner::provision() links a voc row to
+     * an email that already signs in as a client or admin *without* changing its type, so a
+     * real card holder can be user_type = portal. The linked row is the fact that holds.
+     */
+    protected function hasCardHolderAccess(User $user): bool
+    {
+        return VocUser::query()->where('auth_user_id', $user->id)->exists();
+    }
+
+    /** Drop a session that authenticated but is not allowed through this entrance. */
+    protected function abandonSession(Request $request): void
+    {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
     }
 
     /**

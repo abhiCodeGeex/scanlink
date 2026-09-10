@@ -5,8 +5,8 @@
 
 @section('content')
     {{-- Legacy voclogin.php was a dedicated sign-in screen, printed on cards and handed out at
-         induction. The rebuilt portal shares one login, but the branded entry point still has to
-         exist so an old bookmark or a printed card lands somewhere that says VOCC. --}}
+         induction. This is that entry point: its own address and its own POST endpoint, so a
+         card holder no longer signs in through the client login. --}}
     <section class="mkt__page-hero">
         <div class="mkt__container">
             <span class="mkt__eyebrow">Card holder access</span>
@@ -18,7 +18,7 @@
     <section class="mkt__section">
         <div class="mkt__container">
             <div class="mkt__voclogin">
-                <form method="post" action="{{ route('marketing.portal-login') }}" class="mkt__voclogin-form">
+                <form method="post" action="{{ route('marketing.voclogin.submit') }}" class="mkt__voclogin-form">
                     @csrf
 
                     @error('email')<span class="mkt__login-error">{{ $message }}</span>@enderror

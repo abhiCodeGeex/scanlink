@@ -59,6 +59,12 @@ Route::get('/voclogin', function () {
     return view('marketing.voclogin');
 })->name('marketing.voclogin');
 
+// Card holders sign in at their own address. The page above used to post to /portal-login,
+// so clients, sub-clients and card holders all shared one login URL and one generic policy;
+// this endpoint is the VOCC half, and it turns away an account that was never issued card
+// holder access.
+Route::post('/voclogin', [PortalAuthController::class, 'vocLogin'])->name('marketing.voclogin.submit');
+
 Route::post('/notify/paypal', PayPalNotifyController::class);
 
 Route::get('/oauth/youtube/callback', function (Request $request, YouTubeService $youtube) {

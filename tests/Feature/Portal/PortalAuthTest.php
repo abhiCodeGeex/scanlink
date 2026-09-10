@@ -153,9 +153,13 @@ class PortalAuthTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_voclogin_redirects_to_marketing_home(): void
+    public function test_voclogin_serves_the_card_holder_sign_in_page(): void
     {
-        $this->get('/voclogin')->assertRedirect('/#login');
+        // It used to bounce to the home page login. It is now its own screen, posting to its
+        // own endpoint - see VocLoginUrlTest for the separation itself.
+        $this->get('/voclogin')
+            ->assertSuccessful()
+            ->assertSee('VOCC card holder login');
     }
 
     public function test_voc_card_holder_login_lands_on_voc_dashboard(): void

@@ -112,7 +112,10 @@
     </div>
 </footer>
 
-<div class="mkt__overlay" id="mkt-login" role="dialog" aria-modal="true" aria-labelledby="mkt-login-title" @if ($errors->any()) data-open="true" @endif>
+{{-- Auto-open on a failed sign-in, except on the VOCC page: that screen has its own form and
+     its own endpoint, and popping the client modal over it would put the card holder straight
+     back on the login they were moved off. There the errors render inline instead. --}}
+<div class="mkt__overlay" id="mkt-login" role="dialog" aria-modal="true" aria-labelledby="mkt-login-title" @if ($errors->any() && ! request()->routeIs('marketing.voclogin')) data-open="true" @endif>
     <div class="mkt__modal">
         <button type="button" class="mkt__modal-close" data-close aria-label="Close login">&times;</button>
         <h2 id="mkt-login-title">Log in to ScanLink</h2>
