@@ -2,10 +2,12 @@
 
 namespace App\Providers;
 
+use App\Auth\LegacyPasswordUserProvider;
 use App\Filament\Support\FormPlaceholderDefaults;
 use App\Support\RestrictOutboundMailToYopmail;
 use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Mail\Events\MessageSending;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Symfony\Component\Console\Input\InputInterface;
@@ -73,6 +75,17 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         FormPlaceholderDefaults::register();
+
+        // Accounts carried over from Kohana store unsalted MD5 digests, which cannot be
+        // converted to bcrypt up front. This provider verifies one at sign-in and replaces
+        // it with bcrypt in the same request, so the migration is invisible to the user.
+        Auth::provider(
+            'eloquent-legacy',
+            static fn ($app, array $config): LegacyPasswordUserProvider => new LegacyPasswordUserProvider(
+                $app['hash'],
+                $config['model'],
+            ),
+        );
 
         Event::listen(MessageSending::class, RestrictOutboundMailToYopmail::class);
 

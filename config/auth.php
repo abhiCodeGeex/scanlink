@@ -63,7 +63,11 @@ return [
 
     'providers' => [
         'users' => [
-            'driver' => 'eloquent',
+            // `eloquent-legacy` is the stock eloquent provider plus a one-time upgrade path
+            // for imported Kohana MD5 digests (App\Auth\LegacyPasswordUserProvider, registered
+            // in AppServiceProvider). Revert to plain `eloquent` once
+            // `scanlink:legacy-passwords` shows no MD5 rows remain.
+            'driver' => 'eloquent-legacy',
             'model' => env('AUTH_MODEL', User::class),
         ],
 

@@ -343,18 +343,26 @@ class SyncAllUsers extends Command
             return $user;
         }
 
-        // MD5 / unknown / empty → cannot be reused (one-way or missing). Store a BLANK password
-        // (raw) as the "must reset" marker: the account can never authenticate, and the portal
-        // login flow emails a reset link + shows an "expired password" notice on first sign-in.
-        // $defaultPassword is intentionally NOT applied here — a shared fallback for hundreds of
-        // accounts would be a security hole.
+        // Legacy MD5 → keep the digest (written raw so the model's `hashed` cast never bcrypts a
+        // bcrypt). It cannot be converted here — MD5 is one-way — but App\Auth\LegacyPasswordUserProvider
+        // verifies it at sign-in and replaces it with bcrypt in that same request, so the owner
+        // keeps using the password they already know and never sees a reset.
+        if ($this->isMd5($rawPassword)) {
+            $user->password = Str::random(40);
+            $user->save();
+            DB::table('users')->where('id', $user->id)->update(['password' => strtolower($rawPassword)]);
+
+            return $user->refresh();
+        }
+
+        // Unknown / empty → nothing reusable. Store a BLANK password (raw) as the "must reset"
+        // marker: the account can never authenticate, and the portal login flow emails a reset
+        // link + shows an "expired password" notice on first sign-in. $defaultPassword is
+        // intentionally NOT applied here — a shared fallback for hundreds of accounts would be
+        // a security hole.
         $user->password = Str::random(40);
         $user->save();
         DB::table('users')->where('id', $user->id)->update(['password' => '']);
-
-        if ($this->isMd5($rawPassword)) {
-            $this->warn("MD5 password for {$user->email} — blanked; user resets on first login.");
-        }
 
         return $user->refresh();
     }
