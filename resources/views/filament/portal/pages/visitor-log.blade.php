@@ -531,7 +531,7 @@
                             title="Previous page"
                         >&lt;</button>
                         <span>Page</span>
-                        <select wire:change="goToPage(parseInt($event.target.value))">
+                        <select wire:change="goToPage($event.target.value)">
                             @for ($p = 1; $p <= $totalPages; $p++)
                                 <option value="{{ $p }}" @selected($p === $page)>{{ $p }}</option>
                             @endfor

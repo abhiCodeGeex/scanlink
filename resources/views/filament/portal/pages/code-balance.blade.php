@@ -118,8 +118,22 @@
 
         @if ($total > 0)
             <div class="sl-cb__pager">
+                <button
+                    type="button"
+                    class="sl-cb__pager-arrow"
+                    wire:click="goToPage(1)"
+                    @disabled($page <= 1)
+                    title="First page"
+                >&lt;&lt;</button>
+                <button
+                    type="button"
+                    class="sl-cb__pager-arrow"
+                    wire:click="previousPage"
+                    @disabled($page <= 1)
+                    title="Previous page"
+                >&lt;</button>
                 <span>Page</span>
-                <select wire:change="goToPage(parseInt($event.target.value))">
+                <select wire:change="goToPage($event.target.value)">
                     @for ($p = 1; $p <= $totalPages; $p++)
                         <option value="{{ $p }}" @selected($p === $page)>{{ $p }}</option>
                     @endfor
@@ -130,12 +144,14 @@
                     class="sl-cb__pager-arrow"
                     wire:click="nextPage"
                     @disabled($page >= $totalPages)
+                    title="Next page"
                 >&gt;</button>
                 <button
                     type="button"
                     class="sl-cb__pager-arrow"
                     wire:click="goToPage({{ $totalPages }})"
                     @disabled($page >= $totalPages)
+                    title="Last page"
                 >&gt;&gt;</button>
             </div>
         @endif
