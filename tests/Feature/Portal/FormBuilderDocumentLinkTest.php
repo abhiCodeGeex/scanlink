@@ -86,6 +86,20 @@ class FormBuilderDocumentLinkTest extends TestCase
     }
 
     /**
+     * The editor's "Current image" preview had the identical defect and uses the same
+     * resolver, so images must resolve through it too.
+     */
+    public function test_resolves_an_image_stored_on_the_laravel_disk(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('form-builder/images/fb_img_99999_testonly.png', 'png-bytes');
+
+        $this->actingAs($this->portalUser())
+            ->get(self::ROUTE.'fb_img_99999_testonly.png')
+            ->assertRedirect(asset('storage/form-builder/images/fb_img_99999_testonly.png'));
+    }
+
+    /**
      * Guard the cause, not just the symptom: the live editor views must not rebuild the
      * legacy URL by hand, or the next upload is a dead link again.
      */
@@ -96,10 +110,21 @@ class FormBuilderDocumentLinkTest extends TestCase
         // shell.blade.php includes index.php; control-wrap.blade.php includes control.php.
         // The .blade.php twins of both are stale duplicates and are not rendered.
         foreach (['index.php', 'control.php'] as $file) {
-            $path = resource_path('views/legacy/formbuilder/'.$file);
+            $contents = (string) file_get_contents(resource_path('views/legacy/formbuilder/'.$file));
 
-            if (str_contains((string) file_get_contents($path), 'images/formbuilder_upload')) {
-                $offenders[] = $file;
+            if (str_contains($contents, 'images/formbuilder_upload')) {
+                $offenders[] = $file.' (document path)';
+            }
+
+            // Images keep a legitimate legacy reference: the server-rendered spots check
+            // Storage::exists() first and only fall back. A URL assembled in JavaScript
+            // cannot consult the filesystem, so it is right for at most one of the two
+            // eras — flag those specifically.
+            foreach (preg_split('/\R/', $contents) ?: [] as $index => $line) {
+                if (str_contains($line, 'html = html +')
+                    && preg_match('#images/(formbuilder_upload|form_builder_uploaded_images)#', $line) === 1) {
+                    $offenders[] = $file.':'.($index + 1).' (built in JS)';
+                }
             }
         }
 

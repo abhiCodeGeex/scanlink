@@ -1968,8 +1968,8 @@
 				// Show the currently selected image so editing does not look like it was lost.
 				if (ele_val != '') {
 					html = html + '<div class="image-label">Current image</div>';
-					html = html + '<div class="fb-image-preview"><a target="_blank" class="image-doc-link" href="<?php echo rtrim(url('/'), '/'); ?>/images/form_builder_uploaded_images/' + ele_val + '">';
-					html = html + '<img src="<?php echo rtrim(url('/'), '/'); ?>/images/form_builder_uploaded_images/' + ele_val + '" width="100" style="display:block;margin-bottom:2px;">' + ele_val + '</a></div>';
+					html = html + '<div class="fb-image-preview"><a target="_blank" class="image-doc-link" href="<?php echo rtrim(url('/portal/legacy-form-builder/document'), '/'); ?>/' + encodeURIComponent(ele_val) + '">';
+					html = html + '<img src="<?php echo rtrim(url('/portal/legacy-form-builder/document'), '/'); ?>/' + encodeURIComponent(ele_val) + '" width="100" style="display:block;margin-bottom:2px;">' + ele_val + '</a></div>';
 				}
 
 				html = html + '<div class="image-label">' + (ele_val != '' ? 'Replace File' : 'Select File') + '<span class="hint-info">(File type JPG, JPEG, PNG, GIF)</span><input id="uploaded_file" type="hidden" value="1" name="uploaded_file"></div>';
