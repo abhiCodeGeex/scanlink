@@ -179,7 +179,7 @@ switch ($question_type_id) {
 			if ($doc_file === '') {
 				continue;
 			}
-			echo '<a class="image-doc-link" target="_blank" href="' . rtrim(url('/'), '/').'/' . 'images/formbuilder_upload/' . $doc_file . '" >' . $doc_file . '</a><br>';
+			echo '<a class="image-doc-link" target="_blank" href="' . e((string) \App\Support\FormBuilderMedia::url($doc_file)) . '" >' . e($doc_file) . '</a><br>';
 		}
 		echo '<br>';
 		echo '</div>';

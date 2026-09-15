@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Portal;
 use App\Http\Controllers\Controller;
 use App\Models\ClientUser;
 use App\Models\Profile;
+use App\Support\FormBuilderMedia;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +17,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class FormBuilderUploadController extends Controller
 {
+    /** Upload types the form builder accepts, and therefore the only ones worth resolving. */
+    private const RESOLVABLE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'doc', 'docx', 'pdf'];
+
+
     public function imageForm(Request $request): View
     {
         $this->authorizeProfile((int) $request->query('profile_id', 0));
@@ -132,6 +138,32 @@ class FormBuilderUploadController extends Controller
             'textboxId' => $request->input('textbox_id', 'textbox'.$randomId),
             'filename' => $filename,
         ]);
+    }
+
+    /**
+     * Resolve a form-builder upload from the bare filename the editor stores.
+     *
+     * The same question can point at a file from either era: anything uploaded before the
+     * migration sits in the frozen Kohana archive (images/formbuilder_upload), anything since
+     * on the Laravel public disk (form-builder/docs). No single URL prefix covers both, and
+     * the editor only has the filename — so hand it to FormBuilderMedia, which already
+     * searches both, and redirect to whatever it finds.
+     */
+    public function showDocument(string $name): RedirectResponse
+    {
+        // Always a stored upload name, never a path — basename() first so a crafted
+        // ../../ can never walk out of the upload directories.
+        $name = basename(urldecode($name));
+
+        // Gate on extension rather than a character class: the 2014 archive holds names with
+        // spaces and brackets, and a stricter pattern would 404 documents that work today.
+        abort_if($name === '' || str_starts_with($name, '.'), 404);
+        abort_unless(
+            in_array(strtolower(pathinfo($name, PATHINFO_EXTENSION)), self::RESOLVABLE_EXTENSIONS, true),
+            404,
+        );
+
+        return redirect(FormBuilderMedia::url($name));
     }
 
     /**

@@ -183,6 +183,11 @@ Route::middleware(['web', 'auth'])->group(function (): void {
     Route::post('/portal/legacy-form-builder/upload-doc', [FormBuilderUploadController::class, 'storeDoc'])
         ->name('portal.legacy-form-builder.upload-doc');
 
+    // The editor knows only the stored filename, which may live in either the frozen Kohana
+    // archive or the Laravel public disk; this resolves whichever holds it.
+    Route::get('/portal/legacy-form-builder/document/{name}', [FormBuilderUploadController::class, 'showDocument'])
+        ->name('portal.legacy-form-builder.document');
+
     Route::get('/portal/form-submissions/print/{sessionId}', function (Illuminate\Http\Request $request, string $sessionId) {
         return \App\Filament\Portal\Pages\FormSubmissions::downloadSessionHtml(
             $request->integer('profile'),

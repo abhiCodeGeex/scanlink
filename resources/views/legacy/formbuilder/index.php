@@ -2058,7 +2058,9 @@
 				// Show the currently selected document so editing does not look like it was lost.
 				if (ele_val != '') {
 					html = html + '<div class="image-label">Current document</div>';
-					html = html + '<a target="_blank" class="image-doc-link" href="<?php echo rtrim(url('/'), '/'); ?>/images/formbuilder_upload/' + ele_val + '">' + ele_val + '</a>';
+					// Resolve through the server: a pre-migration file sits in the Kohana archive,
+					// a newer one on the Laravel disk, and only the filename is known here.
+					html = html + '<a target="_blank" class="image-doc-link" href="<?php echo rtrim(url('/portal/legacy-form-builder/document'), '/'); ?>/' + encodeURIComponent(ele_val) + '">' + ele_val + '</a>';
 				}
 
 				html = html + '<div class="image-label">' + (ele_val != '' ? 'Replace File' : 'Select File') + '<span class="hint-info">(File type  DOC, DOCX, PDF, JPG, GIF, JPEG)</span><input id="uploaded_doc' + random_id + '" type="hidden" value="1" name="uploaded_doc"></div>';
@@ -2099,7 +2101,7 @@
 					html = html + '<div class="image-label">Current documents</div>';
 					var cur_docs = ele_val.split(",");
 					for (var cd = 0; cd < cur_docs.length; cd++) {
-						html = html + '<a target="_blank" class="image-doc-link" href="<?php echo rtrim(url('/'), '/').'/images/formbuilder_upload/'; ?>' + cur_docs[cd] + '">' + cur_docs[cd] + '</a><br>';
+						html = html + '<a target="_blank" class="image-doc-link" href="<?php echo rtrim(url('/portal/legacy-form-builder/document'), '/').'/'; ?>' + encodeURIComponent(cur_docs[cd]) + '">' + cur_docs[cd] + '</a><br>';
 					}
 				}
 
