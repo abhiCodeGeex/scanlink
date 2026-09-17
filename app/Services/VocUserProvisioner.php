@@ -5,64 +5,49 @@ namespace App\Services;
 use App\Enums\UserType;
 use App\Models\User;
 use App\Models\VocUser;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
- * Legacy parity: a VOCC "Additional User Access Login" (voc_users row) must be able to
- * sign in the moment it is added. Laravel authenticates against the unified `users` table
- * (user_type = Voc, linked via voc_users.auth_user_id). The batch `scanlink:sync-all-users`
- * command only runs after a data import, so this provisions the same identity per-row, in
- * real time — mirroring SyncAllUsers::syncVocUsers.
+ * Points a VOCC card (voc_users row) at the `users` login that carries the card holder's session.
+ *
+ * The card keeps its own password in voc_users and /voclogin checks that password alone (see
+ * App\Support\VocCardLogin). This class therefore never writes a password or a user_type onto
+ * an existing login. It used to: a login labelled `voc` had its password replaced by the card's
+ * every time the card was saved, which is how a client member — relabelled `voc` by the old sync —
+ * had their client login overwritten by their card.
+ *
+ * An email with no login yet gets one, typed `voc`, with a random password nobody knows. It exists
+ * only so the portal has someone to sign in as; the card password is what opens it.
  */
 class VocUserProvisioner
 {
     public function provision(VocUser $vocUser): void
     {
+        $this->identityFor($vocUser);
+    }
+
+    /** The login this card signs in as, created if the email has none, and linked to the card. */
+    public function identityFor(VocUser $vocUser): ?User
+    {
         $email = $this->normalizeEmail($vocUser->email);
 
         if (! $email) {
-            return;
+            return null;
         }
 
-        $existing = User::query()->where('email', $email)->first();
+        $user = User::query()->where('email', $email)->first();
 
-        // The email already logs in via another source (admin or client member): link the
-        // voc row to it but never change its type/password — the person keeps their identity.
-        if ($existing && $existing->user_type !== UserType::Voc) {
-            $this->link($vocUser, (int) $existing->id);
-
-            return;
-        }
-
-        // New identity, or an existing voc-owned one: (re)provision type + password so an
-        // edited voc password re-syncs to the login.
-        $user = $existing ?? new User(['email' => $email]);
-        $user->name = $user->name ?: $email;
-        $user->user_type = UserType::Voc;
-
-        $raw = (string) ($vocUser->password ?? '');
-
-        if (filled($raw) && $this->isBcrypt($raw)) {
-            // Already-hashed legacy value: store verbatim (bypass the hashing cast).
+        if (! $user) {
+            $user = new User(['email' => $email]);
+            $user->name = $email;
+            $user->user_type = UserType::Voc;
+            $user->password = Str::random(40);
             $user->save();
-            DB::table('users')->where('id', $user->id)->update(['password' => $raw]);
-            $this->link($vocUser, (int) $user->id);
-
-            return;
         }
 
-        if (filled($raw)) {
-            // Editor-entered plaintext → hashed by the User `password` cast on save.
-            $user->password = $raw;
-        } elseif (! $user->exists) {
-            // Brand-new identity with no usable password yet.
-            $user->password = Str::random(24);
-        }
-        // Blank password on an existing identity → leave the current login password untouched.
-
-        $user->save();
         $this->link($vocUser, (int) $user->id);
+
+        return $user;
     }
 
     protected function link(VocUser $vocUser, int $userId): void
@@ -71,9 +56,9 @@ class VocUserProvisioner
             return;
         }
 
-        // Raw update so this does not re-fire the VocUser observer.
-        DB::table('voc_users')
-            ->where('voc_user_id', $vocUser->voc_user_id)
+        // Query-level write: no model events, so linking never re-enters the observer.
+        VocUser::query()
+            ->whereKey($vocUser->getKey())
             ->update(['auth_user_id' => $userId]);
 
         $vocUser->setAttribute('auth_user_id', $userId);
@@ -84,11 +69,6 @@ class VocUserProvisioner
     {
         $email = strtolower(trim((string) $email));
 
-        return filled($email) && str_contains($email, '@') ? $email : null;
-    }
-
-    protected function isBcrypt(?string $value): bool
-    {
-        return filled($value) && Str::startsWith($value, ['$2y$', '$2a$', '$2b$']);
+        return $email !== '' && str_contains($email, '@') ? $email : null;
     }
 }

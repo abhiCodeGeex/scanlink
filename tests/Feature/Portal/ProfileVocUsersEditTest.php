@@ -115,7 +115,7 @@ class ProfileVocUsersEditTest extends TestCase
 
         $updated = $rows->first();
         $this->assertSame('new@yopmail.com', $updated->email, 'email edit must persist');
-        $this->assertSame('oldpassword', $updated->getRawOriginal('password'), 'blank password must keep the existing one');
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('oldpassword', (string) $updated->getRawOriginal('password')), 'blank password must keep the existing one');
     }
 
     public function test_editing_the_password_persists(): void
@@ -168,6 +168,6 @@ class ProfileVocUsersEditTest extends TestCase
 
         $updated = VocUser::where('profile_id', $profile->id)->firstOrFail();
         $this->assertSame('changed@yopmail.com', $updated->email);
-        $this->assertSame('brandnewpass9', $updated->getRawOriginal('password'), 'new password must persist');
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('brandnewpass9', (string) $updated->getRawOriginal('password')), 'new password must persist (hashed)');
     }
 }

@@ -65,6 +65,17 @@ Route::get('/voclogin', function () {
 // holder access.
 Route::post('/voclogin', [PortalAuthController::class, 'vocLogin'])->name('marketing.voclogin.submit');
 
+// "Forgot your password?" at the VOCC login resets the card's own password in voc_users, not the
+// person's client or admin login.
+Route::get('/voclogin/forgot', [\App\Http\Controllers\VocPasswordResetController::class, 'request'])->name('marketing.voclogin.forgot');
+Route::post('/voclogin/forgot', [\App\Http\Controllers\VocPasswordResetController::class, 'send'])
+    ->middleware('throttle:6,1')
+    ->name('marketing.voclogin.forgot.send');
+Route::get('/voclogin/reset', [\App\Http\Controllers\VocPasswordResetController::class, 'edit'])->name('marketing.voclogin.reset');
+Route::post('/voclogin/reset', [\App\Http\Controllers\VocPasswordResetController::class, 'update'])
+    ->middleware('throttle:6,1')
+    ->name('marketing.voclogin.reset.update');
+
 Route::post('/notify/paypal', PayPalNotifyController::class);
 
 Route::get('/oauth/youtube/callback', function (Request $request, YouTubeService $youtube) {

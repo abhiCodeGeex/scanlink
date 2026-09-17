@@ -20,6 +20,8 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Carbon;
+use App\Support\LoginEntrance;
+use App\Support\VocCardLogin;
 
 /**
  * Legacy voc/vocedit.php: the self-service editor a VOC "Additional User Access Login"
@@ -334,9 +336,10 @@ class EditVocProfile extends Page
             return false;
         }
 
-        // A VOC secondary user linked to this profile...
-        if ($this->profile->vocUsers()->where('auth_user_id', $user->id)->exists()) {
-            return true;
+        // A VOCC session may work only on the cards it unlocked with their own password, even when
+        // the same person is also a member of the owning client.
+        if (LoginEntrance::current($user) === LoginEntrance::VOC) {
+            return VocCardLogin::unlocks($user, $this->profile);
         }
 
         // ...or a portal member of the owning client.

@@ -76,8 +76,9 @@ class EditAccount extends Page implements HasTable
     {
         $user = auth()->user();
 
-        // By door, not user_type: an admin who is also a client member is user_type = admin.
-        if (! $user instanceof User || ! LoginEntrance::isPortalSession($user)) {
+        // The client door only. A VOCC session is the card, not the client account: legacy gave a
+        // card holder no account page, and this one edits the client login and its password.
+        if (! $user instanceof User || LoginEntrance::current($user) !== LoginEntrance::CLIENT) {
             return false;
         }
 

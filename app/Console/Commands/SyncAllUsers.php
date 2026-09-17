@@ -7,6 +7,7 @@ use App\Enums\UserType;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
@@ -190,14 +191,18 @@ class SyncAllUsers extends Command
                 continue;
             }
 
-            $user = $this->upsertIdentity(
-                email: $email,
-                name: $email,
-                rawPassword: $row->password ?? null,
-                defaultPassword: $defaultPassword,
-                type: UserType::Voc,
-                adminRole: null,
-            );
+            // The card keeps its own password in voc_users; /voclogin checks that alone. So an
+            // existing login is only linked, never retyped or given the card's password, and an
+            // email with no login gets one with a random password nobody signs in with.
+            $user = User::query()->where('email', $email)->first();
+
+            if (! $user) {
+                $user = new User(['email' => $email]);
+                $user->name = $email;
+                $user->user_type = UserType::Voc;
+                $user->password = Str::random(40);
+                $user->save();
+            }
 
             DB::table('voc_users')->where($pk, $row->{$pk})->update(['auth_user_id' => $user->id]);
             $count++;
@@ -273,8 +278,18 @@ class SyncAllUsers extends Command
             DB::table('admin')->whereNotNull('auth_user_id')->update(['password' => '']);
         }
 
+        // Not a duplicate: a card's password is its own, and legacy stored it in plaintext. Hash it
+        // where it stands instead of wiping it, so card holders keep the password they know.
         if (Schema::hasTable('voc_users') && Schema::hasColumn('voc_users', 'password')) {
-            DB::table('voc_users')->whereNotNull('auth_user_id')->update(['password' => '']);
+            $pk = Schema::hasColumn('voc_users', 'voc_user_id') ? 'voc_user_id' : 'id';
+
+            foreach (DB::table('voc_users')->where('password', '!=', '')->get([$pk, 'password']) as $card) {
+                $stored = (string) $card->password;
+
+                if (! $this->isBcrypt($stored) && ! $this->isMd5($stored)) {
+                    DB::table('voc_users')->where($pk, $card->{$pk})->update(['password' => Hash::make($stored)]);
+                }
+            }
         }
 
         if (Schema::hasTable('user_register') && Schema::hasColumn('user_register', 'Pass')) {

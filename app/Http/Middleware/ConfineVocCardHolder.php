@@ -36,8 +36,6 @@ class ConfineVocCardHolder
     protected const ALLOWED = [
         'voc-dashboard',
         'edit-voc-profile',
-        'force-password-change',
-        'account',
         'logout',
         'password-reset',
         'password-reset/*',

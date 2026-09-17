@@ -12,6 +12,10 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
+/**
+ * Saving a VOCC card links it to the login that carries the card holder's session. The card's
+ * password stays on the card; the login's type and password are never written from it.
+ */
 class VocLoginProvisioningTest extends TestCase
 {
     use RefreshDatabase;
@@ -47,7 +51,11 @@ class VocLoginProvisioningTest extends TestCase
         $user = User::findOrFail($vocUser->auth_user_id);
         $this->assertSame('cardholder@yopmail.com', $user->email);
         $this->assertSame(UserType::Voc, $user->user_type);
-        $this->assertTrue(Hash::check('secret123', $user->password), 'plaintext password must be hashed & verifiable');
+
+        $stored = (string) $vocUser->getAttributes()['password'];
+        $this->assertNotSame('secret123', $stored, 'the card password is hashed, never stored as typed');
+        $this->assertTrue(Hash::check('secret123', $stored), 'the card keeps its own password');
+        $this->assertFalse(Hash::check('secret123', $user->password), 'the login does not take the card password');
     }
 
     public function test_second_voc_user_with_same_email_reuses_the_identity(): void
@@ -90,16 +98,27 @@ class VocLoginProvisioningTest extends TestCase
         $this->assertSame($adminHash, $admin->password, 'admin password must be untouched');
     }
 
-    public function test_editing_the_password_resyncs_the_login(): void
+    public function test_editing_the_card_password_changes_the_card_not_the_login(): void
     {
         $profile = $this->vocProfile();
         $vocUser = VocUser::create(['voc_user_id' => 30, 'profile_id' => $profile->id, 'email' => 'resync@yopmail.com', 'password' => 'oldpass1']);
         $vocUser->refresh();
-        $userId = (int) $vocUser->auth_user_id;
+        $login = User::findOrFail((int) $vocUser->auth_user_id);
+        $loginHash = $login->password;
 
         $vocUser->update(['password' => 'brandnew9']);
 
-        $user = User::findOrFail($userId);
-        $this->assertTrue(Hash::check('brandnew9', $user->password), 'edited password must re-sync to the login');
+        $this->assertTrue(Hash::check('brandnew9', (string) $vocUser->fresh()->getAttributes()['password']));
+        $this->assertSame($loginHash, $login->fresh()->password, 'the login password is never rewritten by the card');
+    }
+
+    public function test_a_legacy_bcrypt_card_password_is_stored_as_is(): void
+    {
+        $profile = $this->vocProfile();
+        $hash = Hash::make('legacy-pass');
+
+        $vocUser = VocUser::create(['voc_user_id' => 40, 'profile_id' => $profile->id, 'email' => 'legacy@yopmail.com', 'password' => $hash]);
+
+        $this->assertSame($hash, (string) $vocUser->fresh()->getAttributes()['password']);
     }
 }

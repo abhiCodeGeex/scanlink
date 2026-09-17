@@ -7,6 +7,7 @@ use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Http\Middleware\ConfineVocCardHolder;
 use App\Models\User;
 use App\Support\LoginEntrance;
+use App\Support\VocCardLogin;
 use Filament\Auth\Notifications\ResetPassword as ResetPasswordNotification;
 use Filament\Facades\Filament;
 use Illuminate\Contracts\Auth\CanResetPassword;
@@ -39,11 +40,39 @@ class PortalAuthController extends Controller
      */
     public function vocLogin(Request $request): RedirectResponse
     {
-        return $this->authenticate($request, cardHolderEntrance: true);
+        $credentials = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string'],
+        ]);
+
+        // Legacy checked voc_users alone: the card's own password, never the person's client or
+        // admin password. Checking the login password here is what let a card overwrite a client.
+        $result = VocCardLogin::attempt((string) $credentials['email'], (string) $credentials['password']);
+
+        if ($result === null) {
+            throw ValidationException::withMessages([
+                'email' => VocCardLogin::hasCardWithoutPassword((string) $credentials['email'])
+                    ? 'This card login has no password yet. Use "Forgot your password?" to set one.'
+                    : 'These credentials do not match our records.',
+            ]);
+        }
+
+        [$user, $cardIds] = $result;
+
+        Auth::login($user, $request->boolean('remember'));
+        $request->session()->regenerate();
+
+        LoginEntrance::record(LoginEntrance::VOC);
+        VocCardLogin::remember($cardIds);
+
+        Filament::setCurrentPanel(Filament::getPanel('portal'));
+
+        return redirect()->to(VocDashboard::getUrl(panel: 'portal'));
     }
 
     /**
-     * @param  bool  $cardHolderEntrance  True when the attempt arrived at the VOCC address.
+     * @param  bool  $cardHolderEntrance  Always false now: the VOCC door checks the card password
+     *                                    in vocLogin() and never reaches the login password.
      */
     protected function authenticate(Request $request, bool $cardHolderEntrance): RedirectResponse
     {
@@ -59,6 +88,15 @@ class PortalAuthController extends Controller
             // an "expired password" notice so they aren't left stuck at the new login.
             $email = strtolower(trim((string) $request->input('email')));
             $user = User::query()->where('email', $email)->first();
+
+            // Someone who typed a valid card password at the client login: point them to the VOCC
+            // address. Only when the card password matched, so this never reveals who holds a card.
+            if (! $cardHolderEntrance
+                && VocCardLogin::attempt($email, (string) $request->input('password')) !== null) {
+                throw ValidationException::withMessages([
+                    'email' => 'This account signs in at the VOCC card holder login: '.url('/voclogin'),
+                ]);
+            }
 
             if ($user && blank($user->getRawOriginal('password'))) {
                 $this->sendExpiredPasswordReset($user);

@@ -40,6 +40,7 @@ final class LoginEntrance
             session()->put(ConfineVocCardHolder::SESSION_KEY, true);
         } else {
             session()->forget(ConfineVocCardHolder::SESSION_KEY);
+            VocCardLogin::forget();
         }
     }
 

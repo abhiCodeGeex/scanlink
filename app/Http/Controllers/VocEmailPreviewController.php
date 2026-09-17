@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Support\PublicMediaPath;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use App\Support\LoginEntrance;
+use App\Support\VocCardLogin;
 
 /**
  * Renders the VOC document-expiry notification email in-browser so the editor's
@@ -51,9 +53,10 @@ class VocEmailPreviewController extends Controller
             return false;
         }
 
-        // A VOC secondary user linked to this profile...
-        if ($profile->vocUsers()->where('auth_user_id', $user->id)->exists()) {
-            return true;
+        // A VOCC session may work only on the cards it unlocked with their own password, even when
+        // the same person is also a member of the owning client.
+        if (LoginEntrance::current($user) === LoginEntrance::VOC) {
+            return VocCardLogin::unlocks($user, $profile);
         }
 
         // ...or a portal member of the profile's owning client.

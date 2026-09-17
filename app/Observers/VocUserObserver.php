@@ -16,8 +16,9 @@ class VocUserObserver
 
     public function updated(VocUser $vocUser): void
     {
-        // Re-provision only when the credentials changed, keeping the linked login in sync.
-        if ($vocUser->wasChanged(['email', 'password'])) {
+        // A new email may belong to a different login. The card password stays on the card, so a
+        // password change alone has nothing to sync.
+        if ($vocUser->wasChanged('email')) {
             $this->provisioner->provision($vocUser);
         }
     }

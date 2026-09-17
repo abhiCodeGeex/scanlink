@@ -17,6 +17,7 @@ use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
 use App\Support\LoginEntrance;
+use App\Support\VocCardLogin;
 
 class VocDashboard extends Page
 {
@@ -343,11 +344,9 @@ class VocDashboard extends Page
         // happened to point at.
         $vocTypeIds = EquipmentType::query()->where('slag', 'voc')->pluck('id');
 
-        $linked = VocUser::query()
-            ->where('auth_user_id', $user->id)
-            ->whereNotNull('profile_id')
-            ->pluck('profile_id')
-            ->unique();
+        // Only the cards this sign-in unlocked with their own password (legacy profile_id_array),
+        // not every card that happens to share the email.
+        $linked = VocCardLogin::profileIdsFor($user);
 
         if ($linked->isEmpty()) {
             return;

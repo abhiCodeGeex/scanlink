@@ -26,8 +26,9 @@ class EnsurePortalPasswordChanged
     {
         $user = $request->user();
 
-        // By door, not user_type: an admin who is also a client member is user_type = admin.
-        if (! $user instanceof User || ! LoginEntrance::isPortalSession($user)) {
+        // Client door only: the flag belongs to the client membership, and a VOCC session signs in
+        // with the card's own password, not the client login this would force them to change.
+        if (! $user instanceof User || LoginEntrance::current($user) !== LoginEntrance::CLIENT) {
             return $next($request);
         }
 
