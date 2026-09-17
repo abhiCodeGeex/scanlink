@@ -20,6 +20,11 @@ abstract class TestCase extends BaseTestCase
             'DB_DATABASE' => ':memory:',
             'DB_URL' => '',
             'CACHE_STORE' => 'array',
+            // The real TinyURL token lives in the container's .env. Opening a profile editor
+            // calls ProfileQrService::ensureFor(), which shortens through the live API when a
+            // token is set — so tests were minting real short links for fake localhost
+            // profiles in the account, and URL assertions depended on the network.
+            'SCANLINK_SHORT_URL_API_TOKEN' => '',
         ] as $key => $value) {
             putenv($key.'='.$value);
             $_ENV[$key] = $value;
