@@ -1593,12 +1593,19 @@
                             fi.classList.remove('sl-file-input-hidden');
                         });
                         if (!clone.querySelector('.sl-remove-section')) {
+                            // The bar takes the full row only to right-align; the link inside is
+                            // inline, so just the word "Remove" is clickable. A block-level link
+                            // here made the whole row delete the section on a stray tap.
+                            var bar = document.createElement('div');
+                            bar.className = 'sl-remove-section-bar';
+                            bar.style.cssText = 'text-align:right;margin-top:.35rem;';
                             var del = document.createElement('a');
                             del.href = 'javascript:;';
                             del.className = 'sl-remove-section';
                             del.textContent = 'Remove';
-                            del.style.cssText = 'display:block;text-align:right;color:#c62828;font-size:.85rem;font-weight:700;margin-top:.35rem;text-decoration:none;';
-                            clone.appendChild(del);
+                            del.style.cssText = 'display:inline-block;color:#c62828;font-size:.85rem;font-weight:700;text-decoration:none;';
+                            bar.appendChild(del);
+                            clone.appendChild(bar);
                         }
                         wrap.insertBefore(clone, link);
                         if (window.slReindexRepeatFileInputs) {
