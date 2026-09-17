@@ -5,6 +5,7 @@ namespace App\Filament\Portal\Pages;
 use App\Enums\UserType;
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
+use App\Http\Middleware\ConfineVocCardHolder;
 use App\Models\EquipmentType;
 use App\Models\Profile;
 use App\Models\User;
@@ -66,11 +67,15 @@ class VocDashboard extends Page
             return false;
         }
 
-        if ($user->user_type === UserType::Voc) {
-            return true;
+        // Two audiences, and the door decides which: a session that came in at the VOCC address
+        // (or a pure card holder, who has no other door) gets the card-holder dashboard; anyone
+        // else gets the client's VOC overview, which is a primary-member feature. user_type
+        // cannot decide this — a card holder who is also a client member is user_type = portal.
+        if (ConfineVocCardHolder::fences($user)) {
+            return $user->hasVocCardHolderAccess() || $user->user_type === UserType::Voc;
         }
 
-        if ($user->user_type !== UserType::Portal) {
+        if (! in_array($user->user_type, [UserType::Portal, UserType::Voc], true)) {
             return false;
         }
 
@@ -98,7 +103,10 @@ class VocDashboard extends Page
             return;
         }
 
-        if ($user->user_type === UserType::Voc) {
+        // Same rule as canAccess(): the card-holder view follows the door. Keyed on user_type,
+        // a client member signing in at /voclogin was shown every VOC card their client owns
+        // instead of their own.
+        if (ConfineVocCardHolder::fences($user)) {
             $this->isVocUser = true;
             $this->loadVocUserProfiles($user);
         } else {
