@@ -121,7 +121,7 @@
     min-height: 68px;
 }
 .mkt__brand { display: inline-flex; align-items: center; }
-.mkt__brand img { height: 34px; width: auto; }
+.mkt__brand img { height: 60px; width: auto; }
 .mkt__nav { display: flex; align-items: center; gap: 2px; margin-left: auto; }
 .mkt__nav-link {
     color: var(--ink); font-weight: 600; font-size: .95rem;

@@ -149,6 +149,10 @@ trait HasLegacyProfileEditorLayout
         $record = $this->legacyEditorRecord();
         $previewUrl = null;
         $qrUrl = null;
+        // Shown separately under the QR: the TinyURL the code encodes, and the ScanLink
+        // address it redirects to. $qrUrl keeps its old meaning for existing callers.
+        $qrTinyUrl = null;
+        $qrScanlinkUrl = null;
         $qrImageUrl = null;
         $formBuilderUrl = null;
         $formBuilderEmbedUrl = null;
@@ -161,6 +165,7 @@ trait HasLegacyProfileEditorLayout
             $record->loadMissing(['client', 'qrImage', 'equipmentType']);
             $previewUrl = \App\Support\PortalProfilePreview::previewUrl($record, $this->previewRefreshKey);
             $qrUrl = app(ProfileQrService::class)->profileUrl($record);
+            $qrScanlinkUrl = $qrUrl;
             $formBuilderUrl = FormBuilder::getUrl(panel: 'portal').'?profile='.$record->id;
             $analytics = (int) ($record->enable_form_analytics ? 1 : 0);
             $embedNonce = property_exists($this, 'formBuilderEmbedNonce')
@@ -224,6 +229,7 @@ trait HasLegacyProfileEditorLayout
             // long destination it redirects to.
             if (filled($record->shorturl)) {
                 $qrUrl = $record->shorturl;
+                $qrTinyUrl = $record->shorturl;
             }
         }
 
@@ -231,6 +237,8 @@ trait HasLegacyProfileEditorLayout
             'record' => $record,
             'previewUrl' => $previewUrl,
             'qrUrl' => $qrUrl,
+            'qrTinyUrl' => $qrTinyUrl,
+            'qrScanlinkUrl' => $qrScanlinkUrl,
             'qrImageUrl' => $qrImageUrl,
             'formBuilderUrl' => $formBuilderUrl,
             'formBuilderEmbedUrl' => $formBuilderEmbedUrl,

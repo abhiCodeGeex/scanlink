@@ -1130,6 +1130,11 @@ tr.sl-row-active {
     box-sizing: border-box;
 }
 
+/* Tiny Url above Scanlink Url — keep the two boxes from butting together. */
+.sl-qr-url-row + .sl-qr-url-row {
+    margin-top: 10px;
+}
+
 .sl-legacy-preview-sidebar .form-builder-box,
 .sl-legacy-preview-sidebar .form-builder-box.sl-form-builder-panel {
     clear: both !important;

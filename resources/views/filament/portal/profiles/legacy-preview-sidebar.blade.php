@@ -112,8 +112,18 @@
             </div>
             @if ($qrUrl)
                 <div class="sl-qr-url-block">
-                    URL<br>
-                    <div class="qr-url-div">{{ $qrUrl }}</div>
+                    {{-- The TinyURL is what the QR encodes; the ScanLink URL is where it lands.
+                         A profile that has not been shortened yet only has the latter. --}}
+                    @if (filled($qrTinyUrl ?? null))
+                        <div class="sl-qr-url-row">
+                            Tiny Url<br>
+                            <div class="qr-url-div">{{ $qrTinyUrl }}</div>
+                        </div>
+                    @endif
+                    <div class="sl-qr-url-row">
+                        Scanlink Url<br>
+                        <div class="qr-url-div">{{ $qrScanlinkUrl ?? $qrUrl }}</div>
+                    </div>
                 </div>
             @endif
         </div>
