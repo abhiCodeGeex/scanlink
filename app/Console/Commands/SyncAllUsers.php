@@ -298,16 +298,21 @@ class SyncAllUsers extends Command
     ): User {
         $existing = User::query()->where('email', $email)->first();
 
-        // Prefer admin type if the same email appears in multiple sources.
-        if ($existing && $existing->user_type === UserType::Admin && $type !== UserType::Admin) {
+        // One email is one login, so when it appears in several sources the strongest identity
+        // wins: admin > client member > VOCC card holder > registrant. The sources run in that
+        // order, and the old guard only protected admins — so a client member who is also a
+        // card holder was relabelled `voc` by the later voc pass. That hands their login to the
+        // card-holder rules, and VocUserProvisioner then treats the row as voc-owned and
+        // rewrites its password whenever the card holder is edited. Keep the stronger identity
+        // untouched; the caller still links the weaker source's row to it, exactly as
+        // VocUserProvisioner does at runtime.
+        if ($existing && self::identityRank($existing->user_type) > self::identityRank($type)) {
             return $existing;
         }
 
         $user = $existing ?? new User(['email' => $email]);
         $user->name = $name ?: $email;
-        $user->user_type = $type === UserType::Admin
-            ? UserType::Admin
-            : ($existing?->user_type === UserType::Admin ? UserType::Admin : $type);
+        $user->user_type = $type;
 
         if ($adminRole) {
             $user->admin_role = $adminRole;
@@ -365,6 +370,19 @@ class SyncAllUsers extends Command
         DB::table('users')->where('id', $user->id)->update(['password' => '']);
 
         return $user->refresh();
+    }
+
+    /**
+     * Precedence when one email turns up in more than one legacy source.
+     */
+    protected static function identityRank(?UserType $type): int
+    {
+        return match ($type) {
+            UserType::Admin => 3,
+            UserType::Portal => 2,
+            UserType::Voc => 1,
+            UserType::Registrant, null => 0,
+        };
     }
 
     protected function isBcrypt(?string $value): bool
