@@ -16,6 +16,7 @@ use BackedEnum;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
+use App\Support\LoginEntrance;
 
 class VocDashboard extends Page
 {
@@ -75,7 +76,7 @@ class VocDashboard extends Page
             return $user->hasVocCardHolderAccess() || $user->user_type === UserType::Voc;
         }
 
-        if (! in_array($user->user_type, [UserType::Portal, UserType::Voc], true)) {
+        if (! LoginEntrance::isPortalSession($user)) {
             return false;
         }
 

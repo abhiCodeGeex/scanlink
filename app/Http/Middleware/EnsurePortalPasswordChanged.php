@@ -8,6 +8,7 @@ use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use App\Support\LoginEntrance;
 
 class EnsurePortalPasswordChanged
 {
@@ -25,7 +26,8 @@ class EnsurePortalPasswordChanged
     {
         $user = $request->user();
 
-        if (! $user instanceof User || $user->user_type !== UserType::Portal) {
+        // By door, not user_type: an admin who is also a client member is user_type = admin.
+        if (! $user instanceof User || ! LoginEntrance::isPortalSession($user)) {
             return $next($request);
         }
 

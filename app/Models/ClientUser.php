@@ -278,8 +278,14 @@ class ClientUser extends Model
             $this->first_name,
             $this->last_name,
         ]))) ?: ($this->company_name ?: $email);
-        $auth->user_type = \App\Enums\UserType::Portal;
-        $auth->admin_role = null;
+        // One login can hold several roles. Saving a client membership used to force the login
+        // to `portal` and wipe admin_role, so an admin who is also a client member lost the admin
+        // panel the first time their account was edited. Only a login with no stronger role
+        // becomes a client login; which role is in use is decided by the door, per session.
+        if ($auth->user_type !== \App\Enums\UserType::Admin) {
+            $auth->user_type = \App\Enums\UserType::Portal;
+            $auth->admin_role = null;
+        }
 
         if (filled($this->pendingAuthPassword)) {
             $auth->password = $this->pendingAuthPassword;

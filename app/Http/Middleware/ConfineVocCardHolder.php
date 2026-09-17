@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\User;
+use App\Support\LoginEntrance;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -57,7 +58,9 @@ class ConfineVocCardHolder
             return false;
         }
 
-        return session(self::SESSION_KEY) === true || $user->isVocCardHolder();
+        // Decided by LoginEntrance so the recorded door and the fence can never disagree. It
+        // still honours SESSION_KEY and still fences a pure card holder with no door on record.
+        return LoginEntrance::current($user) === LoginEntrance::VOC;
     }
 
     /**

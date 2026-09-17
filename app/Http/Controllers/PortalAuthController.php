@@ -6,6 +6,7 @@ use App\Filament\Portal\Pages\VocDashboard;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Http\Middleware\ConfineVocCardHolder;
 use App\Models\User;
+use App\Support\LoginEntrance;
 use Filament\Auth\Notifications\ResetPassword as ResetPasswordNotification;
 use Filament\Facades\Filament;
 use Illuminate\Contracts\Auth\CanResetPassword;
@@ -76,14 +77,10 @@ class PortalAuthController extends Controller
         $user = Auth::user();
         $panel = Filament::getPanel('portal');
 
-        if (! $user->canAccessPanel($panel)) {
-            $this->abandonSession($request);
-
-            throw ValidationException::withMessages([
-                'email' => 'This account cannot access the client portal.',
-            ]);
-        }
-
+        // Each door asks only whether the person holds the role it serves. The same login may
+        // hold several — an admin who is also a card holder — so nothing is judged from the
+        // account's single user_type before the door is known; that is what used to turn an
+        // admin away from /voclogin despite a valid card.
         if ($cardHolderEntrance && ! $user->hasVocCardHolderAccess()) {
             $this->abandonSession($request);
 
@@ -98,16 +95,22 @@ class PortalAuthController extends Controller
             $this->abandonSession($request);
 
             throw ValidationException::withMessages([
-                'email' => 'This account signs in at the VOCC card holder login: '.url('/voclogin'),
+                'email' => $user->hasVocCardHolderAccess()
+                    ? 'This account signs in at the VOCC card holder login: '.url('/voclogin')
+                    : 'This account cannot access the client portal.',
             ]);
         }
 
-        // Record which door was used, the way legacy's voc_user_id session value did. A client
-        // signing in clears it so a reused session cannot stay fenced.
-        if ($cardHolderEntrance) {
-            $request->session()->put(ConfineVocCardHolder::SESSION_KEY, true);
-        } else {
-            $request->session()->forget(ConfineVocCardHolder::SESSION_KEY);
+        // Record which door was used, the way legacy's voc_user_id session value did. It decides
+        // the role for the rest of the session, and replaces whatever a previous login recorded.
+        LoginEntrance::record($cardHolderEntrance ? LoginEntrance::VOC : LoginEntrance::CLIENT);
+
+        if (! $user->canAccessPanel($panel)) {
+            $this->abandonSession($request);
+
+            throw ValidationException::withMessages([
+                'email' => 'This account cannot access the client portal.',
+            ]);
         }
 
         Filament::setCurrentPanel($panel);

@@ -4,6 +4,7 @@ namespace App\Filament\Portal\Concerns;
 
 use App\Enums\UserType;
 use App\Models\User;
+use App\Support\LoginEntrance;
 
 /**
  * Pages that legacy shows only on the full "My Account" submenu — Code Balance,
@@ -16,7 +17,8 @@ trait RestrictsToPrimaryClientUser
     {
         $user = auth()->user();
 
-        if (! $user instanceof User || $user->user_type !== UserType::Portal) {
+        // By door, not user_type: an admin who is also a client member is user_type = admin.
+        if (! $user instanceof User || ! LoginEntrance::isPortalSession($user)) {
             return false;
         }
 

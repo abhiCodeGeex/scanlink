@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
+use App\Support\LoginEntrance;
 
 class MarketingController extends Controller
 {
@@ -37,7 +38,7 @@ class MarketingController extends Controller
     protected function marketingLayoutData(): array
     {
         $user = Auth::user();
-        $isPortalUser = $user instanceof User && $user->user_type === UserType::Portal;
+        $isPortalUser = $user instanceof User && LoginEntrance::isPortalSession($user);
 
         return [
             'howToLinks' => $this->howToLinks(),
@@ -52,7 +53,7 @@ class MarketingController extends Controller
         $user = Auth::user();
 
         // Logged-in portal users use the Filament contact page (sidebar/header theme).
-        if ($user instanceof User && $user->user_type === UserType::Portal) {
+        if ($user instanceof User && LoginEntrance::isPortalSession($user)) {
             return redirect('/portal/contact');
         }
 

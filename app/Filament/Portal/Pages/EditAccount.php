@@ -35,6 +35,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 use Illuminate\Validation\ValidationException;
+use App\Support\LoginEntrance;
 
 /**
  * Legacy profile/index — Edit Profile, Change Password, Add sub user, Manage User list.
@@ -75,7 +76,8 @@ class EditAccount extends Page implements HasTable
     {
         $user = auth()->user();
 
-        if (! $user instanceof User || $user->user_type !== UserType::Portal) {
+        // By door, not user_type: an admin who is also a client member is user_type = admin.
+        if (! $user instanceof User || ! LoginEntrance::isPortalSession($user)) {
             return false;
         }
 

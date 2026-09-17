@@ -23,6 +23,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use App\Support\LoginEntrance;
 
 class ProfileResource extends Resource
 {
@@ -201,7 +202,8 @@ class ProfileResource extends Resource
             return null;
         }
 
-        if (! in_array($user->user_type, [UserType::Portal, UserType::Voc], true)) {
+        // By door, not user_type: an admin who is also a client member is user_type = admin.
+        if (! LoginEntrance::isPortalSession($user)) {
             return null;
         }
 

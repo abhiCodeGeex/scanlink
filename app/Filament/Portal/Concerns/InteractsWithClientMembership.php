@@ -9,6 +9,7 @@ use App\Models\Profile;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use App\Support\LoginEntrance;
 
 trait InteractsWithClientMembership
 {
@@ -131,8 +132,9 @@ trait InteractsWithClientMembership
             return null;
         }
 
-        // Live client logins may be typed portal or voc while still having client_users rows.
-        if (! in_array($user->user_type, [UserType::Portal, UserType::Voc], true)) {
+        // By door, not user_type: live client logins may be typed portal, voc or admin while
+        // still having client_users rows.
+        if (! LoginEntrance::isPortalSession($user)) {
             return null;
         }
 

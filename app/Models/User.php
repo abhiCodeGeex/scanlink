@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\AdminRole;
 use App\Enums\UserType;
+use App\Support\LoginEntrance;
 use Filament\Auth\MultiFactor\App\Concerns\InteractsWithAppAuthentication;
 use Filament\Auth\MultiFactor\App\Concerns\InteractsWithAppAuthenticationRecovery;
 use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthentication;
@@ -103,37 +104,41 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
         return VocUser::query()->where('auth_user_id', $this->id)->exists();
     }
 
+    /**
+     * Each panel needs the door it belongs to *and* the role that door serves. A person may hold
+     * several roles under this one login; the door they signed in at picks which one they act
+     * in, so an admin who is also a card holder is only a card holder after /voclogin, and only
+     * an admin after the admin login. See LoginEntrance.
+     */
     public function canAccessPanel(Panel $panel): bool
     {
+        $door = LoginEntrance::current($this);
+
         if ($panel->getId() === 'portal') {
-            if ($this->user_type === UserType::Voc) {
-                return true;
-            }
-
-            if ($this->user_type !== UserType::Portal) {
-                return false;
-            }
-
-            return $this->clientMemberships()
-                ->active()
-                ->exists();
+            return match ($door) {
+                LoginEntrance::CLIENT => $this->hasActiveClientMembership(),
+                // An unlinked legacy card holder still counts: provisioning may not have
+                // pointed the voc_users row at this login yet.
+                LoginEntrance::VOC => $this->hasVocCardHolderAccess() || $this->user_type === UserType::Voc,
+                default => false,
+            };
         }
 
-        // The admin panel belongs to admin accounts alone. A client member never gets in —
-        // including one with "Enable Admin Access", which in legacy meant full rights inside
-        // their own client account, not over ScanLink — and neither does a card holder. Since
-        // one email is one login with one type, this also keeps a session that came in at the
-        // client or VOCC door from wandering into /admin.
-        if ($this->user_type instanceof UserType && ! $this->user_type->canAccessAdminPanel()) {
-            return false;
-        }
+        return $door === LoginEntrance::ADMIN && $this->holdsAdminRole();
+    }
 
+    /**
+     * Holds a ScanLink admin role. "Enable Admin Access" on a client member is not one — in
+     * legacy it granted full rights inside their own client account, never over ScanLink.
+     */
+    public function holdsAdminRole(): bool
+    {
         if ($this->admin_role instanceof AdminRole) {
             return $this->admin_role->canAccessPanel();
         }
 
-        return str_ends_with((string) $this->email, '@scanlink.com')
-            || $this->id === 1;
+        return $this->user_type === UserType::Admin
+            && (str_ends_with((string) $this->email, '@scanlink.com') || $this->id === 1);
     }
 
     public function canManageAdmins(): bool

@@ -34,7 +34,8 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->spa()
-            ->login()
+            // Records the admin door, which canAccessPanel() reads — see LoginEntrance.
+            ->login(\App\Filament\Auth\AdminLogin::class)
             // Self-registration disabled — legacy siteadmin had no open signup.
             ->passwordReset()
             ->databaseNotifications()
