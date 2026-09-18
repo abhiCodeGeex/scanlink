@@ -77,7 +77,7 @@ class VocDashboard extends Page
             return $user->hasVocCardHolderAccess() || $user->user_type === UserType::Voc;
         }
 
-        if (! LoginEntrance::isPortalSession($user)) {
+        if (! LoginEntrance::isClientSession($user)) {
             return false;
         }
 
@@ -91,7 +91,16 @@ class VocDashboard extends Page
 
     public static function getNavigationGroup(): ?string
     {
-        return 'VOC';
+        return ConfineVocCardHolder::fences(auth()->user()) ? null : 'VOC';
+    }
+
+    /**
+     * Legacy's card holder menu was "VOCC Dashboard" and Logout, nothing else. In a VOCC session
+     * this page is that menu; a client reaches it from their account instead.
+     */
+    public static function shouldRegisterNavigation(): bool
+    {
+        return ConfineVocCardHolder::fences(auth()->user());
     }
 
     public function mount(ProfileQrService $qrService): void

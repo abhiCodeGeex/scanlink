@@ -17,8 +17,8 @@ trait RestrictsToPrimaryClientUser
     {
         $user = auth()->user();
 
-        // By door, not user_type: an admin who is also a client member is user_type = admin.
-        if (! $user instanceof User || ! LoginEntrance::isPortalSession($user)) {
+        // Client door only: a VOCC session is the card, even for someone who is also a member.
+        if (! $user instanceof User || ! LoginEntrance::isClientSession($user)) {
             return false;
         }
 

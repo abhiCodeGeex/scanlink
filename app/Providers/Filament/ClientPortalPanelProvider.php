@@ -7,7 +7,9 @@ use App\Filament\Portal\Auth\Register;
 use App\Filament\Portal\Pages\FormSubmissions;
 use App\Filament\Portal\Pages\FormSubmissionView;
 use App\Filament\Portal\Pages\PortalDashboard;
+use App\Filament\Portal\Pages\VocDashboard;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
+use App\Http\Middleware\ConfineVocCardHolder;
 use App\Http\Middleware\EnsurePortalPasswordChanged;
 use App\Http\Middleware\RedirectDeniedPortalActions;
 use App\Models\HowToTutorial;
@@ -48,6 +50,15 @@ class ClientPortalPanelProvider extends PanelProvider
         );
     }
 
+    /**
+     * The client menu (Dashboard, My Account, How to). A VOCC session gets legacy's card holder
+     * menu instead: VOCC Dashboard and Sign out.
+     */
+    protected static function isClientMenu(): bool
+    {
+        return ! ConfineVocCardHolder::fences(auth()->user());
+    }
+
     public function panel(Panel $panel): Panel
     {
         $howToItems = [];
@@ -57,6 +68,7 @@ class ClientPortalPanelProvider extends PanelProvider
                 ->url($tutorial['url'], shouldOpenInNewTab: true)
                 ->icon(Heroicon::OutlinedPlayCircle)
                 ->group('How to')
+                ->visible(fn (): bool => self::isClientMenu())
                 ->sort(100 + $index);
         }
 
@@ -74,7 +86,10 @@ class ClientPortalPanelProvider extends PanelProvider
             ->databaseNotificationsPolling('30s')
             ->profile(isSimple: false)
             // Land on Master Code List (profiles) as the first page after login.
-            ->homeUrl(fn (): string => ProfileResource::getUrl('index'))
+            // A VOCC session's home is the card holder dashboard; everything else is the client's.
+            ->homeUrl(fn (): string => self::isClientMenu()
+                ? ProfileResource::getUrl('index')
+                : VocDashboard::getUrl(panel: 'portal'))
             ->colors([
                 'primary' => Color::hex('#008C00'),
             ])
@@ -107,6 +122,7 @@ class ClientPortalPanelProvider extends PanelProvider
                     ->url(fn (): string => ProfileResource::getUrl('index'))
                     ->icon(Heroicon::OutlinedHome)
                     ->isActiveWhen(fn (): bool => request()->is('portal/profiles*'))
+                    ->visible(fn (): bool => self::isClientMenu())
                     ->sort(-30),
                 ...$howToItems,
             ])

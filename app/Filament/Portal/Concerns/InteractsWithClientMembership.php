@@ -17,7 +17,9 @@ trait InteractsWithClientMembership
     {
         $user = Auth::user();
 
-        if (! $user) {
+        // The client account is reached through the client door only; a VOCC session sees the
+        // card, even when the same person is also a member of the client.
+        if (! $user instanceof User || ! LoginEntrance::isClientSession($user)) {
             return null;
         }
 
@@ -133,8 +135,8 @@ trait InteractsWithClientMembership
         }
 
         // By door, not user_type: live client logins may be typed portal, voc or admin while
-        // still having client_users rows.
-        if (! LoginEntrance::isPortalSession($user)) {
+        // still having client_users rows, and a VOCC session is never the client account.
+        if (! LoginEntrance::isClientSession($user)) {
             return null;
         }
 

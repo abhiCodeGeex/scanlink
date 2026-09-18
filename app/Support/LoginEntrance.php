@@ -72,6 +72,17 @@ final class LoginEntrance
         };
     }
 
+    /**
+     * Came in at the client door. Everything that belongs to the client account — the Master Code
+     * List, purchasing, analytics, users, the menu that leads there — asks this, not
+     * isPortalSession(): a card holder who is also a client member is still only a card holder
+     * after /voclogin.
+     */
+    public static function isClientSession(?User $user): bool
+    {
+        return self::current($user) === self::CLIENT;
+    }
+
     /** Came in at the client or VOCC door — i.e. is using the portal panel at all. */
     public static function isPortalSession(?User $user): bool
     {

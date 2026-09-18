@@ -202,8 +202,9 @@ class ProfileResource extends Resource
             return null;
         }
 
-        // By door, not user_type: an admin who is also a client member is user_type = admin.
-        if (! LoginEntrance::isPortalSession($user)) {
+        // Client door only, by door not user_type: an admin who is also a client member is
+        // user_type = admin, and a VOCC session never gets the Master Code List.
+        if (! LoginEntrance::isClientSession($user)) {
             return null;
         }
 

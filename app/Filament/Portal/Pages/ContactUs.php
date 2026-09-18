@@ -4,6 +4,7 @@ namespace App\Filament\Portal\Pages;
 
 use App\Mail\ContactUsMessage;
 use App\Models\Setting;
+use App\Http\Middleware\ConfineVocCardHolder;
 use App\Models\User;
 use App\Services\ContactCaptchaService;
 use App\Support\SystemNotifier;
@@ -52,8 +53,9 @@ class ContactUs extends Page
 
     public static function canAccess(): bool
     {
-        // Panel auth middleware already gates portal access.
-        return Auth::check();
+        // Panel auth middleware already gates portal access. Not part of the card holder's menu
+        // (legacy vocmenu: VOCC Dashboard and Logout only), and the fence would bounce it anyway.
+        return Auth::check() && ! ConfineVocCardHolder::fences(Auth::user());
     }
 
     public function getHeading(): string|Htmlable|null
