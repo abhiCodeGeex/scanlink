@@ -124,6 +124,18 @@ class ClientPortalPanelProvider extends PanelProvider
                     ->isActiveWhen(fn (): bool => request()->is('portal/profiles*'))
                     ->visible(fn (): bool => self::isClientMenu())
                     ->sort(-30),
+                // Legacy vocmenu: VOCC Dashboard, then a Home icon to the public site and a
+                // Contact us icon to the public contact page.
+                NavigationItem::make('Home')
+                    ->url(fn (): string => route('marketing.home'))
+                    ->icon(Heroicon::OutlinedHome)
+                    ->visible(fn (): bool => ! self::isClientMenu())
+                    ->sort(-5),
+                NavigationItem::make('Contact us')
+                    ->url(fn (): string => route('marketing.contact'))
+                    ->icon(Heroicon::OutlinedEnvelope)
+                    ->visible(fn (): bool => ! self::isClientMenu())
+                    ->sort(-4),
                 ...$howToItems,
             ])
             ->discoverResources(in: app_path('Filament/Portal/Resources'), for: 'App\\Filament\\Portal\\Resources')
