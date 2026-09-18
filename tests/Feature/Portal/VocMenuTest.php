@@ -16,7 +16,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * The VOCC login gets legacy's card holder menu — VOCC Dashboard, Home, Contact us and Sign out — and none of the
+ * The VOCC login gets legacy's card holder menu — VOCC Dashboard and Sign out — and none of the
  * client's menu, even when the same person is also a primary member of a client.
  *
  * The client pages asked only "is this a portal session with a membership", which a VOCC session
@@ -50,11 +50,7 @@ class VocMenuTest extends TestCase
 
         $menu = $this->sidebar($this->get('/portal/voc-dashboard')->assertSuccessful()->getContent());
 
-        $this->assertSame(['VOC Dashboard', 'Home', 'Contact us'], $menu, 'legacy vocmenu: VOCC Dashboard, Home, Contact us (and Sign out)');
-
-        $html = $this->get('/portal/voc-dashboard')->getContent();
-        $this->assertStringContainsString('href="'.route('marketing.home').'"', $html, 'Home goes to the public site');
-        $this->assertStringContainsString('href="'.route('marketing.contact').'"', $html, 'Contact us goes to the public contact page');
+        $this->assertSame(['VOC Dashboard'], $menu, 'legacy card holder menu: VOCC Dashboard (and Sign out)');
 
         $this->assertTrue(VocDashboard::shouldRegisterNavigation(), 'VOC Dashboard is the card holder menu');
         $this->assertFalse(ProfileResource::canViewAny());
@@ -82,7 +78,6 @@ class VocMenuTest extends TestCase
             $this->assertContains($label, $menu);
         }
         $this->assertNotContains('VOC Dashboard', $menu);
-        $this->assertNotContains('Home', $menu, 'the client menu keeps its own Dashboard link instead');
     }
 
     /**
