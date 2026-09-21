@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Auth\LegacyPasswordUserProvider;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 /**
  * Reports how many accounts still hold a legacy MD5 digest, and can re-import digests from
@@ -19,13 +20,18 @@ class LegacyPasswords extends Command
 {
     protected $signature = 'scanlink:legacy-passwords
                             {--restore-from-live : Re-import MD5 digests from the live DB for accounts whose password is blank}
-                            {--dry-run : With --restore-from-live, report what would change without writing}';
+                            {--hash-plaintext : Bcrypt any password still stored as plaintext}
+                            {--dry-run : With --restore-from-live or --hash-plaintext, report what would change without writing}';
 
     protected $description = 'Report legacy MD5 password accounts, and optionally restore digests blanked by an earlier sync';
 
     public function handle(): int
     {
         $this->report();
+
+        if ($this->option('hash-plaintext')) {
+            return $this->hashPlaintext();
+        }
 
         if (! $this->option('restore-from-live')) {
             return self::SUCCESS;
@@ -57,9 +63,42 @@ class LegacyPasswords extends Command
                 ['bcrypt', $bcrypt, 'yes'],
                 ['legacy MD5', $md5, 'yes — upgrades to bcrypt on next sign-in'],
                 ['blank (must reset)', $blank, 'no — reset link on attempt'],
-                ['other / unknown', $other, 'no'],
+                ['plaintext', $other, 'yes — upgrades to bcrypt on next sign-in; run --hash-plaintext'],
             ],
         );
+    }
+
+    /**
+     * Bcrypt the passwords the conversion carried over as plaintext. Nobody has to change
+     * anything: the owner keeps the password they know, it is simply stored hashed from now on.
+     */
+    private function hashPlaintext(): int
+    {
+        $dryRun = (bool) $this->option('dry-run');
+        $hashed = 0;
+
+        DB::table('users')->select('id', 'password')->orderBy('id')->chunk(500, function ($chunk) use ($dryRun, &$hashed): void {
+            foreach ($chunk as $row) {
+                $value = (string) ($row->password ?? '');
+
+                if ($value === ''
+                    || LegacyPasswordUserProvider::isBcrypt($value)
+                    || LegacyPasswordUserProvider::isLegacyMd5($value)) {
+                    continue;
+                }
+
+                if (! $dryRun) {
+                    DB::table('users')->where('id', $row->id)->update(['password' => Hash::make($value)]);
+                }
+
+                $hashed++;
+            }
+        });
+
+        $this->newLine();
+        $this->info(($dryRun ? '[dry-run] ' : '').$hashed.' plaintext password(s) hashed.');
+
+        return self::SUCCESS;
     }
 
     private function restoreFromLive(): int

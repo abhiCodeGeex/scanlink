@@ -83,6 +83,27 @@ class LegacyPasswordUpgradeTest extends TestCase
         $this->assertSame($digest, $this->storedPassword($user), 'a failed attempt must not rewrite the password');
     }
 
+    public function test_plaintext_password_authenticates_and_is_replaced_with_bcrypt(): void
+    {
+        // Kohana kept some passwords as plaintext and the conversion carried them over. Asking
+        // the bcrypt hasher about one throws, which showed up as a 500 at the admin login.
+        $user = $this->userWithRawPassword('plain@example.com', 'GEorge1971#');
+
+        $this->assertTrue(Auth::attempt(['email' => 'plain@example.com', 'password' => 'GEorge1971#']));
+
+        $stored = $this->storedPassword($user);
+        $this->assertStringStartsWith('$2y$', $stored, 'upgraded to bcrypt on the way in');
+        $this->assertTrue(Hash::check('GEorge1971#', $stored));
+    }
+
+    public function test_wrong_password_against_a_plaintext_account_fails_without_erroring(): void
+    {
+        $user = $this->userWithRawPassword('plain@example.com', 'GEorge1971#');
+
+        $this->assertFalse(Auth::attempt(['email' => 'plain@example.com', 'password' => 'not-it']));
+        $this->assertSame('GEorge1971#', $this->storedPassword($user), 'left untouched');
+    }
+
     public function test_blank_password_marker_never_authenticates(): void
     {
         // scanlink:sync-all-users writes '' for accounts with no reusable credential.

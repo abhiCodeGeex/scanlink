@@ -38,17 +38,32 @@ class LegacyPasswordUserProvider extends EloquentUserProvider
             return false;
         }
 
-        if (! self::isLegacyMd5($stored)) {
+        if (self::isBcrypt($stored)) {
             return parent::validateCredentials($user, $credentials);
         }
 
-        if (! hash_equals(strtolower($stored), md5($plain))) {
+        $matches = self::isLegacyMd5($stored)
+            ? hash_equals(strtolower($stored), md5($plain))
+            // Kohana kept some passwords as plaintext, and the conversion carried them over as
+            // they were. Asking the bcrypt hasher about one throws ("This password does not use
+            // the Bcrypt algorithm"), which is a 500 at the login instead of a sign-in — the
+            // admin login was failing on exactly this. Compare it here and upgrade it, the same
+            // way an MD5 digest is handled.
+            : hash_equals($stored, $plain);
+
+        if (! $matches) {
             return false;
         }
 
         $this->upgradeToBcrypt($user, $plain);
 
         return true;
+    }
+
+    /** A bcrypt hash — the only shape the stock hasher will look at without throwing. */
+    public static function isBcrypt(?string $value): bool
+    {
+        return is_string($value) && preg_match('/^\$2[aby]\$/', $value) === 1;
     }
 
     /**
@@ -58,7 +73,7 @@ class LegacyPasswordUserProvider extends EloquentUserProvider
      */
     public function rehashPasswordIfRequired(UserContract $user, #[\SensitiveParameter] array $credentials, bool $force = false): void
     {
-        if (self::isLegacyMd5($user->getAuthPassword())) {
+        if (! self::isBcrypt($user->getAuthPassword())) {
             return;
         }
 
