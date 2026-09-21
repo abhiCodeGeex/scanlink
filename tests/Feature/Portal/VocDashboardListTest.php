@@ -224,6 +224,26 @@ class VocDashboardListTest extends TestCase
     }
 
     #[Test]
+    public function a_document_with_no_expiry_date_prints_no_date_at_all(): void
+    {
+        // The zero date is "no expiry". A plain date cast turned it into 30/11/-0001, and that
+        // is what the documents list printed beside the document.
+        $profile = $this->profile();
+        $zeroDate = $this->document($profile, null, 'No expiry');
+        DB::table('voc_documents')
+            ->where('voc_document_id', $zeroDate->voc_document_id)
+            ->update(['expiry_date' => '0000-00-00']);
+        $this->document($profile, '2030-01-01', 'Real expiry');
+
+        $this->assertNull(VocDocument::query()->findOrFail($zeroDate->voc_document_id)->expiry_date);
+
+        $this->dashboard($this->holderFor($profile))
+            ->assertSee('expires 01/01/2030')
+            ->assertDontSee('-0001')
+            ->assertDontSee('30/11');
+    }
+
+    #[Test]
     public function an_expired_document_shows_a_flag_on_the_row(): void
     {
         $profile = $this->profile();
