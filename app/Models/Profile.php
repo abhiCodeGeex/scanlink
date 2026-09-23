@@ -259,14 +259,30 @@ class Profile extends Model
         return $this->belongsTo(CodePurchase::class, 'code_purchase_id');
     }
 
+    /**
+     * Company logos, the one in use first.
+     *
+     * Legacy never removed the previous row: each upload added one, and every read took the
+     * newest row that was not an abandoned draft (classes/model/logo.php: is_temp = 0 ordered by
+     * created_at DESC). The rebuild ordered by nothing and filtered nothing, so a migrated
+     * profile stacked every logo it had ever had on the scanned card, the editor previewed the
+     * oldest, and saving deleted the rest — quietly replacing the live logo with an old one.
+     */
     public function logos(): HasMany
     {
-        return $this->hasMany(Logo::class);
+        return $this->hasMany(Logo::class)
+            ->where('is_temp', '0')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
     }
 
+    /** The second "extra" logo, same story as logos(). */
     public function logosExtra(): HasMany
     {
-        return $this->hasMany(LogoExtra::class);
+        return $this->hasMany(LogoExtra::class)
+            ->where('is_temp', '0')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
     }
 
     public function pictures(): HasMany

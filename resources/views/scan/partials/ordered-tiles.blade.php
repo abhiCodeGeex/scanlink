@@ -18,23 +18,19 @@
 
         {{-- ============================ EXHIBIT ============================ --}}
         @case('exhibit-1')
-            @if ($profile->logos->isNotEmpty())
-                <div class="logo-row">
-                    @foreach ($profile->logos as $logo)
-                        @if ($u = $publicMediaUrl($logo->logo_name))<img src="{{ $u }}" alt="Company logo">@endif
-                    @endforeach
-                </div>
+            {{-- One logo, the current one: legacy kept every upload as a row and displayed only
+                 the newest (classes/model/logo.php), so looping stacked a profile's whole history. --}}
+            @if ($u = $publicMediaUrl($profile->logos->first()?->logo_name))
+                <div class="logo-row"><img src="{{ $u }}" alt="Company logo"></div>
             @endif
             @break
 
         @case('exhibit-17')
-            @if ($profile->logosExtra->isNotEmpty())
+            {{-- The current extra logo only, same reason as the logo above. --}}
+            @php($lx = $profile->logosExtra->first())
+            @if ($lx && ($u = $publicMediaUrl($lx->logo_name)))
                 <div class="logo-row">
-                    @foreach ($profile->logosExtra as $lx)
-                        @if ($u = $publicMediaUrl($lx->logo_name))
-                            @if (filled($lx->logo_url))<a href="{{ $lx->logo_url }}" target="_blank" rel="noopener"><img src="{{ $u }}" alt="Company logo"></a>@else<img src="{{ $u }}" alt="Company logo">@endif
-                        @endif
-                    @endforeach
+                    @if (filled($lx->logo_url))<a href="{{ $lx->logo_url }}" target="_blank" rel="noopener"><img src="{{ $u }}" alt="Company logo"></a>@else<img src="{{ $u }}" alt="Company logo">@endif
                 </div>
             @endif
             @break
@@ -159,12 +155,10 @@
 
         {{-- ============================== VOC ============================== --}}
         @case('voc-1')
-            @if ($profile->logos->isNotEmpty())
-                <div class="logo-row">
-                    @foreach ($profile->logos as $logo)
-                        @if ($u = $publicMediaUrl($logo->logo_name))<img src="{{ $u }}" alt="Company logo">@endif
-                    @endforeach
-                </div>
+            {{-- One logo, the current one: legacy kept every upload as a row and displayed only
+                 the newest (classes/model/logo.php), so looping stacked a profile's whole history. --}}
+            @if ($u = $publicMediaUrl($profile->logos->first()?->logo_name))
+                <div class="logo-row"><img src="{{ $u }}" alt="Company logo"></div>
             @endif
             @break
 

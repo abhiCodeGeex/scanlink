@@ -329,13 +329,11 @@
             @include('scan.partials.ordered-tiles')
         @endif
 
-        @if ($profile->logos->isNotEmpty() && ! in_array($profile->typeSlug(), $slOrderedTileTypes, true))
+        {{-- The current logo only — see the note in ordered-tiles. --}}
+        @if (! in_array($profile->typeSlug(), $slOrderedTileTypes, true)
+            && ($logoUrl = $publicMediaUrl($profile->logos->first()?->logo_name)))
             <div class="logo-row">
-                @foreach ($profile->logos as $logo)
-                    @if ($logoUrl = $publicMediaUrl($logo->logo_name))
-                        <img src="{{ $logoUrl }}" alt="Company logo">
-                    @endif
-                @endforeach
+                <img src="{{ $logoUrl }}" alt="Company logo">
             </div>
         @endif
 
