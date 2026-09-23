@@ -27,7 +27,7 @@
 
         @case('exhibit-17')
             {{-- The current extra logo only, same reason as the logo above. --}}
-            @php($lx = $profile->logosExtra->first())
+            @php $lx = $profile->logosExtra->first(); @endphp
             @if ($lx && ($u = $publicMediaUrl($lx->logo_name)))
                 <div class="logo-row">
                     @if (filled($lx->logo_url))<a href="{{ $lx->logo_url }}" target="_blank" rel="noopener"><img src="{{ $u }}" alt="Company logo"></a>@else<img src="{{ $u }}" alt="Company logo">@endif
