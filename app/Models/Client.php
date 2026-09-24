@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 #[Fillable([
     'client_name',
@@ -97,6 +98,33 @@ class Client extends Model
     public function profiles(): HasMany
     {
         return $this->hasMany(Profile::class);
+    }
+
+    /**
+     * A scanned card's home-screen icon: slot 1 is the 180x180 iOS icon, slot 2 the 192x192
+     * Android one. Null when the client never uploaded that one, or the file has gone missing.
+     *
+     * The client uploads these on My Account, and legacy put them in the page head of every
+     * card (views/mobile/template/head.php). Imported icons still sit in the legacy media tree
+     * (public/images/touch_icons) while the rebuilt editor saves new ones on the public disk,
+     * so both places are checked — the column holds only the file name either way.
+     */
+    public function shortcutIconUrl(int $slot): ?string
+    {
+        $stored = trim((string) ($slot === 2 ? $this->shortcut_image2 : $this->shortcut_image1));
+        $name = $stored === '' ? '' : basename($stored);
+
+        if ($name === '' || $name === '.') {
+            return null;
+        }
+
+        if (Storage::disk('public')->exists('touch_icons/'.$name)) {
+            return Storage::disk('public')->url('touch_icons/'.$name);
+        }
+
+        return file_exists(public_path('images/touch_icons/'.$name))
+            ? asset('images/touch_icons/'.$name)
+            : null;
     }
 
     public function resellerName(): ?string

@@ -3,7 +3,24 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $profile->name }} — ScanLink</title>
+    @php
+        // Legacy put the client's shortcut title and home-screen icons in every card's head
+        // (views/mobile/template/head.php): the title, the iOS touch icon and startup image from
+        // image 1, the Android icon from image 2. They are uploaded on My Account.
+        $slClient = $profile->client;
+        $slShortcutTitle = trim((string) ($slClient?->shortcut_title ?? ''));
+        $slIconIos = $slClient?->shortcutIconUrl(1);
+        $slIconAndroid = $slClient?->shortcutIconUrl(2);
+    @endphp
+    <title>{{ $slShortcutTitle !== '' ? $slShortcutTitle : $profile->name.' — ScanLink' }}</title>
+    @if ($slIconIos)
+        <link rel="apple-touch-icon" sizes="180x180" href="{{ $slIconIos }}">
+        <link rel="apple-touch-startup-image" href="{{ $slIconIos }}">
+        <link rel="shortcut icon" type="image/x-icon" href="{{ $slIconIos }}">
+    @endif
+    @if ($slIconAndroid)
+        <link rel="icon" sizes="192x192" href="{{ $slIconAndroid }}">
+    @endif
     <style>
         /* Legacy mobile page: plain white body, 12px #555755 base text. */
         body { font-family: Arial, Helvetica, sans-serif; margin: 0; background: #fff; color: #555755; font-size: 12px; line-height: 22px; }
