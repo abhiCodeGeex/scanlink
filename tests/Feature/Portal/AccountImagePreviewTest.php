@@ -70,6 +70,39 @@ class AccountImagePreviewTest extends TestCase
         $this->assertSame([], $this->files($state->get('data.shortcut_image1')), 'nothing to preview, and nothing to save back');
     }
 
+    #[Test]
+    public function the_three_image_fields_use_the_same_compact_tile_as_the_profile_editor(): void
+    {
+        Storage::fake('public');
+        Storage::fake('legacy_media');
+
+        $owner = $this->accountOwner([]);
+
+        $page = Livewire::actingAs($owner)->test(EditAccount::class)->assertOk();
+
+        // Same panel as the profile editor's Logo field: a thumbnail tile, not a file-name row.
+        foreach (['shortcut_image1', 'shortcut_image2', 'footer_logo'] as $field) {
+            $component = $this->fileUpload($page->instance(), $field);
+
+            $classes = (string) ($component->getExtraAttributes()['class'] ?? '');
+
+            $this->assertStringContainsString('sl-logo-upload', $classes, $field.' uses the compact image tile');
+            $this->assertSame('compact', $component->getPanelLayout(), $field.' shows a thumbnail, not a file row');
+            $this->assertTrue($component->isPreviewable(), $field.' previews the image');
+        }
+    }
+
+    private function fileUpload(EditAccount $page, string $name): \Filament\Forms\Components\FileUpload
+    {
+        foreach ($page->getSchema('form')->getFlatComponents() as $component) {
+            if ($component instanceof \Filament\Forms\Components\FileUpload && $component->getName() === $name) {
+                return $component;
+            }
+        }
+
+        $this->fail('no FileUpload named '.$name);
+    }
+
     /**
      * A FileUpload holds its files as [upload id => path]; the paths are what matters here.
      *

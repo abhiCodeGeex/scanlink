@@ -2420,28 +2420,28 @@ tr.sl-row-active {
     color: #6b7280 !important;
 }
 
-.fi-page:has(.sl-profile-editor) .sl-logo-upload,
-.fi-page:has(.sl-profile-editor) .sl-add-form-left .sl-logo-upload.fi-fo-file-upload {
+.sl-logo-upload,
+.sl-add-form-left .sl-logo-upload.fi-fo-file-upload {
     margin: 0 !important;
     padding: 0 !important;
     max-width: 100%;
     box-sizing: border-box;
 }
 
-.fi-page:has(.sl-profile-editor) .sl-logo-upload .fi-fo-file-upload-input-ctn {
+.sl-logo-upload .fi-fo-file-upload-input-ctn {
     margin: 0 !important;
     max-width: 100%;
     box-sizing: border-box;
 }
 
-.fi-page:has(.sl-profile-editor) .sl-logo-upload .filepond--root {
+.sl-logo-upload .filepond--root {
     margin: 0 !important;
     max-width: 100%;
     box-sizing: border-box;
 }
 
-.fi-page:has(.sl-profile-editor) .sl-logo-upload .filepond--drop-label,
-.fi-page:has(.sl-profile-editor) .sl-logo-upload .filepond--drop-label label {
+.sl-logo-upload .filepond--drop-label,
+.sl-logo-upload .filepond--drop-label label {
     min-height: 48px !important;
     padding: 8px 12px !important;
     font-size: 12px !important;
@@ -2451,7 +2451,7 @@ tr.sl-row-active {
 
 /* Uploaded: image tile only (~76×76, +5% vs prior 72) + × — clip FilePond's
  * leftover bottom chrome (empty gray under the image after file-info is hidden). */
-.fi-page:has(.sl-profile-editor) .sl-logo-upload .filepond--root:has(.filepond--item) {
+.sl-logo-upload .filepond--root:has(.filepond--item) {
     width: 76px !important;
     max-width: 76px !important;
     min-width: 76px !important;
@@ -2462,29 +2462,29 @@ tr.sl-row-active {
     border-radius: 8px;
 }
 
-.fi-page:has(.sl-profile-editor) .sl-logo-upload .filepond--root:has(.filepond--item) .filepond--panel-root {
+.sl-logo-upload .filepond--root:has(.filepond--item) .filepond--panel-root {
     background-color: #f3f4f6;
 }
 
-.fi-page:has(.sl-profile-editor) .sl-logo-upload .filepond--root:has(.filepond--item) .filepond--image-preview-wrapper,
-.fi-page:has(.sl-profile-editor) .sl-logo-upload .filepond--root:has(.filepond--item) .filepond--image-preview {
+.sl-logo-upload .filepond--root:has(.filepond--item) .filepond--image-preview-wrapper,
+.sl-logo-upload .filepond--root:has(.filepond--item) .filepond--image-preview {
     height: 76px !important;
     min-height: 76px !important;
     max-height: 76px !important;
     background-color: #f3f4f6 !important;
 }
 
-.fi-page:has(.sl-profile-editor) .sl-logo-upload .filepond--image-preview {
+.sl-logo-upload .filepond--image-preview {
     background-color: #f3f4f6 !important;
 }
 
 /* Filename / size / status — hide so they don't reserve bottom/side space */
-.fi-page:has(.sl-profile-editor) .sl-logo-upload .filepond--root:has(.filepond--item) .filepond--file-info,
-.fi-page:has(.sl-profile-editor) .sl-logo-upload .filepond--root:has(.filepond--item) .filepond--file-status {
+.sl-logo-upload .filepond--root:has(.filepond--item) .filepond--file-info,
+.sl-logo-upload .filepond--root:has(.filepond--item) .filepond--file-status {
     display: none !important;
 }
 
-.fi-page:has(.sl-profile-editor) .sl-logo-upload .filepond--action-remove-item {
+.sl-logo-upload .filepond--action-remove-item {
     width: 22px !important;
     height: 22px !important;
     box-shadow: none !important;
@@ -2494,8 +2494,8 @@ tr.sl-row-active {
     border-radius: 999px !important;
 }
 
-.fi-page:has(.sl-profile-editor) .sl-logo-upload .filepond--action-remove-item:hover,
-.fi-page:has(.sl-profile-editor) .sl-logo-upload .filepond--action-remove-item:focus-visible {
+.sl-logo-upload .filepond--action-remove-item:hover,
+.sl-logo-upload .filepond--action-remove-item:focus-visible {
     color: #b91c1c !important;
     border-color: #fecaca !important;
     background-color: #fef2f2 !important;
@@ -2505,6 +2505,7 @@ tr.sl-row-active {
 /* Remove (x) button sits top-RIGHT on every upload preview. FilePond defaults it to the
    left, which put it over the top-left corner of picture previews while the logo uploads
    showed it on the right — the same control in two different places. */
+.sl-logo-upload .filepond--action-remove-item,
 .fi-page:has(.sl-profile-editor) .fi-fo-file-upload .filepond--action-remove-item {
     left: auto !important;
     right: 0.5em !important;

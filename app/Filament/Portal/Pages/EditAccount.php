@@ -213,7 +213,12 @@ class EditAccount extends Page implements HasTable
                             ->directory('touch_icons')
                             ->disk('public')
                             ->visibility('public')
-                            ->imagePreviewHeight('50')),
+                            ->previewable(true)
+                            ->removeUploadedFileButtonPosition('right top')
+                            ->imagePreviewHeight('76')
+                            // Same tile as the profile editor's Logo field: image only, no
+                            // file-name row and no empty space around it (sl-logo-upload).
+                            ->extraAttributes(['class' => 'sl-logo-upload'])),
                         $this->withLegacyPreview(FileUpload::make('shortcut_image2')
                             ->label('Shortcut Image 2 (Please use a 192x192px dimension PNG image)')
                             ->image()
@@ -222,7 +227,12 @@ class EditAccount extends Page implements HasTable
                             ->directory('touch_icons')
                             ->disk('public')
                             ->visibility('public')
-                            ->imagePreviewHeight('50')),
+                            ->previewable(true)
+                            ->removeUploadedFileButtonPosition('right top')
+                            ->imagePreviewHeight('76')
+                            // Same tile as the profile editor's Logo field: image only, no
+                            // file-name row and no empty space around it (sl-logo-upload).
+                            ->extraAttributes(['class' => 'sl-logo-upload'])),
                         $this->withLegacyPreview(FileUpload::make('footer_logo')
                             ->label('Footer Logo')
                             ->image()
@@ -230,7 +240,10 @@ class EditAccount extends Page implements HasTable
                             ->directory('logos')
                             ->disk('public')
                             ->visibility('public')
-                            ->imagePreviewHeight('50')
+                            ->previewable(true)
+                            ->removeUploadedFileButtonPosition('right top')
+                            ->imagePreviewHeight('76')
+                            ->extraAttributes(['class' => 'sl-logo-upload'])
                             ->helperText('Upload Company Logo: (File type JPG, JPEG, PNG, GIF) (Max file size 1MB)')
                             ->maxSize(1024)
                             ->columnSpanFull()),
