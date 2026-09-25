@@ -8,6 +8,7 @@ use App\Filament\Resources\Clients\Pages\EditClient;
 use App\Filament\Resources\Clients\Pages\ListClients;
 use App\Mail\ClientWelcomeNotification;
 use App\Models\Client;
+use App\Models\ClientUser;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
@@ -170,6 +171,8 @@ class ClientResourceTest extends TestCase
     public function test_add_free_codes_action_creates_free_order(): void
     {
         $client = Client::factory()->create();
+        // The grant needs someone to own the codes it creates; see FreeCodeSlotsTest.
+        ClientUser::factory()->primary()->create(['client_id' => $client->id]);
 
         $this->actingAs($this->admin());
 

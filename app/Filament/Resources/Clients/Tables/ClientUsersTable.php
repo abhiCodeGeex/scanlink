@@ -7,12 +7,15 @@ use App\Filament\Support\DateRangeTableFilter;
 use App\Filament\Support\SearchTableFilter;
 use App\Filament\Support\TableFilterDefaults;
 use App\Models\ClientUser;
+use App\Services\UserRenewalService;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
@@ -172,6 +175,53 @@ class ClientUsersTable
     public static function recordActions(): array
     {
         return [
+            // Legacy siteadmin had both: "Re-new" added a year (user.php:147-165) and the expiry
+            // date itself was editable (user.php:114-119). Neither came across, so an account
+            // that reached its expire_at could only be rescued with a SQL update.
+            Action::make('renewAccount')
+                ->label('Renew')
+                ->icon('heroicon-o-arrow-path')
+                ->color('success')
+                ->requiresConfirmation()
+                ->modalHeading('Re-new this account?')
+                ->modalDescription(fn (ClientUser $record): string => 'Adds a year, to '
+                    .app(UserRenewalService::class)->nextExpiryFor($record)->format('d/m/Y H:i:s')
+                    .'. The user is emailed the new expiry date.')
+                ->modalSubmitActionLabel('Re-new')
+                ->action(function (ClientUser $record): void {
+                    $renewed = app(UserRenewalService::class)->renew($record);
+
+                    Notification::make()
+                        ->success()
+                        ->title('Account re-newed')
+                        ->body($record->email.' now expires on '.$renewed->expire_at?->format('d/m/Y H:i:s').'.')
+                        ->send();
+                }),
+            Action::make('setExpiry')
+                ->label('Change expiry')
+                ->icon('heroicon-o-calendar-days')
+                ->color('gray')
+                ->modalHeading('Change the expiry date')
+                ->modalSubmitActionLabel('Save')
+                ->fillForm(fn (ClientUser $record): array => [
+                    'expire_at' => $record->expire_at,
+                ])
+                ->schema([
+                    DateTimePicker::make('expire_at')
+                        ->label('Expires')
+                        ->seconds(false)
+                        ->required(),
+                ])
+                ->action(function (ClientUser $record, array $data): void {
+                    $updated = app(UserRenewalService::class)
+                        ->updateExpiry($record, (string) $data['expire_at']);
+
+                    Notification::make()
+                        ->success()
+                        ->title('Expiry updated')
+                        ->body($record->email.' now expires on '.$updated->expire_at?->format('d/m/Y H:i:s').'.')
+                        ->send();
+                }),
             Action::make('toggleStatus')
                 ->label(fn (ClientUser $record): string => $record->status ? 'Block' : 'Unblock')
                 ->icon(fn (ClientUser $record): string => $record->status ? 'heroicon-o-no-symbol' : 'heroicon-o-check-circle')

@@ -4,10 +4,12 @@ namespace App\Models;
 
 use App\Casts\MysqlEnumBoolean;
 use App\Enums\ClientUserRole;
+use App\Enums\UserType;
 use App\Models\Concerns\FillsLegacyNotNullDefaults;
 use Database\Factories\ClientUserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -54,6 +56,7 @@ class ClientUser extends Model
 {
     /** @use HasFactory<ClientUserFactory> */
     use FillsLegacyNotNullDefaults;
+
     use HasFactory;
 
     /**
@@ -100,7 +103,9 @@ class ClientUser extends Model
             'customqr_option' => 'boolean',
             'is_password_change' => 'boolean',
             'expire_at' => 'datetime',
-            'notice' => 'boolean',
+            // Legacy's account-expiry stage counter, not a flag: 0 = nothing sent,
+            // 1 = the two-month warning, 2 = the one-month one (welcome.php:104-111).
+            'notice' => 'integer',
             'is_sub_user' => 'boolean',
             'access_addcode' => 'boolean',
             'access_edit' => 'boolean',
@@ -128,8 +133,8 @@ class ClientUser extends Model
      * Active memberships only. Live schema stores ENUM('0','1'); binding PHP
      * true in where() does not match, so always compare to the string member.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<static>
+     * @param  Builder<static>  $query
+     * @return Builder<static>
      */
     public function scopeActive($query)
     {
@@ -159,8 +164,8 @@ class ClientUser extends Model
     /**
      * Unrestricted (non sub-user) memberships. Live schema stores INT 0/1.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<static>
+     * @param  Builder<static>  $query
+     * @return Builder<static>
      */
     public function scopeNotSubUser($query)
     {
@@ -168,8 +173,8 @@ class ClientUser extends Model
     }
 
     /**
-     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<static>
+     * @param  Builder<static>  $query
+     * @return Builder<static>
      */
     public function scopeSubUser($query)
     {
@@ -282,8 +287,8 @@ class ClientUser extends Model
         // to `portal` and wipe admin_role, so an admin who is also a client member lost the admin
         // panel the first time their account was edited. Only a login with no stronger role
         // becomes a client login; which role is in use is decided by the door, per session.
-        if ($auth->user_type !== \App\Enums\UserType::Admin) {
-            $auth->user_type = \App\Enums\UserType::Portal;
+        if ($auth->user_type !== UserType::Admin) {
+            $auth->user_type = UserType::Portal;
             $auth->admin_role = null;
         }
 

@@ -3,6 +3,7 @@
 namespace App\Filament\Portal\Auth;
 
 use App\Enums\ClientUserRole;
+use App\Enums\CodeOrderStatus;
 use App\Enums\UserType;
 use App\Mail\ScanlinkMail;
 use App\Models\Client;
@@ -10,6 +11,7 @@ use App\Models\ClientUser;
 use App\Models\CodePrising;
 use App\Models\CodePurchase;
 use App\Models\User;
+use App\Services\CodeSlotIssuer;
 use App\Services\ContactCaptchaService;
 use App\Support\SystemNotifier;
 use DanHarrin\LivewireRateLimiting\Exceptions\TooManyRequestsException;
@@ -20,6 +22,7 @@ use Filament\Facades\Filament;
 use Filament\Schemas\Components\View as SchemaView;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\Width;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -58,12 +61,12 @@ class Register extends BaseRegister
         return Width::Full;
     }
 
-    public function getTitle(): string|\Illuminate\Contracts\Support\Htmlable
+    public function getTitle(): string|Htmlable
     {
         return 'Register with ScanLink';
     }
 
-    public function getHeading(): string|\Illuminate\Contracts\Support\Htmlable|null
+    public function getHeading(): string|Htmlable|null
     {
         return null;
     }
@@ -402,7 +405,7 @@ class Register extends BaseRegister
                 'admin_role' => null,
             ]);
 
-            ClientUser::query()->create([
+            $member = ClientUser::query()->create([
                 'client_id' => $client->id,
                 'auth_user_id' => $user->id,
                 'email' => $data['email'],
@@ -423,7 +426,7 @@ class Register extends BaseRegister
             ]);
 
             // Legacy bypass: 1 free code for the year.
-            CodePurchase::query()->create([
+            $order = CodePurchase::query()->create([
                 'client_id' => $client->id,
                 'email' => $data['email'],
                 'first_name' => $data['first_name'],
@@ -436,11 +439,16 @@ class Register extends BaseRegister
                 'no_of_codes' => 1,
                 'per_code_amount' => 0,
                 'total_amount' => 0,
-                'status' => \App\Enums\CodeOrderStatus::New,
+                'status' => CodeOrderStatus::New,
                 'enable' => true,
                 'free_code' => true,
                 'ordered_on' => now(),
             ]);
+
+            // The order alone is not a code: legacy also created the open slot the customer
+            // activates (classes/model/codepurchase.php:113). Without it a new sign-up lands on
+            // a Code Balance of 0 with nothing to activate.
+            app(CodeSlotIssuer::class)->issue($order, $member, 1);
 
             return $user->fresh();
         });

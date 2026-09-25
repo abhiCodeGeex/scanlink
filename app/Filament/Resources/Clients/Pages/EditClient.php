@@ -8,10 +8,13 @@ use App\Filament\Resources\Clients\ClientResource;
 use App\Filament\Resources\Clients\RelationManagers\ClientUsersRelationManager;
 use App\Filament\Resources\Clients\Tables\ClientUsersTable;
 use App\Models\Client;
+use App\Models\ClientUser;
+use App\Services\CodeSlotIssuer;
 use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\QueryException;
 use Illuminate\Validation\ValidationException;
 
 class EditClient extends EditRecord
@@ -94,7 +97,22 @@ class EditClient extends EditRecord
                     try {
                         $client = $this->record;
 
-                        $client->codePurchases()->create([
+                        $member = $client->users()
+                            ->orderBy('is_sub_user')
+                            ->orderByDesc('role')
+                            ->first();
+
+                        if (! $member instanceof ClientUser) {
+                            Notification::make()
+                                ->title('Could not add free codes')
+                                ->body('This client has no user to own the codes.')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        $order = $client->codePurchases()->create([
                             'email' => $client->email,
                             'first_name' => $client->contact_person,
                             'company_name' => $client->client_name,
@@ -108,7 +126,12 @@ class EditClient extends EditRecord
                             'free_code' => true,
                             'ordered_on' => now(),
                         ]);
-                    } catch (\Illuminate\Database\QueryException $exception) {
+
+                        // Legacy's add_free_code also created one open slot per code
+                        // (siteadmin classes/model/codeorder.php:164); without it the grant
+                        // shows as an order and the client's balance never moves.
+                        app(CodeSlotIssuer::class)->issue($order, $member, (int) $data['no_of_codes']);
+                    } catch (QueryException $exception) {
                         report($exception);
 
                         Notification::make()

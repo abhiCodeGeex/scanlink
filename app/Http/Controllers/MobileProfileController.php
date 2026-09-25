@@ -49,6 +49,18 @@ class MobileProfileController extends Controller
             return view('scan.expired', compact('profile'));
         }
 
+        // Password gate applies to live scans and portal preview (legacy mobile behaviour), and
+        // it comes first: legacy checked `protect` (mobile.php:268) before it looked at the code
+        // type, so a password-protected URL-link code asked for the password rather than
+        // forwarding the scanner straight to its destination.
+        if ($profile->protect && ! $this->isUnlocked($profile)) {
+            return view('scan.password', [
+                'profile' => $profile,
+                'clientUrl' => $clientUrl,
+                'portalPreview' => $portalPreview || PortalProfilePreview::isPreviewRequest(),
+            ]);
+        }
+
         if ($redirectUrl = $this->codeRedirectUrl($profile)) {
             if (! $portalPreview) {
                 // Legacy records the scan for URL-link codes too, and (when data collection is
@@ -67,15 +79,6 @@ class MobileProfileController extends Controller
 
                 return redirect()->away($redirectUrl);
             }
-        }
-
-        // Password gate applies to live scans and portal preview (legacy mobile behaviour).
-        if ($profile->protect && ! $this->isUnlocked($profile)) {
-            return view('scan.password', [
-                'profile' => $profile,
-                'clientUrl' => $clientUrl,
-                'portalPreview' => $portalPreview || PortalProfilePreview::isPreviewRequest(),
-            ]);
         }
 
         $scanHitId = null;

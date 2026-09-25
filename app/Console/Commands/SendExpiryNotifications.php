@@ -59,10 +59,10 @@ class SendExpiryNotifications extends Command
                     continue;
                 }
 
-                // Sub-users only notified when they have the notice flag (legacy parity).
-                if ($member->is_sub_user && ! $member->notice) {
-                    continue;
-                }
+                // Every code owner is told, sub-user or not. Legacy's profileexpiry task mailed
+                // whoever owned the code with no such test; `notice` is its account-renewal
+                // counter, and it is 0 on nearly every imported sub-user, so keying off it
+                // silenced the warnings for their codes entirely.
 
                 $email = $member->email ?: $userProfiles->first()->client?->email;
 

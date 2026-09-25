@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Filament\Portal\Pages\VocDashboard;
 use App\Filament\Portal\Resources\Profiles\ProfileResource;
 use App\Http\Middleware\ConfineVocCardHolder;
+use App\Models\Client;
 use App\Models\User;
 use App\Support\LoginEntrance;
 use App\Support\VocCardLogin;
@@ -139,6 +140,17 @@ class PortalAuthController extends Controller
             ]);
         }
 
+        // A client the admin has blocked cannot sign in, nor can any of its users: legacy
+        // checked clients.approve first thing (welcome.php:265), so pressing Block really did
+        // shut the account. Without this the button changed nothing.
+        if (! $cardHolderEntrance && $this->isBlockedClientMember($user)) {
+            $this->abandonSession($request);
+
+            throw ValidationException::withMessages([
+                'email' => 'Your account is blocked, please contact admin to un-block account.',
+            ]);
+        }
+
         // Record which door was used, the way legacy's voc_user_id session value did. It decides
         // the role for the rest of the session, and replaces whatever a previous login recorded.
         LoginEntrance::record($cardHolderEntrance ? LoginEntrance::VOC : LoginEntrance::CLIENT);
@@ -184,6 +196,28 @@ class PortalAuthController extends Controller
         }
 
         return redirect()->to($fallback);
+    }
+
+    /**
+     * Does every client this person belongs to have its account blocked?
+     *
+     * Someone can hold memberships of several clients; they are only turned away when none of
+     * those clients is approved, so a block on one client cannot lock them out of another.
+     */
+    protected function isBlockedClientMember(User $user): bool
+    {
+        $clientIds = $user->clientMemberships()->active()->pluck('client_id')->unique();
+
+        if ($clientIds->isEmpty()) {
+            return false;
+        }
+
+        // Read approve through the model: live stores ENUM('0','1'), the test schema a boolean,
+        // and the cast is the only place that knows both.
+        return ! Client::query()
+            ->whereIn('id', $clientIds)
+            ->get(['id', 'approve'])
+            ->contains(fn (Client $client): bool => $client->approve);
     }
 
     /** Drop a session that authenticated but is not allowed through this entrance. */
