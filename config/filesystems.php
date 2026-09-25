@@ -47,6 +47,21 @@ return [
             'report' => false,
         ],
 
+        /*
+         * The legacy Kohana media tree, served straight out of public/images. Every logo, card
+         * photo and home-screen icon that came across in the import still lives here, while new
+         * uploads go to the 'public' disk — so anything reading an imported file looks in both.
+         * Read-only in practice: on the server this path is the mounted legacy restore.
+         */
+        'legacy_media' => [
+            'driver' => 'local',
+            'root' => public_path('images'),
+            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/images',
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

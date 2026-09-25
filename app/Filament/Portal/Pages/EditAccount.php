@@ -114,7 +114,7 @@ class EditAccount extends Page implements HasTable
                 'shortcut_title' => $client?->shortcut_title ?: '',
                 'shortcut_image1' => $this->existingPublicUpload($client?->shortcut_image1, 'touch_icons'),
                 'shortcut_image2' => $this->existingPublicUpload($client?->shortcut_image2, 'touch_icons'),
-                'footer_logo' => $this->existingPublicUpload($member->footer_logo, 'logos', 'images/logo'),
+                'footer_logo' => $this->existingPublicUpload($member->footer_logo, 'logos', 'logo'),
             ]);
 
             $this->getSchema('subUserForm')?->fill([
@@ -550,11 +550,11 @@ class EditAccount extends Page implements HasTable
             return $relative;
         }
 
-        // Legacy kept footer logos in images/logo and the icons in images/touch_icons, so the
-        // folder is not always the one the upload field writes to.
-        $legacy = ($legacyDirectory ?? 'images/'.$directory).'/'.$name;
+        // Legacy kept footer logos in logo/ and the icons in touch_icons/, so the folder is not
+        // always the one the upload field writes to.
+        $legacy = ($legacyDirectory ?? $directory).'/'.$name;
 
-        return is_file(public_path($legacy)) ? $legacy : null;
+        return Storage::disk('legacy_media')->exists($legacy) ? 'images/'.$legacy : null;
     }
 
     /**
@@ -571,17 +571,18 @@ class EditAccount extends Page implements HasTable
                     return $component->getUploadedFile($file, $storedFileNames);
                 }
 
-                $absolute = public_path($file);
+                $legacy = Storage::disk('legacy_media');
+                $relative = substr($file, strlen('images/'));
 
-                if (! is_file($absolute)) {
+                if (! $legacy->exists($relative)) {
                     return null;
                 }
 
                 return [
                     'name' => basename($file),
-                    'size' => (int) filesize($absolute),
-                    'type' => mime_content_type($absolute) ?: null,
-                    'url' => asset($file),
+                    'size' => (int) $legacy->size($relative),
+                    'type' => $legacy->mimeType($relative) ?: null,
+                    'url' => $legacy->url($relative),
                 ];
             });
     }

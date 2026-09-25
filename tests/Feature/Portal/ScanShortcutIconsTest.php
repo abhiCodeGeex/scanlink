@@ -26,6 +26,7 @@ class ScanShortcutIconsTest extends TestCase
     public function the_card_carries_the_clients_shortcut_title_and_home_screen_icons(): void
     {
         Storage::fake('public');
+        Storage::fake('legacy_media');
         Storage::disk('public')->put('touch_icons/icon-180.png', 'ios');
         Storage::disk('public')->put('touch_icons/icon-192.png', 'android');
 
@@ -48,6 +49,7 @@ class ScanShortcutIconsTest extends TestCase
     public function a_client_without_them_keeps_the_default_title_and_gets_no_icons(): void
     {
         Storage::fake('public');
+        Storage::fake('legacy_media');
 
         $client = Client::factory()->create([
             'url' => 'plain-co',
@@ -68,6 +70,7 @@ class ScanShortcutIconsTest extends TestCase
     public function an_icon_whose_file_is_missing_is_not_linked(): void
     {
         Storage::fake('public');
+        Storage::fake('legacy_media');
 
         $client = Client::factory()->create([
             'url' => 'gone-co',

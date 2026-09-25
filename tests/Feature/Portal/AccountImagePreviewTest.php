@@ -8,7 +8,6 @@ use App\Models\Client;
 use App\Models\ClientUser;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
@@ -18,31 +17,21 @@ use Tests\TestCase;
  * My Account shows the images a client already has.
  *
  * The three upload fields read the public disk, but every image that came across in the import
- * sits in the legacy media tree under public/images. Filament silently drops a value whose file
- * it cannot find on its own disk, so a client with a footer logo and both shortcut icons was
+ * sits in the legacy media tree (the legacy_media disk). Filament silently drops a value whose
+ * file it cannot find on its own disk, so a client with a footer logo and both shortcut icons was
  * shown three empty drop zones — and saving the form would then clear the names from the record.
  */
 class AccountImagePreviewTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @var list<string> */
-    private array $legacyFiles = [];
-
-    protected function tearDown(): void
-    {
-        foreach ($this->legacyFiles as $path) {
-            File::delete($path);
-        }
-
-        parent::tearDown();
-    }
-
     #[Test]
     public function an_image_in_the_legacy_media_tree_is_loaded_into_the_form(): void
     {
-        $this->legacyFile('images/touch_icons/preview-test-180.png');
-        $this->legacyFile('images/logo/preview-test-footer.png');
+        Storage::fake('public');
+        Storage::fake('legacy_media');
+        Storage::disk('legacy_media')->put('touch_icons/preview-test-180.png', 'png');
+        Storage::disk('legacy_media')->put('logo/preview-test-footer.png', 'png');
 
         $owner = $this->accountOwner([
             'shortcut_image1' => 'preview-test-180.png',
@@ -58,6 +47,7 @@ class AccountImagePreviewTest extends TestCase
     public function a_new_upload_on_the_public_disk_is_still_loaded(): void
     {
         Storage::fake('public');
+        Storage::fake('legacy_media');
         Storage::disk('public')->put('touch_icons/fresh-upload.png', 'png');
 
         $owner = $this->accountOwner(['shortcut_image1' => 'fresh-upload.png']);
@@ -71,6 +61,7 @@ class AccountImagePreviewTest extends TestCase
     public function a_name_whose_file_is_gone_leaves_the_field_empty(): void
     {
         Storage::fake('public');
+        Storage::fake('legacy_media');
 
         $owner = $this->accountOwner(['shortcut_image1' => 'deleted-long-ago.png']);
 
@@ -87,17 +78,6 @@ class AccountImagePreviewTest extends TestCase
     private function files(mixed $state): array
     {
         return array_values(array_map(strval(...), (array) $state));
-    }
-
-    /** A file where the legacy app kept it, cleaned up after the test. */
-    private function legacyFile(string $relative): void
-    {
-        $absolute = public_path($relative);
-
-        File::ensureDirectoryExists(dirname($absolute));
-        File::put($absolute, 'test image');
-
-        $this->legacyFiles[] = $absolute;
     }
 
     /**

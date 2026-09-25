@@ -122,9 +122,9 @@ class Client extends Model
             return Storage::disk('public')->url('touch_icons/'.$name);
         }
 
-        return file_exists(public_path('images/touch_icons/'.$name))
-            ? asset('images/touch_icons/'.$name)
-            : null;
+        $legacy = Storage::disk('legacy_media');
+
+        return $legacy->exists('touch_icons/'.$name) ? $legacy->url('touch_icons/'.$name) : null;
     }
 
     public function resellerName(): ?string
