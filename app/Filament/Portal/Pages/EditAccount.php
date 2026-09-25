@@ -114,7 +114,7 @@ class EditAccount extends Page implements HasTable
                 'shortcut_title' => $client?->shortcut_title ?: '',
                 'shortcut_image1' => $this->existingPublicUpload($client?->shortcut_image1, 'touch_icons'),
                 'shortcut_image2' => $this->existingPublicUpload($client?->shortcut_image2, 'touch_icons'),
-                'footer_logo' => $this->existingPublicUpload($member->footer_logo, 'logos'),
+                'footer_logo' => $this->existingPublicUpload($member->footer_logo, 'logos', 'images/logo'),
             ]);
 
             $this->getSchema('subUserForm')?->fill([
@@ -205,7 +205,7 @@ class EditAccount extends Page implements HasTable
                             ->label('Shortcut Title:')
                             ->maxLength(255)
                             ->columnSpanFull(),
-                        FileUpload::make('shortcut_image1')
+                        $this->withLegacyPreview(FileUpload::make('shortcut_image1')
                             ->label('Shortcut Image 1 (Please use a 180x180px dimension PNG image)')
                             ->image()
                             ->validationMessages(['mimetypes' => 'Please use png image for Shortcut Image 1'])
@@ -213,8 +213,8 @@ class EditAccount extends Page implements HasTable
                             ->directory('touch_icons')
                             ->disk('public')
                             ->visibility('public')
-                            ->imagePreviewHeight('50'),
-                        FileUpload::make('shortcut_image2')
+                            ->imagePreviewHeight('50')),
+                        $this->withLegacyPreview(FileUpload::make('shortcut_image2')
                             ->label('Shortcut Image 2 (Please use a 192x192px dimension PNG image)')
                             ->image()
                             ->validationMessages(['mimetypes' => 'Please use png image for Shortcut Image 2'])
@@ -222,8 +222,8 @@ class EditAccount extends Page implements HasTable
                             ->directory('touch_icons')
                             ->disk('public')
                             ->visibility('public')
-                            ->imagePreviewHeight('50'),
-                        FileUpload::make('footer_logo')
+                            ->imagePreviewHeight('50')),
+                        $this->withLegacyPreview(FileUpload::make('footer_logo')
                             ->label('Footer Logo')
                             ->image()
                             ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/gif', 'image/jpg'])
@@ -233,7 +233,7 @@ class EditAccount extends Page implements HasTable
                             ->imagePreviewHeight('50')
                             ->helperText('Upload Company Logo: (File type JPG, JPEG, PNG, GIF) (Max file size 1MB)')
                             ->maxSize(1024)
-                            ->columnSpanFull(),
+                            ->columnSpanFull()),
                     ]),
             ]);
     }
@@ -529,15 +529,61 @@ class EditAccount extends Page implements HasTable
         return false;
     }
 
-    protected function existingPublicUpload(?string $filename, string $directory): ?string
+    /**
+     * Where an already-saved image actually lives, ready to hand to a FileUpload.
+     *
+     * The column holds only the file name. New uploads go to the public disk, but every image
+     * that came across in the import still sits in the legacy media tree under public/images,
+     * so both are looked at — otherwise the field shows an empty drop zone for a client who
+     * plainly has a logo, and saving the form would then wipe it.
+     */
+    protected function existingPublicUpload(?string $filename, string $directory, ?string $legacyDirectory = null): ?string
     {
         if (! filled($filename)) {
             return null;
         }
 
-        $relative = $directory.'/'.ltrim(basename($filename), '/');
+        $name = ltrim(basename($filename), '/');
+        $relative = $directory.'/'.$name;
 
-        return Storage::disk('public')->exists($relative) ? $relative : null;
+        if (Storage::disk('public')->exists($relative)) {
+            return $relative;
+        }
+
+        // Legacy kept footer logos in images/logo and the icons in images/touch_icons, so the
+        // folder is not always the one the upload field writes to.
+        $legacy = ($legacyDirectory ?? 'images/'.$directory).'/'.$name;
+
+        return is_file(public_path($legacy)) ? $legacy : null;
+    }
+
+    /**
+     * Let a FileUpload preview an image that lives in the legacy media tree rather than on its
+     * own disk: Filament drops a value whose file it cannot find, and builds its preview URL
+     * from the disk, so both steps are taken over for those paths.
+     */
+    protected function withLegacyPreview(FileUpload $field): FileUpload
+    {
+        return $field
+            ->fetchFileInformation(false)
+            ->getUploadedFileUsing(function (FileUpload $component, string $file, string|array|null $storedFileNames): ?array {
+                if (! str_starts_with($file, 'images/')) {
+                    return $component->getUploadedFile($file, $storedFileNames);
+                }
+
+                $absolute = public_path($file);
+
+                if (! is_file($absolute)) {
+                    return null;
+                }
+
+                return [
+                    'name' => basename($file),
+                    'size' => (int) filesize($absolute),
+                    'type' => mime_content_type($absolute) ?: null,
+                    'url' => asset($file),
+                ];
+            });
     }
 
     protected function storeBasename(mixed $path): ?string
