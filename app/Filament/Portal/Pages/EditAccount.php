@@ -3,11 +3,11 @@
 namespace App\Filament\Portal\Pages;
 
 use App\Enums\ClientUserRole;
-use App\Enums\UserType;
 use App\Filament\Portal\Concerns\InteractsWithClientMembership;
 use App\Models\ClientUser;
 use App\Models\Profile;
 use App\Models\User;
+use App\Support\LoginEntrance;
 use BackedEnum;
 use Carbon\Carbon;
 use Filament\Actions\Action;
@@ -35,7 +35,6 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 use Illuminate\Validation\ValidationException;
-use App\Support\LoginEntrance;
 
 /**
  * Legacy profile/index — Edit Profile, Change Password, Add sub user, Manage User list.
@@ -410,13 +409,13 @@ class EditAccount extends Page implements HasTable
             'town' => $data['town'],
             'phone' => $data['phone'] ?: 0,
             'postal_code' => $data['postal_code'] ?: 0,
-            'footer_logo' => $this->storeBasename($data['footer_logo'] ?? null) ?? ($member->footer_logo ?: ''),
+            'footer_logo' => $this->imageToStore($data, 'footer_logo', (string) $member->footer_logo, 'logos'),
         ]);
 
         $clientPayload = [
             'shortcut_title' => $data['shortcut_title'] ?? '',
-            'shortcut_image1' => $this->storeBasename($data['shortcut_image1'] ?? null) ?? ($client->shortcut_image1 ?: ''),
-            'shortcut_image2' => $this->storeBasename($data['shortcut_image2'] ?? null) ?? ($client->shortcut_image2 ?: ''),
+            'shortcut_image1' => $this->imageToStore($data, 'shortcut_image1', (string) $client->shortcut_image1, 'touch_icons'),
+            'shortcut_image2' => $this->imageToStore($data, 'shortcut_image2', (string) $client->shortcut_image2, 'touch_icons'),
         ];
 
         // Legacy profile/index mirrors the owner's details onto the clients row, but only
@@ -600,8 +599,42 @@ class EditAccount extends Page implements HasTable
             });
     }
 
+    /**
+     * What to store for one of the three image fields, and tidy up the file it replaces.
+     *
+     * The field is the record. An empty field means the client removed the image, which is what
+     * legacy's "Remove Logo" did (dashboard.php:2581-2584) - it cleared the column and unlinked
+     * the file. The previous version fell back to the stored name whenever the field came back
+     * empty, so the X could never take: every save wrote the old name straight back.
+     *
+     * When the name changes, the file it replaces is deleted from our own upload area, the way
+     * legacy unlinked the previous one (profile.php:215). Files in the imported legacy tree are
+     * left alone: that tree is a frozen restore, and a name there may be shared.
+     */
+    protected function imageToStore(array $data, string $field, string $current, string $directory): string
+    {
+        $name = $this->storeBasename($data[$field] ?? null) ?? '';
+        $previous = basename($current);
+
+        if ($previous !== '' && $previous !== '.' && $previous !== $name) {
+            $path = $directory.'/'.$previous;
+
+            if (Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
+            }
+        }
+
+        return $name;
+    }
+
+    /** The filename a FileUpload now holds, or null when it holds nothing. */
     protected function storeBasename(mixed $path): ?string
     {
+        // A single FileUpload keeps its value as [upload id => path].
+        if (is_array($path)) {
+            $path = reset($path);
+        }
+
         if (! filled($path) || ! is_string($path)) {
             return null;
         }
@@ -836,4 +869,3 @@ class EditAccount extends Page implements HasTable
         }
     }
 }
-
