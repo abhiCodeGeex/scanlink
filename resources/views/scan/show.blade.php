@@ -2033,10 +2033,7 @@
     </div>
 
     @php
-        $ownerFooter = trim((string) ($profile->owner?->footer_logo ?? ''));
-        $footerSrc = ($ownerFooter !== '' && file_exists(public_path('images/logo/'.$ownerFooter)))
-            ? asset('images/logo/'.$ownerFooter)
-            : asset('images/PoweredbyScanLink.png');
+        $footerSrc = $profile->footerLogoUrl() ?: asset('images/PoweredbyScanLink.png');
     @endphp
     <footer class="mobile-footer">
         <figure style="margin:0;">

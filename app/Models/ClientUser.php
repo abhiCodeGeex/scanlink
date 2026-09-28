@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 #[Fillable([
     'client_id',
@@ -122,6 +123,32 @@ class ClientUser extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    /**
+     * The footer logo this user has of their own, wherever the file happens to live.
+     *
+     * Legacy wrote footer logos to images/logo/ and read them back from the same folder. The
+     * rebuild's upload field writes to the public disk instead, so a logo uploaded since the
+     * cutover sits somewhere the old path cannot see it - which is why re-uploading one made it
+     * disappear from every card. Both places are checked, newest home first, exactly as
+     * Client::shortcutIconUrl() already does for the home-screen icons.
+     */
+    public function footerLogoUrl(): ?string
+    {
+        $name = basename(trim((string) $this->footer_logo));
+
+        if ($name === '' || $name === '.') {
+            return null;
+        }
+
+        if (Storage::disk('public')->exists('logos/'.$name)) {
+            return Storage::disk('public')->url('logos/'.$name);
+        }
+
+        $legacy = Storage::disk('legacy_media');
+
+        return $legacy->exists('logo/'.$name) ? $legacy->url('logo/'.$name) : null;
     }
 
     public function authUser(): BelongsTo

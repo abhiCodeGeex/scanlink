@@ -217,8 +217,9 @@
         </div>
     </div>
 
+    {{-- Legacy set the same footer logo on the unlock screen (mobile.php:1542), not the default. --}}
     <footer class="mobile-footer">
-        <img src="{{ asset('images/PoweredbyScanLink.png') }}" alt="Powered by SCANLINK">
+        <img src="{{ $profile->footerLogoUrl() ?: asset('images/PoweredbyScanLink.png') }}" alt="Powered by SCANLINK">
     </footer>
 </div>
 </body>

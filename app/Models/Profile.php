@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Casts\LegacyZeroOne;
 use App\Enums\ProfileCodeType;
 use App\Models\Concerns\FillsLegacyNotNullDefaults;
+use App\Services\AnalyticsApiService;
 use Database\Factories\ProfileFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,6 +13,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 #[Fillable([
     'client_id', 'user_id', 'type_id', 'name', 'position', 'code_profile_name', 'identification',
@@ -36,6 +41,7 @@ class Profile extends Model
 {
     /** @use HasFactory<ProfileFactory> */
     use FillsLegacyNotNullDefaults;
+
     use HasFactory;
 
     protected static function booted(): void
@@ -121,9 +127,9 @@ class Profile extends Model
             }
 
             try {
-                app(\App\Services\AnalyticsApiService::class)->clearItem($key);
+                app(AnalyticsApiService::class)->clearItem($key);
             } catch (\Throwable $exception) {
-                \Illuminate\Support\Facades\Log::warning('Failed to clear analytics on archive', [
+                Log::warning('Failed to clear analytics on archive', [
                     'profile_id' => $profile->getKey(),
                     'message' => $exception->getMessage(),
                 ]);
@@ -202,34 +208,34 @@ class Profile extends Model
     protected function casts(): array
     {
         return [
-            'protect' => \App\Casts\LegacyZeroOne::class,
-            'show_header' => \App\Casts\LegacyZeroOne::class.':true',
-            'show_name' => \App\Casts\LegacyZeroOne::class.':true',
-            'show_description' => \App\Casts\LegacyZeroOne::class.':true',
-            'show_address' => \App\Casts\LegacyZeroOne::class.':true',
-            'show_telephone' => \App\Casts\LegacyZeroOne::class.':true',
-            'show_mobile' => \App\Casts\LegacyZeroOne::class.':true',
-            'show_email' => \App\Casts\LegacyZeroOne::class.':true',
-            'show_url' => \App\Casts\LegacyZeroOne::class.':true',
-            'voc_title_bar_enable' => \App\Casts\LegacyZeroOne::class.':true',
-            'enable_data_collection' => \App\Casts\LegacyZeroOne::class.':true',
-            'set_up_compulsory' => \App\Casts\LegacyZeroOne::class,
-            'data_collection_name' => \App\Casts\LegacyZeroOne::class,
-            'data_collection_surname' => \App\Casts\LegacyZeroOne::class,
-            'data_collection_email' => \App\Casts\LegacyZeroOne::class.':true',
-            'data_collection_mobile' => \App\Casts\LegacyZeroOne::class.':true',
-            'display_share_link' => \App\Casts\LegacyZeroOne::class,
-            'activate_bridge_graphic' => \App\Casts\LegacyZeroOne::class.':true',
-            'link_button' => \App\Casts\LegacyZeroOne::class.':true',
+            'protect' => LegacyZeroOne::class,
+            'show_header' => LegacyZeroOne::class.':true',
+            'show_name' => LegacyZeroOne::class.':true',
+            'show_description' => LegacyZeroOne::class.':true',
+            'show_address' => LegacyZeroOne::class.':true',
+            'show_telephone' => LegacyZeroOne::class.':true',
+            'show_mobile' => LegacyZeroOne::class.':true',
+            'show_email' => LegacyZeroOne::class.':true',
+            'show_url' => LegacyZeroOne::class.':true',
+            'voc_title_bar_enable' => LegacyZeroOne::class.':true',
+            'enable_data_collection' => LegacyZeroOne::class.':true',
+            'set_up_compulsory' => LegacyZeroOne::class,
+            'data_collection_name' => LegacyZeroOne::class,
+            'data_collection_surname' => LegacyZeroOne::class,
+            'data_collection_email' => LegacyZeroOne::class.':true',
+            'data_collection_mobile' => LegacyZeroOne::class.':true',
+            'display_share_link' => LegacyZeroOne::class,
+            'activate_bridge_graphic' => LegacyZeroOne::class.':true',
+            'link_button' => LegacyZeroOne::class.':true',
             // Live DB uses enum('0','1') — boolean cast sends int 0 which MySQL truncates.
-            'deleted' => \App\Casts\LegacyZeroOne::class,
-            'update_or_not' => \App\Casts\LegacyZeroOne::class,
-            'form_active' => \App\Casts\LegacyZeroOne::class,
-            'form_is_enable' => \App\Casts\LegacyZeroOne::class,
-            'enable_form_analytics' => \App\Casts\LegacyZeroOne::class,
-            'pop_up_formbuilder' => \App\Casts\LegacyZeroOne::class,
-            'free_code' => \App\Casts\LegacyZeroOne::class,
-            'is_reseller_code' => \App\Casts\LegacyZeroOne::class,
+            'deleted' => LegacyZeroOne::class,
+            'update_or_not' => LegacyZeroOne::class,
+            'form_active' => LegacyZeroOne::class,
+            'form_is_enable' => LegacyZeroOne::class,
+            'enable_form_analytics' => LegacyZeroOne::class,
+            'pop_up_formbuilder' => LegacyZeroOne::class,
+            'free_code' => LegacyZeroOne::class,
+            'is_reseller_code' => LegacyZeroOne::class,
             'form_submission_format' => 'integer',
             'code_type' => ProfileCodeType::class,
             'expired_at' => 'datetime',
@@ -247,6 +253,21 @@ class Profile extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(ClientUser::class, 'user_id');
+    }
+
+    /**
+     * The logo shown in the footer of this card, or null for the "Powered by ScanLink" default.
+     *
+     * Legacy took it from the user who owns the code (mobile.php:201) and nowhere else, so a
+     * client whose codes are spread across several admins saw the logo on one admin's cards and
+     * the default on the rest. The account owner's logo now stands in for anyone who has not set
+     * one of their own: the company mark covers every card, and an admin who uploads their own
+     * still overrides it for theirs, which is the behaviour legacy allowed.
+     */
+    public function footerLogoUrl(): ?string
+    {
+        return $this->owner?->footerLogoUrl()
+            ?? $this->client?->primaryUser?->footerLogoUrl();
     }
 
     public function equipmentType(): BelongsTo
@@ -375,7 +396,7 @@ class Profile extends Model
         return $this->hasMany(VocUser::class);
     }
 
-    public function qrImage(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function qrImage(): HasOne
     {
         return $this->hasOne(QrImage::class, 'profile_id');
     }
@@ -492,10 +513,10 @@ class Profile extends Model
     }
 
     /**
-     * @param  callable(\Illuminate\Database\Eloquent\Builder): void|null  $constrain
-     * @return \Illuminate\Support\Collection<int|string, string>
+     * @param  callable(Builder): void|null  $constrain
+     * @return Collection<int|string, string>
      */
-    public static function selectOptionsForClient(int $clientId, ?callable $constrain = null): \Illuminate\Support\Collection
+    public static function selectOptionsForClient(int $clientId, ?callable $constrain = null): Collection
     {
         $query = static::query()
             ->where('client_id', $clientId)
