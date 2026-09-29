@@ -339,21 +339,16 @@ class CreateProfile extends EditRecord
     }
 
     /**
+     * No button at the foot of the form.
+     *
+     * The page carries its own SAVE above the first card (legacy-profile-page), which follows
+     * the page down as you scroll, so the one down here was a second way to do the same thing
+     * at the end of a very long form.
+     *
      * @return array<\Filament\Actions\Action>
      */
     protected function getFormActions(): array
     {
-        // Survey Save is rendered under Form Builder in legacy-profile-page (no Cancel).
-        if ($this->activeEditorTypeSlag() === 'survey') {
-            return [];
-        }
-
-        $legacySaveOnly = $this->activeEditorTypeSlag() === 'code';
-
-        return [
-            $this->getSaveFormAction()->label(
-                $legacySaveOnly ? 'SAVE' : 'Save changes'
-            ),
-        ];
+        return [];
     }
 }

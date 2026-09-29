@@ -306,6 +306,376 @@
     </style>
     @endif
 
+    {{-- Save without scrolling to the foot of a long form. Same action as the button down
+         there, so validation and behaviour are identical; this one is only closer to hand. --}}
+    <style>
+        /* Save bar: sits above the first card, then follows the page down so a long form
+           never has to be scrolled back to the top to save. */
+        .sl-top-save {
+            display: block;
+            width: 100%;
+            height: 38px;
+            margin: 0 0 8px;
+            box-sizing: border-box;
+        }
+        .sl-top-save__inner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 38px;
+            box-sizing: border-box;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            transition: background-color .15s ease, box-shadow .15s ease, border-color .15s ease;
+        }
+        /* Off the top of the screen: lifted out of flow and pinned over the form column.
+           .sl-top-save keeps its height, so nothing below shifts when that happens. */
+        .sl-top-save__inner.is-floating {
+            position: fixed;
+            z-index: 40;
+            /* Only wide enough to frame the button. Spanning the whole column put a bare white
+               band across the page; the panel is there to lift the button off what is behind
+               it, not to be a bar in its own right. */
+            width: auto;
+            /* height:auto so the padding is even on all four sides - the fixed height above
+               squeezed the top and bottom down to a couple of pixels. */
+            height: auto;
+            padding: 8px;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, .96);
+            border-color: #e3e6ea;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .10);
+            backdrop-filter: blur(2px);
+        }
+        /* Pinned, it sits over the page rather than in it, so it has to carry the panel colour
+           of whichever theme is on - a white strip across a dark page reads as a glitch. */
+        .dark .sl-top-save__inner.is-floating {
+            background: rgba(17, 24, 39, .96);
+            border-color: #374151;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, .45);
+        }
+        .sl-top-save__btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 110px;
+            max-width: 140px;
+            padding: 7px 22px;
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1.2;
+            text-transform: uppercase;
+            border: 0;
+            border-radius: 3px;
+            background: #008C00;
+            color: #fff;
+            cursor: pointer;
+            transition: opacity .15s ease, background-color .15s ease;
+        }
+        .sl-top-save__btn:hover:not(:disabled) {
+            background: #007600;
+        }
+        /* Off, not faded: a translucent green washed out against the panel behind it and read
+           as a rendering fault rather than a button that is deliberately unavailable. */
+        .sl-top-save__btn:disabled {
+            background: #9aa0a6;
+            color: #f3f4f6;
+            opacity: 1;
+            cursor: not-allowed;
+        }
+        /* Mandatory fields carry a red star. Filament prints one inside the field label,
+           so that only needs colouring. */
+        .sl-add-form-left .fi-fo-field-label-required-mark {
+            color: #dc2626 !important;
+            margin-left: 2px;
+            font-size: 14px;
+            line-height: 1;
+        }
+        /* Several legacy fields are declared hiddenLabel() - Code Profile Name among them -
+           so Filament has nowhere to put the star and the field looks optional. Mark the
+           section heading above it instead, which is the label a person actually reads. */
+        .sl-add-form-left .sl-required-section > .fi-section-header .fi-section-header-heading::after,
+        .sl-add-form-left .sl-required-section .fi-section-header-heading::after {
+            content: " *";
+            color: #dc2626;
+            font-weight: 700;
+        }
+    </style>
+
+    <script>
+        /**
+         * Top SAVE bar.
+         *
+         * Deliberately plain JS rather than an Alpine component. Livewire folds its own methods
+         * into Alpine's expression scope and re-renders this corner of the page on every commit,
+         * and between the two the button ended up bound to one component instance while the
+         * click landed on another - the profile saved, but the button never reset. Delegated
+         * listeners and a directly-set `disabled` do not care how often the node is replaced.
+         */
+        (function () {
+            if (window.__slTopSave) { return; }
+            window.__slTopSave = true;
+
+            var OFFSET = 12;
+            var dirty = false;
+            var saving = false;
+            var pendingSave = false;
+
+            var bar = function () { return document.querySelector('.sl-top-save'); };
+            var inner = function () { return document.querySelector('.sl-top-save__inner'); };
+            var button = function () { return document.querySelector('.sl-top-save__btn'); };
+
+            // Form Builder is its own thing with its own Save, and on a survey it sits in this
+            // same column. Its fields neither arm this button nor hold it back: they are not
+            // part of the profile this button saves.
+            var ownField = function (el) {
+                return !! el.closest('.sl-add-form-left') && ! el.closest('.sl-form-builder-panel');
+            };
+
+            // Filament puts the real HTML required attribute on the control, and re-renders it
+            // whenever a conditional required() changes its mind, so this stays right without
+            // the page having to list its own fields.
+            var requiredControls = function () {
+                return Array.prototype.filter.call(
+                    document.querySelectorAll(
+                        '.sl-add-form-left input[required], .sl-add-form-left select[required], .sl-add-form-left textarea[required]'
+                    ),
+                    function (el) {
+                        return el.type !== 'hidden' && el.offsetParent !== null && ownField(el);
+                    }
+                );
+            };
+
+            var filled = function (el) {
+                if (el.type === 'checkbox') { return el.checked; }
+
+                if (el.type === 'radio') {
+                    var group = el.form
+                        ? el.form.querySelectorAll('input[type=radio][name="' + el.name + '"]')
+                        : [el];
+
+                    return Array.prototype.some.call(group, function (r) { return r.checked; });
+                }
+
+                return String(el.value || '').trim() !== '';
+            };
+
+            // A field declared hiddenLabel() has nowhere to show Filament's star, so the star
+            // goes on the section heading a person actually reads instead.
+            var markRequiredSections = function () {
+                Array.prototype.forEach.call(
+                    document.querySelectorAll('.sl-add-form-left .sl-required-section'),
+                    function (el) { el.classList.remove('sl-required-section'); }
+                );
+
+                requiredControls().forEach(function (el) {
+                    var field = el.closest('.fi-fo-field-wrp, .fi-fo-field');
+                    var visibleLabel = field
+                        ? field.querySelector('.fi-fo-field-label:not(.fi-sr-only)')
+                        : null;
+
+                    // Filament already stars a field whose label is on show.
+                    if (visibleLabel) { return; }
+
+                    var section = el.closest('.fi-section');
+
+                    if (section) { section.classList.add('sl-required-section'); }
+                });
+            };
+
+            var refresh = function () {
+                var btn = button();
+
+                if (! btn) { return; }
+
+                markRequiredSections();
+
+                btn.disabled = saving || ! dirty || ! requiredControls().every(filled);
+            };
+
+            /**
+             * The form is clean again.
+             *
+             * Called from whichever signal turns up first - the call promise, or the morph that
+             * follows the save. Neither proved dependable on its own here, and running twice
+             * costs nothing.
+             */
+            var settle = function () {
+                pendingSave = false;
+
+                // After the morph, so the re-rendered form is not read as a fresh edit.
+                setTimeout(function () {
+                    dirty = false;
+                    saving = false;
+                    refresh();
+                }, 120);
+            };
+
+            // Pinned only once its resting place has gone off the top of the screen. The pinned
+            // copy still has to line up with the form column rather than the window, and that
+            // column is a different width per profile type.
+            var reposition = function () {
+                var anchor = bar();
+                var box = inner();
+                var column = document.querySelector('.sl-add-form-left');
+
+                if (! anchor || ! box || ! column) { return; }
+
+                if (anchor.getBoundingClientRect().top >= OFFSET) {
+                    box.classList.remove('is-floating');
+                    box.style.left = '';
+                    box.style.top = '';
+
+                    return;
+                }
+
+                var rect = column.getBoundingClientRect();
+
+                // Pinned to the middle of the form column and shrink-wrapped, so it reads as a
+                // button on a card rather than a white bar across the page.
+                box.classList.add('is-floating');
+                box.style.left = Math.round(rect.left + (rect.width / 2)) + 'px';
+                box.style.top = OFFSET + 'px';
+            };
+
+            var onEdit = function (e) {
+                if (! e.target || ! e.target.closest || ! ownField(e.target)) { return; }
+
+                dirty = true;
+                refresh();
+            };
+
+            document.addEventListener('input', onEdit, true);
+            document.addEventListener('change', onEdit, true);
+
+            var submit = function () {
+                // Judged from our own state, not from btn.disabled: a morph can re-apply the
+                // server's disabled attribute a moment before the click lands, and we would
+                // then turn away a button the person can plainly see is live.
+                if (saving || ! dirty || ! requiredControls().every(filled)) { return; }
+
+                var btn = button();
+                var root = btn && btn.closest('[wire\\:id]');
+
+                if (! root || ! window.Livewire) { return; }
+
+                saving = true;
+                pendingSave = true;
+                refresh();
+
+                Promise.resolve(window.Livewire.find(root.getAttribute('wire:id')).call('save'))
+                    .then(function () { settle(); })
+                    .catch(function () {
+                        // Validation refused it: leave the change pending so it can be
+                        // corrected and sent again.
+                        pendingSave = false;
+                        saving = false;
+                        refresh();
+                    });
+            };
+
+            // Bound straight to the button rather than delegated from document: a click on it
+            // never reached a document-level listener on this page, so the bar never knew its
+            // own button had been pressed. Assigning onclick is idempotent, so re-running this
+            // after a morph cannot stack handlers up.
+            var bind = function () {
+                var btn = button();
+
+                if (btn) { btn.onclick = submit; }
+            };
+
+            window.addEventListener('scroll', reposition, { passive: true });
+            window.addEventListener('resize', reposition);
+
+            var booted = false;
+
+            var boot = function () {
+                // Called from several entry points because the order is not guaranteed: Livewire
+                // can be on window before its hook API is, and bailing out once left the button
+                // with nothing listening for the save to come back.
+                if (booted || ! window.Livewire || ! window.Livewire.hook) { return; }
+
+                booted = true;
+
+                // Fields appear and disappear as the form reacts, and a morph re-renders the
+                // button from server markup, so both need re-judging afterwards.
+                window.Livewire.hook('morph.updated', function () {
+                    settle();
+                    bind();
+                    refresh();
+                    reposition();
+                });
+
+                // The form is clean again once the save has actually come back.
+                window.Livewire.hook('commit', function (payload) {
+                    var calls = (payload.commit && payload.commit.calls) || [];
+
+                    var isSave = calls.some(function (call) { return call.method === 'save'; });
+
+                    if (! isSave) { return; }
+
+                    // The commit is the authority on "a save happened", whatever set it off.
+                    // Nothing here has to have seen the click for the form to count as clean
+                    // again, which is what makes the button reliably go back to disabled.
+                    payload.succeed(function () {
+                        // After the morph that follows, so the re-rendered form is not read as
+                        // a fresh edit.
+                        setTimeout(function () {
+                            dirty = false;
+                            saving = false;
+                            pendingSave = false;
+                            refresh();
+                        }, 120);
+                    });
+
+                    payload.fail(function () {
+                        // Validation refused it: leave the change pending so it can be
+                        // corrected and sent again.
+                        pendingSave = false;
+                        saving = false;
+                        refresh();
+                    });
+                });
+            };
+
+            document.addEventListener('livewire:init', boot);
+            document.addEventListener('livewire:initialized', boot);
+            document.addEventListener('DOMContentLoaded', boot);
+            boot();
+
+            // Belt and braces: the events above fire in an order that varies with how the page
+            // was reached, and a missed registration leaves the button unable to settle.
+            var waiting = setInterval(function () {
+                boot();
+
+                if (booted) { clearInterval(waiting); }
+            }, 200);
+
+            setTimeout(function () { clearInterval(waiting); }, 15000);
+
+            // The portal is an SPA panel: navigating swaps the page without reloading, and the
+            // hooks registered above belong to the Livewire instance that has just gone. Drop
+            // the latch and register again, or the first save on the new page has nothing
+            // listening for it to come back.
+            document.addEventListener('livewire:navigated', function () {
+                booted = false;
+                boot();
+
+                dirty = false;
+                saving = false;
+                pendingSave = false;
+                bind();
+                refresh();
+                reposition();
+            });
+
+            bind();
+            refresh();
+            reposition();
+        })();
+    </script>
+
     <div class="scanlink-container sl-profile-editor clearfix {{ $editorClass }}">
         {{-- DOM order matches legacy: right column first, left second --}}
         <section class="add-form-right sl-add-form-right {{ $isUrlLinkCode ? 'add-form-right-code' : '' }}">
@@ -313,6 +683,16 @@
         </section>
 
         <section class="add-form-left sl-add-form-left {{ $isSurvey ? 'sl-add-form-left--survey' : '' }}">
+            {{-- wire:ignore so a morph never swaps this node out from under a click: the bar is
+                 driven entirely by the script below and has nothing for Livewire to update. --}}
+            <div class="sl-top-save" wire:ignore>
+                <div class="sl-top-save__inner">
+                    {{-- Starts disabled: a morph re-renders this from the server, and the page
+                         should never come back with a live button over an unchanged form. --}}
+                    <button type="button" class="sl-top-save__btn" disabled>SAVE</button>
+                </div>
+            </div>
+
             {{ $this->content }}
 
             {{-- Legacy survey/index.php: Form Builder then Save under Logo on the LEFT. --}}
