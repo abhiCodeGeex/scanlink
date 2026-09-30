@@ -36,16 +36,30 @@
                             <label for="commentsText">Message <span class="req" aria-hidden="true">*</span></label>
                             <textarea name="comments" id="commentsText" required>{{ old('comments') }}</textarea>
                         </div>
-                        <div class="mkt__form-field">
-                            <label for="captcha">Verification code <span class="req" aria-hidden="true">*</span></label>
-                            <div class="mkt__captcha">
-                                <img src="{{ route('marketing.captcha') }}?t={{ time() }}" alt="Verification code" width="150" height="50">
-                                <input type="text" id="captcha" name="captcha" value="" autocomplete="off" required style="max-width:200px;">
+                        @if ($recaptcha->enabled())
+                            {{-- reCAPTCHA v3: nothing to fill in, the token is fetched on submit. --}}
+                            <input type="hidden" name="g-recaptcha-response" value="">
+                            <p class="mkt__captcha-note" style="font-size:12px;color:#6b7280;margin:0 0 12px;">
+                                Protected by reCAPTCHA &mdash;
+                                <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Privacy</a> and
+                                <a href="https://policies.google.com/terms" target="_blank" rel="noopener">Terms</a> apply.
+                            </p>
+                        @else
+                            <div class="mkt__form-field">
+                                <label for="captcha">Verification code <span class="req" aria-hidden="true">*</span></label>
+                                <div class="mkt__captcha">
+                                    <img src="{{ route('marketing.captcha') }}?t={{ time() }}" alt="Verification code" width="150" height="50">
+                                    <input type="text" id="captcha" name="captcha" value="" autocomplete="off" required style="max-width:200px;">
+                                </div>
                             </div>
-                        </div>
+                        @endif
                         <input type="hidden" name="submitted" id="submitted" value="true">
                         <button type="submit" class="btn btn-primary btn-lg">Send enquiry</button>
                     </form>
+
+                    @if ($recaptcha->enabled())
+                        @include('partials.recaptcha-v3', ['recaptcha' => $recaptcha, 'formId' => 'frmcontact'])
+                    @endif
                 </div>
 
                 <aside class="mkt__contact-card">

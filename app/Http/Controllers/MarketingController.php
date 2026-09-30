@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\UserType;
 use App\Mail\ContactUsMessage;
 use App\Mail\EnquiryMessage;
 use App\Models\CodePrising;
@@ -12,6 +11,8 @@ use App\Models\Setting;
 use App\Models\Testimonial;
 use App\Models\User;
 use App\Services\ContactCaptchaService;
+use App\Services\RecaptchaService;
+use App\Support\LoginEntrance;
 use App\Support\SystemNotifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -20,7 +21,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
-use App\Support\LoginEntrance;
 
 class MarketingController extends Controller
 {
@@ -60,6 +60,7 @@ class MarketingController extends Controller
         return view('marketing.contact', [
             ...$this->marketingLayoutData(),
             'contactEmail' => Setting::valueFor('contact_email') ?? 'admin@scanlink.com',
+            'recaptcha' => app(RecaptchaService::class),
         ]);
     }
 
@@ -225,25 +226,37 @@ class MarketingController extends Controller
             ->with('enquiry_submitted', true);
     }
 
-    public function submitContact(Request $request, ContactCaptchaService $captcha): RedirectResponse
+    public function submitContact(Request $request, ContactCaptchaService $captcha, RecaptchaService $recaptcha): RedirectResponse
     {
         $name = trim((string) $request->input('name', ''));
         $email = trim((string) $request->input('email', ''));
         $comments = trim((string) ($request->input('comments') ?? $request->input('message', '')));
         $captchaAnswer = trim((string) $request->input('captcha', ''));
 
-        if ($name === '' || $email === '' || $comments === '' || $captchaAnswer === '') {
+        // reCAPTCHA v3 asks the visitor for nothing, so only the picture captcha counts towards
+        // "all fields are required".
+        $usesRecaptcha = $recaptcha->enabled();
+
+        if ($name === '' || $email === '' || $comments === '' || (! $usesRecaptcha && $captchaAnswer === '')) {
             return redirect()
                 ->route('marketing.contact')
                 ->withInput($request->except('captcha'))
                 ->withErrors(['form' => 'All fields are required...']);
         }
 
-        if (! $captcha->valid($captchaAnswer)) {
+        $passed = $usesRecaptcha
+            ? $recaptcha->verify((string) $request->input('g-recaptcha-response'), $request)
+            : $captcha->valid($captchaAnswer);
+
+        if (! $passed) {
             return redirect()
                 ->route('marketing.contact')
                 ->withInput($request->except('captcha'))
-                ->withErrors(['captcha' => 'Invalid Verification Code...']);
+                ->withErrors([
+                    'captcha' => $usesRecaptcha
+                        ? 'We could not verify that you are human. Please try again.'
+                        : 'Invalid Verification Code...',
+                ]);
         }
 
         $contactEmail = Setting::valueFor('contact_email') ?? 'admin@scanlink.com';

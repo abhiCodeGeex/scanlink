@@ -13,7 +13,9 @@
         @endif
 
         <div class="sl-portal-contact__layout">
-            <form wire:submit.prevent="submit" class="sl-portal-contact__form" id="frmcontact">
+            {{-- With reCAPTCHA on, the submit is intercepted so a token can be fetched and handed
+                 to submit() directly; without it, Livewire handles the submit as before. --}}
+            <form @if (! $this->recaptcha()->enabled()) wire:submit.prevent="submit" @endif class="sl-portal-contact__form" id="frmcontact">
                 <ul class="sl-portal-contact__fields">
                     <li>
                         <label for="yourName">Name:<span class="required" aria-hidden="true">*</span></label>
@@ -45,26 +47,36 @@
                             required
                         ></textarea>
                     </li>
-                    <li>
-                        <label>Verification Code:<span class="required" aria-hidden="true">*</span></label>
-                        <br/>
-                        <img
-                            src="{{ route('marketing.captcha') }}?t={{ $captchaNonce }}"
-                            alt="Verification code"
-                            class="sl-portal-contact__captcha"
-                            width="150"
-                            height="50"
-                            wire:key="captcha-{{ $captchaNonce }}"
-                        />
-                        <input
-                            type="text"
-                            wire:model="captcha"
-                            id="captcha"
-                            class="sl-portal-contact__input"
-                            autocomplete="off"
-                            required
-                        />
-                    </li>
+                    @if ($this->recaptcha()->enabled())
+                        <li>
+                            <span class="sl-portal-contact__recaptcha-note" style="font-size:12px;color:#6b7280;">
+                                Protected by reCAPTCHA &mdash;
+                                <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Privacy</a> and
+                                <a href="https://policies.google.com/terms" target="_blank" rel="noopener">Terms</a> apply.
+                            </span>
+                        </li>
+                    @else
+                        <li>
+                            <label>Verification Code:<span class="required" aria-hidden="true">*</span></label>
+                            <br/>
+                            <img
+                                src="{{ route('marketing.captcha') }}?t={{ $captchaNonce }}"
+                                alt="Verification code"
+                                class="sl-portal-contact__captcha"
+                                width="150"
+                                height="50"
+                                wire:key="captcha-{{ $captchaNonce }}"
+                            />
+                            <input
+                                type="text"
+                                wire:model="captcha"
+                                id="captcha"
+                                class="sl-portal-contact__input"
+                                autocomplete="off"
+                                required
+                            />
+                        </li>
+                    @endif
                     <li>
                         <button type="submit" class="sl-portal-contact__send" wire:loading.attr="disabled">
                             SEND
@@ -72,6 +84,15 @@
                     </li>
                 </ul>
             </form>
+
+            @if ($this->recaptcha()->enabled())
+                @include('partials.recaptcha-v3', [
+                    'recaptcha' => $this->recaptcha(),
+                    'formId' => 'frmcontact',
+                    'livewireId' => $this->getId(),
+                    'method' => 'submit',
+                ])
+            @endif
 
             <section class="sl-portal-contact__box">
                 <h2 class="sl-portal-contact__box-title">

@@ -2,11 +2,12 @@
 
 namespace App\Filament\Portal\Pages;
 
+use App\Http\Middleware\ConfineVocCardHolder;
 use App\Mail\ContactUsMessage;
 use App\Models\Setting;
-use App\Http\Middleware\ConfineVocCardHolder;
 use App\Models\User;
 use App\Services\ContactCaptchaService;
+use App\Services\RecaptchaService;
 use App\Support\SystemNotifier;
 use BackedEnum;
 use Filament\Notifications\Notification;
@@ -75,8 +76,17 @@ class ContactUs extends Page
         $this->captchaNonce = time();
     }
 
-    public function submit(ContactCaptchaService $captcha): void
+    /** The view asks this so the markup does not have to know which challenge is in play. */
+    public function recaptcha(): RecaptchaService
     {
+        return app(RecaptchaService::class);
+    }
+
+    public function submit(?string $recaptchaToken = null): void
+    {
+        $captcha = app(ContactCaptchaService::class);
+        $recaptcha = $this->recaptcha();
+
         $this->formError = null;
         $this->submitted = false;
 
@@ -85,15 +95,25 @@ class ContactUs extends Page
         $comments = trim($this->comments);
         $captchaAnswer = trim($this->captcha);
 
-        if ($name === '' || $email === '' || $comments === '' || $captchaAnswer === '') {
+        // reCAPTCHA v3 asks the visitor for nothing, so only the picture captcha counts towards
+        // "all fields are required".
+        $usesRecaptcha = $recaptcha->enabled();
+
+        if ($name === '' || $email === '' || $comments === '' || (! $usesRecaptcha && $captchaAnswer === '')) {
             $this->formError = 'All fields are required...';
             $this->refreshCaptcha();
 
             return;
         }
 
-        if (! $captcha->valid($captchaAnswer)) {
-            $this->formError = 'Invalid Verification Code...';
+        $passed = $usesRecaptcha
+            ? $recaptcha->verify($recaptchaToken)
+            : $captcha->valid($captchaAnswer);
+
+        if (! $passed) {
+            $this->formError = $usesRecaptcha
+                ? 'We could not verify that you are human. Please try again.'
+                : 'Invalid Verification Code...';
             $this->refreshCaptcha();
 
             return;
