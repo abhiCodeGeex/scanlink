@@ -311,19 +311,32 @@
     <style>
         /* Save bar: sits above the first card, then follows the page down so a long form
            never has to be scrolled back to the top to save. */
+        /* Filament puts a 32px gap between a page's header and its content. With the tabs
+           directly above, that left the button marooned in a band of empty space - far
+           further from the menu than from the card beneath it. Closed here so the button
+           sits the same distance from both. */
+        .fi-page:has(.sl-profile-editor) .fi-page-header-main-ctn {
+            gap: 0 !important;
+        }
         .sl-top-save {
             display: block;
             width: 100%;
-            height: 38px;
-            margin: 0 0 8px;
+            /* Matches the button exactly: any extra here reads as padding above it, which is
+               what threw the spacing out. Still an explicit height, so the placeholder holds
+               its ground when the inner copy is pinned and the page does not jump. */
+            height: 30px;
+            /* 11, not 12: the card contributes a pixel of its own, so this lands the gap below
+               the button on exactly the 12px it has above it. */
+            margin: 0 0 11px;
             box-sizing: border-box;
         }
         .sl-top-save__inner {
             display: flex;
             align-items: center;
-            justify-content: center;
+            /* Sits against the right edge of the form card rather than over its middle. */
+            justify-content: flex-end;
             width: 100%;
-            height: 38px;
+            height: 30px;
             box-sizing: border-box;
             border: 1px solid transparent;
             border-radius: 4px;
@@ -342,7 +355,9 @@
                squeezed the top and bottom down to a couple of pixels. */
             height: auto;
             padding: 8px;
-            transform: translateX(-50%);
+            /* Pinned, left is set to the column's right edge, so the chip is pulled back by
+               its own width to finish flush with it. */
+            transform: translateX(-100%);
             background: rgba(255, 255, 255, .96);
             border-color: #e3e6ea;
             box-shadow: 0 2px 10px rgba(0, 0, 0, .10);
@@ -532,10 +547,10 @@
 
                 var rect = column.getBoundingClientRect();
 
-                // Pinned to the middle of the form column and shrink-wrapped, so it reads as a
-                // button on a card rather than a white bar across the page.
+                // Pinned flush with the form column's right edge and shrink-wrapped, so it
+                // reads as a button on a card rather than a white bar across the page.
                 box.classList.add('is-floating');
-                box.style.left = Math.round(rect.left + (rect.width / 2)) + 'px';
+                box.style.left = Math.round(rect.right) + 'px';
                 box.style.top = OFFSET + 'px';
             };
 
