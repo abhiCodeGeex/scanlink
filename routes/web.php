@@ -1,15 +1,26 @@
 <?php
 
-use App\Http\Controllers\Portal\FormBuilderUploadController;
-use App\Http\Controllers\Portal\LegacyFormBuilderController;
+use App\Filament\Portal\Pages\FormSubmissions;
+use App\Filament\Portal\Pages\VocDashboard;
 use App\Http\Controllers\CaptchaController;
 use App\Http\Controllers\ExpressCodeController;
 use App\Http\Controllers\MarketingController;
 use App\Http\Controllers\MobileProfileController;
 use App\Http\Controllers\PayPalNotifyController;
+use App\Http\Controllers\Portal\FormBuilderUploadController;
+use App\Http\Controllers\Portal\LegacyFormBuilderController;
+use App\Http\Controllers\Portal\ScanalyticsGraphController;
 use App\Http\Controllers\PortalAuthController;
+use App\Http\Controllers\ShortLinkController;
+use App\Http\Controllers\VocEmailPreviewController;
+use App\Http\Controllers\VocPasswordResetController;
+use App\Http\Middleware\EnsureShortLinkHost;
+use App\Models\ClientUser;
+use App\Models\Setting;
+use App\Models\Video;
 use App\Services\YouTubeService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [MarketingController::class, 'home'])->name('marketing.home');
@@ -52,8 +63,8 @@ Route::redirect('/privacypolicy/index', '/privacy', 301);
 // Legacy voclogin.php was its own branded sign-in screen — the address printed on cards and
 // handed out at induction. Keep that entry point rather than bouncing it to the generic home.
 Route::get('/voclogin', function () {
-    if (\Illuminate\Support\Facades\Auth::check()) {
-        return redirect()->to(\App\Filament\Portal\Pages\VocDashboard::getUrl(panel: 'portal'));
+    if (Auth::check()) {
+        return redirect()->to(VocDashboard::getUrl(panel: 'portal'));
     }
 
     return view('marketing.voclogin');
@@ -67,12 +78,12 @@ Route::post('/voclogin', [PortalAuthController::class, 'vocLogin'])->name('marke
 
 // "Forgot your password?" at the VOCC login resets the card's own password in voc_users, not the
 // person's client or admin login.
-Route::get('/voclogin/forgot', [\App\Http\Controllers\VocPasswordResetController::class, 'request'])->name('marketing.voclogin.forgot');
-Route::post('/voclogin/forgot', [\App\Http\Controllers\VocPasswordResetController::class, 'send'])
+Route::get('/voclogin/forgot', [VocPasswordResetController::class, 'request'])->name('marketing.voclogin.forgot');
+Route::post('/voclogin/forgot', [VocPasswordResetController::class, 'send'])
     ->middleware('throttle:6,1')
     ->name('marketing.voclogin.forgot.send');
-Route::get('/voclogin/reset', [\App\Http\Controllers\VocPasswordResetController::class, 'edit'])->name('marketing.voclogin.reset');
-Route::post('/voclogin/reset', [\App\Http\Controllers\VocPasswordResetController::class, 'update'])
+Route::get('/voclogin/reset', [VocPasswordResetController::class, 'edit'])->name('marketing.voclogin.reset');
+Route::post('/voclogin/reset', [VocPasswordResetController::class, 'update'])
     ->middleware('throttle:6,1')
     ->name('marketing.voclogin.reset.update');
 
@@ -89,7 +100,7 @@ Route::get('/oauth/youtube/callback', function (Request $request, YouTubeService
 
     try {
         $tokens = $youtube->exchangeAuthorizationCode($code, $redirectUri);
-    } catch (\Throwable $exception) {
+    } catch (Throwable $exception) {
         return response('OAuth failed: '.$exception->getMessage(), 500);
     }
 
@@ -97,7 +108,7 @@ Route::get('/oauth/youtube/callback', function (Request $request, YouTubeService
         return response('No refresh token returned. Revoke prior access in Google Account and authorize again.', 422);
     }
 
-    \App\Models\Setting::setValue('youtube_refresh_token', $tokens['refresh_token']);
+    Setting::setValue('youtube_refresh_token', $tokens['refresh_token']);
 
     return response('YouTube connected successfully. You can close this window and return to the admin panel.');
 });
@@ -136,21 +147,21 @@ Route::post('/{clientUrl}/{profileId}/checklist/{itemId}/uncheck', [MobileProfil
 Route::middleware(['web', 'auth'])->group(function (): void {
     // VOC "Email Notification Settings" Preview — renders the document-expiry email
     // (30-day renewal reminder / expiry notice) from the saved profile.
-    Route::get('/portal/profiles/{profile}/voc-email-preview/{kind}', [\App\Http\Controllers\VocEmailPreviewController::class, 'show'])
+    Route::get('/portal/profiles/{profile}/voc-email-preview/{kind}', [VocEmailPreviewController::class, 'show'])
         ->whereNumber('profile')
         ->where('kind', 'reminder|expired')
         ->name('portal.voc.email-preview');
 
-    Route::get('/portal/graphengine/country', [\App\Http\Controllers\Portal\ScanalyticsGraphController::class, 'country'])
+    Route::get('/portal/graphengine/country', [ScanalyticsGraphController::class, 'country'])
         ->name('portal.graphengine.country');
-    Route::get('/portal/graphengine/device', [\App\Http\Controllers\Portal\ScanalyticsGraphController::class, 'device'])
+    Route::get('/portal/graphengine/device', [ScanalyticsGraphController::class, 'device'])
         ->name('portal.graphengine.device');
-    Route::get('/portal/graphengine/browser', [\App\Http\Controllers\Portal\ScanalyticsGraphController::class, 'browser'])
+    Route::get('/portal/graphengine/browser', [ScanalyticsGraphController::class, 'browser'])
         ->name('portal.graphengine.browser');
     // Isolated standalone charts page (legacy jQuery ddchart + jQuery-UI theme) embedded via iframe.
-    Route::get('/portal/scanalytics-charts', [\App\Http\Controllers\Portal\ScanalyticsGraphController::class, 'charts'])
+    Route::get('/portal/scanalytics-charts', [ScanalyticsGraphController::class, 'charts'])
         ->name('portal.graphengine.charts');
-    Route::get('/portal/scanalytics-export', [\App\Http\Controllers\Portal\ScanalyticsGraphController::class, 'export'])
+    Route::get('/portal/scanalytics-export', [ScanalyticsGraphController::class, 'export'])
         ->name('portal.graphengine.export');
 
     Route::get('/portal/legacy-form-builder', [LegacyFormBuilderController::class, 'index'])
@@ -165,9 +176,9 @@ Route::middleware(['web', 'auth'])->group(function (): void {
         ->name('portal.legacy-form-builder.enable');
 
     // Remove a video from the client's library (the existing-videos picker table).
-    Route::post('/portal/videos/{video}/remove', function (\App\Models\Video $video) {
-        $member = \App\Models\ClientUser::query()
-            ->where('auth_user_id', \Illuminate\Support\Facades\Auth::id())
+    Route::post('/portal/videos/{video}/remove', function (Video $video) {
+        $member = ClientUser::query()
+            ->where('auth_user_id', Auth::id())
             ->where('client_id', $video->client_id)
             ->active()
             ->first();
@@ -199,10 +210,21 @@ Route::middleware(['web', 'auth'])->group(function (): void {
     Route::get('/portal/legacy-form-builder/document/{name}', [FormBuilderUploadController::class, 'showDocument'])
         ->name('portal.legacy-form-builder.document');
 
-    Route::get('/portal/form-submissions/print/{sessionId}', function (Illuminate\Http\Request $request, string $sessionId) {
-        return \App\Filament\Portal\Pages\FormSubmissions::downloadSessionHtml(
+    Route::get('/portal/form-submissions/print/{sessionId}', function (Request $request, string $sessionId) {
+        return FormSubmissions::downloadSessionHtml(
             $request->integer('profile'),
             $sessionId,
         );
     })->name('portal.form-submissions.print');
 });
+
+// Our own short links, served from their own host.
+//
+// Declared last on purpose. A bare /{code} is indistinguishable from /contact or /pricing, so
+// every real route is registered ahead of it and matched first; only a path nothing else claims
+// reaches here. EnsureShortLinkHost then turns it away unless the request arrived on the short
+// domain, which keeps the main site free of it entirely.
+Route::get('/{code}', ShortLinkController::class)
+    ->where('code', '[A-Za-z0-9]{4,16}')
+    ->middleware(EnsureShortLinkHost::class)
+    ->name('shortlink.resolve');

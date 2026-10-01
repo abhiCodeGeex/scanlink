@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\ProfileCodeType;
+use App\Exceptions\UnsupportedDownloadFormatException;
 use App\Models\Profile;
 use App\Models\QrImage;
 use chillerlan\QRCode\Data\QRMatrix;
@@ -47,6 +48,21 @@ class ProfileQrService
         // Don't shorten an orphan profile (no linked client) — it has no valid scan
         // destination yet, so a short link would just point at a dead URL. Fall back to raw.
         $canShorten = $isCustomQr || filled($profile->client?->url);
+
+        // Our own shortener first, when it is switched on. A code it mints is served from our
+        // own domain and resolves for as long as we keep that domain, which is the whole point
+        // of it: a TinyURL link printed on a label outlives our control of the account behind
+        // it. Falls through to TinyURL, and then to the long URL, so switching this on cannot
+        // leave a profile with no usable QR.
+        $shortLinks = app(ShortLinkService::class);
+
+        if ($canShorten && $shortLinks->enabled()) {
+            $short = $shortLinks->urlFor($profile);
+
+            $profile->update(['shorturl' => $short]);
+
+            return $short;
+        }
 
         $token = config('scanlink.short_url_api_token');
 
@@ -548,7 +564,7 @@ class ProfileQrService
 
         // TIFF/EPS need ImageMagick. Rather than hand out a PNG under a .tiff/.eps name
         // (a corrupt file), fail clearly so the UI can ask for a supported format.
-        throw new \App\Exceptions\UnsupportedDownloadFormatException(
+        throw new UnsupportedDownloadFormatException(
             'The '.strtoupper($extension).' format requires ImageMagick, which is not available on this server. '
             .'Please choose PDF, PNG or JPG instead.'
         );

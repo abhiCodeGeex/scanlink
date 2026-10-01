@@ -28,6 +28,9 @@
         <env name="DB_DATABASE" value=":memory:" force="true"/>
         <env name="DB_URL" value="" force="true"/>
         <env name="MAIL_MAILER" value="array"/>
+        <!-- Pinned so the suite does not change behaviour with whatever a developer has in
+             .env. ShortLinkTest turns the local shortener on for itself. -->
+        <env name="SHORT_LINK_DRIVER" value="tinyurl" force="true"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
