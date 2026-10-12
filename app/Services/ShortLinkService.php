@@ -19,11 +19,22 @@ use Illuminate\Database\UniqueConstraintViolationException;
  *    would otherwise strand every code already printed; here the code simply follows them.
  *  - Codes are random, not sequential. A counter would let anyone enumerate every client's
  *    codes by incrementing.
+ *
+ * Codes are 7 uppercase characters from digits and letters, minus the look-alikes I, L, O
+ * and U, so one read off a label and typed by hand cannot be mistaken for another. Whatever
+ * is typed is normalised before the lookup: lowercase becomes uppercase, and the skipped
+ * letters are read as the digits they get confused with.
  */
 class ShortLinkService
 {
-    /** Base62. Nobody types these - they are scanned - so the full alphabet is fine. */
-    protected const ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    /**
+     * 32 characters: the digits and A-Z without I, L, O and U. 32^7 is about 34 billion codes.
+     * Uppercase only, so a code reads the same however a database collation compares case.
+     */
+    public const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+
+    /** Letters never issued, read as the digit someone typing them most likely meant. */
+    protected const LOOK_ALIKES = ['I' => '1', 'L' => '1', 'O' => '0'];
 
     /** How many times to re-roll on the astronomically unlikely collision. */
     protected const ATTEMPTS = 8;
@@ -102,10 +113,19 @@ class ShortLinkService
         throw new \RuntimeException('Could not mint a unique short code after '.self::ATTEMPTS.' attempts.');
     }
 
+    /**
+     * A code as it is stored, from however it was scanned or typed: "7k3qx9m" and "7K3QX9M"
+     * are the same code, and so is "7K3QX9O" typed for "7K3QX90".
+     */
+    public function normalize(string $code): string
+    {
+        return strtr(strtoupper(trim($code)), self::LOOK_ALIKES);
+    }
+
     /** The profile a scanned code belongs to, or null if we never issued it. */
     public function resolve(string $code): ?Profile
     {
-        $code = trim($code);
+        $code = $this->normalize($code);
 
         if ($code === '') {
             return null;

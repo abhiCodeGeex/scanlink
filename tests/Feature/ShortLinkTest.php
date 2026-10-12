@@ -65,7 +65,7 @@ class ShortLinkTest extends TestCase
         $url = app(ProfileQrService::class)->resolveQrData($this->profile());
 
         $this->assertStringStartsWith('https://'.self::DOMAIN.'/', $url);
-        $this->assertMatchesRegularExpression('#^https://'.preg_quote(self::DOMAIN, '#').'/[A-Za-z0-9]{7}$#', $url);
+        $this->assertMatchesRegularExpression('#^https://'.preg_quote(self::DOMAIN, '#').'/[0-9A-HJKMNP-TV-Z]{7}$#', $url);
 
         // Nothing was asked of TinyURL.
         Http::assertNothingSent();
@@ -168,6 +168,62 @@ class ShortLinkTest extends TestCase
 
         $this->get('https://'.self::DOMAIN.'/'.$code)
             ->assertRedirect('https://example.com/brochure');
+    }
+
+    #[Test]
+    public function codes_are_seven_uppercase_characters_without_look_alikes(): void
+    {
+        $this->useLocalShortener();
+        $service = app(ShortLinkService::class);
+
+        $codes = collect(range(1, 60))
+            ->map(fn (int $i): string => $service->codeFor($this->profile('alphabet-'.$i)));
+
+        foreach ($codes as $code) {
+            $this->assertSame(7, strlen($code));
+            $this->assertMatchesRegularExpression('/^[0-9A-Z]{7}$/', $code, 'uppercase only');
+            $this->assertDoesNotMatchRegularExpression('/[ILOU]/', $code, 'I, L, O and U are never issued');
+        }
+
+        // Every character comes from the documented 32-character set.
+        $this->assertSame('', str_replace(str_split(ShortLinkService::ALPHABET), '', $codes->implode('')));
+        $this->assertSame(32, strlen(ShortLinkService::ALPHABET));
+        $this->assertSame(0, preg_match('/[ILOU]/', ShortLinkService::ALPHABET));
+    }
+
+    #[Test]
+    public function a_code_typed_in_lowercase_opens_the_same_profile(): void
+    {
+        $this->useLocalShortener();
+        $profile = $this->profile('acme-co');
+        $code = app(ShortLinkService::class)->codeFor($profile);
+        $expected = app(ProfileQrService::class)->profileUrl($profile->fresh());
+
+        $this->get('https://'.self::DOMAIN.'/'.strtolower($code))->assertRedirect($expected);
+        $this->get('https://'.self::DOMAIN.'/'.ucfirst(strtolower($code)))->assertRedirect($expected);
+        $this->get('https://'.self::DOMAIN.'/'.$code)->assertRedirect($expected);
+    }
+
+    #[Test]
+    public function a_skipped_letter_typed_for_its_digit_still_finds_the_code(): void
+    {
+        $this->useLocalShortener();
+        $profile = $this->profile('acme-co');
+        ProfileShortLink::query()->create(['profile_id' => $profile->id, 'code' => '7K30X1M']);
+        $expected = app(ProfileQrService::class)->profileUrl($profile->fresh());
+
+        // O for 0, and I or l for 1, in either case.
+        $this->get('https://'.self::DOMAIN.'/7K3OXIM')->assertRedirect($expected);
+        $this->get('https://'.self::DOMAIN.'/7k3oxlm')->assertRedirect($expected);
+    }
+
+    #[Test]
+    public function normalising_a_code_uppercases_it_and_maps_look_alikes(): void
+    {
+        $service = app(ShortLinkService::class);
+
+        $this->assertSame('7K3QX9M', $service->normalize(' 7k3qx9m '));
+        $this->assertSame('7K30X11', $service->normalize('7k3oxIl'));
     }
 
     #[Test]

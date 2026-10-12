@@ -47,8 +47,9 @@ return [
     'scheme' => env('SHORT_LINK_SCHEME', 'https'),
 
     /*
-    | Base62, so 7 characters is about 3.5 trillion codes. Random rather than
-    | sequential: a counter would let anyone walk every client's codes.
+    | Uppercase digits and letters without I, L, O and U (32 characters), so 7
+    | characters is about 34 billion codes. Random rather than sequential: a
+    | counter would let anyone walk every client's codes.
     */
 
     'length' => (int) env('SHORT_LINK_LENGTH', 7),
